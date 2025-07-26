@@ -82,18 +82,31 @@ CREATE TABLE existences (
     existence_reference_code INTEGER UNIQUE NOT NULL,
     ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
     receipt_number VARCHAR(100), -- this should be a reference to a receipt table (expense)
-
+    --units
     units_purchased DECIMAL(10,2) NOT NULL,
     units_available DECIMAL(10,2) NOT NULL, -- at creation it will be the same as units_purchased, updated with running out
     unit_Type VARCHAR(20) NOT NULL CHECK (unit IN ('Liters', 'Gallons', 'Units', 'Bag')),
+    --items
     items_per_unit INTEGER NOT NULL, --ie. Galon has 31 ice-cream balls
     cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
     cost_per_unit DECIMAL(10,2) NOT NULL, --ie. Galon costs 12,000
+    --costs
     total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
     remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
     purchase_date DATE NOT NULL,
     expiry_date DATE,
+    --incomes & taxes
+    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00,
+    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost * income_margin_percentage / 100) STORED,
+    iva_percentage DECIMAL(5,2) DEFAULT 13.00,
+    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * iva_percentage / 100) STORED,
+    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
+    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
+    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost + income_margin_amount + iva_amount + service_tax_amount) STORED,
+    final_price DECIMAL(10,2),
+    --supplier
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -116,9 +129,9 @@ CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
 - `id`: Primary key, UUID (auto-generated)
 - `existence_reference_code`: Simple numeric consecutive code for easy identification
 - `ingredient_id`: Foreign key reference to ingredients table (UUID)
-- `receipt_number`: Receipt/invoice number from the purchase (nullable for cash purchases)
+- `receipt_number`: Receipt/invoice number - should reference a receipt table (expense)
 - `units_purchased`: Original quantity purchased
-- `units_available`: Current quantity available (decreases as used)
+- `units_available`: Current quantity available (at creation same as units_purchased, decreases as used)
 - `unit_type`: Unit of measurement for this existence (Liters, Gallons, Units, Bag)
 - `items_per_unit`: Number of individual items produced from one unit (e.g., 1 Gallon = 31 ice cream balls)
 - `cost_per_item`: Calculated field (cost_per_unit ÷ items_per_unit) - cost per individual item
@@ -127,6 +140,14 @@ CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
 - `remaining_value`: Calculated field (units_available × cost_per_unit)
 - `purchase_date`: When this batch was purchased
 - `expiry_date`: Expiration date for this specific batch (nullable)
+- `income_margin_percentage`: Configurable margin percentage (default 30%)
+- `income_margin_amount`: Calculated margin amount (read-only)
+- `iva_percentage`: IVA tax percentage (default 13%, configurable)
+- `iva_amount`: IVA tax amount (read-only auto-generated)
+- `service_tax_percentage`: Service tax percentage (default 10%, configurable)
+- `service_tax_amount`: Service tax amount (read-only auto-generated)
+- `calculated_price`: Auto-calculated total price with margins and taxes
+- `final_price`: Final price (can be rounded up to next 100)
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for supermarket purchases)
 
 ### Recipes Table
@@ -140,14 +161,7 @@ CREATE TABLE recipes (
     picture_url VARCHAR(500),
 
     total_recipe_cost DECIMAL(10,2) DEFAULT 0,
-    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00,
-    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost * income_margin_percentage / 100) STORED,
-    iva_percentage DECIMAL(5,2) DEFAULT 13.00,
-    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * iva_percentage / 100) STORED,
-    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
-    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
-    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost + income_margin_amount + iva_amount + service_tax_amount) STORED,
-    final_price DECIMAL(10,2),
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -163,14 +177,6 @@ CREATE INDEX idx_recipes_final_price ON recipes(final_price);
 - `recipe_description`: Description of the product
 - `picture_url`: Picture of the product for reference
 - `total_recipe_cost`: Sum of all material costs in the recipe
-- `income_margin_percentage`: Configurable margin percentage (default 30%)
-- `income_margin_amount`: Calculated margin amount (read-only)
-- `iva_percentage`: IVA tax percentage (default 13%, configurable)
-- `iva_amount`: IVA tax amount (read-only auto-generated)
-- `service_tax_percentage`: Service tax percentage (default 10%, configurable)
-- `service_tax_amount`: Service tax amount (read-only auto-generated)
-- `calculated_price`: Auto-calculated total price with margins and taxes
-- `final_price`: Final price (can be rounded up to next 100)
 
 ### Recipe Ingredients Table
 **Purpose:** Junction table linking recipes to ingredients with quantities
@@ -197,8 +203,6 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - `recipe_id`: Foreign key reference to recipes table (UUID)
 - `ingredient_id`: Foreign key reference to ingredients table (UUID)
 - `number_of_units`: Quantity of the raw material needed for the recipe
-- `cost_per_unit`: Cost per unit from ingredients table (individual material cost)
-- `total_cost`: Calculated field (number_of_units × cost_per_unit)
 
 ## Relationships
 - **suppliers** ← **ingredients** (One-to-Many: One supplier can provide multiple ingredients)
@@ -208,11 +212,12 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 
 ## Business Logic Triggers
 - Update `total_recipe_cost` in recipes table when recipe_ingredients change
-- Recalculate `calculated_price` when cost components change
-- Update `cost_per_unit` in recipe_ingredients when ingredient prices change
-- Track ingredient consumption by updating `number_of_units_available` in existences table
+- Recalculate pricing fields in existences table when cost components change
+- Track ingredient consumption by updating `units_available` in existences table
 - Implement FIFO logic: use oldest existences first (by purchase_date)
 - Alert when existences are near expiry (based on expiry_date)
+- Calculate final pricing (margins, taxes) at existence level for inventory items
+- Link receipt_number to expense/receipt table for full traceability
 
 ---
 
