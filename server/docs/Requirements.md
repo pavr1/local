@@ -9,8 +9,9 @@
 
 ## Table of Contents
 1. [Inventory Management](#inventory-management)
+   - [Suppliers](#suppliers)
    - [Ingredients](#ingredients)
-   - [In-Stock](#in-stock)
+   - [Existences](#existences)
    - [Recipes](#recipes)
 2. [Expenses Management](#expenses-management)
 3. [Income Managements (Orders)](#income-managements-orders)
@@ -33,11 +34,28 @@
 
 ## Inventory Management
 
+### Suppliers
+**Description:** Vendor/supplier management system for ingredient procurement and relationship management.
+
+- **Attributes:**
+  - **Supplier Name** (string): Name of the supplier/vendor (unique)
+  - **Contact Number** (string, nullable): Phone number for supplier contact
+  - **Email** (string, nullable): Email address for supplier communication
+  - **Address** (text, nullable): Physical address of supplier
+  - **Notes** (text, nullable): Additional notes about the supplier
+
+- **Business Logic:**
+  - Centralized supplier information management
+  - Supports multiple ingredients per supplier
+  - Supplier information is optional for local store purchases
+  - Used for reordering and supplier relationship management
+
 ### Ingredients
 **Description:** Raw materials required to prepare different products in the ice cream store.
 
 - **Attributes:**
   - **Name** (string): Ingredient identifier/name
+  - **Description** (text, nullable): Additional details about the ingredient
   - **Purchase Price** (decimal): Cost per unit when purchasing the ingredient (expense)
   - **Unit** (enum): Unit of measurement
     - Liters
@@ -50,26 +68,34 @@
   - **Item Cost** (decimal, read-only): Calculated cost per individual item
     - **Formula:** `Item Cost = Purchase Price ÷ Items per Unit`
     - **Purpose:** Used for calculating total product costs and pricing
-  - **Purchase Date** (date): When the raw material was acquired
+    - **Purchase Date** (date): When the raw material was acquired
   - **Expiring Date** (date): Expiration date to control material freshness
-  - **Supplier Name** (string, nullable): Name of the supplier
-  - **Supplier Contact Number** (string, nullable): Contact information for the supplier
-      - Both supplier fields are optional for items purchased from local stores
+  - **Supplier Reference** (foreign key, nullable): Reference to supplier in suppliers table
+    - Optional for items purchased from local stores
 
   - **Business Logic:**
   - Each ingredient must have all required fields configured
   - Item Cost is automatically calculated and cannot be manually edited
   - Used as foundation for product cost calculation and profit margin analysis
 
-### In-Stock
-**Description:** Control and monitoring system for ingredients inventory to ensure adequate stock levels and prevent usage of expired materials.
+### Existences
+**Description:** Track individual ingredient purchases/acquisitions from suppliers or supermarkets. Each existence represents a specific purchase batch with receipt traceability and expiration tracking.
 
 - **Attributes:**
-  - **Stock Reference Code** (integer, auto-increment): Simple numeric consecutive code for easy identification
+  - **Existence Reference Code** (integer, auto-increment): Simple numeric consecutive code for easy identification
   - **Ingredient Reference** (foreign key): Link to ingredient
-  - **Number of Units Available** (decimal): Quantity of complete ingredient in stock
-  - **Cost per Unit** (decimal): Cost to produce one unit of this recipe (found in ingredients)
-  - **Total Cost** (decimal): Total cost for all units in stock (Cost per Unit × Number of Units)
+  - **Receipt Number** (string, nullable): Receipt/invoice number from the purchase
+  - **Units Purchased** (decimal): Original quantity purchased
+  - **Units Available** (decimal): Current quantity available (decreases as used)
+  - **Unit Type** (enum): Unit of measurement for this existence (Liters, Gallons, Units, Bag)
+  - **Items per Unit** (integer): Number of individual items produced from one unit (e.g., 1 Gallon = 31 ice cream balls)
+  - **Cost per Item** (decimal, read-only): Calculated field (Cost per Unit ÷ Items per Unit) - cost per individual item
+  - **Cost per Unit** (decimal): Cost per unit for this specific purchase (e.g., Gallon costs ₡12,000)
+  - **Total Purchase Cost** (decimal, read-only): Calculated field (Units Purchased × Cost per Unit)
+  - **Remaining Value** (decimal, read-only): Calculated field (Units Available × Cost per Unit)
+  - **Purchase Date** (date): When this batch was purchased
+  - **Expiry Date** (date, nullable): Expiration date for this specific batch
+  - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
   
 - **Automatic Notifications:**
   - **Low Stock Alerts**: 
@@ -86,10 +112,12 @@
     - Notification frequency settings
   
 - **Business Logic:**
-  - Prevent usage of expired materials in production
-  - Ensure continuous availability of raw materials
-  - Optimize inventory management through proactive notifications
-  - Support inventory rotation (FIFO - First In, First Out)
+  - Multiple existences can exist for the same ingredient (different purchase batches)
+  - Track ingredient usage by reducing "Number of Units Available" from specific existences
+  - Support FIFO (First In, First Out) consumption by using oldest batches first
+  - Prevent usage of expired materials by checking expiry dates
+  - Receipt traceability for audit and accounting purposes
+  - Each purchase batch maintains its own cost and expiration tracking
 
 ### Recipes
 **Description:** Product recipes that define combinations of raw materials with specific quantities needed to create finished products.
