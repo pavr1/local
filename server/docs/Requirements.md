@@ -10,6 +10,7 @@
 ## Table of Contents
 1. [Inventory Management](#inventory-management)
    - [Suppliers](#suppliers)
+   - [Expense Receipts](#expense-receipts)
    - [Ingredients](#ingredients)
    - [Existences](#existences)
    - [Recipes](#recipes)
@@ -50,6 +51,23 @@
   - Supplier information is optional for local store purchases
   - Used for reordering and supplier relationship management
 
+### Expense Receipts
+**Description:** Purchase receipt/invoice management system that tracks purchases from suppliers or supermarkets. Each expense receipt can contain multiple ingredient purchases.
+
+- **Attributes:**
+  - **Receipt Number** (string): Receipt/invoice number (unique)
+  - **Purchase Date** (date): When the purchase was made
+  - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
+  - **Total Amount** (decimal, nullable): Total amount of the receipt/invoice
+  - **Notes** (text, nullable): Additional notes about the purchase
+
+- **Business Logic:**
+  - One expense receipt can contain multiple ingredient existences (line items)
+  - Centralizes purchase date and supplier information
+  - Links to expense management for accounting purposes
+  - Supports both supplier and supermarket purchases
+  - Provides audit trail for all ingredient acquisitions
+
 ### Ingredients
 **Description:** Raw materials required to prepare different products in the ice cream store.
 
@@ -84,7 +102,7 @@
 - **Attributes:**
   - **Existence Reference Code** (integer, auto-increment): Simple numeric consecutive code for easy identification
   - **Ingredient Reference** (foreign key): Link to ingredient
-  - **Receipt Number** (string): Receipt/invoice number - should reference expense/receipt table
+  - **Expense Receipt ID** (foreign key): Reference to expense receipt/invoice table
   - **Units Purchased** (decimal): Original quantity purchased
   - **Units Available** (decimal): Current quantity available (at creation same as units_purchased, decreases as used)
   - **Unit Type** (enum): Unit of measurement for this existence (Liters, Gallons, Units, Bag)
@@ -93,17 +111,15 @@
   - **Cost per Unit** (decimal): Cost per unit for this specific purchase (e.g., Gallon costs ₡12,000)
   - **Total Purchase Cost** (decimal, read-only): Calculated field (Units Purchased × Cost per Unit)
   - **Remaining Value** (decimal, read-only): Calculated field (Units Available × Cost per Unit)
-  - **Purchase Date** (date): When this batch was purchased
-  - **Expiry Date** (date, nullable): Expiration date for this specific batch
-  - **Income Margin Percentage** (decimal): Configurable margin percentage (default 30%)
+  - **Expiration Date** (date, nullable): Expiration date for this specific ingredient batch
+  - **Income Margin Percentage** (decimal): Configurable margin percentage (default 30%, from config)
   - **Income Margin Amount** (decimal, read-only): Calculated margin amount
-  - **IVA Percentage** (decimal): IVA tax percentage (default 13%, configurable)
+  - **IVA Percentage** (decimal): IVA tax percentage (default 13%, from config)
   - **IVA Amount** (decimal, read-only): IVA tax amount (auto-generated)
-  - **Service Tax Percentage** (decimal): Service tax percentage (default 10%, configurable)
+  - **Service Tax Percentage** (decimal): Service tax percentage (default 10%, from config)
   - **Service Tax Amount** (decimal, read-only): Service tax amount (auto-generated)
   - **Calculated Price** (decimal, read-only): Auto-calculated total price with margins and taxes
   - **Final Price** (decimal): Final price (can be rounded up to next 100)
-  - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
   
 - **Automatic Notifications:**
   - **Low Stock Alerts**: 
@@ -123,11 +139,13 @@
   - Multiple existences can exist for the same ingredient (different purchase batches)
   - Track ingredient usage by reducing "Units Available" from specific existences
   - Support FIFO (First In, First Out) consumption by using oldest batches first
-  - Prevent usage of expired materials by checking expiry dates
-  - Receipt traceability for audit and accounting purposes (links to expense/receipt table)
+  - Prevent usage of expired materials by checking expiration dates at existence level
+  - Expense receipt traceability for audit and accounting purposes (links to expense receipt table)
   - Each purchase batch maintains its own cost, pricing, and expiration tracking
   - Pricing calculations (margins, taxes) happen at existence level for inventory items
   - Final pricing can be adjusted from calculated price (rounded up to next 100)
+  - Purchase date and supplier information accessed through expense receipt relationship
+  - Different ingredients on same receipt can have different expiration dates
 
 ### Recipes
 **Description:** Product recipes that define combinations of raw materials with specific quantities needed to create finished products.
