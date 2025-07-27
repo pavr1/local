@@ -12,30 +12,114 @@ This service provides JWT-based authentication and authorization for the Ice Cre
 - **Comprehensive Logging**: Structured logging with logrus
 - **Health Checks**: Built-in health monitoring
 - **CORS Support**: Cross-origin resource sharing
+- **Docker Support**: Full containerization with Docker Compose
+
+## 🐳 Quick Start with Docker
+
+### Prerequisites
+
+1. **Docker & Docker Compose**: Ensure Docker is running
+2. **Data Service**: The database must be running first
+
+```bash
+# Start the database first
+cd ../data-service
+make start
+
+# Then start the auth service
+cd ../auth-service
+make install
+```
+
+### Using Make Commands
+
+```bash
+# Complete fresh setup
+make fresh                    # Clean, build, start, test everything
+
+# Basic operations
+make start                    # Start auth service
+make stop                     # Stop auth service
+make restart                  # Restart auth service
+make reset                    # Rebuild and restart
+
+# Monitoring
+make logs                     # View logs
+make logs-follow              # Follow logs in real-time
+make status                   # Show container status
+make health                   # Check service health
+
+# Testing
+make test                     # Run comprehensive API tests
+make test-basic               # Basic connectivity test
+make test-login               # Test admin login
+
+# Information
+make info                     # Show service URLs and API docs
+make help                     # Show all available commands
+```
+
+### Manual Docker Commands
+
+If you prefer to use Docker directly:
+
+```bash
+# Build and start
+cd docker
+docker-compose build
+docker-compose up -d
+
+# View logs
+docker-compose logs -f auth-service
+
+# Stop
+docker-compose down
+```
 
 ## 📁 Project Structure
 
 ```
 auth-service/
-├── config/
-│   └── config.go              # Configuration management
+├── docker/
+│   ├── Dockerfile             # Container build configuration
+│   └── docker-compose.yml     # Service orchestration
+├── scripts/
+│   ├── start.sh              # Start service script
+│   ├── stop.sh               # Stop service script
+│   ├── reset.sh              # Reset service script
+│   ├── logs.sh               # View logs script
+│   └── test.sh               # API testing script
 ├── handler/
-│   └── auth_handler.go        # HTTP handlers and business logic
+│   ├── middleware/
+│   │   └── auth.go           # Authentication middleware
+│   └── auth_handler.go       # HTTP handlers and business logic
 ├── models/
-│   └── auth.go                # Data models and structures
-├── middleware/                # (Future middleware implementations)
+│   └── models.go             # Data models and structures
+├── sql/
+│   ├── scripts/              # SQL query files (auto-discovered)
+│   │   ├── get_user_profile_by_username.sql
+│   │   ├── get_user_profile_by_id.sql
+│   │   ├── get_user_permissions.sql
+│   │   └── update_last_login.sql
+│   └── queries.go            # Dynamic SQL query loader
 ├── utils/
-│   ├── jwt.go                 # JWT token management
-│   └── password.go            # Password hashing utilities
-├── main.go                    # Application entry point
-├── go.mod                     # Go module definition
-├── config.env.example        # Environment variables template
-└── README.md                  # This file
+│   ├── jwt.go                # JWT token management
+│   └── password.go           # Password hashing utilities
+├── config/
+│   └── config.go             # Configuration management
+├── main.go                   # Application entry point
+├── Makefile                  # Development automation
+├── go.mod                    # Go module definition
+├── config.env.example       # Environment variables template
+├── docker.env.example       # Docker environment template
+└── README.md                 # This file
 ```
 
 ## 🔧 Configuration
 
-The service uses environment variables for configuration. Copy `config.env.example` to `.env` and adjust values:
+### Environment Variables
+
+The service uses environment variables for configuration. Available options:
 
 ```bash
 # Server Configuration
@@ -48,7 +132,7 @@ JWT_EXPIRATION_TIME=10m          # Token expiration time
 JWT_REFRESH_THRESHOLD=2m         # When to allow token refresh
 
 # Database Configuration
-DB_HOST=localhost                # Database host
+DB_HOST=postgres                 # Database host (container name)
 DB_PORT=5432                     # Database port
 DB_USER=postgres                 # Database user
 DB_PASSWORD=postgres123          # Database password
@@ -64,18 +148,35 @@ LOGIN_COOLDOWN_TIME=15m          # Cooldown after max attempts
 LOG_LEVEL=info                   # Log level (debug, info, warn, error)
 ```
 
-## 🏃‍♂️ Running the Service
+### Docker Environment
 
-### Prerequisites
-
-1. **Data Service**: Ensure the PostgreSQL database is running (see data-service)
-2. **Go 1.21+**: Required for building and running
-
-### Development
+For Docker deployments, copy `docker.env.example` to `docker/.env`:
 
 ```bash
-# Clone and navigate to auth-service
-cd auth-service
+cp docker.env.example docker/.env
+# Edit docker/.env with your settings
+```
+
+## 🏃‍♂️ Running the Service
+
+### Docker (Recommended)
+
+```bash
+# Quick start (ensures database is running)
+make install
+
+# Or step by step
+make deps                        # Install Go dependencies  
+make build                       # Build Docker image
+make start                       # Start service
+make test                        # Run tests
+```
+
+### Development Mode (Without Docker)
+
+```bash
+# Prerequisites: Ensure data-service is running
+cd ../data-service && make start
 
 # Install dependencies
 go mod tidy
@@ -85,17 +186,25 @@ cp config.env.example .env
 # Edit .env with your settings
 
 # Run the service
+make dev
+# or
 go run main.go
 ```
 
 ### Production
 
 ```bash
-# Build the service
-go build -o auth-service main.go
+# Build production image
+docker build -f docker/Dockerfile -t icecream-auth:latest .
 
-# Run the binary
-./auth-service
+# Run with production configuration
+docker run -d \
+  --name icecream-auth \
+  --network icecream_network \
+  -p 8081:8081 \
+  -e JWT_SECRET=your-production-secret \
+  -e LOG_LEVEL=warn \
+  icecream-auth:latest
 ```
 
 ## 📡 API Endpoints
@@ -128,13 +237,7 @@ Content-Type: application/json
     "role_name": "super_admin",
     "description": "Full system access and control"
   },
-  "permissions": [
-    {"permission_name": "inventory-read", "description": "View inventory data"},
-    {"permission_name": "inventory-write", "description": "Modify inventory data"}
-  ],
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expires_at": "2025-07-27T16:30:00Z",
-  "refresh_at": "2025-07-27T16:28:00Z"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -206,7 +309,7 @@ Authorization: Bearer <token>
 1. Client sends username/password to `/api/v1/auth/login`
 2. Service validates credentials against database
 3. If valid, generates JWT token with user roles/permissions
-4. Returns token with expiration and refresh information
+4. Returns token with user and role information
 
 ### 2. Token Usage
 1. Client includes token in `Authorization: Bearer <token>` header
@@ -219,14 +322,67 @@ Authorization: Bearer <token>
 2. Send current token to `/api/v1/auth/refresh`
 3. Receive new token with extended expiration
 
+## 🧪 Testing
+
+### Automated Tests
+
+```bash
+# Run comprehensive test suite
+make test
+
+# Basic connectivity test
+make test-basic
+
+# Test admin login specifically
+make test-login
+```
+
+### Manual Testing with curl
+
+```bash
+# Health check
+curl http://localhost:8081/api/v1/auth/health
+
+# Login
+curl -X POST http://localhost:8081/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+
+# Use the returned token
+export TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+# Validate token
+curl -X GET http://localhost:8081/api/v1/auth/validate \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get profile
+curl -X GET http://localhost:8081/api/v1/auth/profile \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Container Health Monitoring
+
+```bash
+# Check container health
+make health
+
+# View detailed container status
+make status
+
+# Follow logs in real-time
+make logs-follow
+```
+
 ## 🛡️ Security Features
 
 - **Password Hashing**: bcrypt with configurable cost factor
 - **JWT Security**: HMAC-SHA256 signing with secure secret
-- **Token Expiration**: Configurable token lifetime
+- **Token Expiration**: Configurable token lifetime (default: 10 minutes)
 - **Permission-Based Access**: Granular role-based permissions
 - **Request Logging**: All requests are logged for audit
 - **CORS Protection**: Configurable cross-origin policies
+- **Container Security**: Non-root user, minimal Alpine Linux base
+- **Health Checks**: Built-in container and service health monitoring
 
 ## 🔌 Integration with Other Services
 
@@ -265,28 +421,43 @@ The JWT token contains the following claims:
 
 ## 🐳 Docker Integration
 
-The service is designed to work with the existing Docker network from data-service:
+### Service Dependencies
+
+The auth service automatically connects to the existing data-service network:
 
 ```yaml
-# In your docker-compose.yml
-auth-service:
-  build: ./auth-service
-  ports:
-    - "8081:8081"
-  environment:
-    DB_HOST: postgres
-    JWT_SECRET: your-production-secret
-  depends_on:
-    - postgres
-  networks:
-    - icecream_network
+# The auth service joins the existing network
+networks:
+  icecream_network:
+    external: true
 ```
+
+### Multi-Service Setup
+
+```bash
+# Start database first
+cd ../data-service
+make start
+
+# Start auth service
+cd ../auth-service  
+make start
+
+# Both services now communicate via Docker network
+curl http://localhost:8081/api/v1/auth/health
+```
+
+### Docker Network Communication
+
+- **Database**: `postgres:5432` (container name)
+- **Auth Service**: `icecream_auth:8081` (container name)
+- **External Access**: `localhost:8081` (host port mapping)
 
 ## 🔍 Monitoring and Logging
 
 ### Log Levels
 - **DEBUG**: Detailed flow information
-- **INFO**: General operational entries
+- **INFO**: General operational entries  
 - **WARN**: Warning conditions
 - **ERROR**: Error conditions
 
@@ -300,6 +471,19 @@ auth-service:
   "username": "admin",
   "role": "super_admin"
 }
+```
+
+### Container Logs
+
+```bash
+# View logs
+make logs
+
+# Follow logs in real-time
+make logs-follow
+
+# View specific time range
+docker logs icecream_auth --since="1h"
 ```
 
 ## 🚨 Error Handling
@@ -322,43 +506,72 @@ auth-service:
 - `invalid_token`: Token invalid or expired
 - `insufficient_permissions`: User lacks required permission
 
-## 🧪 Testing
-
-### Manual Testing with curl
-
-```bash
-# Login
-curl -X POST http://localhost:8081/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
-
-# Use the returned token
-export TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-
-# Validate token
-curl -X GET http://localhost:8081/api/v1/auth/validate \
-  -H "Authorization: Bearer $TOKEN"
-
-# Get profile
-curl -X GET http://localhost:8081/api/v1/auth/profile \
-  -H "Authorization: Bearer $TOKEN"
-```
-
 ## 📈 Performance Considerations
 
 - **Connection Pooling**: Database connections are pooled for efficiency
 - **JWT Stateless**: No server-side session storage required
-- **Token Caching**: Consider implementing token blacklist for logout
-- **Rate Limiting**: Implement rate limiting for login endpoints
+- **Container Resources**: Lightweight Alpine Linux base image
+- **Health Checks**: Automatic container restart on failure
+- **Request Logging**: Configurable log levels to control verbosity
+
+## 🚨 Troubleshooting
+
+### Service Won't Start
+
+```bash
+# Check if database is running
+cd ../data-service && make health
+
+# Check Docker network
+docker network ls | grep icecream
+
+# Check auth service logs  
+make logs
+
+# Reset everything
+make reset
+```
+
+### Database Connection Issues
+
+```bash
+# Test database connectivity
+docker run --rm --network icecream_network postgres:15-alpine \
+  pg_isready -h postgres -p 5432 -U postgres
+
+# Check auth service can reach database
+make test-basic
+```
+
+### Authentication Issues
+
+```bash
+# Test admin login
+make test-login
+
+# Check database has users
+cd ../data-service && make connect
+# Then: SELECT * FROM users;
+```
+
+### Container Health Issues
+
+```bash
+# Check container health
+docker inspect icecream_auth --format='{{.State.Health.Status}}'
+
+# Force health check
+docker exec icecream_auth wget --spider http://localhost:8081/api/v1/auth/health
+```
 
 ## 🔄 Next Steps
 
-1. **Implement Database Queries**: Complete the user profile database methods
-2. **Add Rate Limiting**: Protect against brute force attacks  
-3. **Token Blacklisting**: Implement proper logout with token invalidation
-4. **Password Policies**: Add password complexity requirements
-5. **Two-Factor Authentication**: Add 2FA support
-6. **Audit Logging**: Enhanced audit trail for security events
+1. **Rate Limiting**: Implement rate limiting for login endpoints
+2. **Token Blacklisting**: Implement proper logout with token invalidation
+3. **Password Policies**: Add password complexity requirements
+4. **Two-Factor Authentication**: Add 2FA support
+5. **Audit Logging**: Enhanced audit trail for security events
+6. **Load Balancing**: Support for multiple auth service instances
 
 ## 🤝 Contributing
 
@@ -369,6 +582,7 @@ When making changes to the auth service:
 3. Ensure all new endpoints include proper error handling
 4. Add appropriate logging for security events
 5. Test with the data-service integration
+6. Update Docker configuration as needed
 
 ---
 
