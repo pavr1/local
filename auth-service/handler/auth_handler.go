@@ -11,6 +11,7 @@ import (
 
 	"auth-service/config"
 	"auth-service/models"
+	sqlQueries "auth-service/sql"
 	"auth-service/utils"
 
 	"github.com/sirupsen/logrus"
@@ -41,6 +42,7 @@ type authHandler struct {
 	logger          *logrus.Logger
 	jwtManager      *utils.JWTManager
 	passwordManager *utils.PasswordManager
+	queries         sqlQueries.Queries
 }
 
 // New creates a new auth handler instance
@@ -48,12 +50,21 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) AuthHandler {
 	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
 	passwordManager := utils.NewPasswordManager(cfg.BcryptCost, logger)
 
+	// Load SQL queries
+	queries, err := sqlQueries.LoadQueries()
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to load SQL queries")
+	}
+
+	logger.WithField("queries_loaded", queries.List()).Info("SQL queries loaded successfully")
+
 	return &authHandler{
 		db:              db,
 		config:          cfg,
 		logger:          logger,
 		jwtManager:      jwtManager,
 		passwordManager: passwordManager,
+		queries:         queries,
 	}
 }
 
@@ -119,12 +130,9 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare response
 	response := models.LoginResponse{
-		User:        profile.User,
-		Role:        profile.Role,
-		Permissions: profile.Permissions,
-		Token:       token,
-		ExpiresAt:   expiresAt,
-		RefreshAt:   expiresAt.Add(-h.config.JWTRefreshThreshold),
+		User:  profile.User,
+		Role:  profile.Role,
+		Token: token,
 	}
 
 	h.logger.WithFields(logrus.Fields{
@@ -182,7 +190,7 @@ func (h *authHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := models.LoginResponse{
+	response := models.RefreshTokenResponse{
 		Token:     newToken,
 		ExpiresAt: expiresAt,
 		RefreshAt: expiresAt.Add(-h.config.JWTRefreshThreshold),
@@ -316,20 +324,11 @@ func (h *authHandler) writeErrorResponse(w http.ResponseWriter, statusCode int, 
 func (h *authHandler) getUserProfile(username string) (*models.UserProfile, error) {
 	h.logger.WithField("username", username).Debug("Retrieving user profile by username")
 
-	// Query to get user with role information
-	userQuery := `
-		SELECT u.id, u.username, u.password_hash, u.full_name, u.role_id, u.is_active, 
-		       u.last_login, u.created_at, u.updated_at,
-		       r.id, r.role_name, r.description, r.created_at, r.updated_at
-		FROM users u
-		INNER JOIN roles r ON u.role_id = r.id
-		WHERE u.username = $1 AND u.is_active = true`
-
 	var user models.User
 	var role models.Role
 	var lastLogin sql.NullTime
 
-	err := h.db.QueryRow(userQuery, username).Scan(
+	err := h.db.QueryRow(h.queries.MustGet("get_user_profile_by_username"), username).Scan(
 		&user.ID, &user.Username, &user.PasswordHash, &user.FullName, &user.RoleID, &user.IsActive,
 		&lastLogin, &user.CreatedAt, &user.UpdatedAt,
 		&role.ID, &role.RoleName, &role.Description, &role.CreatedAt, &role.UpdatedAt,
@@ -376,20 +375,11 @@ func (h *authHandler) getUserProfile(username string) (*models.UserProfile, erro
 func (h *authHandler) getUserProfileByID(userID string) (*models.UserProfile, error) {
 	h.logger.WithField("user_id", userID).Debug("Retrieving user profile by ID")
 
-	// Query to get user with role information
-	userQuery := `
-		SELECT u.id, u.username, u.password_hash, u.full_name, u.role_id, u.is_active, 
-		       u.last_login, u.created_at, u.updated_at,
-		       r.id, r.role_name, r.description, r.created_at, r.updated_at
-		FROM users u
-		INNER JOIN roles r ON u.role_id = r.id
-		WHERE u.id = $1 AND u.is_active = true`
-
 	var user models.User
 	var role models.Role
 	var lastLogin sql.NullTime
 
-	err := h.db.QueryRow(userQuery, userID).Scan(
+	err := h.db.QueryRow(h.queries.MustGet("get_user_profile_by_id"), userID).Scan(
 		&user.ID, &user.Username, &user.PasswordHash, &user.FullName, &user.RoleID, &user.IsActive,
 		&lastLogin, &user.CreatedAt, &user.UpdatedAt,
 		&role.ID, &role.RoleName, &role.Description, &role.CreatedAt, &role.UpdatedAt,
@@ -436,13 +426,7 @@ func (h *authHandler) getUserProfileByID(userID string) (*models.UserProfile, er
 func (h *authHandler) getUserPermissions(roleID string) ([]models.Permission, error) {
 	h.logger.WithField("role_id", roleID).Debug("Retrieving permissions for role")
 
-	permissionsQuery := `
-		SELECT id, permission_name, description, role_id, created_at, updated_at
-		FROM permissions
-		WHERE role_id = $1
-		ORDER BY permission_name`
-
-	rows, err := h.db.Query(permissionsQuery, roleID)
+	rows, err := h.db.Query(h.queries.MustGet("get_user_permissions"), roleID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to query permissions")
 		return nil, fmt.Errorf("failed to query permissions: %w", err)
@@ -480,12 +464,7 @@ func (h *authHandler) getUserPermissions(roleID string) ([]models.Permission, er
 func (h *authHandler) updateLastLogin(userID string) error {
 	h.logger.WithField("user_id", userID).Debug("Updating last login timestamp")
 
-	updateQuery := `
-		UPDATE users 
-		SET last_login = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $1`
-
-	result, err := h.db.Exec(updateQuery, userID)
+	result, err := h.db.Exec(h.queries.MustGet("update_last_login"), userID)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to update last login")
 		return fmt.Errorf("failed to update last login: %w", err)

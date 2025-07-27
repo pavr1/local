@@ -53,17 +53,21 @@ type LoginRequest struct {
 
 // LoginResponse represents a successful login response
 type LoginResponse struct {
-	User        User         `json:"user"`
-	Role        Role         `json:"role"`
-	Permissions []Permission `json:"permissions"`
-	Token       string       `json:"token"`
-	ExpiresAt   time.Time    `json:"expires_at"`
-	RefreshAt   time.Time    `json:"refresh_at"`
+	User  User   `json:"user"`
+	Role  Role   `json:"role"`
+	Token string `json:"token"`
 }
 
 // RefreshTokenRequest represents a token refresh request
 type RefreshTokenRequest struct {
 	Token string `json:"token" validate:"required"`
+}
+
+// RefreshTokenResponse represents a token refresh response
+type RefreshTokenResponse struct {
+	Token     string    `json:"token"`
+	ExpiresAt time.Time `json:"expires_at"`
+	RefreshAt time.Time `json:"refresh_at"`
 }
 
 // LogoutRequest represents a logout request
