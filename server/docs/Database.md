@@ -24,12 +24,11 @@
    - [Ordered Receipes Table](#ordered-receipes-table)
 4. [Administration Panel Entities](#administration-panel-entities)
    - [System Configuration Table](#system-configuration-table)
-   - [Users Table](#users-table)
-   - [Roles Table](#roles-table)
    - [User Salary Table](#user-salary-table)
 5. [Authentication & Authorization Entities](#authentication--authorization-entities)
+   - [Users Table](#users-table)
+   - [Roles Table](#roles-table)
    - [Permissions Table](#permissions-table)
-   - [Role Permissions Table](#role-permissions-table)
 
 ---
 
@@ -305,7 +304,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **roles** ← **users** (One-to-Many: One role can be assigned to multiple users)
 - **users** ← **user_salary** (One-to-Many: One user can have multiple salary records)
 - **expenses** ← **user_salary** (One-to-Many: One expense can be linked to multiple salary records)
-- **roles** ← **role_permissions** → **permissions** (Many-to-Many: Roles can have multiple permissions, permissions can be assigned to multiple roles)
+- **roles** ← **permissions** (One-to-Many: One role can have multiple permissions)
 
 ## Overall Business Logic Triggers
 
@@ -527,6 +526,41 @@ CREATE INDEX idx_system_config_editable ON system_config(is_editable);
 - `description`: Human-readable description of the parameter
 - `is_editable`: Whether this config can be modified through the administration UI
 
+### User Salary Table
+**Purpose:** Track employee salaries and link them to expense management for payroll processing.
+
+```sql
+CREATE TABLE user_salary (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    salary DECIMAL(12,2) NOT NULL,
+    additional_expenses DECIMAL(12,2) DEFAULT 0.00,
+    total DECIMAL(12,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_user_salary_user ON user_salary(user_id);
+CREATE INDEX idx_user_salary_expense ON user_salary(expense_id);
+CREATE INDEX idx_user_salary_total ON user_salary(total);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `user_id`: Foreign key reference to users table (employee)
+- `expense_id`: Foreign key reference to expenses table (links salary to expense tracking)
+- `salary`: Base salary amount for the employee
+- `additional_expenses`: Extra expenses or bonuses (defaults to 0.00)
+- `total`: Calculated total compensation (salary + additional_expenses)
+- `created_at`: When the salary record was created
+- `updated_at`: When the salary record was last modified
+
+---
+
+## Authentication & Authorization Entities
+
 ### Users Table
 **Purpose:** Store user accounts for employees and administrators with internal authentication.
 
@@ -593,103 +627,28 @@ CREATE INDEX idx_roles_active ON roles(is_active);
 - `description`: Description of role responsibilities and access level
 - `is_active`: Whether the role is currently active
 
-### User Salary Table
-**Purpose:** Track employee salaries and link them to expense management for payroll processing.
-
-```sql
-CREATE TABLE user_salary (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
-    salary DECIMAL(12,2) NOT NULL,
-    additional_expenses DECIMAL(12,2) DEFAULT 0.00,
-    total DECIMAL(12,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes
-CREATE INDEX idx_user_salary_user ON user_salary(user_id);
-CREATE INDEX idx_user_salary_expense ON user_salary(expense_id);
-CREATE INDEX idx_user_salary_total ON user_salary(total);
-```
-
-**Field Descriptions:**
-- `id`: Primary key, UUID (auto-generated)
-- `user_id`: Foreign key reference to users table (employee)
-- `expense_id`: Foreign key reference to expenses table (links salary to expense tracking)
-- `salary`: Base salary amount for the employee
-- `additional_expenses`: Extra expenses or bonuses (defaults to 0.00)
-- `total`: Calculated total compensation (salary + additional_expenses)
-- `created_at`: When the salary record was created
-- `updated_at`: When the salary record was last modified
-
----
-
-## Authentication & Authorization Entities
-
 ### Permissions Table
 **Purpose:** Define granular permissions for system operations using [entity]-[action] naming convention.
 
 ```sql
 CREATE TABLE permissions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    permission_name VARCHAR(100) NOT NULL UNIQUE, -- Format: Entity-Action (e.g., "Ingredients-Create")
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_name VARCHAR(100) NOT NULL, -- Format: Entity-Action (e.g., "Ingredients-Create")
     description TEXT,
     entity_name VARCHAR(50) NOT NULL,
     action_name VARCHAR(50) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(role_id, permission_name)
 );
 
--- Insert default permissions following [entity]-[action] naming convention
-INSERT INTO permissions (permission_name, description, entity_name, action_name) VALUES
--- Inventory Management
-('Suppliers-Create', 'Create new suppliers', 'Suppliers', 'Create'),
-('Suppliers-Read', 'View supplier information', 'Suppliers', 'Read'),
-('Suppliers-Update', 'Update supplier information', 'Suppliers', 'Update'),
-('Suppliers-Delete', 'Delete suppliers', 'Suppliers', 'Delete'),
-('Ingredients-Create', 'Create new ingredients', 'Ingredients', 'Create'),
-('Ingredients-Read', 'View ingredient information', 'Ingredients', 'Read'),
-('Ingredients-Update', 'Update ingredient information', 'Ingredients', 'Update'),
-('Ingredients-Delete', 'Delete ingredients', 'Ingredients', 'Delete'),
-('Existences-Create', 'Create new existences', 'Existences', 'Create'),
-('Existences-Read', 'View existence information', 'Existences', 'Read'),
-('Existences-Update', 'Update existence information', 'Existences', 'Update'),
-('Existences-Delete', 'Delete existences', 'Existences', 'Delete'),
-('RunoutReports-Create', 'Create new runout ingredient reports', 'RunoutReports', 'Create'),
-('RunoutReports-Read', 'View runout ingredient reports', 'RunoutReports', 'Read'),
-('RunoutReports-Update', 'Update runout ingredient reports', 'RunoutReports', 'Update'),
-('RunoutReports-Delete', 'Delete runout ingredient reports', 'RunoutReports', 'Delete'),
-('Recipes-Create', 'Create new recipes', 'Recipes', 'Create'),
-('Recipes-Read', 'View recipe information', 'Recipes', 'Read'),
-('Recipes-Update', 'Update recipe information', 'Recipes', 'Update'),
-('Recipes-Delete', 'Delete recipes', 'Recipes', 'Delete'),
--- Expense Management
-('Expenses-Create', 'Create new expenses', 'Expenses', 'Create'),
-('Expenses-Read', 'View expense information', 'Expenses', 'Read'),
-('Expenses-Update', 'Update expense information', 'Expenses', 'Update'),
-('Expenses-Delete', 'Delete expenses', 'Expenses', 'Delete'),
--- Order Management
-('Orders-Create', 'Create new orders', 'Orders', 'Create'),
-('Orders-Read', 'View order information', 'Orders', 'Read'),
-('Orders-Update', 'Update order information', 'Orders', 'Update'),
-('Orders-Delete', 'Cancel orders', 'Orders', 'Delete'),
--- Administration
-('Users-Create', 'Create new users', 'Users', 'Create'),
-('Users-Read', 'View user information', 'Users', 'Read'),
-('Users-Update', 'Update user information', 'Users', 'Update'),
-('Users-Delete', 'Delete users', 'Users', 'Delete'),
-('Salaries-Create', 'Create new salary records', 'Salaries', 'Create'),
-('Salaries-Read', 'View salary information', 'Salaries', 'Read'),
-('Salaries-Update', 'Update salary records', 'Salaries', 'Update'),
-('Salaries-Delete', 'Delete salary records', 'Salaries', 'Delete'),
-('Config-Read', 'View system configuration', 'Config', 'Read'),
-('Config-Update', 'Update system configuration', 'Config', 'Update'),
-('Reports-Read', 'View business reports and analytics', 'Reports', 'Read');
+
 
 -- Indexes
+CREATE INDEX idx_permissions_role ON permissions(role_id);
 CREATE INDEX idx_permissions_name ON permissions(permission_name);
 CREATE INDEX idx_permissions_entity ON permissions(entity_name);
 CREATE INDEX idx_permissions_action ON permissions(action_name);
@@ -698,60 +657,67 @@ CREATE INDEX idx_permissions_active ON permissions(is_active);
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
-- `permission_name`: Unique permission identifier following [Entity]-[Action] format
+- `role_id`: Foreign key reference to roles table (UUID)
+- `permission_name`: Permission identifier following [Entity]-[Action] format
 - `description`: Human-readable description of the permission
 - `entity_name`: The entity/resource being accessed (e.g., Ingredients, Orders)
 - `action_name`: The action being performed (Create, Read, Update, Delete)
 - `is_active`: Whether the permission is currently active
 
-### Role Permissions Table
-**Purpose:** Junction table linking roles to their granted permissions (many-to-many relationship).
+-- Insert admin permissions (admin gets all permissions)
+INSERT INTO permissions (role_id, permission_name, description, entity_name, action_name)
+SELECT r.id, 'Suppliers-Create', 'Create new suppliers', 'Suppliers', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Suppliers-Read', 'View supplier information', 'Suppliers', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Suppliers-Update', 'Update supplier information', 'Suppliers', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Suppliers-Delete', 'Delete suppliers', 'Suppliers', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Ingredients-Create', 'Create new ingredients', 'Ingredients', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Ingredients-Read', 'View ingredient information', 'Ingredients', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Ingredients-Update', 'Update ingredient information', 'Ingredients', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Ingredients-Delete', 'Delete ingredients', 'Ingredients', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Existences-Create', 'Create new existences', 'Existences', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Existences-Read', 'View existence information', 'Existences', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Existences-Update', 'Update existence information', 'Existences', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Existences-Delete', 'Delete existences', 'Existences', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'RunoutReports-Create', 'Create new runout ingredient reports', 'RunoutReports', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'RunoutReports-Read', 'View runout ingredient reports', 'RunoutReports', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'RunoutReports-Update', 'Update runout ingredient reports', 'RunoutReports', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'RunoutReports-Delete', 'Delete runout ingredient reports', 'RunoutReports', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Recipes-Create', 'Create new recipes', 'Recipes', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Recipes-Read', 'View recipe information', 'Recipes', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Recipes-Update', 'Update recipe information', 'Recipes', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Recipes-Delete', 'Delete recipes', 'Recipes', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Expenses-Create', 'Create new expenses', 'Expenses', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Expenses-Read', 'View expense information', 'Expenses', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Expenses-Update', 'Update expense information', 'Expenses', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Expenses-Delete', 'Delete expenses', 'Expenses', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Orders-Create', 'Create new orders', 'Orders', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Orders-Read', 'View order information', 'Orders', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Orders-Update', 'Update order information', 'Orders', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Orders-Delete', 'Cancel orders', 'Orders', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Users-Create', 'Create new users', 'Users', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Users-Read', 'View user information', 'Users', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Users-Update', 'Update user information', 'Users', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Users-Delete', 'Delete users', 'Users', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Salaries-Create', 'Create new salary records', 'Salaries', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Salaries-Read', 'View salary information', 'Salaries', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Salaries-Update', 'Update salary records', 'Salaries', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Salaries-Delete', 'Delete salary records', 'Salaries', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Config-Read', 'View system configuration', 'Config', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Config-Update', 'Update system configuration', 'Config', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'admin';
 
-```sql
-CREATE TABLE role_permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
-    granted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    granted_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    
-    UNIQUE(role_id, permission_id)
-);
-
--- Insert default role permissions based on access control requirements
--- Admin gets all permissions (full system access)
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r, permissions p 
-WHERE r.role_name = 'admin';
-
--- Employee gets limited permissions (restricted access per requirements)
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r, permissions p 
-WHERE r.role_name = 'employee' 
-AND p.permission_name IN (
-    -- Read-only access to inventory information
-    'Suppliers-Read', 'Ingredients-Read', 'Existences-Read', 'Recipes-Read',
-    -- Full access to runout reporting (employee main function for inventory)
-    'RunoutReports-Create', 'RunoutReports-Read',
-    -- Full access to order management (employee main function)
-    'Orders-Create', 'Orders-Read', 'Orders-Update',
-    -- Limited reporting access (no sensitive financial data)
-    'Reports-Read'
-);
-
--- Indexes
-CREATE INDEX idx_role_permissions_role ON role_permissions(role_id);
-CREATE INDEX idx_role_permissions_permission ON role_permissions(permission_id);
-```
-
-**Field Descriptions:**
-- `id`: Primary key, UUID (auto-generated)
-- `role_id`: Foreign key reference to roles table
-- `permission_id`: Foreign key reference to permissions table
-- `granted_at`: When the permission was granted to the role
-- `granted_by`: Who granted the permission (nullable for system assignments)
+-- Insert employee permissions (limited access)
+INSERT INTO permissions (role_id, permission_name, description, entity_name, action_name)
+SELECT r.id, 'Suppliers-Read', 'View supplier information', 'Suppliers', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Ingredients-Read', 'View ingredient information', 'Ingredients', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Existences-Read', 'View existence information', 'Existences', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Recipes-Read', 'View recipe information', 'Recipes', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'RunoutReports-Create', 'Create new runout ingredient reports', 'RunoutReports', 'Create' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'RunoutReports-Read', 'View runout ingredient reports', 'RunoutReports', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Orders-Create', 'Create new orders', 'Orders', 'Create' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Orders-Read', 'View order information', 'Orders', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Orders-Update', 'Update order information', 'Orders', 'Update' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'employee';
 
 ---
 

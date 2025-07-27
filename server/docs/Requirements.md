@@ -348,25 +348,36 @@
   5. Permissions checked against user's roles and permissions tables
 
 ### Permission System
+- **Simplified Role-Permission Structure:**
+  - Permissions are directly assigned to roles (no junction table required)
+  - Each permission belongs to one role and is identified by role-entity-action pattern
+  - Permission naming follows [entity]-[action] format (e.g., "Ingredients-Create")
 - **Server-Side Validation:**
-  - Session-based authentication on all API endpoints. We can use middleware to implement session verification
-  - Permission-based access control. Permissions would be named after [entity]-[action]. For instance "Ingredients-Create"
-  - Role-based endpoint restrictions
+  - Session-based authentication on all API endpoints with middleware for session verification
+  - Permission-based access control with direct role lookup
+  - Role-based endpoint restrictions with simplified permission checking
 - **Client-Side Validation:**
   - Session validation
-  - UI component access control based on permissions
+  - UI component access control based on user's role permissions
   - Login form with username/password
   - UI client side will be worked in incoming documentation once server-side is implemented
 
 ### User Access Control
+- **Direct Role Assignment:**
+  - Each user is assigned one role (admin or employee)
+  - Permissions are directly linked to roles for simplified access control
+  - No complex many-to-many relationships required
 - **Employee Restrictions:**
-  - Limited access to sensitive financial data
+  - Limited access to sensitive financial data (no salary information access)
   - Restricted administrative functions
-  - Read-only access to certain reports
+  - Read-only access to inventory information
+  - Full access to runout reporting and order management
+  - Limited reporting access (no sensitive financial data)
 - **Admin Privileges:**
-  - Full system access
-  - User management capabilities
-  - Financial data access
+  - Full system access with all permissions
+  - User and salary management capabilities
+  - Complete financial data access
+  - System configuration control
 
 ---
 
@@ -389,7 +400,9 @@
 - Relational database structure
 - Inventory tracking tables
 - Financial transaction records
-- User and permission management
+- Authentication & authorization entities (users, roles, permissions)
+- Simplified role-permission management with direct foreign key relationships
+- Employee salary tracking linked to expense management
 - Audit trails for critical operations
 
 ---
