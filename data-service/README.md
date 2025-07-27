@@ -43,7 +43,7 @@ This will:
 
 ### PgAdmin Web Interface
 - **URL:** http://localhost:8080
-- **Email:** admin@icecream.local
+- **Email:** admin@icecreamstore.com
 - **Password:** admin123
 
 ### Command Line Access
