@@ -272,7 +272,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Generate monthly expense records when `is_recurring` = true
 - Organize invoice documents in monthly directories (MM-yyyy format)
 - Calculate monthly expense totals for financial analysis
-- Validate timeline format matches MM/yyyy pattern
+- Validate expense_date is within valid range
 
 ---
 
@@ -321,22 +321,18 @@ CREATE TABLE expenses (
     expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
     description TEXT NOT NULL,
     amount DECIMAL(12,2) NOT NULL,
-    timeline VARCHAR(7) NOT NULL, -- MM/yyyy format
-    expense_payment_date DATE,
+    expense_date DATE NOT NULL,
     is_paid BOOLEAN DEFAULT FALSE,
     payment_receipt_url VARCHAR(500),
     invoice_document_url VARCHAR(500) NOT NULL,
     is_recurring BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT valid_timeline_format CHECK (timeline ~ '^[0-1][0-9]/[0-9]{4}$')
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
 CREATE INDEX idx_expenses_category ON expenses(expense_category_id);
-CREATE INDEX idx_expenses_timeline ON expenses(timeline);
-CREATE INDEX idx_expenses_payment_date ON expenses(expense_payment_date);
+CREATE INDEX idx_expenses_expense_date ON expenses(expense_date);
 CREATE INDEX idx_expenses_is_paid ON expenses(is_paid);
 CREATE INDEX idx_expenses_is_recurring ON expenses(is_recurring);
 CREATE INDEX idx_expenses_amount ON expenses(amount);
@@ -347,9 +343,8 @@ CREATE INDEX idx_expenses_amount ON expenses(amount);
 - `expense_category_id`: Foreign key reference to expense_categories table
 - `description`: Brief description of the expense
 - `amount`: Monetary amount of the expense
-- `timeline`: Month/year the expense is valid for (MM/yyyy format)
-- `expense_payment_date`: Scheduled payment date for recurring expenses (nullable)
-- `is_paid`: Boolean indicating if expense has been paid for the timeline
+- `expense_date`: Date the expense is valid for
+- `is_paid`: Boolean indicating if expense has been paid for the expense_date
 - `payment_receipt_url`: URL/path to payment receipt screenshot (required when is_paid = true)
 - `invoice_document_url`: URL/path to uploaded invoice image (mandatory)
 - `is_recurring`: Whether this expense recurs monthly (creates new records)

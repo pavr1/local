@@ -181,11 +181,8 @@
     - Raw material purchases
     - Other operational expenses
   - **Description:** Brief description of expense.
-  - **Timeline:** MMM/yyyy this is the month the expense is valid for. If expense payment date is provided they will be recurrent (one record per month)
-  - **IsPayed:** Bool. The expense has been payed for the timeline. If set to true, require receipt screenshot
-  - **Expense Payment Date** (date, nullable): Scheduled payment date for expenses like rent, services or salaries
-    - Null when no specific payment date is required
-    - Used for payment scheduling and cash flow planning.
+  - **Expense Date:** The date the expense is valid for
+  - **IsPayed:** Bool. The expense has been payed for the expense date. If set to true, require receipt screenshot
   
 - **Digital Invoice Requirements:**
   - All expenses must include digital invoice image upload
