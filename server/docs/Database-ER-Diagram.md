@@ -8,13 +8,13 @@
 
 ## 📊 Database Overview
 
-This diagram represents the complete relational structure of the ice cream store management system database, showing all **21 tables** and their interconnections.
+This diagram represents the complete relational structure of the ice cream store management system database, showing all **22 tables** and their interconnections.
 
 ### Table Categories:
 
 - **🔐 Authentication & Authorization** (3 tables): Users, roles, and permissions
 - **👥 Customer Management** (1 table): Customer information and contact details  
-- **📦 Inventory Management** (6 tables): Suppliers, ingredients, stock, recipes, and waste tracking
+- **📦 Inventory Management** (7 tables): Suppliers, ingredients, stock, recipe categories, recipes, and waste tracking
 - **💰 Expenses Management** (3 tables): Expense categories, records, and receipt documentation
 - **🛒 Orders Management** (2 tables): Customer transactions and order line items
 - **🎁 Promotions & Loyalty** (2 tables): Promotional campaigns and customer points
@@ -129,11 +129,20 @@ erDiagram
         timestamp updated_at
     }
     
+    RECIPE_CATEGORIES {
+        uuid id PK
+        varchar name UK
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+    
     RECIPES {
         uuid id PK
         varchar recipe_name UK
         text recipe_description
         varchar picture_url
+        uuid recipe_category_id FK
         decimal total_recipe_cost
         timestamp created_at
         timestamp updated_at
@@ -342,6 +351,8 @@ erDiagram
     
     EXPENSE_RECEIPTS ||--o{ EXISTENCES : "expense_receipt_id"
     
+    RECIPE_CATEGORIES ||--o{ RECIPES : "recipe_category_id"
+    
     RECIPES ||--o{ RECIPE_INGREDIENTS : "recipe_id"
     RECIPES ||--o{ ORDERED_RECEIPES : "recipe_id"
     RECIPES ||--o{ PROMOTIONS : "recipe_id"
@@ -418,5 +429,5 @@ Suppliers → Ingredients → Existences → Recipe Usage
 ---
 
 **Diagram Generated:** `r new Date().toISOString()`  
-**Total Tables:** 21  
-**Total Relationships:** 25+ foreign key constraints 
+**Total Tables:** 22  
+**Total Relationships:** 26+ foreign key constraints 

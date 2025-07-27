@@ -12,6 +12,7 @@
    - [Suppliers](#suppliers)
    - [Ingredients](#ingredients)
    - [Existences](#existences)
+   - [Recipe Categories](#recipe-categories)
    - [Recipes](#recipes)
 2. [Expenses Management](#expenses-management)
    - [Expense Receipts](#expense-receipts)
@@ -145,12 +146,34 @@
   - Purchase date and supplier information accessed through expense receipt relationship
   - Different ingredients on same receipt can have different expiration dates
 
+### Recipe Categories
+**Description:** Product categorization system to organize recipes by type for better management and customer browsing.
+
+- **Attributes:**
+    - **Category ID** (UUID): Unique identifier for each recipe category
+    - **Name** (string): Category name (unique)
+    - **Description** (text): Description of the category type
+
+- **Predefined Categories:**
+    - **Postres**: Desserts and sweet treats
+    - **Helados**: Traditional ice cream products
+    - **Batidos**: Milkshakes and blended drinks
+    - **Gelato**: Italian-style gelato products
+    - **Artesanales**: Artisan and handcrafted specialty items
+
+- **Business Logic:**
+    - Each recipe must belong to exactly one category
+    - Categories help organize menu displays and reporting
+    - Used for filtering and searching recipes in administration
+    - Supports promotional campaigns targeting specific product categories
+
 ### Recipes
 **Description:** Product recipes that define combinations of raw materials with specific quantities needed to create finished products.
 
 - **Attributes:**
     - **Recipe Name** (string): Name of the product/recipe
     - **Recipe Description** (string): Description of the product
+    - **Recipe Category ID** (foreign key): Link to recipe category (required)
     - **Price**: Price of the product. This price can be calculated based on costs, margin and taxes.
     - **Picture**: Picture of the product to be use as reference.
     
@@ -163,10 +186,12 @@
   
 - **Business Logic:**
   - Multiple ingredients can be part of one recipe
+  - Each recipe must be assigned to a valid category
   - Total cost automatically calculated based on current ingredient prices
   - Used for cost analysis and recipe planning
   - Supplier information is managed at the ingredient level
   - Pricing (margins, taxes) is calculated at existence level, not recipe level
+  - Category assignment enables better organization and promotional targeting
 
 ## Expenses Management
 **Description:** Comprehensive expense tracking system that requires digital invoice documentation for all business expenses. The system automatically organizes invoice images by month to facilitate accounting processes and provides clear visibility into operational costs for profit margin analysis.

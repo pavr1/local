@@ -13,6 +13,7 @@
    - [Ingredients Table](#ingredients-table)
    - [Existences Table](#existences-table)
    - [Runout Ingredient Report Table](#runout-ingredient-report-table)
+   - [Recipe Categories Table](#recipe-categories-table)
    - [Recipes Table](#recipes-table)
    - [Recipe Ingredients Table](#recipe-ingredients-table)
 2. [Expenses Management Entities](#expenses-management-entities)
@@ -204,8 +205,37 @@ CREATE INDEX idx_runout_report_unit_type ON runout_ingredient_report(unit_type);
 - `created_at`: When the runout report was created
 - `updated_at`: When the runout report was last modified
 
+### Recipe Categories Table
+**Purpose:** Categorize recipes by product type for better organization and filtering
+
+```sql
+CREATE TABLE recipe_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default categories
+INSERT INTO recipe_categories (name, description) VALUES
+('Postres', 'Desserts and sweet treats'),
+('Helados', 'Traditional ice cream products'),
+('Batidos', 'Milkshakes and blended drinks'),
+('Gelato', 'Italian-style gelato products'),
+('Artesanales', 'Artisan and handcrafted specialty items');
+
+-- Indexes
+CREATE INDEX idx_recipe_categories_name ON recipe_categories(name);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Category name (unique)
+- `description`: Description of the category type
+
 ### Recipes Table
-**Purpose:** Store product recipes with pricing information
+**Purpose:** Store product recipes with pricing information and categorization
 
 ```sql
 CREATE TABLE recipes (
@@ -213,7 +243,7 @@ CREATE TABLE recipes (
     recipe_name VARCHAR(255) NOT NULL UNIQUE,
     recipe_description TEXT,
     picture_url VARCHAR(500),
-
+    recipe_category_id UUID NOT NULL REFERENCES recipe_categories(id) ON DELETE RESTRICT,
     total_recipe_cost DECIMAL(10,2) DEFAULT 0,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -222,6 +252,7 @@ CREATE TABLE recipes (
 
 -- Indexes
 CREATE INDEX idx_recipes_name ON recipes(recipe_name);
+CREATE INDEX idx_recipes_category ON recipes(recipe_category_id);
 CREATE INDEX idx_recipes_final_price ON recipes(final_price);
 ```
 
@@ -230,6 +261,7 @@ CREATE INDEX idx_recipes_final_price ON recipes(final_price);
 - `recipe_name`: Name of the product/recipe (unique)
 - `recipe_description`: Description of the product
 - `picture_url`: Picture of the product for reference
+- `recipe_category_id`: Foreign key reference to recipe_categories table (UUID)
 - `total_recipe_cost`: Sum of all material costs in the recipe
 
 ### Recipe Ingredients Table
@@ -267,6 +299,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **ingredients** ← **existences** (One-to-Many: One ingredient can have multiple purchase batches/existences)
 - **existences** ← **runout_ingredient_report** (One-to-Many: One existence can have multiple runout reports)
 - **users** ← **runout_ingredient_report** (One-to-Many: One employee can create multiple runout reports)
+- **recipe_categories** ← **recipes** (One-to-Many: One category can contain multiple recipes)
 - **recipes** ← **recipe_ingredients** → **ingredients** (Many-to-Many: Recipes contain multiple ingredients, ingredients can be in multiple recipes)
 
 ### Expenses Management
@@ -285,6 +318,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **recipes** ← **ordered_receipes** (One-to-Many: One recipe can be ordered multiple times)
 
 ### Promotions & Loyalty System
+- **recipe_categories** ← **recipes** ← **promotions** (One-to-Many chain: Categories contain recipes, recipes can have promotions)
 - **recipes** ← **promotions** (One-to-Many: One recipe can have multiple promotions)
 - **customers** ← **customer_points** (One-to-Many: One customer can have multiple point records)
 - **orders** ← **customer_points** (One-to-Many: One order can award customer points)
