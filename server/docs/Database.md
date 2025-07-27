@@ -451,9 +451,7 @@ CREATE TABLE ordered_receipes (
     product_name VARCHAR(255) NOT NULL, -- Snapshot of recipe name at time of sale
     quantity INTEGER NOT NULL,
     receipe_price DECIMAL(10,2) NOT NULL, -- Snapshot of recipe price at time of sale
-    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * receipe_price) STORED,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * receipe_price) STORED
 );
 
 -- Indexes

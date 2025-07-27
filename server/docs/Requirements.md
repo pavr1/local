@@ -232,9 +232,9 @@
 **Description:** Comprehensive sales tracking system that records all customer transactions with detailed product information, payment methods, and supporting documentation for accurate income analysis.
 
 - **Transaction Attributes:**
-  - **Product Details**: Complete list of products sold in each transaction
+  - **Product Details**: Complete list of products sold in each transaction (snapshots taken at order creation time)
     - Product name and quantity
-    - Recipe price (receipe_price)
+    - Recipe price (receipe_price) - captured when order is created
     - Product subtotal
   - **Amount Details**:
     - **Total Amount** (decimal): Final transaction total
@@ -257,10 +257,12 @@
     - **Screenshot Upload**: Mandatory screenshot of Sinpe transaction
     - **Transaction Reference**: Sinpe transaction ID
 
-- **Transaction Timestamp**: Date and time of sale
+- **Transaction Timestamp**: Date and time of sale (tracked at order level)
 - **Customer Information** (optional): Basic customer details if provided
 - **Sales Representative**: Employee who processed the sale
 - **Transaction Status**: Completed, pending, cancelled
+
+**Note**: All timing information (creation, updates, completion) is tracked at the order level. Individual product line items (ordered recipes) do not have separate timestamps as they are part of the same transaction and inherit the order's timing.
 
 * Orders are created with pending status, it can be cancelled and nothing happens, but once payed the order should be set as completed and an invoice should be created.
 
