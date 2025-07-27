@@ -229,11 +229,11 @@
 - **Transaction Attributes:**
   - **Product Details**: Complete list of products sold in each transaction
     - Product name and quantity
-    - Individual product price
+    - Recipe price (receipe_price)
     - Product subtotal
   - **Amount Details**:
     - **Total Amount** (decimal): Final transaction total
-    - **Individual Product Amounts**: Uses pre-calculated prices from recipes (includes cost + margin + taxes)
+    - **Individual Recipe Amounts**: Uses pre-calculated prices from recipes (includes cost + margin + taxes)
     - **Tax Breakdown**: Display IVA (13%) and Service Tax (10%) amounts for transparency
       - Taxes are calculated at recipe level, not during order creation
   - **Invoice Integration**:

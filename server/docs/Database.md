@@ -20,7 +20,7 @@
    - [Expenses Table](#expenses-table)
 3. [Income Management (Orders) Entities](#income-management-orders-entities)
    - [Orders Table](#orders-table)
-   - [Order Items Table](#order-items-table)
+   - [Ordered Receipes Table](#ordered-receipes-table)
 4. [Administration Panel Entities](#administration-panel-entities)
    - [System Configuration Table](#system-configuration-table)
    - [Users Table](#users-table)
@@ -403,26 +403,26 @@ CREATE INDEX idx_orders_invoice_number ON orders(invoice_number);
 - `transaction_timestamp`: When the transaction occurred
 - `completed_at`: When the order was completed (nullable)
 
-### Order Items Table
+### Ordered Receipes Table
 **Purpose:** Track individual products sold in each order with quantities and pricing snapshots.
 
 ```sql
-CREATE TABLE order_items (
+CREATE TABLE ordered_receipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE RESTRICT,
     product_name VARCHAR(255) NOT NULL, -- Snapshot of recipe name at time of sale
     quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL, -- Snapshot of recipe price at time of sale
-    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+    receipe_price DECIMAL(10,2) NOT NULL, -- Snapshot of recipe price at time of sale
+    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * receipe_price) STORED,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_recipe ON order_items(recipe_id);
-CREATE INDEX idx_order_items_product_name ON order_items(product_name);
+CREATE INDEX idx_ordered_receipes_order ON ordered_receipes(order_id);
+CREATE INDEX idx_ordered_receipes_recipe ON ordered_receipes(recipe_id);
+CREATE INDEX idx_ordered_receipes_product_name ON ordered_receipes(product_name);
 ```
 
 **Field Descriptions:**
@@ -431,8 +431,8 @@ CREATE INDEX idx_order_items_product_name ON order_items(product_name);
 - `recipe_id`: Foreign key reference to recipes table
 - `product_name`: Snapshot of product name at time of sale (for historical accuracy)
 - `quantity`: Number of items ordered
-- `unit_price`: Snapshot of recipe price at time of sale (for historical accuracy)
-- `subtotal`: Calculated subtotal for this line item (quantity × unit_price)
+- `receipe_price`: Snapshot of recipe price at time of sale (for historical accuracy)
+- `subtotal`: Calculated subtotal for this line item (quantity × receipe_price)
 
 ---
 
