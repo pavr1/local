@@ -138,6 +138,11 @@
 - **Business Logic:**
   - Multiple existences can exist for the same ingredient (different purchase batches)
   - Track ingredient usage by reducing "Units Available" from specific existences
+  - **Runout Reporting Process**: When ingredients run out, employees report usage through runout ingredient reports
+    - Employee creates runout report specifying existence, quantity used, and date
+    - System automatically updates "Units Available" in existences table based on reported usage
+    - Maintains audit trail of who reported usage and when
+    - Validates reported quantities against available stock
   - Support FIFO (First In, First Out) consumption by using oldest batches first
   - Prevent usage of expired materials by checking expiration dates at existence level
   - Expense receipt traceability for audit and accounting purposes (links to expense receipt table)

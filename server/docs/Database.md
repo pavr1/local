@@ -13,6 +13,7 @@
    - [Expense Receipts Table](#expense-receipts-table)
    - [Ingredients Table](#ingredients-table)
    - [Existences Table](#existences-table)
+   - [Runout Ingredient Report Table](#runout-ingredient-report-table)
    - [Recipes Table](#recipes-table)
    - [Recipe Ingredients Table](#recipe-ingredients-table)
 2. [Expenses Management Entities](#expenses-management-entities)
@@ -194,6 +195,38 @@ CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 - `calculated_price`: Auto-calculated total price with margins and taxes
 - `final_price`: Final price (can be rounded up to next 100)
 
+### Runout Ingredient Report Table
+**Purpose:** Track ingredient usage and runouts reported by employees. Updates existences table to reflect ingredient consumption.
+
+```sql
+CREATE TABLE runout_ingredient_report (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
+    report_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_runout_report_existence ON runout_ingredient_report(existence_id);
+CREATE INDEX idx_runout_report_employee ON runout_ingredient_report(employee_id);
+CREATE INDEX idx_runout_report_date ON runout_ingredient_report(report_date);
+CREATE INDEX idx_runout_report_unit_type ON runout_ingredient_report(unit_type);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `existence_id`: Foreign key reference to existences table (UUID)
+- `employee_id`: Foreign key reference to users table (employee who reported the runout)
+- `quantity`: Amount of ingredient that was used/ran out
+- `unit_type`: Unit of measurement for the reported quantity (Liters, Gallons, Units, Bag)
+- `report_date`: Date when the runout was reported (defaults to current date)
+- `created_at`: When the runout report was created
+- `updated_at`: When the runout report was last modified
+
 ### Recipes Table
 **Purpose:** Store product recipes with pricing information
 
@@ -255,6 +288,8 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **suppliers** ← **ingredients** (One-to-Many: One supplier can provide multiple ingredients)
 - **expense_receipts** ← **existences** (One-to-Many: One expense receipt can contain multiple existences/line items)
 - **ingredients** ← **existences** (One-to-Many: One ingredient can have multiple purchase batches/existences)
+- **existences** ← **runout_ingredient_report** (One-to-Many: One existence can have multiple runout reports)
+- **users** ← **runout_ingredient_report** (One-to-Many: One employee can create multiple runout reports)
 - **recipes** ← **recipe_ingredients** → **ingredients** (Many-to-Many: Recipes contain multiple ingredients, ingredients can be in multiple recipes)
 
 ### Expenses Management
@@ -267,6 +302,8 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Update `total_recipe_cost` in recipes table when recipe_ingredients change
 - Recalculate pricing fields in existences table when cost components change
 - Track ingredient consumption by updating `units_available` in existences table
+- Process runout reports: when employees report ingredient usage, create runout_ingredient_report record and decrease `units_available` in existences table accordingly
+- Validate runout report quantities against available stock in existences table
 - Implement FIFO logic: use oldest expense receipts first (by purchase_date from expense_receipts table)
 - Alert when existences are near expiry (based on expiration_date from existences table)
 - Calculate final pricing (margins, taxes) at existence level for inventory items
@@ -570,6 +607,10 @@ INSERT INTO permissions (permission_name, description, entity_name, action_name)
 ('Existences-Read', 'View existence information', 'Existences', 'Read'),
 ('Existences-Update', 'Update existence information', 'Existences', 'Update'),
 ('Existences-Delete', 'Delete existences', 'Existences', 'Delete'),
+('RunoutReports-Create', 'Create new runout ingredient reports', 'RunoutReports', 'Create'),
+('RunoutReports-Read', 'View runout ingredient reports', 'RunoutReports', 'Read'),
+('RunoutReports-Update', 'Update runout ingredient reports', 'RunoutReports', 'Update'),
+('RunoutReports-Delete', 'Delete runout ingredient reports', 'RunoutReports', 'Delete'),
 ('Recipes-Create', 'Create new recipes', 'Recipes', 'Create'),
 ('Recipes-Read', 'View recipe information', 'Recipes', 'Read'),
 ('Recipes-Update', 'Update recipe information', 'Recipes', 'Update'),
@@ -663,6 +704,8 @@ WHERE r.role_name = 'employee'
 AND p.permission_name IN (
     -- Read-only access to inventory information
     'Suppliers-Read', 'Ingredients-Read', 'Existences-Read', 'Recipes-Read',
+    -- Full access to runout reporting (employee main function for inventory)
+    'RunoutReports-Create', 'RunoutReports-Read',
     -- Full access to order management (employee main function)
     'Orders-Create', 'Orders-Read', 'Orders-Update',
     -- Limited reporting access (no sensitive financial data)
