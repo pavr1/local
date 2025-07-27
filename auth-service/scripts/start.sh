@@ -21,15 +21,15 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # Check if the database network exists (from data-service)
-if ! docker network ls | grep -q "icecream_network"; then
-    echo "⚠️  icecream_network not found. Please ensure data-service is running first."
+if ! docker network ls | grep -q "docker_icecream_network"; then
+    echo "⚠️  docker_icecream_network not found. Please ensure data-service is running first."
     echo "   Run: cd ../data-service && make start"
     exit 1
 fi
 
 # Check if database is accessible
 echo "🔍 Checking database connectivity..."
-if ! docker run --rm --network icecream_network postgres:15-alpine pg_isready -h postgres -p 5432 -U postgres > /dev/null 2>&1; then
+if ! docker run --rm --network docker_icecream_network postgres:15-alpine pg_isready -h postgres -p 5432 -U postgres > /dev/null 2>&1; then
     echo "❌ Cannot connect to database. Please ensure data-service is running."
     echo "   Run: cd ../data-service && make start"
     exit 1
@@ -39,7 +39,7 @@ echo "✅ Database connectivity confirmed!"
 
 # Stop existing auth service container if it exists
 echo "🧹 Cleaning up existing auth service container..."
-docker-compose down --remove-orphans 2>/dev/null || true
+docker-compose down 2>/dev/null || true
 
 # Build and start the auth service
 echo "🔨 Building auth service..."

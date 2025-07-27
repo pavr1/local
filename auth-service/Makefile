@@ -147,7 +147,7 @@ fresh: clean deps build start test status info ## Fresh start: clean, build, sta
 
 clean: ## Clean up containers and images
 	@echo "$(YELLOW)🧹 Cleaning up Auth Service...$(RESET)"
-	@cd docker && docker-compose down -v --remove-orphans 2>/dev/null || true
+	@cd docker && docker-compose down -v 2>/dev/null || true
 	@docker image rm auth-service_auth-service 2>/dev/null || true
 	@echo "$(GREEN)✅ Cleanup completed$(RESET)"
 

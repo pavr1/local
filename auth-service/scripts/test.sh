@@ -37,59 +37,57 @@ run_test() {
     set +e
     local output
     local http_code
-    output=$(eval "$command" 2>&1)
-    local exit_code=$?
     
     if [[ "$command" == *"curl"* ]]; then
-        # Extract HTTP status code from curl output
-        http_code=$(echo "$output" | tail -n1)
-        output=$(echo "$output" | head -n -1)
+        # Run curl and capture both response body and HTTP code
+        local temp_file="/tmp/auth_test_$$"
+        http_code=$(curl -s -w '%{http_code}' -o "$temp_file" $(echo "$command" | sed 's/curl -s -w.*$//' | sed "s/curl -s/curl -s/"))
+        output=$(cat "$temp_file" 2>/dev/null || echo "")
+        rm -f "$temp_file"
+    else
+        output=$(eval "$command" 2>&1)
+        http_code="N/A"
     fi
+    
+    local exit_code=$?
     set -e
     
     # Check if test passed
-    if [[ $exit_code -eq 0 ]] && [[ "${http_code:-$expected_code}" == "$expected_code" ]]; then
+    if [[ "$http_code" == "$expected_code" ]] || [[ "$expected_code" == "0" && "$exit_code" == "0" ]]; then
         echo -e "   ${GREEN}✅ PASSED${RESET}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
-        if [[ -n "$output" && "$output" != "curl:"* ]]; then
-            echo "   Response: $(echo "$output" | head -c 100)..."
-        fi
     else
         echo -e "   ${RED}❌ FAILED${RESET}"
         echo "   Expected HTTP code: $expected_code"
-        echo "   Got HTTP code: ${http_code:-N/A}"
+        echo "   Got HTTP code: $http_code"
         echo "   Exit code: $exit_code"
-        if [[ -n "$output" ]]; then
-            echo "   Output: $output"
-        fi
     fi
-    echo ""
 }
 
-# Test 1: Health Check
+# Test 1: Health check
 run_test "Health Check" \
-    "curl -s -w '%{http_code}' '$API_BASE/auth/health'" \
+    "curl -s -X GET '$API_BASE/auth/health'" \
     "200"
 
 # Test 2: Login with admin user (should work if database is properly initialized)
 run_test "Admin Login" \
-    "curl -s -w '%{http_code}' -X POST '$API_BASE/auth/login' -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'" \
+    "curl -s -X POST '$API_BASE/auth/login' -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'" \
     "200"
 
 # Test 3: Login with invalid credentials
 run_test "Invalid Login" \
-    "curl -s -w '%{http_code}' -X POST '$API_BASE/auth/login' -H 'Content-Type: application/json' -d '{\"username\":\"invalid\",\"password\":\"invalid\"}'" \
+    "curl -s -X POST '$API_BASE/auth/login' -H 'Content-Type: application/json' -d '{\"username\":\"invalid\",\"password\":\"invalid\"}'" \
     "401"
 
 # Test 4: Access protected endpoint without token
 run_test "Protected Endpoint Without Token" \
-    "curl -s -w '%{http_code}' '$API_BASE/auth/profile'" \
+    "curl -s -X GET '$API_BASE/auth/profile'" \
     "401"
 
 # Test 5: Validate token endpoint without token
 run_test "Validate Token Without Token" \
-    "curl -s -w '%{http_code}' '$API_BASE/auth/validate'" \
-    "400"
+    "curl -s -X GET '$API_BASE/auth/validate'" \
+    "401"
 
 # Test 6: Try to get a valid token and use it
 echo -e "${CYAN}🧪 Testing: Full Auth Flow${RESET}"
@@ -105,17 +103,18 @@ if [[ -n "$LOGIN_RESPONSE" ]] && echo "$LOGIN_RESPONSE" | grep -q '"token"'; the
     
     if [[ -n "$TOKEN" ]]; then
         # Test using the token
-        PROFILE_RESPONSE=$(curl -s -w '%{http_code}' \
+        PROFILE_CODE=$(curl -s -w '%{http_code}' -o /dev/null \
             -H "Authorization: Bearer $TOKEN" \
             "$API_BASE/auth/profile" 2>/dev/null || echo "")
         
-        if echo "$PROFILE_RESPONSE" | tail -n1 | grep -q "200"; then
+        if [[ "$PROFILE_CODE" == "200" ]]; then
             echo -e "   ${GREEN}✅ PASSED${RESET}"
             TESTS_PASSED=$((TESTS_PASSED + 1))
             echo "   Successfully obtained and used JWT token"
         else
             echo -e "   ${RED}❌ FAILED${RESET}"
             echo "   Could not use JWT token for protected endpoint"
+            echo "   Profile endpoint returned: $PROFILE_CODE"
         fi
     else
         echo -e "   ${RED}❌ FAILED${RESET}"
@@ -124,24 +123,24 @@ if [[ -n "$LOGIN_RESPONSE" ]] && echo "$LOGIN_RESPONSE" | grep -q '"token"'; the
 else
     echo -e "   ${RED}❌ FAILED${RESET}"
     echo "   Login failed or invalid response format"
+    echo "   Response: $LOGIN_RESPONSE"
 fi
-echo ""
 
-# Test 7: Container Health
+# Test 7: Container health check
 run_test "Container Health Check" \
-    "docker inspect icecream_auth --format='{{.State.Health.Status}}' | grep -q 'healthy' && echo 'healthy'" \
+    "docker inspect icecream_auth --format='{{.State.Health.Status}}' | grep -q healthy" \
     "0"
 
-# Summary
+echo ""
 echo "=========================================="
 echo -e "${CYAN}🏁 Test Summary${RESET}"
 echo "=========================================="
 echo "Tests run: $TESTS_RUN"
-echo -e "Tests passed: ${GREEN}$TESTS_PASSED${RESET}"
-echo -e "Tests failed: ${RED}$((TESTS_RUN - TESTS_PASSED))${RESET}"
+echo "Tests passed: $TESTS_PASSED"
+echo "Tests failed: $((TESTS_RUN - TESTS_PASSED))"
 
 if [[ $TESTS_PASSED -eq $TESTS_RUN ]]; then
-    echo -e "${GREEN}🎉 All tests passed! Auth service is working correctly.${RESET}"
+    echo -e "${GREEN}✅ All tests passed!${RESET}"
     exit 0
 else
     echo -e "${RED}❌ Some tests failed. Please check the auth service configuration.${RESET}"

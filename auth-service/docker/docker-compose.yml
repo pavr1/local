@@ -39,8 +39,8 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - icecream_network
+      - docker_icecream_network
 
 networks:
-  icecream_network:
+  docker_icecream_network:
     external: true 

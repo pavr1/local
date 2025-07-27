@@ -424,7 +424,7 @@ INSERT INTO permissions (permission_name, description, role_id) VALUES
 
 -- Insert default admin user (password: admin123)
 INSERT INTO users (username, password_hash, full_name, role_id) VALUES
-('admin', '$2a$10$rQJ8Y8O0Z1QHJC5b3vGw.uK8YvZ4Z1Q2X3V4B5N6M7L8K9J0H1G2F', 'System Administrator', 
+('admin', '$2a$12$04xNgahgyY9qDgv7goYUVenjgTHF7.ei9GVkp.uYixLs.ebrJxw6u', 'System Administrator', 
  (SELECT id FROM roles WHERE role_name = 'super_admin'));
 
 -- Insert default expense categories
