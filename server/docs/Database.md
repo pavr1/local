@@ -69,21 +69,24 @@ CREATE INDEX idx_suppliers_email ON suppliers(email);
 - `notes`: Additional notes about the supplier
 
 ### Expense Receipts Table
-**Purpose:** Store purchase receipt/invoice information from suppliers or supermarkets. Each expense receipt can contain multiple ingredient purchases (existences).
+**Purpose:** Store receipt/invoice documentation with images and amounts, linked to expense categories. Each expense receipt can contain multiple ingredient purchases (existences) and is categorized through the parent expense record.
 
 ```sql
 CREATE TABLE expense_receipts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
     receipt_number VARCHAR(100) UNIQUE NOT NULL,
     purchase_date DATE NOT NULL,
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
     total_amount DECIMAL(12,2), -- get all existences for that recipt number to get total amount
+    image_url VARCHAR(500) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
+CREATE INDEX idx_expense_receipts_expense ON expense_receipts(expense_id);
 CREATE INDEX idx_expense_receipts_number ON expense_receipts(receipt_number);
 CREATE INDEX idx_expense_receipts_supplier ON expense_receipts(supplier_id);
 CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_date);
@@ -91,10 +94,12 @@ CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_dat
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
+- `expense_id`: Foreign key reference to expenses table (UUID)
 - `receipt_number`: Receipt/invoice number (unique)
 - `purchase_date`: When the purchase was made
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for supermarket purchases)
 - `total_amount`: Total amount of the expense receipt/invoice
+- `image_url`: URL/path to uploaded receipt/invoice image (mandatory)
 - `notes`: Additional notes about the purchase
 
 ### Ingredients Table
@@ -254,6 +259,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 
 ### Expenses Management
 - **expense_categories** ← **expenses** (One-to-Many: One category can have multiple expenses)
+- **expenses** ← **expense_receipts** (One-to-Many: One expense can have multiple receipts)
 
 ## Overall Business Logic Triggers
 
@@ -268,11 +274,10 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Link expense receipts to expense management system for accounting integration
 
 ### Expenses Management
-- Validate `payment_receipt_url` is required when `is_paid` = true
-- Generate monthly expense records when `is_recurring` = true
 - Organize invoice documents in monthly directories (MM-yyyy format)
-- Calculate monthly expense totals for financial analysis
-- Validate expense_date is within valid range
+- Calculate monthly expense totals from expense receipts
+- Link expense receipts to their parent expense categories through the expenses table
+- Validate receipt image uploads for all expense receipts
 
 ---
 
@@ -313,41 +318,25 @@ INSERT INTO expense_categories (category_name, description) VALUES
 - `updated_at`: When the category was last modified
 
 ### Expenses Table
-**Purpose:** Track all business expenses with complete documentation, categorization, and payment scheduling.
+**Purpose:** Define business expense categories and descriptions for organizational purposes.
 
 ```sql
 CREATE TABLE expenses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
     description TEXT NOT NULL,
-    amount DECIMAL(12,2) NOT NULL,
-    expense_date DATE NOT NULL,
-    is_paid BOOLEAN DEFAULT FALSE,
-    payment_receipt_url VARCHAR(500),
-    invoice_document_url VARCHAR(500) NOT NULL,
-    is_recurring BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
 CREATE INDEX idx_expenses_category ON expenses(expense_category_id);
-CREATE INDEX idx_expenses_expense_date ON expenses(expense_date);
-CREATE INDEX idx_expenses_is_paid ON expenses(is_paid);
-CREATE INDEX idx_expenses_is_recurring ON expenses(is_recurring);
-CREATE INDEX idx_expenses_amount ON expenses(amount);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `expense_category_id`: Foreign key reference to expense_categories table
 - `description`: Brief description of the expense
-- `amount`: Monetary amount of the expense
-- `expense_date`: Date the expense is valid for
-- `is_paid`: Boolean indicating if expense has been paid for the expense_date
-- `payment_receipt_url`: URL/path to payment receipt screenshot (required when is_paid = true)
-- `invoice_document_url`: URL/path to uploaded invoice image (mandatory)
-- `is_recurring`: Whether this expense recurs monthly (creates new records)
 - `created_at`: When the expense record was created
 - `updated_at`: When the expense record was last modified
 

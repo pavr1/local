@@ -18,7 +18,7 @@ This is the identity-api service working on robust database migration and SQL qu
 - Wait for review and expect approval or feedback.
 - After readme and Development Phases docs are created and approved, ask if there is something else that needs to be added. Otherwhise ask if it's ok to start with the development phases. Besides add an index to the document.
 - Do not implement anything until it's requested, only work on the documents.
--  
+- If there is feedback and any document is updated, look for all documents and update any reference for that specific change. The idea is having all documents synced up and accurately reflecting all changes.
 
 ## Development
 - Base on the readme and phases documents, start development one phase at a time, starting from phase 1.

@@ -181,13 +181,19 @@
     - Raw material purchases
     - Other operational expenses
   - **Description:** Brief description of expense.
-  - **Expense Date:** The date the expense is valid for
-  - **IsPayed:** Bool. The expense has been payed for the expense date. If set to true, require receipt screenshot
+
+- **Expense Receipt Attributes:**
+  - **Receipt Number:** Unique identifier for the receipt/invoice
+  - **Purchase Date:** When the purchase was made
+  - **Total Amount:** Monetary amount of the receipt/invoice
+  - **Image Upload:** Mandatory receipt/invoice image documentation
+  - **Supplier Reference:** Optional reference to supplier (nullable for supermarket purchases)
   
 - **Digital Invoice Requirements:**
-  - All expenses must include digital invoice image upload
+  - All expense receipts must include digital invoice image upload
   - Supported formats: JPG, PNG, PDF
   - Mandatory documentation for expense validation
+  - Each expense receipt is linked to an expense category through the parent expense record
   
 - **Automatic File Organization:**
   - **Monthly Directory Creation**: System automatically creates `.../invoices/MM-yyyy` directories
