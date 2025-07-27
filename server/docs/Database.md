@@ -18,6 +18,9 @@
 2. [Expenses Management Entities](#expenses-management-entities)
    - [Expense Categories Table](#expense-categories-table)
    - [Expenses Table](#expenses-table)
+3. [Income Management (Orders) Entities](#income-management-orders-entities)
+   - [Orders Table](#orders-table)
+   - [Order Items Table](#order-items-table)
 
 ---
 
@@ -349,7 +352,98 @@ CREATE INDEX idx_expenses_amount ON expenses(amount);
 
 ---
 
+## Income Management (Orders) Entities
+
+### Orders Table
+**Purpose:** Track all customer transactions/sales with complete product and payment information for accurate income analysis.
+
+```sql
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    sales_representative_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'completed', 'cancelled')) DEFAULT 'pending',
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('cash', 'card', 'sinpe')),
+    transaction_reference VARCHAR(100), -- For card and sinpe payments
+    sinpe_screenshot_url VARCHAR(500), -- Required for sinpe payments
+    subtotal_amount DECIMAL(12,2) NOT NULL,
+    iva_amount DECIMAL(12,2) NOT NULL, -- 13% IVA tax
+    service_tax_amount DECIMAL(12,2) NOT NULL, -- 10% service tax
+    total_amount DECIMAL(12,2) NOT NULL,
+    invoice_number VARCHAR(50) UNIQUE,
+    invoice_url VARCHAR(500),
+    transaction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Auto-increment sequence for order_number
+CREATE SEQUENCE order_number_seq START 1;
+ALTER TABLE orders ALTER COLUMN order_number SET DEFAULT 'ORD-' || LPAD(nextval('order_number_seq')::text, 6, '0');
+
+-- Auto-increment sequence for invoice_number (generated when order completed)
+CREATE SEQUENCE invoice_number_seq START 1;
+
+-- Indexes
+CREATE INDEX idx_orders_number ON orders(order_number);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_payment_method ON orders(payment_method);
+CREATE INDEX idx_orders_sales_rep ON orders(sales_representative_id);
+CREATE INDEX idx_orders_transaction_timestamp ON orders(transaction_timestamp);
+CREATE INDEX idx_orders_invoice_number ON orders(invoice_number);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `order_number`: Unique order identifier (auto-generated: ORD-000001, ORD-000002, etc.)
+- `sales_representative_id`: Foreign key reference to users table (employee who processed sale)
+- `status`: Order status (pending → completed/cancelled)
+- `payment_method`: Payment method used (cash, card, sinpe)
+- `transaction_reference`: Transaction reference for card/sinpe payments (required for non-cash)
+- `sinpe_screenshot_url`: Required screenshot URL for sinpe payments
+- `subtotal_amount`: Order subtotal before taxes
+- `iva_amount`: IVA tax amount (13%)
+- `service_tax_amount`: Service tax amount (10%)
+- `total_amount`: Final total amount
+- `invoice_number`: Sequential invoice number (generated when order completed)
+- `invoice_url`: URL to generated invoice document
+- `transaction_timestamp`: When the transaction occurred
+- `completed_at`: When the order was completed (nullable)
+
+### Order Items Table
+**Purpose:** Track individual products sold in each order with quantities and pricing snapshots.
+
+```sql
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE RESTRICT,
+    product_name VARCHAR(255) NOT NULL, -- Snapshot of recipe name at time of sale
+    quantity INTEGER NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL, -- Snapshot of recipe price at time of sale
+    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * unit_price) STORED,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_recipe ON order_items(recipe_id);
+CREATE INDEX idx_order_items_product_name ON order_items(product_name);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `order_id`: Foreign key reference to orders table
+- `recipe_id`: Foreign key reference to recipes table
+- `product_name`: Snapshot of product name at time of sale (for historical accuracy)
+- `quantity`: Number of items ordered
+- `unit_price`: Snapshot of recipe price at time of sale (for historical accuracy)
+- `subtotal`: Calculated subtotal for this line item (quantity × unit_price)
+
+---
+
 **Next Sections to Review:**
-- Income Management (Orders) Entities  
 - Administration Panel Entities
 - Authentication & Authorization Entities 
