@@ -238,7 +238,7 @@ CREATE TABLE waste_loss (
     employee_id UUID NOT NULL, -- References users table
     items_wasted DECIMAL(10,2) NOT NULL CHECK (items_wasted > 0), -- amount of items in a unit wasted
     reason VARCHAR(255) NOT NULL,
-    financial_loss DECIMAL(10,2) GENERATED ALWAYS AS (items_wasted * (SELECT price_per_unit FROM existences WHERE id = existence_id)) STORED,
+    financial_loss DECIMAL(10,2) NOT NULL, -- Calculated by application: items_wasted * existence.price_per_unit
     waste_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
