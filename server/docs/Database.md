@@ -10,7 +10,6 @@
 ## Table of Contents
 1. [Inventory Management Entities](#inventory-management-entities)
    - [Suppliers Table](#suppliers-table)
-   - [Expense Receipts Table](#expense-receipts-table)
    - [Ingredients Table](#ingredients-table)
    - [Existences Table](#existences-table)
    - [Runout Ingredient Report Table](#runout-ingredient-report-table)
@@ -19,6 +18,7 @@
 2. [Expenses Management Entities](#expenses-management-entities)
    - [Expense Categories Table](#expense-categories-table)
    - [Expenses Table](#expenses-table)
+   - [Expense Receipts Table](#expense-receipts-table)
 3. [Income Management (Orders) Entities](#income-management-orders-entities)
    - [Orders Table](#orders-table)
    - [Ordered Receipes Table](#ordered-receipes-table)
@@ -67,40 +67,6 @@ CREATE INDEX idx_suppliers_email ON suppliers(email);
 - `email`: Email address for supplier communication
 - `address`: Physical address of supplier
 - `notes`: Additional notes about the supplier
-
-### Expense Receipts Table
-**Purpose:** Store receipt/invoice documentation with images and amounts, linked to expense categories. Each expense receipt can contain multiple ingredient purchases (existences) and is categorized through the parent expense record.
-
-```sql
-CREATE TABLE expense_receipts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
-    receipt_number VARCHAR(100) UNIQUE NOT NULL,
-    purchase_date DATE NOT NULL,
-    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-    total_amount DECIMAL(12,2), -- get all existences for that recipt number to get total amount
-    image_url VARCHAR(500) NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Indexes
-CREATE INDEX idx_expense_receipts_expense ON expense_receipts(expense_id);
-CREATE INDEX idx_expense_receipts_number ON expense_receipts(receipt_number);
-CREATE INDEX idx_expense_receipts_supplier ON expense_receipts(supplier_id);
-CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_date);
-```
-
-**Field Descriptions:**
-- `id`: Primary key, UUID (auto-generated)
-- `expense_id`: Foreign key reference to expenses table (UUID)
-- `receipt_number`: Receipt/invoice number (unique)
-- `purchase_date`: When the purchase was made
-- `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for supermarket purchases)
-- `total_amount`: Total amount of the expense receipt/invoice
-- `image_url`: URL/path to uploaded receipt/invoice image (mandatory)
-- `notes`: Additional notes about the purchase
 
 ### Ingredients Table
 **Purpose:** Store raw materials/ingredients information with pricing and supplier details
@@ -390,7 +356,39 @@ CREATE INDEX idx_expenses_category ON expenses(expense_category_id);
 - `created_at`: When the expense record was created
 - `updated_at`: When the expense record was last modified
 
+### Expense Receipts Table
+**Purpose:** Store receipt/invoice documentation with images and amounts, linked to expense categories. Each expense receipt can contain multiple ingredient purchases (existences) and is categorized through the parent expense record.
 
+```sql
+CREATE TABLE expense_receipts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    receipt_number VARCHAR(100) UNIQUE NOT NULL,
+    purchase_date DATE NOT NULL,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    total_amount DECIMAL(12,2), -- get all existences for that recipt number to get total amount
+    image_url VARCHAR(500) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_expense_receipts_expense ON expense_receipts(expense_id);
+CREATE INDEX idx_expense_receipts_number ON expense_receipts(receipt_number);
+CREATE INDEX idx_expense_receipts_supplier ON expense_receipts(supplier_id);
+CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_date);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `expense_id`: Foreign key reference to expenses table (UUID)
+- `receipt_number`: Receipt/invoice number (unique)
+- `purchase_date`: When the purchase was made
+- `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for supermarket purchases)
+- `total_amount`: Total amount of the expense receipt/invoice
+- `image_url`: URL/path to uploaded receipt/invoice image (mandatory)
+- `notes`: Additional notes about the purchase
 
 ---
 

@@ -10,11 +10,11 @@
 ## Table of Contents
 1. [Inventory Management](#inventory-management)
    - [Suppliers](#suppliers)
-   - [Expense Receipts](#expense-receipts)
    - [Ingredients](#ingredients)
    - [Existences](#existences)
    - [Recipes](#recipes)
 2. [Expenses Management](#expenses-management)
+   - [Expense Receipts](#expense-receipts)
 3. [Income Managements (Orders)](#income-managements-orders)
 4. [Administration Panel](#administration-panel)
    - [Configuration](#configuration)
@@ -50,23 +50,6 @@
   - Supports multiple ingredients per supplier
   - Supplier information is optional for local store purchases
   - Used for reordering and supplier relationship management
-
-### Expense Receipts
-**Description:** Purchase receipt/invoice management system that tracks purchases from suppliers or supermarkets. Each expense receipt can contain multiple ingredient purchases.
-
-- **Attributes:**
-  - **Receipt Number** (string): Receipt/invoice number (unique)
-  - **Purchase Date** (date): When the purchase was made
-  - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
-  - **Total Amount** (decimal, nullable): Total amount of the receipt/invoice
-  - **Notes** (text, nullable): Additional notes about the purchase
-
-- **Business Logic:**
-  - One expense receipt can contain multiple ingredient existences (line items)
-  - Centralizes purchase date and supplier information
-  - Links to expense management for accounting purposes
-  - Supports both supplier and supermarket purchases
-  - Provides audit trail for all ingredient acquisitions
 
 ### Ingredients
 **Description:** Raw materials required to prepare different products in the ice cream store.
@@ -227,6 +210,23 @@
   - **Monthly Zip Export**: Generate zip files with all monthly invoices for accountant
   - **Expense Reports**: Generate detailed monthly/yearly expense reports
   - **Audit Trail**: Complete record of all expense transactions with supporting documentation
+
+### Expense Receipts
+**Description:** Purchase receipt/invoice management system that tracks purchases from suppliers or supermarkets. Each expense receipt can contain multiple ingredient purchases.
+
+- **Attributes:**
+  - **Receipt Number** (string): Receipt/invoice number (unique)
+  - **Purchase Date** (date): When the purchase was made
+  - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
+  - **Total Amount** (decimal, nullable): Total amount of the receipt/invoice
+  - **Notes** (text, nullable): Additional notes about the purchase
+
+- **Business Logic:**
+  - One expense receipt can contain multiple ingredient existences (line items)
+  - Centralizes purchase date and supplier information
+  - Links to expense management for accounting purposes
+  - Supports both supplier and supermarket purchases
+  - Provides audit trail for all ingredient acquisitions
 
 ## Income Managements (Orders)
 **Description:** Comprehensive sales tracking system that records all customer transactions with detailed product information, payment methods, and supporting documentation for accurate income analysis.
