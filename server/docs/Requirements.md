@@ -288,6 +288,8 @@
   - Admin (full access)
   - Employee (restricted access)
 - Employee account management
+  - User identification by username (not email address)
+  - Auth0 integration for authentication
 - Role-based permissions
 
 ### Business Metrics & Analytics

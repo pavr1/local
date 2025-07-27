@@ -520,7 +520,7 @@ CREATE INDEX idx_system_config_editable ON system_config(is_editable);
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     auth0_user_id VARCHAR(255) UNIQUE NOT NULL, -- Auth0 subject identifier
-    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255) NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP,
@@ -530,14 +530,14 @@ CREATE TABLE users (
 
 -- Indexes
 CREATE INDEX idx_users_auth0_id ON users(auth0_user_id);
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_active ON users(is_active);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `auth0_user_id`: Auth0 subject identifier for JWT token validation
-- `email`: User email address (unique)
+- `username`: User username (unique)
 - `full_name`: User's full name
 - `is_active`: Whether the user account is active
 - `last_login`: Timestamp of last successful login
