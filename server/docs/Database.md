@@ -21,6 +21,10 @@
 3. [Income Management (Orders) Entities](#income-management-orders-entities)
    - [Orders Table](#orders-table)
    - [Order Items Table](#order-items-table)
+4. [Administration Panel Entities](#administration-panel-entities)
+   - [System Configuration Table](#system-configuration-table)
+   - [Users Table](#users-table)
+   - [Roles Table](#roles-table)
 
 ---
 
@@ -444,6 +448,107 @@ CREATE INDEX idx_order_items_product_name ON order_items(product_name);
 
 ---
 
+## Administration Panel Entities
+
+### System Configuration Table
+**Purpose:** Store system-wide configuration parameters and business settings for centralized management.
+
+```sql
+CREATE TABLE system_config (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    config_key VARCHAR(100) NOT NULL UNIQUE,
+    config_value TEXT NOT NULL,
+    config_type VARCHAR(20) NOT NULL CHECK (config_type IN ('string', 'number', 'boolean', 'decimal')),
+    description TEXT,
+    is_editable BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default configuration values
+INSERT INTO system_config (config_key, config_value, config_type, description) VALUES
+('default_income_margin_percentage', '30.00', 'decimal', 'Default income margin percentage for pricing calculations'),
+('default_iva_percentage', '13.00', 'decimal', 'Default IVA tax percentage'),
+('default_service_tax_percentage', '10.00', 'decimal', 'Default service tax percentage'),
+('low_stock_threshold', '1', 'number', 'Minimum stock level threshold for alerts'),
+('expiration_warning_days', '7', 'number', 'Days before expiration to show warnings'),
+('business_name', 'Ice Cream Store', 'string', 'Business name for invoices and reports'),
+('business_address', '', 'string', 'Business address for invoices'),
+('business_phone', '', 'string', 'Business phone number'),
+('business_email', '', 'string', 'Business email address');
+
+-- Indexes
+CREATE INDEX idx_system_config_key ON system_config(config_key);
+CREATE INDEX idx_system_config_editable ON system_config(is_editable);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `config_key`: Unique configuration parameter key
+- `config_value`: Configuration value (stored as text, cast based on type)
+- `config_type`: Data type of the configuration value (string, number, boolean, decimal)
+- `description`: Human-readable description of the parameter
+- `is_editable`: Whether this config can be modified through the administration UI
+
+### Users Table
+**Purpose:** Store user accounts for employees and administrators with Auth0 integration.
+
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    auth0_user_id VARCHAR(255) UNIQUE NOT NULL, -- Auth0 subject identifier
+    email VARCHAR(255) UNIQUE NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_users_auth0_id ON users(auth0_user_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_active ON users(is_active);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `auth0_user_id`: Auth0 subject identifier for JWT token validation
+- `email`: User email address (unique)
+- `full_name`: User's full name
+- `is_active`: Whether the user account is active
+- `last_login`: Timestamp of last successful login
+
+### Roles Table
+**Purpose:** Define user roles in the system for access control.
+
+```sql
+CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_name VARCHAR(50) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default roles
+INSERT INTO roles (role_name, description) VALUES
+('admin', 'Full system access with administrative privileges'),
+('employee', 'Limited access for regular employees');
+
+-- Indexes
+CREATE INDEX idx_roles_name ON roles(role_name);
+CREATE INDEX idx_roles_active ON roles(is_active);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `role_name`: Name of the role (unique)
+- `description`: Description of role responsibilities and access level
+- `is_active`: Whether the role is currently active
+
+---
+
 **Next Sections to Review:**
-- Administration Panel Entities
 - Authentication & Authorization Entities 
