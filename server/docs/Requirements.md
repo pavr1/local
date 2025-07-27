@@ -178,7 +178,7 @@
     - Salary payments
     - Service payments
     - Rent payments
-    - Raw material purchases
+    - Ingredients
     - Other operational expenses
   - **Description:** Brief description of expense.
 

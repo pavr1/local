@@ -305,7 +305,7 @@ INSERT INTO expense_categories (category_name, description) VALUES
 ('Salary payments', 'Employee salaries and wages'),
 ('Service payments', 'Utility services, maintenance, subscriptions'),
 ('Rent payments', 'Property rent and lease payments'),
-('Raw material purchases', 'Ingredient and supply purchases'),
+('Ingredients', 'Ingredient and supply purchases'),
 ('Other operational expenses', 'Miscellaneous business expenses');
 ```
 
