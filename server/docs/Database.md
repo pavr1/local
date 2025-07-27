@@ -26,6 +26,7 @@
    - [System Configuration Table](#system-configuration-table)
    - [Users Table](#users-table)
    - [Roles Table](#roles-table)
+   - [User Salary Table](#user-salary-table)
 5. [Authentication & Authorization Entities](#authentication--authorization-entities)
    - [Permissions Table](#permissions-table)
    - [Role Permissions Table](#role-permissions-table)
@@ -302,6 +303,8 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 
 ### Authentication & Authorization
 - **roles** ← **users** (One-to-Many: One role can be assigned to multiple users)
+- **users** ← **user_salary** (One-to-Many: One user can have multiple salary records)
+- **expenses** ← **user_salary** (One-to-Many: One expense can be linked to multiple salary records)
 - **roles** ← **role_permissions** → **permissions** (Many-to-Many: Roles can have multiple permissions, permissions can be assigned to multiple roles)
 
 ## Overall Business Logic Triggers
@@ -323,6 +326,9 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Calculate monthly expense totals from expense receipts
 - Link expense receipts to their parent expense categories through the expenses table
 - Validate receipt image uploads for all expense receipts
+- Track employee salaries through user_salary table linked to expense records
+- Calculate total compensation automatically (salary + additional_expenses)
+- Maintain salary audit trail with creation and update timestamps
 
 ---
 
@@ -587,6 +593,37 @@ CREATE INDEX idx_roles_active ON roles(is_active);
 - `description`: Description of role responsibilities and access level
 - `is_active`: Whether the role is currently active
 
+### User Salary Table
+**Purpose:** Track employee salaries and link them to expense management for payroll processing.
+
+```sql
+CREATE TABLE user_salary (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+    salary DECIMAL(12,2) NOT NULL,
+    additional_expenses DECIMAL(12,2) DEFAULT 0.00,
+    total DECIMAL(12,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_user_salary_user ON user_salary(user_id);
+CREATE INDEX idx_user_salary_expense ON user_salary(expense_id);
+CREATE INDEX idx_user_salary_total ON user_salary(total);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `user_id`: Foreign key reference to users table (employee)
+- `expense_id`: Foreign key reference to expenses table (links salary to expense tracking)
+- `salary`: Base salary amount for the employee
+- `additional_expenses`: Extra expenses or bonuses (defaults to 0.00)
+- `total`: Calculated total compensation (salary + additional_expenses)
+- `created_at`: When the salary record was created
+- `updated_at`: When the salary record was last modified
+
 ---
 
 ## Authentication & Authorization Entities
@@ -644,6 +681,10 @@ INSERT INTO permissions (permission_name, description, entity_name, action_name)
 ('Users-Read', 'View user information', 'Users', 'Read'),
 ('Users-Update', 'Update user information', 'Users', 'Update'),
 ('Users-Delete', 'Delete users', 'Users', 'Delete'),
+('Salaries-Create', 'Create new salary records', 'Salaries', 'Create'),
+('Salaries-Read', 'View salary information', 'Salaries', 'Read'),
+('Salaries-Update', 'Update salary records', 'Salaries', 'Update'),
+('Salaries-Delete', 'Delete salary records', 'Salaries', 'Delete'),
 ('Config-Read', 'View system configuration', 'Config', 'Read'),
 ('Config-Update', 'Update system configuration', 'Config', 'Update'),
 ('Reports-Read', 'View business reports and analytics', 'Reports', 'Read');

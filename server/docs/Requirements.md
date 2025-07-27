@@ -291,6 +291,12 @@
   - User identification by username (not email address)
   - Internal password-based authentication
   - Secure password hashing and validation
+- Employee salary management
+  - Track individual employee salaries and compensation
+  - Link salary records to expense management system
+  - Support for additional expenses and bonuses
+  - Automatic total compensation calculation
+  - Admin-only access to salary information
 - Role-based permissions
 
 ### Business Metrics & Analytics
