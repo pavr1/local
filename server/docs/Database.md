@@ -15,6 +15,9 @@
    - [Existences Table](#existences-table)
    - [Recipes Table](#recipes-table)
    - [Recipe Ingredients Table](#recipe-ingredients-table)
+2. [Expenses Management Entities](#expenses-management-entities)
+   - [Expense Categories Table](#expense-categories-table)
+   - [Expenses Table](#expenses-table)
 
 ---
 
@@ -229,14 +232,21 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - `ingredient_id`: Foreign key reference to ingredients table (UUID)
 - `number_of_units`: Quantity of the raw material needed for the recipe
 
-## Relationships
+## Overall System Relationships
+
+### Inventory Management
 - **suppliers** ← **expense_receipts** (One-to-Many: One supplier can have multiple expense receipts)
 - **suppliers** ← **ingredients** (One-to-Many: One supplier can provide multiple ingredients)
 - **expense_receipts** ← **existences** (One-to-Many: One expense receipt can contain multiple existences/line items)
 - **ingredients** ← **existences** (One-to-Many: One ingredient can have multiple purchase batches/existences)
 - **recipes** ← **recipe_ingredients** → **ingredients** (Many-to-Many: Recipes contain multiple ingredients, ingredients can be in multiple recipes)
 
-## Business Logic Triggers
+### Expenses Management
+- **expense_categories** ← **expenses** (One-to-Many: One category can have multiple expenses)
+
+## Overall Business Logic Triggers
+
+### Inventory Management
 - Update `total_recipe_cost` in recipes table when recipe_ingredients change
 - Recalculate pricing fields in existences table when cost components change
 - Track ingredient consumption by updating `units_available` in existences table
@@ -246,10 +256,100 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Maintain expense receipt totals when existences are added/modified
 - Link expense receipts to expense management system for accounting integration
 
+### Expenses Management
+- Validate `payment_receipt_url` is required when `is_paid` = true
+- Generate monthly expense records when `is_recurring` = true
+- Organize invoice documents in monthly directories (MM-yyyy format)
+- Calculate monthly expense totals for financial analysis
+- Validate timeline format matches MM/yyyy pattern
+
+---
+
+## Expenses Management Entities
+
+### Expense Categories Table
+**Purpose:** Define and manage different categories of business expenses for classification and reporting purposes.
+
+```sql
+CREATE TABLE expense_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    category_name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_expense_categories_name ON expense_categories(category_name);
+CREATE INDEX idx_expense_categories_active ON expense_categories(is_active);
+
+-- Insert default categories
+INSERT INTO expense_categories (category_name, description) VALUES
+('Salary payments', 'Employee salaries and wages'),
+('Service payments', 'Utility services, maintenance, subscriptions'),
+('Rent payments', 'Property rent and lease payments'),
+('Raw material purchases', 'Ingredient and supply purchases'),
+('Other operational expenses', 'Miscellaneous business expenses');
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `category_name`: Name of the expense category (unique)
+- `description`: Detailed description of the category
+- `is_active`: Whether the category is currently active/available
+- `created_at`: When the category was created
+- `updated_at`: When the category was last modified
+
+### Expenses Table
+**Purpose:** Track all business expenses with complete documentation, categorization, and payment scheduling.
+
+```sql
+CREATE TABLE expenses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
+    description TEXT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    timeline VARCHAR(7) NOT NULL, -- MM/yyyy format
+    expense_payment_date DATE,
+    is_paid BOOLEAN DEFAULT FALSE,
+    payment_receipt_url VARCHAR(500),
+    invoice_document_url VARCHAR(500) NOT NULL,
+    is_recurring BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT valid_timeline_format CHECK (timeline ~ '^[0-1][0-9]/[0-9]{4}$')
+);
+
+-- Indexes
+CREATE INDEX idx_expenses_category ON expenses(expense_category_id);
+CREATE INDEX idx_expenses_timeline ON expenses(timeline);
+CREATE INDEX idx_expenses_payment_date ON expenses(expense_payment_date);
+CREATE INDEX idx_expenses_is_paid ON expenses(is_paid);
+CREATE INDEX idx_expenses_is_recurring ON expenses(is_recurring);
+CREATE INDEX idx_expenses_amount ON expenses(amount);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `expense_category_id`: Foreign key reference to expense_categories table
+- `description`: Brief description of the expense
+- `amount`: Monetary amount of the expense
+- `timeline`: Month/year the expense is valid for (MM/yyyy format)
+- `expense_payment_date`: Scheduled payment date for recurring expenses (nullable)
+- `is_paid`: Boolean indicating if expense has been paid for the timeline
+- `payment_receipt_url`: URL/path to payment receipt screenshot (required when is_paid = true)
+- `invoice_document_url`: URL/path to uploaded invoice image (mandatory)
+- `is_recurring`: Whether this expense recurs monthly (creates new records)
+- `created_at`: When the expense record was created
+- `updated_at`: When the expense record was last modified
+
+
+
 ---
 
 **Next Sections to Review:**
-- Expenses Management Entities
 - Income Management (Orders) Entities  
 - Administration Panel Entities
 - Authentication & Authorization Entities 

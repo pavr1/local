@@ -179,7 +179,6 @@
     - Service payments
     - Rent payments
     - Raw material purchases
-    - Utilities
     - Other operational expenses
   - **Description:** Brief description of expense.
   - **Timeline:** MMM/yyyy this is the month the expense is valid for. If expense payment date is provided they will be recurrent (one record per month)
