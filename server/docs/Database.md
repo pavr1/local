@@ -335,6 +335,8 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Automatically validate and apply promotions during order creation based on time, recipe, and customer eligibility
 - Calculate discount amounts and apply to order total
 - Award customer loyalty points based on active promotions upon order completion
+- For points_reward promotions: validate minimum purchase amount condition before awarding points
+- Calculate point expiration dates based on promotion's points_expiration_duration (1d/3w/7m/2y format)
 - Track point accumulation and redemption for customer loyalty program
 - Enforce promotion time limits and recipe-specific rules
 
@@ -346,11 +348,12 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Maintain mechanic contact information for emergency repairs
 
 ### Waste & Loss Tracking
-- Calculate financial loss automatically when waste is reported (quantity × cost_per_unit)
-- Update existence quantities when waste is recorded
+- Calculate financial loss automatically when waste is reported (items_wasted × existence price per unit)
+- Update existence quantities when waste is recorded: decrease `units_available` in existences table by items_wasted amount
 - Track waste patterns by type, date, and employee for analysis
 - Generate waste reports for cost analysis and prevention strategies
 - Integrate waste tracking with inventory management to maintain accurate stock levels
+- Validate that waste amounts do not exceed available existence quantities
 
 ### Audit & Security
 - Automatically log all critical operations (user management, financial transactions, inventory changes)
@@ -598,6 +601,9 @@ CREATE TABLE promotions (
     time_to TIMESTAMP, -- End date/time for promotion (null = no end date)
     promotion_type VARCHAR(20) NOT NULL CHECK (promotion_type IN ('percentage_discount', 'points_reward')),
     value DECIMAL(10,2) NOT NULL, -- Percentage for discounts, points for loyalty
+    -- Fields for points_reward promotions only
+    minimum_purchase_amount DECIMAL(12,2), -- Minimum purchase amount to qualify for points (e.g., 5000 colones)
+    points_expiration_duration VARCHAR(10), -- Duration format: 1d/3w/7m/2y (null = no expiration)
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -608,6 +614,7 @@ CREATE INDEX idx_promotions_recipe ON promotions(recipe_id);
 CREATE INDEX idx_promotions_type ON promotions(promotion_type);
 CREATE INDEX idx_promotions_active ON promotions(is_active);
 CREATE INDEX idx_promotions_time_range ON promotions(time_from, time_to);
+CREATE INDEX idx_promotions_min_purchase ON promotions(minimum_purchase_amount);
 ```
 
 **Field Descriptions:**
@@ -619,6 +626,8 @@ CREATE INDEX idx_promotions_time_range ON promotions(time_from, time_to);
 - `time_to`: End date/time for time-limited promotions (nullable for ongoing)
 - `promotion_type`: Type of promotion (percentage_discount, points_reward)
 - `value`: Promotion value (percentage for discounts, points awarded for loyalty)
+- `minimum_purchase_amount`: Minimum purchase amount to qualify for points (only for points_reward promotions)
+- `points_expiration_duration`: Duration format for point expiration: 1d/3w/7m/2y (only for points_reward, null = no expiration)
 - `is_active`: Whether the promotion is currently active
 
 ### Customer Points Table
@@ -652,7 +661,7 @@ CREATE INDEX idx_customer_points_expiration ON customer_points(expiration_date);
 - `points_source`: How points were earned (purchase, promotion_bonus, manual_adjustment)
 - `order_id`: Order that generated the points (nullable for non-purchase points)
 - `date_earned`: When the points were awarded
-- `expiration_date`: When points expire (nullable for non-expiring points)
+- `expiration_date`: When points expire (calculated based on promotion's points_expiration_duration field)
 
 ---
 
@@ -813,10 +822,9 @@ CREATE TABLE waste_loss (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
     waste_type VARCHAR(20) NOT NULL CHECK (waste_type IN ('expired', 'damaged', 'spoiled', 'theft', 'other')),
-    quantity_wasted DECIMAL(10,2) NOT NULL,
-    remaining_quantity DECIMAL(10,2) NOT NULL, -- Units left before waste
+    items_wasted DECIMAL(10,2) NOT NULL, -- amount of items in a unit wasted
     unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
-    financial_loss DECIMAL(12,2) NOT NULL, -- Calculated monetary value of waste
+    financial_loss DECIMAL(12,2) NOT NULL, -- Calculated as: items_wasted * existence price per unit
     waste_date DATE NOT NULL DEFAULT CURRENT_DATE,
     reported_by UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
     reason TEXT NOT NULL,
@@ -837,10 +845,9 @@ CREATE INDEX idx_waste_loss_financial ON waste_loss(financial_loss);
 - `id`: Primary key, UUID (auto-generated)
 - `existence_id`: Foreign key reference to specific existence/batch that was wasted
 - `waste_type`: Type of waste (expired, damaged, spoiled, theft, other)
-- `quantity_wasted`: Amount of ingredient units that were wasted
-- `remaining_quantity`: How many units were left in the existence before waste
+- `items_wasted`: Amount of items in a unit that were wasted
 - `unit_type`: Unit of measurement (Liters, Gallons, Units, Bag)
-- `financial_loss`: Calculated monetary value of wasted ingredients
+- `financial_loss`: Calculated as items_wasted * existence price per unit
 - `waste_date`: When the waste was discovered/reported
 - `reported_by`: Foreign key reference to employee who reported the waste
 - `reason`: Detailed explanation of why the waste occurred

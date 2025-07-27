@@ -321,18 +321,22 @@
   - **Time To** (datetime, nullable): End date/time for time-limited promotions
   - **Promotion Type** (enum): Type of promotion (percentage_discount, points_reward)
   - **Value** (decimal): Promotion value (percentage for discounts, points awarded for loyalty)
+  - **Minimum Purchase Amount** (decimal, nullable): For points_reward only - minimum purchase amount required to qualify for points (e.g., 5000 colones)
+  - **Points Expiration Duration** (string, nullable): For points_reward only - expiration format: 1d/3w/7m/2y (null = no expiration)
   - **Is Active** (boolean): Whether the promotion is currently active
 
 - **Promotion Types:**
   - **Recipe-Specific Discounts**: Percentage discounts applied to specific products
   - **Time-Based Promotions**: Limited-time offers with start and end dates
-  - **Customer Points Rewards**: Points awarded to customers for loyalty program
+  - **Customer Points Rewards**: Points awarded to customers for loyalty program (with configurable minimum purchase conditions and expiration rules)
   - **General Discounts**: Store-wide percentage discounts (no recipe specified)
 
 - **Business Logic:**
   - Promotions are automatically validated during order creation
   - Time-based promotions only apply within specified date ranges
   - Recipe-specific promotions only apply to designated products
+  - For points_reward promotions: validate minimum purchase amount condition before awarding points
+  - Points expiration calculated automatically based on promotion's expiration duration format
   - Multiple promotions can be active simultaneously (admin configurable stacking rules)
   - Only active promotions are considered during order processing
 
@@ -346,14 +350,14 @@
   - **Points Source** (enum): How points were earned (purchase, promotion_bonus, manual_adjustment)
   - **Order ID** (foreign key, nullable): Order that generated the points (if applicable)
   - **Date Earned** (date): When the points were awarded
-  - **Expiration Date** (date, nullable): When points expire (if applicable)
+  - **Expiration Date** (date, nullable): When points expire (calculated based on promotion's expiration duration)
 
 - **Points Management:**
   - **Points Accumulation**: Customers earn points from qualifying orders and promotions
   - **Points Redemption**: Points can be used for discounts on future orders
   - **Points Balance**: Real-time calculation of available points per customer
   - **Points History**: Complete audit trail of points earned and spent
-  - **Points Expiration**: Configurable expiration rules for earned points
+  - **Points Expiration**: Automatic expiration calculation based on promotion's duration format (1d/3w/7m/2y)
 
 - **Integration with Orders:**
   - Points automatically awarded upon order completion
@@ -407,10 +411,9 @@
   - **Waste Record ID** (UUID): Unique identifier for each waste incident
   - **Existence ID** (foreign key): Reference to specific existence/batch that was wasted
   - **Waste Type** (enum): Type of waste (expired, damaged, spoiled, theft, other)
-  - **Quantity Wasted** (decimal): Amount of ingredient units that were wasted
-  - **Remaining Quantity** (decimal): How many units were left in the existence before waste
+  - **Items Wasted** (decimal): Amount of items in a unit that were wasted
   - **Unit Type** (enum): Unit of measurement (Liters, Gallons, Units, Bag)
-  - **Financial Loss** (decimal): Calculated monetary value of wasted ingredients
+  - **Financial Loss** (decimal): Calculated as items_wasted × existence price per unit
   - **Waste Date** (date): When the waste was discovered/reported
   - **Reported By** (foreign key): Employee who reported the waste
   - **Reason** (text): Detailed explanation of why the waste occurred
@@ -418,8 +421,8 @@
 
 - **Financial Impact Calculation:**
   - **Cost per Unit**: Retrieved from existence record (original purchase cost)
-  - **Total Loss Value**: Quantity Wasted × Cost per Unit
-  - **Percentage Loss**: (Quantity Wasted ÷ Original Purchase Quantity) × 100
+  - **Total Loss Value**: Items Wasted × Cost per Unit
+  - **Percentage Loss**: (Items Wasted ÷ Original Purchase Quantity) × 100
   - **Monthly Waste Reports**: Aggregate waste costs by category and time period
 
 - **Business Logic:**
@@ -428,6 +431,8 @@
   - Waste cost analysis supports better purchasing decisions
   - Employee training opportunities identified through waste pattern analysis
   - Integration with inventory to automatically update available quantities
+  - **Automatic Inventory Updates**: When waste is reported, system automatically decreases `units_available` in existences table by items_wasted amount
+  - **Validation Logic**: System validates that waste amounts do not exceed available existence quantities
 
 - **Waste Prevention:**
   - **Expiration Monitoring**: Automated alerts for approaching expiration dates
