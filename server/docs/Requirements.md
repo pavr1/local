@@ -15,21 +15,31 @@
    - [Recipes](#recipes)
 2. [Expenses Management](#expenses-management)
    - [Expense Receipts](#expense-receipts)
-3. [Income Managements (Orders)](#income-managements-orders)
-4. [Administration Panel](#administration-panel)
+3. [Customer Management](#customer-management)
+4. [Income Managements (Orders)](#income-managements-orders)
+5. [Promotions & Loyalty System](#promotions--loyalty-system)
+   - [Promotions](#promotions)
+   - [Customer Points System](#customer-points-system)
+6. [Equipment Management](#equipment-management)
+   - [Equipment Tracking](#equipment-tracking)
+   - [Mechanic Management](#mechanic-management)
+7. [Waste & Loss Tracking](#waste--loss-tracking)
+8. [Administration Panel](#administration-panel)
    - [Configuration](#configuration)
    - [Ingredients](#ingredients-1)
    - [Stock](#stock)
    - [Employees](#employees)
    - [Business Metrics & Analytics](#business-metrics--analytics)
-5. [Authentication & Authorization](#authentication--authorization)
+9. [Authentication & Authorization](#authentication--authorization)
    - [Internal Authentication](#internal-authentication)
    - [Permission System](#permission-system)
    - [User Access Control](#user-access-control)
-6. [Technical Stack](#technical-stack)
-   - [Backend Requirements](#backend-requirements)
-   - [File Management](#file-management)
-   - [Database Design](#database-design)
+10. [Audit & Security](#audit--security)
+11. [Technical Stack](#technical-stack)
+    - [Backend Requirements](#backend-requirements)
+    - [File Management](#file-management)
+    - [Database Design](#database-design)
+    - [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -228,6 +238,28 @@
   - Supports both supplier and supermarket purchases
   - Provides audit trail for all ingredient acquisitions
 
+## Customer Management
+**Description:** Customer relationship management system for tracking customer information, enabling targeted marketing, and supporting loyalty programs.
+
+- **Customer Attributes:**
+  - **Customer ID** (UUID): Unique identifier for each customer
+  - **Name** (string): Customer's full name (required)
+  - **Phone** (string, nullable): Customer's phone number for contact and promotions
+  - **Email** (string, nullable): Customer's email address for marketing and notifications
+
+- **Business Logic:**
+  - Customer information is optional during order creation (walk-in customers)
+  - Phone and email are collected for future marketing campaigns and promotions
+  - Supports customer loyalty point accumulation when linked to orders
+  - Enables customer purchase history tracking and analytics
+  - Customer data can be used for targeted promotions and communication
+
+- **Privacy and Marketing:**
+  - Optional customer data collection respects privacy preferences
+  - Email and phone used for promotional campaigns and special offers
+  - Customer consent tracked for marketing communications
+  - Supports customer segmentation for targeted advertising
+
 ## Income Managements (Orders)
 **Description:** Comprehensive sales tracking system that records all customer transactions with detailed product information, payment methods, and supporting documentation for accurate income analysis.
 
@@ -258,14 +290,150 @@
     - **Transaction Reference**: Sinpe transaction ID
 
 - **Transaction Timestamp**: Date and time of sale (tracked at order level)
-- **Customer Information** (optional): Basic customer details if provided
+- **Customer Information** (optional): Link to customer record if provided for loyalty points and marketing
 - **Sales Representative**: Employee who processed the sale
 - **Transaction Status**: Completed, pending, cancelled
+
+- **Promotional Integration:**
+  - **Discount Application**: System automatically applies available promotions during order creation
+  - **Customer Loyalty Points**: Points awarded to customers based on active promotions
+  - **Promotional Validation**: Check time-based, recipe-specific, and customer point promotions
+  - **Discount Calculation**: Apply percentage discounts or point redemptions to order total
 
 **Note**: All timing information (creation, updates, completion) is tracked at the order level. Individual product line items (ordered recipes) do not have separate timestamps as they are part of the same transaction and inherit the order's timing.
 
 * Orders are created with pending status, it can be cancelled and nothing happens, but once payed the order should be set as completed and an invoice should be created.
+* During order creation, system checks for available promotions and applies them automatically
+* Customer points are awarded upon order completion if customer is linked to the order
 
+## Promotions & Loyalty System
+**Description:** Comprehensive promotional and customer loyalty system that enables targeted discounts, time-based promotions, and points-based rewards to drive customer engagement and repeat business.
+
+### Promotions
+**Description:** Flexible promotional system supporting multiple types of discounts and incentives.
+
+- **Promotion Attributes:**
+  - **Promotion ID** (UUID): Unique identifier for each promotion
+  - **Name** (string): Promotional campaign name
+  - **Description** (text): Detailed description of the promotion
+  - **Recipe ID** (foreign key, nullable): Specific recipe/product the promotion applies to (null = applies to all)
+  - **Time From** (datetime, not-null): Start date/time for time-limited promotions
+  - **Time To** (datetime, nullable): End date/time for time-limited promotions
+  - **Promotion Type** (enum): Type of promotion (percentage_discount, points_reward)
+  - **Value** (decimal): Promotion value (percentage for discounts, points awarded for loyalty)
+  - **Is Active** (boolean): Whether the promotion is currently active
+
+- **Promotion Types:**
+  - **Recipe-Specific Discounts**: Percentage discounts applied to specific products
+  - **Time-Based Promotions**: Limited-time offers with start and end dates
+  - **Customer Points Rewards**: Points awarded to customers for loyalty program
+  - **General Discounts**: Store-wide percentage discounts (no recipe specified)
+
+- **Business Logic:**
+  - Promotions are automatically validated during order creation
+  - Time-based promotions only apply within specified date ranges
+  - Recipe-specific promotions only apply to designated products
+  - Multiple promotions can be active simultaneously (admin configurable stacking rules)
+  - Only active promotions are considered during order processing
+
+### Customer Points System
+**Description:** Customer loyalty program that awards points for purchases and enables point-based promotions.
+
+- **Customer Points Attributes:**
+  - **Points Record ID** (UUID): Unique identifier for each points transaction
+  - **Customer ID** (foreign key): Reference to customer who earned/spent points
+  - **Points Earned** (integer): Number of points added to customer account
+  - **Points Source** (enum): How points were earned (purchase, promotion_bonus, manual_adjustment)
+  - **Order ID** (foreign key, nullable): Order that generated the points (if applicable)
+  - **Date Earned** (date): When the points were awarded
+  - **Expiration Date** (date, nullable): When points expire (if applicable)
+
+- **Points Management:**
+  - **Points Accumulation**: Customers earn points from qualifying orders and promotions
+  - **Points Redemption**: Points can be used for discounts on future orders
+  - **Points Balance**: Real-time calculation of available points per customer
+  - **Points History**: Complete audit trail of points earned and spent
+  - **Points Expiration**: Configurable expiration rules for earned points
+
+- **Integration with Orders:**
+  - Points automatically awarded upon order completion
+  - Available points displayed during order creation for redemption
+  - Point redemption applies as discount to order total
+  - Points conversion rate configurable (e.g., 100 points = ₡1000 discount)
+
+## Equipment Management
+**Description:** Comprehensive equipment and asset management system for tracking store equipment, maintenance schedules, and mechanic relationships.
+
+### Equipment Tracking
+**Description:** Track all store equipment with maintenance scheduling and cost management.
+
+- **Equipment Attributes:**
+  - **Equipment ID** (UUID): Unique identifier for each equipment item
+  - **Name** (string): Equipment name/model
+  - **Description** (text): Detailed description of the equipment
+  - **Purchase Date** (date): When the equipment was purchased
+  - **Mechanic ID** (foreign key): Reference to assigned mechanic for maintenance
+  - **Maintenance Schedule** (integer): Days between scheduled maintenance (e.g., 90 days)
+  - **Purchase Cost** (decimal): Original purchase cost of equipment
+  - **Current Status** (enum): Equipment status (operational, maintenance_required, out_of_service, retired)
+
+- **Maintenance Management:**
+  - **Scheduled Maintenance**: Automatic alerts based on maintenance schedule
+  - **Maintenance History**: Track all maintenance performed on equipment
+  - **Cost Tracking**: Monitor maintenance costs and equipment total cost of ownership
+  - **Downtime Tracking**: Track equipment downtime for operational analysis
+
+### Mechanic Management
+**Description:** Contact management for equipment maintenance professionals.
+
+- **Mechanic Attributes:**
+  - **Mechanic ID** (UUID): Unique identifier for each mechanic
+  - **Name** (string): Mechanic or company name
+  - **Email** (string, nullable): Email contact for scheduling and communication
+  - **Phone** (string): Primary phone contact for emergency repairs
+  - **Specialization** (text, nullable): Equipment types or brands they specialize in
+  - **Notes** (text, nullable): Additional notes about the mechanic
+
+- **Business Logic:**
+  - Equipment can be assigned to specific mechanics for consistency
+  - Mechanic contact information used for maintenance scheduling
+  - Supports multiple mechanics for different equipment types
+  - Emergency contact capability for urgent equipment failures
+
+## Waste & Loss Tracking
+**Description:** Comprehensive waste and loss tracking system to monitor expired ingredients, calculate financial losses, and improve inventory management efficiency.
+
+- **Waste/Loss Attributes:**
+  - **Waste Record ID** (UUID): Unique identifier for each waste incident
+  - **Existence ID** (foreign key): Reference to specific existence/batch that was wasted
+  - **Waste Type** (enum): Type of waste (expired, damaged, spoiled, theft, other)
+  - **Quantity Wasted** (decimal): Amount of ingredient units that were wasted
+  - **Remaining Quantity** (decimal): How many units were left in the existence before waste
+  - **Unit Type** (enum): Unit of measurement (Liters, Gallons, Units, Bag)
+  - **Financial Loss** (decimal): Calculated monetary value of wasted ingredients
+  - **Waste Date** (date): When the waste was discovered/reported
+  - **Reported By** (foreign key): Employee who reported the waste
+  - **Reason** (text): Detailed explanation of why the waste occurred
+  - **Prevention Notes** (text, nullable): Notes on how to prevent similar waste
+
+- **Financial Impact Calculation:**
+  - **Cost per Unit**: Retrieved from existence record (original purchase cost)
+  - **Total Loss Value**: Quantity Wasted × Cost per Unit
+  - **Percentage Loss**: (Quantity Wasted ÷ Original Purchase Quantity) × 100
+  - **Monthly Waste Reports**: Aggregate waste costs by category and time period
+
+- **Business Logic:**
+  - Waste tracking helps identify patterns in ingredient loss
+  - Expired ingredient alerts can prevent waste through early consumption
+  - Waste cost analysis supports better purchasing decisions
+  - Employee training opportunities identified through waste pattern analysis
+  - Integration with inventory to automatically update available quantities
+
+- **Waste Prevention:**
+  - **Expiration Monitoring**: Automated alerts for approaching expiration dates
+  - **FIFO Enforcement**: First-in-first-out consumption to minimize expiration waste
+  - **Portion Control**: Tracking helps identify over-portioning issues
+  - **Storage Optimization**: Waste patterns inform better storage practices
 
 ## Administration Panel
 ### Configuration
@@ -381,6 +549,53 @@
 
 ---
 
+## Audit & Security
+**Description:** Comprehensive audit trail and security monitoring system to track critical operations, maintain data integrity, and ensure regulatory compliance.
+
+- **Audit Log Attributes:**
+  - **Audit Log ID** (UUID): Unique identifier for each audit record
+  - **User ID** (foreign key): Reference to user who performed the action
+  - **Action Type** (enum): Type of operation (create, update, delete, login, logout, etc.)
+  - **Entity Type** (string): Type of entity affected (users, orders, inventory, etc.)
+  - **Entity ID** (UUID): Specific record that was affected
+  - **Old Values** (JSON, nullable): Previous values before change (for updates/deletes)
+  - **New Values** (JSON, nullable): New values after change (for creates/updates)
+  - **IP Address** (string): Client IP address where action originated
+  - **User Agent** (string): Browser/client information
+  - **Timestamp** (datetime): When the action occurred
+  - **Success** (boolean): Whether the action was successful
+  - **Error Message** (text, nullable): Error details if action failed
+
+- **Critical Operations to Audit:**
+  - **User Management**: User creation, deletion, password changes, role modifications
+  - **Financial Data**: Order creation/modification, pricing changes, payment processing
+  - **Inventory Management**: Ingredient additions/modifications, existence updates, waste reporting
+  - **System Configuration**: Config changes, promotion creation/modification
+  - **Authentication**: Login attempts, logout, session timeouts, failed authentications
+  - **Sensitive Data Access**: Salary information access, financial reports generation
+
+- **Security Monitoring:**
+  - **Failed Login Attempts**: Track and alert on suspicious login patterns
+  - **Unusual Activity**: Monitor for abnormal data access or modification patterns
+  - **Data Integrity**: Verify critical calculations and data consistency
+  - **Session Management**: Track active sessions and detect concurrent logins
+  - **Privilege Escalation**: Monitor for unauthorized access attempts
+
+- **Compliance and Reporting:**
+  - **Audit Trail Reports**: Generate audit reports for specific time periods or users
+  - **Data Retention**: Configurable audit log retention periods
+  - **Search and Filter**: Ability to search audit logs by user, action, entity, or time range
+  - **Export Capabilities**: Export audit logs for external compliance reviews
+  - **Alert System**: Automated alerts for critical security events
+
+- **Data Protection:**
+  - **Sensitive Data Masking**: Mask sensitive information in audit logs (passwords, payment details)
+  - **Tamper Protection**: Ensure audit logs cannot be modified or deleted by users
+  - **Backup Integration**: Include audit logs in regular backup procedures
+  - **Access Control**: Restrict audit log access to authorized administrators only
+
+---
+
 ## Technical Stack
 
 ### Backend Requirements
@@ -400,17 +615,45 @@
 - Relational database structure
 - Inventory tracking tables
 - Financial transaction records
+- Customer management and loyalty system
+- Promotions and discount management
+- Equipment and mechanic tracking
+- Waste and loss monitoring
 - Authentication & authorization entities (users, roles, permissions)
 - Simplified role-permission management with direct foreign key relationships
 - Employee salary tracking linked to expense management
-- Audit trails for critical operations
+- Comprehensive audit trails for critical operations
+
+### Future Enhancements
+- **Automated Backup Strategy**:
+  - Scheduled database backups with configurable retention periods
+  - Automated backup verification and restoration testing
+  - Cloud backup integration for disaster recovery
+  - Point-in-time recovery capabilities
+  - Backup monitoring and alert system
+- **Advanced Analytics Dashboard**:
+  - Real-time business intelligence and reporting
+  - Predictive analytics for inventory management
+  - Customer behavior analysis and segmentation
+- **Mobile Application Support**:
+  - Mobile-optimized API endpoints
+  - Employee mobile app for inventory management
+  - Customer mobile app for loyalty program
+- **Integration Capabilities**:
+  - Accounting software integration (QuickBooks, etc.)
+  - Payment processor APIs
+  - Email marketing platform integration
+  - SMS notification services
 
 ---
 
 ## Next Steps
 This document will be reviewed and expanded with additional details and feedback. Areas requiring further specification:
 - Detailed API endpoint specifications
-- Database schema design
+- Database schema design for new entities
 - File storage architecture
 - Security protocols and validation rules
-- Error handling and logging requirements 
+- Error handling and logging requirements
+- Customer data privacy and GDPR compliance
+- Promotional campaign management workflows
+- Equipment maintenance scheduling algorithms 

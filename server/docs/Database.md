@@ -19,16 +19,28 @@
    - [Expense Categories Table](#expense-categories-table)
    - [Expenses Table](#expenses-table)
    - [Expense Receipts Table](#expense-receipts-table)
-3. [Income Management (Orders) Entities](#income-management-orders-entities)
+3. [Customer Management Entities](#customer-management-entities)
+   - [Customers Table](#customers-table)
+4. [Income Management (Orders) Entities](#income-management-orders-entities)
    - [Orders Table](#orders-table)
    - [Ordered Receipes Table](#ordered-receipes-table)
-4. [Administration Panel Entities](#administration-panel-entities)
+5. [Promotions & Loyalty System Entities](#promotions--loyalty-system-entities)
+   - [Promotions Table](#promotions-table)
+   - [Customer Points Table](#customer-points-table)
+6. [Equipment Management Entities](#equipment-management-entities)
+   - [Mechanics Table](#mechanics-table)
+   - [Equipment Table](#equipment-table)
+7. [Waste & Loss Tracking Entities](#waste--loss-tracking-entities)
+   - [Waste Loss Table](#waste-loss-table)
+8. [Administration Panel Entities](#administration-panel-entities)
    - [System Configuration Table](#system-configuration-table)
    - [User Salary Table](#user-salary-table)
-5. [Authentication & Authorization Entities](#authentication--authorization-entities)
+9. [Authentication & Authorization Entities](#authentication--authorization-entities)
    - [Users Table](#users-table)
    - [Roles Table](#roles-table)
    - [Permissions Table](#permissions-table)
+10. [Audit & Security Entities](#audit--security-entities)
+    - [Audit Logs Table](#audit-logs-table)
 
 ---
 
@@ -261,14 +273,33 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **expense_categories** ← **expenses** (One-to-Many: One category can have multiple expenses)
 - **expenses** ← **expense_receipts** (One-to-Many: One expense can have multiple receipts)
 
+### Customer Management
+- **customers** ← **orders** (One-to-Many: One customer can have multiple orders)
+- **customers** ← **customer_points** (One-to-Many: One customer can have multiple point transactions)
+
 ### Income Management
 - **users** ← **orders** (One-to-Many: One sales representative can create multiple orders)
+- **customers** ← **orders** (One-to-Many: One customer can have multiple orders)
 - **orders** ← **ordered_receipes** (One-to-Many: One order can have multiple recipe line items)
+- **orders** ← **customer_points** (One-to-Many: One order can generate customer points)
 - **recipes** ← **ordered_receipes** (One-to-Many: One recipe can be ordered multiple times)
+
+### Promotions & Loyalty System
+- **recipes** ← **promotions** (One-to-Many: One recipe can have multiple promotions)
+- **customers** ← **customer_points** (One-to-Many: One customer can have multiple point records)
+- **orders** ← **customer_points** (One-to-Many: One order can award customer points)
+
+### Equipment Management
+- **mechanics** ← **equipment** (One-to-Many: One mechanic can service multiple equipment)
+
+### Waste & Loss Tracking
+- **existences** ← **waste_loss** (One-to-Many: One existence can have multiple waste records)
+- **users** ← **waste_loss** (One-to-Many: One employee can report multiple waste incidents)
 
 ### Authentication & Authorization
 - **roles** ← **users** (One-to-Many: One role can be assigned to multiple users)
 - **users** ← **user_salary** (One-to-Many: One user can have multiple salary records)
+- **users** ← **audit_logs** (One-to-Many: One user can generate multiple audit log entries)
 - **expenses** ← **user_salary** (One-to-Many: One expense can be linked to multiple salary records)
 - **roles** ← **permissions** (One-to-Many: One role can have multiple permissions)
 
@@ -294,6 +325,40 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Track employee salaries through user_salary table linked to expense records
 - Calculate total compensation automatically (salary + additional_expenses)
 - Maintain salary audit trail with creation and update timestamps
+
+### Customer Management & Loyalty
+- Optional customer linking during order creation for marketing and loyalty programs
+- Track customer purchase history and preferences through order relationships
+- Maintain customer contact information for promotional campaigns
+
+### Promotions & Discounts
+- Automatically validate and apply promotions during order creation based on time, recipe, and customer eligibility
+- Calculate discount amounts and apply to order total
+- Award customer loyalty points based on active promotions upon order completion
+- Track point accumulation and redemption for customer loyalty program
+- Enforce promotion time limits and recipe-specific rules
+
+### Equipment Management
+- Schedule equipment maintenance based on maintenance_schedule intervals
+- Generate maintenance alerts when next_maintenance_date approaches
+- Track equipment downtime and maintenance costs
+- Update equipment status based on maintenance requirements
+- Maintain mechanic contact information for emergency repairs
+
+### Waste & Loss Tracking
+- Calculate financial loss automatically when waste is reported (quantity × cost_per_unit)
+- Update existence quantities when waste is recorded
+- Track waste patterns by type, date, and employee for analysis
+- Generate waste reports for cost analysis and prevention strategies
+- Integrate waste tracking with inventory management to maintain accurate stock levels
+
+### Audit & Security
+- Automatically log all critical operations (user management, financial transactions, inventory changes)
+- Track user authentication events (login, logout, failed attempts)
+- Record IP addresses and user agents for security monitoring
+- Maintain tamper-proof audit trail with timestamps
+- Enable audit log searching and reporting for compliance
+- Alert on suspicious activity patterns or failed operations
 
 ---
 
@@ -392,6 +457,37 @@ CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_dat
 
 ---
 
+## Customer Management Entities
+
+### Customers Table
+**Purpose:** Store customer information for marketing, loyalty programs, and sales tracking.
+
+```sql
+CREATE TABLE customers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    email VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_customers_name ON customers(name);
+CREATE INDEX idx_customers_phone ON customers(phone);
+CREATE INDEX idx_customers_email ON customers(email);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Customer's full name (required)
+- `phone`: Customer's phone number (optional, for marketing and contact)
+- `email`: Customer's email address (optional, for marketing and notifications)
+- `created_at`: When the customer record was created
+- `updated_at`: When the customer record was last modified
+
+---
+
 ## Income Management (Orders) Entities
 
 ### Orders Table
@@ -401,12 +497,14 @@ CREATE INDEX idx_expense_receipts_purchase_date ON expense_receipts(purchase_dat
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_number VARCHAR(50) UNIQUE NOT NULL,
+    customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
     sales_representative_id UUID REFERENCES users(id) ON DELETE SET NULL,
     status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'completed', 'cancelled')) DEFAULT 'pending',
     payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('cash', 'card', 'sinpe')),
     transaction_reference VARCHAR(100), -- For card and sinpe payments
     sinpe_screenshot_url VARCHAR(500), -- Required for sinpe payments
     subtotal_amount DECIMAL(12,2) NOT NULL,
+    discount_amount DECIMAL(12,2) DEFAULT 0.00, -- Total discount applied from promotions
     iva_amount DECIMAL(12,2) NOT NULL, -- 13% IVA tax
     service_tax_amount DECIMAL(12,2) NOT NULL, -- 10% service tax
     total_amount DECIMAL(12,2) NOT NULL,
@@ -427,6 +525,7 @@ CREATE SEQUENCE invoice_number_seq START 1;
 
 -- Indexes
 CREATE INDEX idx_orders_number ON orders(order_number);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_payment_method ON orders(payment_method);
 CREATE INDEX idx_orders_sales_rep ON orders(sales_representative_id);
@@ -437,12 +536,14 @@ CREATE INDEX idx_orders_invoice_number ON orders(invoice_number);
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `order_number`: Unique order identifier (auto-generated: ORD-000001, ORD-000002, etc.)
+- `customer_id`: Foreign key reference to customers table (nullable for walk-in customers)
 - `sales_representative_id`: Foreign key reference to users table (employee who processed sale)
 - `status`: Order status (pending → completed/cancelled)
 - `payment_method`: Payment method used (cash, card, sinpe)
 - `transaction_reference`: Transaction reference for card/sinpe payments (required for non-cash)
 - `sinpe_screenshot_url`: Required screenshot URL for sinpe payments
 - `subtotal_amount`: Order subtotal before taxes
+- `discount_amount`: Total discount applied from promotions (defaults to 0.00)
 - `iva_amount`: IVA tax amount (13%)
 - `service_tax_amount`: Service tax amount (10%)
 - `total_amount`: Final total amount
@@ -479,6 +580,79 @@ CREATE INDEX idx_ordered_receipes_product_name ON ordered_receipes(product_name)
 - `quantity`: Number of items ordered
 - `receipe_price`: Snapshot of recipe price at time of sale (for historical accuracy)
 - `subtotal`: Calculated subtotal for this line item (quantity × receipe_price)
+
+---
+
+## Promotions & Loyalty System Entities
+
+### Promotions Table
+**Purpose:** Manage promotional campaigns, discounts, and loyalty programs.
+
+```sql
+CREATE TABLE promotions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE, -- null = applies to all recipes
+    time_from TIMESTAMP NOT NULL, -- Start date/time for promotion
+    time_to TIMESTAMP, -- End date/time for promotion (null = no end date)
+    promotion_type VARCHAR(20) NOT NULL CHECK (promotion_type IN ('percentage_discount', 'points_reward')),
+    value DECIMAL(10,2) NOT NULL, -- Percentage for discounts, points for loyalty
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_promotions_recipe ON promotions(recipe_id);
+CREATE INDEX idx_promotions_type ON promotions(promotion_type);
+CREATE INDEX idx_promotions_active ON promotions(is_active);
+CREATE INDEX idx_promotions_time_range ON promotions(time_from, time_to);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Promotional campaign name
+- `description`: Detailed description of the promotion
+- `recipe_id`: Specific recipe the promotion applies to (nullable for store-wide promotions)
+- `time_from`: Start date/time for time-limited promotions (required)
+- `time_to`: End date/time for time-limited promotions (nullable for ongoing)
+- `promotion_type`: Type of promotion (percentage_discount, points_reward)
+- `value`: Promotion value (percentage for discounts, points awarded for loyalty)
+- `is_active`: Whether the promotion is currently active
+
+### Customer Points Table
+**Purpose:** Track customer loyalty points earned and spent for rewards program.
+
+```sql
+CREATE TABLE customer_points (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    points_earned INTEGER NOT NULL,
+    points_source VARCHAR(20) NOT NULL CHECK (points_source IN ('purchase', 'promotion_bonus', 'manual_adjustment')),
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL, -- Order that generated points (if applicable)
+    date_earned DATE NOT NULL DEFAULT CURRENT_DATE,
+    expiration_date DATE, -- this will be calculated based on promotion expiration field
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_customer_points_customer ON customer_points(customer_id);
+CREATE INDEX idx_customer_points_order ON customer_points(order_id);
+CREATE INDEX idx_customer_points_source ON customer_points(points_source);
+CREATE INDEX idx_customer_points_date ON customer_points(date_earned);
+CREATE INDEX idx_customer_points_expiration ON customer_points(expiration_date);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `customer_id`: Foreign key reference to customers table
+- `points_earned`: Number of points added to customer account
+- `points_source`: How points were earned (purchase, promotion_bonus, manual_adjustment)
+- `order_id`: Order that generated the points (nullable for non-purchase points)
+- `date_earned`: When the points were awarded
+- `expiration_date`: When points expire (nullable for non-expiring points)
 
 ---
 
@@ -554,6 +728,123 @@ CREATE INDEX idx_user_salary_total ON user_salary(total);
 - `total`: Calculated total compensation (salary + additional_expenses)
 - `created_at`: When the salary record was created
 - `updated_at`: When the salary record was last modified
+
+---
+
+## Equipment Management Entities
+
+### Mechanics Table
+**Purpose:** Store contact information for equipment maintenance professionals.
+
+```sql
+CREATE TABLE mechanics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(50) NOT NULL,
+    specialization TEXT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_mechanics_name ON mechanics(name);
+CREATE INDEX idx_mechanics_phone ON mechanics(phone);
+CREATE INDEX idx_mechanics_email ON mechanics(email);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Mechanic or company name
+- `email`: Email contact for scheduling and communication (optional)
+- `phone`: Primary phone contact for emergency repairs
+- `specialization`: Equipment types or brands they specialize in (optional)
+- `notes`: Additional notes about the mechanic (optional)
+
+### Equipment Table
+**Purpose:** Track store equipment with maintenance scheduling and cost management.
+
+```sql
+CREATE TABLE equipment (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    purchase_date DATE NOT NULL,
+    mechanic_id UUID REFERENCES mechanics(id) ON DELETE SET NULL,
+    maintenance_schedule INTEGER NOT NULL, -- Days between maintenance (e.g., 90)
+    purchase_cost DECIMAL(12,2) NOT NULL,
+    current_status VARCHAR(20) NOT NULL CHECK (current_status IN ('operational', 'maintenance_required', 'out_of_service', 'retired')) DEFAULT 'operational',
+    last_maintenance_date DATE,
+    next_maintenance_date DATE, -- Calculated based on last maintenance + schedule
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_equipment_name ON equipment(name);
+CREATE INDEX idx_equipment_mechanic ON equipment(mechanic_id);
+CREATE INDEX idx_equipment_status ON equipment(current_status);
+CREATE INDEX idx_equipment_next_maintenance ON equipment(next_maintenance_date);
+CREATE INDEX idx_equipment_purchase_date ON equipment(purchase_date);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Equipment name/model
+- `description`: Detailed description of the equipment
+- `purchase_date`: When the equipment was purchased
+- `mechanic_id`: Foreign key reference to assigned mechanic for maintenance
+- `maintenance_schedule`: Days between scheduled maintenance (e.g., 90 days)
+- `purchase_cost`: Original purchase cost of equipment
+- `current_status`: Equipment status (operational, maintenance_required, out_of_service, retired)
+- `last_maintenance_date`: Date of last maintenance performed
+- `next_maintenance_date`: Calculated next maintenance due date
+
+---
+
+## Waste & Loss Tracking Entities
+
+### Waste Loss Table
+**Purpose:** Track expired ingredients and calculate financial losses for inventory management efficiency. 
+
+```sql
+CREATE TABLE waste_loss (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
+    waste_type VARCHAR(20) NOT NULL CHECK (waste_type IN ('expired', 'damaged', 'spoiled', 'theft', 'other')),
+    quantity_wasted DECIMAL(10,2) NOT NULL,
+    remaining_quantity DECIMAL(10,2) NOT NULL, -- Units left before waste
+    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
+    financial_loss DECIMAL(12,2) NOT NULL, -- Calculated monetary value of waste
+    waste_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    reported_by UUID NOT NULL REFERENCES users(id) ON DELETE SET NULL,
+    reason TEXT NOT NULL,
+    prevention_notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_waste_loss_existence ON waste_loss(existence_id);
+CREATE INDEX idx_waste_loss_type ON waste_loss(waste_type);
+CREATE INDEX idx_waste_loss_date ON waste_loss(waste_date);
+CREATE INDEX idx_waste_loss_reported_by ON waste_loss(reported_by);
+CREATE INDEX idx_waste_loss_financial ON waste_loss(financial_loss);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `existence_id`: Foreign key reference to specific existence/batch that was wasted
+- `waste_type`: Type of waste (expired, damaged, spoiled, theft, other)
+- `quantity_wasted`: Amount of ingredient units that were wasted
+- `remaining_quantity`: How many units were left in the existence before waste
+- `unit_type`: Unit of measurement (Liters, Gallons, Units, Bag)
+- `financial_loss`: Calculated monetary value of wasted ingredients
+- `waste_date`: When the waste was discovered/reported
+- `reported_by`: Foreign key reference to employee who reported the waste
+- `reason`: Detailed explanation of why the waste occurred
+- `prevention_notes`: Notes on how to prevent similar waste (optional)
 
 ---
 
@@ -702,7 +993,37 @@ UNION ALL SELECT r.id, 'Salaries-Update', 'Update salary records', 'Salaries', '
 UNION ALL SELECT r.id, 'Salaries-Delete', 'Delete salary records', 'Salaries', 'Delete' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Config-Read', 'View system configuration', 'Config', 'Read' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Config-Update', 'Update system configuration', 'Config', 'Update' FROM roles r WHERE r.role_name = 'admin'
-UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'admin';
+UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'admin'
+-- Customer Management
+UNION ALL SELECT r.id, 'Customers-Create', 'Create new customers', 'Customers', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Customers-Read', 'View customer information', 'Customers', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Customers-Update', 'Update customer information', 'Customers', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Customers-Delete', 'Delete customers', 'Customers', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+-- Promotions & Loyalty
+UNION ALL SELECT r.id, 'Promotions-Create', 'Create new promotions', 'Promotions', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Promotions-Read', 'View promotion information', 'Promotions', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Promotions-Update', 'Update promotion information', 'Promotions', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Promotions-Delete', 'Delete promotions', 'Promotions', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'CustomerPoints-Create', 'Create customer points', 'CustomerPoints', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'CustomerPoints-Read', 'View customer points', 'CustomerPoints', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'CustomerPoints-Update', 'Update customer points', 'CustomerPoints', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'CustomerPoints-Delete', 'Delete customer points', 'CustomerPoints', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+-- Equipment Management
+UNION ALL SELECT r.id, 'Equipment-Create', 'Create new equipment', 'Equipment', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Equipment-Read', 'View equipment information', 'Equipment', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Equipment-Update', 'Update equipment information', 'Equipment', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Equipment-Delete', 'Delete equipment', 'Equipment', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Mechanics-Create', 'Create new mechanics', 'Mechanics', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Mechanics-Read', 'View mechanic information', 'Mechanics', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Mechanics-Update', 'Update mechanic information', 'Mechanics', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Mechanics-Delete', 'Delete mechanics', 'Mechanics', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+-- Waste & Loss Tracking
+UNION ALL SELECT r.id, 'WasteLoss-Create', 'Create waste loss records', 'WasteLoss', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'WasteLoss-Read', 'View waste loss information', 'WasteLoss', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'WasteLoss-Update', 'Update waste loss records', 'WasteLoss', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'WasteLoss-Delete', 'Delete waste loss records', 'WasteLoss', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+-- Audit & Security
+UNION ALL SELECT r.id, 'AuditLogs-Read', 'View audit logs', 'AuditLogs', 'Read' FROM roles r WHERE r.role_name = 'admin';
 
 -- Insert employee permissions (limited access)
 INSERT INTO permissions (role_id, permission_name, description, entity_name, action_name)
@@ -715,7 +1036,66 @@ UNION ALL SELECT r.id, 'RunoutReports-Read', 'View runout ingredient reports', '
 UNION ALL SELECT r.id, 'Orders-Create', 'Create new orders', 'Orders', 'Create' FROM roles r WHERE r.role_name = 'employee'
 UNION ALL SELECT r.id, 'Orders-Read', 'View order information', 'Orders', 'Read' FROM roles r WHERE r.role_name = 'employee'
 UNION ALL SELECT r.id, 'Orders-Update', 'Update order information', 'Orders', 'Update' FROM roles r WHERE r.role_name = 'employee'
-UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'employee';
+UNION ALL SELECT r.id, 'Reports-Read', 'View business reports and analytics', 'Reports', 'Read' FROM roles r WHERE r.role_name = 'employee'
+-- Customer Management (limited access)
+UNION ALL SELECT r.id, 'Customers-Read', 'View customer information', 'Customers', 'Read' FROM roles r WHERE r.role_name = 'employee'
+-- Promotions (read-only to apply during order creation)
+UNION ALL SELECT r.id, 'Promotions-Read', 'View promotion information', 'Promotions', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'CustomerPoints-Read', 'View customer points', 'CustomerPoints', 'Read' FROM roles r WHERE r.role_name = 'employee'
+-- Equipment (read-only for status checking)
+UNION ALL SELECT r.id, 'Equipment-Read', 'View equipment information', 'Equipment', 'Read' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'Mechanics-Read', 'View mechanic information', 'Mechanics', 'Read' FROM roles r WHERE r.role_name = 'employee'
+-- Waste & Loss (full access for reporting)
+UNION ALL SELECT r.id, 'WasteLoss-Create', 'Create waste loss records', 'WasteLoss', 'Create' FROM roles r WHERE r.role_name = 'employee'
+UNION ALL SELECT r.id, 'WasteLoss-Read', 'View waste loss information', 'WasteLoss', 'Read' FROM roles r WHERE r.role_name = 'employee';
+
+---
+
+## Audit & Security Entities
+
+### Audit Logs Table
+**Purpose:** Comprehensive audit trail for tracking critical operations, maintaining data integrity, and ensuring regulatory compliance.
+
+```sql
+CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    action_type VARCHAR(50) NOT NULL, -- create, update, delete, login, logout, etc.
+    entity_type VARCHAR(50) NOT NULL, -- users, orders, inventory, etc.
+    entity_id UUID, -- Specific record that was affected
+    old_values JSONB, -- Previous values before change (for updates/deletes)
+    new_values JSONB, -- New values after change (for creates/updates)
+    ip_address INET,
+    user_agent TEXT,
+    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    success BOOLEAN NOT NULL DEFAULT TRUE,
+    error_message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action_type);
+CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type);
+CREATE INDEX idx_audit_logs_entity_id ON audit_logs(entity_id);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
+CREATE INDEX idx_audit_logs_success ON audit_logs(success);
+CREATE INDEX idx_audit_logs_ip ON audit_logs(ip_address);
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `user_id`: Foreign key reference to user who performed the action (nullable for system actions)
+- `action_type`: Type of operation (create, update, delete, login, logout, etc.)
+- `entity_type`: Type of entity affected (users, orders, inventory, etc.)
+- `entity_id`: Specific record that was affected (nullable for general actions)
+- `old_values`: Previous values before change (JSON, for updates/deletes)
+- `new_values`: New values after change (JSON, for creates/updates)
+- `ip_address`: Client IP address where action originated
+- `user_agent`: Browser/client information
+- `timestamp`: When the action occurred
+- `success`: Whether the action was successful
+- `error_message`: Error details if action failed (nullable)
 
 ---
 
