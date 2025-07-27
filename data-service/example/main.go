@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"database-service/pkg/database"
+	"data-service/pkg/database"
 
 	"github.com/sirupsen/logrus"
 )
@@ -48,7 +48,7 @@ func main() {
 	db := database.New(config, logger)
 
 	// Connect to database
-	fmt.Println("🍦 Connecting to Ice Cream Store Database...")
+	fmt.Println("🍦 Connecting to Ice Cream Store Data Service...")
 	if err := db.Connect(); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
@@ -90,7 +90,7 @@ func main() {
 	fmt.Printf("   Wait count: %d\n", stats.WaitCount)
 	fmt.Printf("   Wait duration: %v\n", stats.WaitDuration)
 
-	fmt.Println("\n🎉 Database service is working correctly!")
+	fmt.Println("\n🎉 Data service is working correctly!")
 }
 
 // querySystemConfig demonstrates querying system configuration

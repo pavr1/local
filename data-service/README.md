@@ -1,4 +1,4 @@
-# Ice Cream Store Database Service
+# Ice Cream Store Data Service
 
 This service provides PostgreSQL database infrastructure for the Ice Cream Store management system. It includes Docker containerization, database schema initialization, and a Go database handler that other services can import.
 
@@ -84,7 +84,7 @@ Other services can import and use the database handler:
 ### Installation
 
 ```go
-import "database-service/pkg/database"
+import "data-service/pkg/database"
 ```
 
 ### Basic Usage
@@ -95,7 +95,7 @@ package main
 import (
     "log"
     "time"
-    "database-service/pkg/database"
+    "data-service/pkg/database"
     "github.com/sirupsen/logrus"
 )
 
@@ -177,7 +177,7 @@ DB_SSLMODE=disable
 ## 📁 Project Structure
 
 ```
-database-service/
+data-service/
 ├── docker/
 │   ├── docker-compose.yml      # Container orchestration
 │   ├── config/
@@ -311,7 +311,7 @@ When making schema changes:
 
 ## 📞 Support
 
-For issues with the database service:
+For issues with the data service:
 
 1. Check logs: `./scripts/logs.sh`
 2. Verify container status: `docker ps`

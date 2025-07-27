@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
-echo "🍦 Resetting Ice Cream Store Database..."
+echo "🍦 Resetting Ice Cream Store Data Service..."
 echo "⚠️  WARNING: This will delete ALL database data!"
 read -p "Are you sure you want to continue? (y/N): " -n 1 -r
 echo

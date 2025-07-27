@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
-echo "🍦 Stopping Ice Cream Store Database..."
+echo "🍦 Stopping Ice Cream Store Data Service..."
 
 # Change to docker directory
 cd "$DOCKER_DIR"

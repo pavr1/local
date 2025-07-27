@@ -12,7 +12,7 @@ DOCKER_DIR="$PROJECT_ROOT/docker"
 # Change to docker directory
 cd "$DOCKER_DIR"
 
-echo "🍦 Ice Cream Store Database Logs"
+echo "🍦 Ice Cream Store Data Service Logs"
 echo "================================="
 
 # Check if specific service is requested
