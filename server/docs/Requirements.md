@@ -23,7 +23,7 @@
    - [Employees](#employees)
    - [Business Metrics & Analytics](#business-metrics--analytics)
 5. [Authentication & Authorization](#authentication--authorization)
-   - [Auth0 Integration](#auth0-integration)
+   - [Internal Authentication](#internal-authentication)
    - [Permission System](#permission-system)
    - [User Access Control](#user-access-control)
 6. [Technical Stack](#technical-stack)
@@ -289,7 +289,8 @@
   - Employee (restricted access)
 - Employee account management
   - User identification by username (not email address)
-  - Auth0 integration for authentication
+  - Internal password-based authentication
+  - Secure password hashing and validation
 - Role-based permissions
 
 ### Business Metrics & Analytics
@@ -323,20 +324,32 @@
 
 ## Authentication & Authorization
 
-### Auth0 Integration
+### Internal Authentication
 - **Implementation Requirements:**
-  - Auth0 account setup and configuration
-  - JWT token-based authentication
-  - Permission claims management through Auth0 Actions
+  - Username and password-based authentication
+  - Secure password hashing (bcrypt or similar)
+  - Session management for logged-in users
+  - Login/logout functionality
+  - Password strength requirements
+  - Default admin user creation for initial system setup
+  - Password change functionality for users
+
+- **Authentication Workflow:**
+  1. User submits username/password via login form
+  2. Server validates credentials against users table
+  3. On success, create authenticated session
+  4. Session used for subsequent API requests
+  5. Permissions checked against user's roles and permissions tables
 
 ### Permission System
 - **Server-Side Validation:**
-  - JWT token verification on all API endpoints. We can use middleware to implement jtw verification
+  - Session-based authentication on all API endpoints. We can use middleware to implement session verification
   - Permission-based access control. Permissions would be named after [entity]-[action]. For instance "Ingredients-Create"
   - Role-based endpoint restrictions
 - **Client-Side Validation:**
-  - Token validation
+  - Session validation
   - UI component access control based on permissions
+  - Login form with username/password
   - UI client side will be worked in incoming documentation once server-side is implemented
 
 ### User Access Control
@@ -356,10 +369,10 @@
 ### Backend Requirements
 - Go-based API server
 - RESTful API design
-- JWT authentication middleware
+- Session-based authentication middleware
+- Secure password hashing (bcrypt)
 - File upload handling for invoices
 - Database integration for data persistence
-- Auth0 SDK integration
 
 ### File Management
 - Monthly directory structure for invoice storage

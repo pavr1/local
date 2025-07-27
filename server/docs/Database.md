@@ -28,7 +28,6 @@
    - [Roles Table](#roles-table)
 5. [Authentication & Authorization Entities](#authentication--authorization-entities)
    - [Permissions Table](#permissions-table)
-   - [User Roles Table](#user-roles-table)
    - [Role Permissions Table](#role-permissions-table)
 
 ---
@@ -296,6 +295,15 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **expense_categories** ← **expenses** (One-to-Many: One category can have multiple expenses)
 - **expenses** ← **expense_receipts** (One-to-Many: One expense can have multiple receipts)
 
+### Income Management
+- **users** ← **orders** (One-to-Many: One sales representative can create multiple orders)
+- **orders** ← **ordered_receipes** (One-to-Many: One order can have multiple recipe line items)
+- **recipes** ← **ordered_receipes** (One-to-Many: One recipe can be ordered multiple times)
+
+### Authentication & Authorization
+- **roles** ← **users** (One-to-Many: One role can be assigned to multiple users)
+- **roles** ← **role_permissions** → **permissions** (Many-to-Many: Roles can have multiple permissions, permissions can be assigned to multiple roles)
+
 ## Overall Business Logic Triggers
 
 ### Inventory Management
@@ -514,14 +522,15 @@ CREATE INDEX idx_system_config_editable ON system_config(is_editable);
 - `is_editable`: Whether this config can be modified through the administration UI
 
 ### Users Table
-**Purpose:** Store user accounts for employees and administrators with Auth0 integration.
+**Purpose:** Store user accounts for employees and administrators with internal authentication.
 
 ```sql
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    auth0_user_id VARCHAR(255) UNIQUE NOT NULL, -- Auth0 subject identifier
     username VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL, -- Hashed password for authentication
     full_name VARCHAR(255) NOT NULL,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
     is_active BOOLEAN DEFAULT TRUE,
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -529,16 +538,23 @@ CREATE TABLE users (
 );
 
 -- Indexes
-CREATE INDEX idx_users_auth0_id ON users(auth0_user_id);
 CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_role ON users(role_id);
 CREATE INDEX idx_users_active ON users(is_active);
+
+-- Insert default admin user (password should be changed on first login)
+-- Note: Replace 'hashed_password_here' with actual bcrypt hash of temporary password
+INSERT INTO users (username, password_hash, full_name, role_id, is_active)
+SELECT 'admin', 'hashed_password_here', 'System Administrator', r.id, true
+FROM roles r WHERE r.role_name = 'admin';
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
-- `auth0_user_id`: Auth0 subject identifier for JWT token validation
 - `username`: User username (unique)
+- `password_hash`: Hashed password for secure authentication
 - `full_name`: User's full name
+- `role_id`: Foreign key reference to roles table (UUID)
 - `is_active`: Whether the user account is active
 - `last_login`: Timestamp of last successful login
 
@@ -646,32 +662,6 @@ CREATE INDEX idx_permissions_active ON permissions(is_active);
 - `entity_name`: The entity/resource being accessed (e.g., Ingredients, Orders)
 - `action_name`: The action being performed (Create, Read, Update, Delete)
 - `is_active`: Whether the permission is currently active
-
-### User Roles Table
-**Purpose:** Junction table linking users to their assigned roles (many-to-many relationship).
-
-```sql
-CREATE TABLE user_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    
-    UNIQUE(user_id, role_id)
-);
-
--- Indexes
-CREATE INDEX idx_user_roles_user ON user_roles(user_id);
-CREATE INDEX idx_user_roles_role ON user_roles(role_id);
-```
-
-**Field Descriptions:**
-- `id`: Primary key, UUID (auto-generated)
-- `user_id`: Foreign key reference to users table
-- `role_id`: Foreign key reference to roles table
-- `assigned_at`: When the role was assigned to the user
-- `assigned_by`: Who assigned the role (nullable for system assignments)
 
 ### Role Permissions Table
 **Purpose:** Junction table linking roles to their granted permissions (many-to-many relationship).
