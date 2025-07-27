@@ -147,6 +147,9 @@ func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Ro
 	// Add CORS middleware
 	router.Use(corsMiddleware)
 
+	// Get auth middleware instance
+	authMiddleware := authHandler.GetMiddleware()
+
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()
 	publicRouter.HandleFunc("/auth/login", authHandler.Login).Methods("POST")
@@ -154,7 +157,7 @@ func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Ro
 
 	// Protected routes (authentication required)
 	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
-	protectedRouter.Use(authHandler.AuthMiddleware)
+	protectedRouter.Use(authMiddleware.Authenticate)
 
 	// Auth endpoints
 	protectedRouter.HandleFunc("/auth/logout", authHandler.Logout).Methods("POST")
@@ -164,7 +167,7 @@ func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Ro
 
 	// Admin only endpoints
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
-	adminRouter.Use(authHandler.RequirePermission("admin-read"))
+	adminRouter.Use(authMiddleware.RequirePermission("admin-read"))
 	adminRouter.HandleFunc("/auth/token-info", authHandler.GetTokenInfo).Methods("GET")
 
 	// Root endpoint

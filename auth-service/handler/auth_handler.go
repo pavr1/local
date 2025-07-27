@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"auth-service/config"
+	"auth-service/handler/middleware"
 	"auth-service/models"
 	sqlQueries "auth-service/sql"
 	"auth-service/utils"
@@ -30,9 +30,8 @@ type AuthHandler interface {
 	HealthCheck(w http.ResponseWriter, r *http.Request)
 	GetTokenInfo(w http.ResponseWriter, r *http.Request)
 
-	// Middleware
-	AuthMiddleware(next http.Handler) http.Handler
-	RequirePermission(permission string) func(http.Handler) http.Handler
+	// Middleware access
+	GetMiddleware() *middleware.AuthMiddleware
 }
 
 // authHandler implements the AuthHandler interface
@@ -43,6 +42,7 @@ type authHandler struct {
 	jwtManager      *utils.JWTManager
 	passwordManager *utils.PasswordManager
 	queries         sqlQueries.Queries
+	middleware      *middleware.AuthMiddleware
 }
 
 // New creates a new auth handler instance
@@ -65,6 +65,7 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) AuthHandler {
 		jwtManager:      jwtManager,
 		passwordManager: passwordManager,
 		queries:         queries,
+		middleware:      middleware.NewAuthMiddleware(jwtManager, logger),
 	}
 }
 
@@ -281,6 +282,11 @@ func (h *authHandler) GetTokenInfo(w http.ResponseWriter, r *http.Request) {
 	h.writeJSONResponse(w, http.StatusOK, tokenInfo)
 }
 
+// GetMiddleware returns the auth middleware instance
+func (h *authHandler) GetMiddleware() *middleware.AuthMiddleware {
+	return h.middleware
+}
+
 // Helper methods
 
 // extractTokenFromHeader extracts the JWT token from the Authorization header
@@ -481,73 +487,4 @@ func (h *authHandler) updateLastLogin(userID string) error {
 
 	h.logger.WithField("user_id", userID).Debug("Last login timestamp updated successfully")
 	return nil
-}
-
-// AuthMiddleware validates JWT tokens and adds user context to requests
-func (h *authHandler) AuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract token from Authorization header
-		token := h.extractTokenFromHeader(r)
-		if token == "" {
-			h.writeErrorResponse(w, http.StatusUnauthorized, "missing_token", "Authorization token is required")
-			return
-		}
-
-		// Validate token
-		claims, err := h.jwtManager.ValidateToken(token)
-		if err != nil {
-			h.writeErrorResponse(w, http.StatusUnauthorized, "invalid_token", err.Error())
-			return
-		}
-
-		// Add user claims to request context
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "user", claims)
-		ctx = context.WithValue(ctx, "user_id", claims.UserID)
-		ctx = context.WithValue(ctx, "username", claims.Username)
-		ctx = context.WithValue(ctx, "role", claims.RoleName)
-		ctx = context.WithValue(ctx, "permissions", claims.Permissions)
-
-		// Continue to next handler
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// RequirePermission creates middleware that checks for a specific permission
-func (h *authHandler) RequirePermission(permission string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Get user claims from context (should be set by AuthMiddleware)
-			claims, ok := r.Context().Value("user").(*models.JWTClaims)
-			if !ok {
-				h.writeErrorResponse(w, http.StatusUnauthorized, "missing_auth_context", "Authentication context is missing")
-				return
-			}
-
-			// Check if user has the required permission
-			hasPermission := false
-			for _, userPerm := range claims.Permissions {
-				if userPerm == permission {
-					hasPermission = true
-					break
-				}
-			}
-
-			if !hasPermission {
-				h.logger.WithFields(logrus.Fields{
-					"user_id":             claims.UserID,
-					"username":            claims.Username,
-					"required_permission": permission,
-					"user_permissions":    claims.Permissions,
-				}).Warn("Access denied: insufficient permissions")
-
-				h.writeErrorResponse(w, http.StatusForbidden, "insufficient_permissions",
-					fmt.Sprintf("Required permission '%s' not found", permission))
-				return
-			}
-
-			// User has permission, continue to next handler
-			next.ServeHTTP(w, r)
-		})
-	}
 }
