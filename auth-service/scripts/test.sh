@@ -112,12 +112,35 @@ fi
 echo -e "${CYAN}🧪 Testing: Container Health Check${RESET}"
 TESTS_RUN=$((TESTS_RUN + 1))
 
-if docker inspect icecream_auth --format='{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; then
+# Wait for container to become healthy (max 30 seconds)
+MAX_RETRIES=15
+RETRY_COUNT=0
+CONTAINER_HEALTHY=false
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    HEALTH_STATUS=$(docker inspect icecream_auth --format='{{.State.Health.Status}}' 2>/dev/null || echo "unknown")
+    
+    if [[ "$HEALTH_STATUS" == "healthy" ]]; then
+        CONTAINER_HEALTHY=true
+        break
+    elif [[ "$HEALTH_STATUS" == "unhealthy" ]]; then
+        echo -e "   ${RED}❌ FAILED${RESET}"
+        echo "   Container is unhealthy"
+        break
+    fi
+    
+    sleep 2
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
+if [[ "$CONTAINER_HEALTHY" == "true" ]]; then
     echo -e "   ${GREEN}✅ PASSED${RESET}"
     TESTS_PASSED=$((TESTS_PASSED + 1))
+    echo "   Container became healthy after $((RETRY_COUNT * 2)) seconds"
 else
     echo -e "   ${RED}❌ FAILED${RESET}"
-    echo "   Container is not healthy"
+    echo "   Container did not become healthy within 30 seconds"
+    echo "   Final status: $HEALTH_STATUS"
 fi
 
 # Summary
