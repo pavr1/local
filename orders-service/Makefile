@@ -108,6 +108,11 @@ build: fix-permissions ## Build the orders service container
 	@cd docker && docker-compose build
 	@echo "$(GREEN)✅ Build completed!$(RESET)"
 
+build-fresh: fix-permissions ## Force rebuild the orders service container (no cache)
+	@echo "$(CYAN)🔨 Force rebuilding Orders Service (no cache)...$(RESET)"
+	@cd docker && docker-compose build --no-cache --force-rm
+	@echo "$(GREEN)✅ Fresh build completed!$(RESET)"
+
 dev: ## Run the service in development mode (without Docker)
 	@echo "$(CYAN)🛠️  Running Orders Service in development mode...$(RESET)"
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
@@ -144,7 +149,7 @@ install: deps start ## Complete setup: install dependencies and start service
 	@echo "   make test-orders              # Test orders endpoint"
 	@echo "   curl http://localhost:8083/api/v1/orders/health"
 
-fresh: clean deps build start test status info ## Fresh start: clean, build, start, test, and show info
+fresh: clean deps build-fresh start test status info ## Fresh start: clean, force rebuild, start, test, and show info
 	@echo "$(GREEN)🎉 Fresh Orders Service setup completed!$(RESET)"
 
 ## 🧹 Cleanup Commands
@@ -152,7 +157,11 @@ fresh: clean deps build start test status info ## Fresh start: clean, build, sta
 clean: ## Clean up containers and images
 	@echo "$(YELLOW)🧹 Cleaning up Orders Service...$(RESET)"
 	@cd docker && docker-compose down -v 2>/dev/null || true
+	@docker stop icecream_orders 2>/dev/null || true
+	@docker rm icecream_orders 2>/dev/null || true
 	@docker image rm orders-service_orders-service 2>/dev/null || true
+	@docker image rm temp-orders:latest 2>/dev/null || true
+	@docker image rm temp-orders-fixed:latest 2>/dev/null || true
 	@echo "$(GREEN)✅ Cleanup completed$(RESET)"
 
 clean-all: clean ## Clean up everything including Go build cache

@@ -149,7 +149,7 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 
 	// Add global middleware
 	router.Use(authMiddleware.LoggingMiddleware)
-	router.Use(authMiddleware.CORS)
+	// router.Use(authMiddleware.CORS) // Disabled: Gateway handles CORS for all services
 
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()

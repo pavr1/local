@@ -105,6 +105,11 @@ build: fix-permissions ## Build the auth service container
 	@cd docker && docker-compose build
 	@echo "$(GREEN)✅ Build completed!$(RESET)"
 
+build-fresh: fix-permissions ## Force rebuild the auth service container (no cache)
+	@echo "$(CYAN)🔨 Force rebuilding Auth Service (no cache)...$(RESET)"
+	@cd docker && docker-compose build --no-cache --force-rm
+	@echo "$(GREEN)✅ Fresh build completed!$(RESET)"
+
 dev: ## Run the service in development mode (without Docker)
 	@echo "$(CYAN)🛠️  Running Auth Service in development mode...$(RESET)"
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
@@ -140,7 +145,7 @@ install: deps start ## Complete setup: install dependencies and start service
 	@echo "   make test-login               # Test admin login"
 	@echo "   curl -X POST http://localhost:8081/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 
-fresh: clean deps build start test status info ## Fresh start: clean, build, start, test, and show info
+fresh: clean deps build-fresh start test status info ## Fresh start: clean, force rebuild, start, test, and show info
 	@echo "$(GREEN)🎉 Fresh Auth Service setup completed!$(RESET)"
 
 ## 🧹 Cleanup Commands

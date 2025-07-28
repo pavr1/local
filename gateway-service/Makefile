@@ -122,7 +122,7 @@ install: deps build-docker ## Complete setup: install dependencies and build Doc
 	@echo "   make test                      # Run all tests"
 	@echo "   curl http://localhost:8082/api/hello"
 
-fresh: clean deps build-docker start health test info ## Fresh start: clean, build Docker image, start, and test
+fresh: clean deps build-docker-fresh start health test info ## Fresh start: clean, force rebuild Docker image, start, and test
 	@echo "$(GREEN)🎉 Fresh Gateway Service setup completed!$(RESET)"
 	@echo ""
 	@echo "$(CYAN)📊 Gateway Service Status:$(RESET)"
@@ -134,6 +134,11 @@ fresh: clean deps build-docker start health test info ## Fresh start: clean, bui
 build-docker: ## Build the Docker image
 	@echo "$(CYAN)🔨 Building Gateway Service Docker image...$(RESET)"
 	@cd docker && docker-compose build
+
+build-docker-fresh: ## Force rebuild the Docker image (no cache)
+	@echo "$(CYAN)🔨 Force rebuilding Gateway Service Docker image (no cache)...$(RESET)"
+	@cd docker && docker-compose build --no-cache --force-rm
+	@echo "$(GREEN)✅ Fresh build completed!$(RESET)"
 
 ## 🧹 Cleanup Commands
 

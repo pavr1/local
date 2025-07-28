@@ -118,6 +118,7 @@ class AuthService {
     }
 
     async checkSystemHealth() {
+        console.log('🔍 DEBUG: Starting system health check...');
         const healthResults = {
             gateway: 'offline',
             services: {}
@@ -126,19 +127,27 @@ class AuthService {
         // Check Database (via auth service since database is internal)
         let databaseHealthy = false;
         try {
+            console.log('🔐 DEBUG: Checking auth service health...');
             const authResponse = await fetch('http://localhost:8082/api/v1/auth/health', {
                 method: 'GET',
-                mode: 'cors'
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
             });
-            console.log('Auth health response status:', authResponse.status);
+            
+            console.log('🔐 DEBUG: Auth response status:', authResponse.status);
             if (authResponse.ok) {
                 const authData = await authResponse.json();
-                console.log('Auth health data:', authData);
+                console.log('🔐 DEBUG: Auth response data:', authData);
                 const authHealthy = authData.success && authData.data?.status === 'healthy';
+                console.log('🔐 DEBUG: Auth healthy:', authHealthy);
                 healthResults.services['auth-service'] = authHealthy ? 'healthy' : 'unhealthy';
                 databaseHealthy = authHealthy; // Infer database health from auth service
             } else {
                 healthResults.services['auth-service'] = 'unhealthy';
+                console.log('🔐 DEBUG: Auth service unhealthy - bad response');
             }
         } catch (error) {
             console.error('Auth service health check error:', error);
@@ -147,27 +156,38 @@ class AuthService {
 
         // Set database status
         healthResults.services['database'] = databaseHealthy ? 'healthy' : 'unhealthy';
+        console.log('🗄️ DEBUG: Database status:', healthResults.services['database']);
 
         // Check Orders Service (via Gateway to avoid CORS)
         try {
+            console.log('📦 DEBUG: Checking orders service health...');
             const ordersResponse = await fetch('http://localhost:8082/api/v1/orders/health', {
                 method: 'GET',
-                mode: 'cors'
+                mode: 'cors',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
             });
-            console.log('Orders health response status:', ordersResponse.status);
+            
+            console.log('📦 DEBUG: Orders response status:', ordersResponse.status);
             if (ordersResponse.ok) {
                 const ordersData = await ordersResponse.json();
-                console.log('Orders health data:', ordersData);
+                console.log('📦 DEBUG: Orders response data:', ordersData);
                 const ordersHealthy = ordersData.success && ordersData.data?.status === 'healthy';
+                console.log('📦 DEBUG: Orders healthy:', ordersHealthy);
                 
                 // Orders service depends on database
                 if (!databaseHealthy) {
                     healthResults.services['orders-service'] = 'degraded';
+                    console.log('📦 DEBUG: Orders degraded - database unhealthy');
                 } else {
                     healthResults.services['orders-service'] = ordersHealthy ? 'healthy' : 'unhealthy';
+                    console.log('📦 DEBUG: Orders final status:', healthResults.services['orders-service']);
                 }
             } else {
                 healthResults.services['orders-service'] = 'unhealthy';
+                console.log('📦 DEBUG: Orders service unhealthy - bad response');
             }
         } catch (error) {
             console.error('Orders service health check error:', error);
@@ -180,7 +200,6 @@ class AuthService {
                 method: 'GET',
                 mode: 'cors'
             });
-            console.log('Gateway health response status:', gatewayResponse.status);
             
             // Gateway depends on all services
             const allServicesHealthy = Object.values(healthResults.services).every(status => status === 'healthy');
@@ -202,7 +221,7 @@ class AuthService {
             healthResults.gateway = 'offline';
         }
 
-        console.log('Final health results:', healthResults);
+        console.log('🏁 DEBUG: Final health results:', healthResults);
         return healthResults;
     }
 

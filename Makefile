@@ -116,10 +116,28 @@ final-status: ## Final status check after fresh installation
 		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
 	fi
 	@printf "  🌐 Gateway Service: "
-	@if curl -f http://localhost:8082/api/hello > /dev/null 2>&1; then \
-		echo "$(GREEN)✅ RUNNING$(RESET)"; \
-	else \
+	@gateway_running=false; \
+	db_healthy=false; \
+	auth_running=false; \
+	orders_running=false; \
+	if curl -f http://localhost:8082/api/hello > /dev/null 2>&1; then \
+		gateway_running=true; \
+	fi; \
+	if docker exec icecream_postgres pg_isready -U postgres -d icecream_store > /dev/null 2>&1; then \
+		db_healthy=true; \
+	fi; \
+	if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+		auth_running=true; \
+	fi; \
+	if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
+		orders_running=true; \
+	fi; \
+	if [ "$$gateway_running" = "false" ]; then \
 		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
+	elif [ "$$db_healthy" = "false" ] || [ "$$auth_running" = "false" ] || [ "$$orders_running" = "false" ]; then \
+		echo "$(YELLOW)🟡 DEGRADED (dependencies down)$(RESET)"; \
+	else \
+		echo "$(GREEN)✅ RUNNING$(RESET)"; \
 	fi
 	@echo ""
 
