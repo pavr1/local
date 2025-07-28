@@ -206,16 +206,56 @@ body {
 .status-indicator.online {
     background: var(--success-color);
     box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.3);
+    animation: pulse-green 2s infinite;
 }
 
 .status-indicator.offline {
     background: var(--danger-color);
     box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.3);
+    animation: pulse-red 1.8s infinite;
 }
 
 .status-indicator.loading {
     background: var(--warning-color);
-    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+    animation: pulse-yellow 1.5s infinite;
+}
+
+/* Status indicator animations */
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(220, 53, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+@keyframes pulse-yellow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    }
 }
 
 /* === LOGIN PAGE STYLES === */
