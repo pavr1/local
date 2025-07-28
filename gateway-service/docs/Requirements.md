@@ -21,11 +21,11 @@
 5. [Promotions & Loyalty System](#promotions--loyalty-system)
    - [Promotions](#promotions)
    - [Customer Points System](#customer-points-system)
-6. [Equipment Management](#equipment-management)
+6. [Waste & Loss Tracking](#waste--loss-tracking)
+7. [Administration Panel](#administration-panel)
+   - [Equipment Management](#equipment-management)
    - [Equipment Tracking](#equipment-tracking)
    - [Mechanic Management](#mechanic-management)
-7. [Waste & Loss Tracking](#waste--loss-tracking)
-8. [Administration Panel](#administration-panel)
    - [Configuration](#configuration)
    - [Ingredients](#ingredients-1)
    - [Stock](#stock)
@@ -390,45 +390,6 @@
   - Point redemption applies as discount to order total
   - Points conversion rate configurable (e.g., 100 points = ₡1000 discount)
 
-## Equipment Management
-**Description:** Comprehensive equipment and asset management system for tracking store equipment, maintenance schedules, and mechanic relationships.
-
-### Equipment Tracking
-**Description:** Track all store equipment with maintenance scheduling and cost management.
-
-- **Equipment Attributes:**
-  - **Equipment ID** (UUID): Unique identifier for each equipment item
-  - **Name** (string): Equipment name/model
-  - **Description** (text): Detailed description of the equipment
-  - **Purchase Date** (date): When the equipment was purchased
-  - **Mechanic ID** (foreign key): Reference to assigned mechanic for maintenance
-  - **Maintenance Schedule** (integer): Days between scheduled maintenance (e.g., 90 days)
-  - **Purchase Cost** (decimal): Original purchase cost of equipment
-  - **Current Status** (enum): Equipment status (operational, maintenance_required, out_of_service, retired)
-
-- **Maintenance Management:**
-  - **Scheduled Maintenance**: Automatic alerts based on maintenance schedule
-  - **Maintenance History**: Track all maintenance performed on equipment
-  - **Cost Tracking**: Monitor maintenance costs and equipment total cost of ownership
-  - **Downtime Tracking**: Track equipment downtime for operational analysis
-
-### Mechanic Management
-**Description:** Contact management for equipment maintenance professionals.
-
-- **Mechanic Attributes:**
-  - **Mechanic ID** (UUID): Unique identifier for each mechanic
-  - **Name** (string): Mechanic or company name
-  - **Email** (string, nullable): Email contact for scheduling and communication
-  - **Phone** (string): Primary phone contact for emergency repairs
-  - **Specialization** (text, nullable): Equipment types or brands they specialize in
-  - **Notes** (text, nullable): Additional notes about the mechanic
-
-- **Business Logic:**
-  - Equipment can be assigned to specific mechanics for consistency
-  - Mechanic contact information used for maintenance scheduling
-  - Supports multiple mechanics for different equipment types
-  - Emergency contact capability for urgent equipment failures
-
 ## Waste & Loss Tracking
 **Description:** Comprehensive waste and loss tracking system to monitor expired ingredients, calculate financial losses, and improve inventory management efficiency.
 
@@ -497,6 +458,45 @@
   - Admin-only access to salary information
 - Role-based permissions
 
+### Equipment Management
+**Description:** Comprehensive equipment and asset management system for tracking store equipment, maintenance schedules, and mechanic relationships as part of administrative operations.
+
+#### Equipment Tracking
+**Description:** Track all store equipment with maintenance scheduling and cost management.
+
+- **Equipment Attributes:**
+  - **Equipment ID** (UUID): Unique identifier for each equipment item
+  - **Name** (string): Equipment name/model
+  - **Description** (text): Detailed description of the equipment
+  - **Purchase Date** (date): When the equipment was purchased
+  - **Mechanic ID** (foreign key): Reference to assigned mechanic for maintenance
+  - **Maintenance Schedule** (integer): Days between scheduled maintenance (e.g., 90 days)
+  - **Purchase Cost** (decimal): Original purchase cost of equipment
+  - **Current Status** (enum): Equipment status (operational, maintenance_required, out_of_service, retired)
+
+- **Maintenance Management:**
+  - **Scheduled Maintenance**: Automatic alerts based on maintenance schedule
+  - **Maintenance History**: Track all maintenance performed on equipment
+  - **Cost Tracking**: Monitor maintenance costs and equipment total cost of ownership
+  - **Downtime Tracking**: Track equipment downtime for operational analysis
+
+#### Mechanic Management
+**Description:** Contact management for equipment maintenance professionals.
+
+- **Mechanic Attributes:**
+  - **Mechanic ID** (UUID): Unique identifier for each mechanic
+  - **Name** (string): Mechanic or company name
+  - **Email** (string, nullable): Email contact for scheduling and communication
+  - **Phone** (string): Primary phone contact for emergency repairs
+  - **Specialization** (text, nullable): Equipment types or brands they specialize in
+  - **Notes** (text, nullable): Additional notes about the mechanic
+
+- **Business Logic:**
+  - Equipment can be assigned to specific mechanics for consistency
+  - Mechanic contact information used for maintenance scheduling
+  - Supports multiple mechanics for different equipment types
+  - Emergency contact capability for urgent equipment failures
+
 ### Business Metrics & Analytics
 #### Financial Reports
 - **Expenses/Income Analysis:**
@@ -546,6 +546,8 @@ The authentication and authorization system is implemented across **two speciali
 - Permission management and validation
 - System configuration settings
 - Employee salary and payroll management
+- Equipment and maintenance management
+- Mechanic contact management
 
 ### Internal Authentication
 - **Implementation Requirements:**

@@ -4,7 +4,7 @@ A comprehensive business management system built with Go microservices architect
 
 ## 🏗️ System Architecture
 
-This project implements a **microservices architecture** with 10 specialized services, each handling specific business domains with clear separation of concerns.
+This project implements a **microservices architecture** with 9 specialized services, each handling specific business domains with clear separation of concerns.
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -21,9 +21,8 @@ This project implements a **microservices architecture** with 10 specialized ser
 - **📋 Audit Service** - Activity logging with `LogAuditEntry()` & `RetrieveAuditLogs()` API methods
 
 ### 🟧 **Level 1: Administrative Services**  
-- **⚙️ Administration Service** - User/role/permission management, system config (Admin only)
+- **⚙️ Administration Service** - User/role/permission management, system config, equipment tracking (Admin only)
 - **👥 Customer Service** - Customer management and profiles
-- **🔧 Equipment Service** - Equipment tracking and maintenance
 - **💰 Expenses Service** - Expense management and receipts
 
 ### 🟪 **Level 2: Business Logic Services**
@@ -141,9 +140,8 @@ local/
 ├── data-service/           # 🗄️ PostgreSQL database setup
 ├── gateway-service/        # 🌐 API Gateway and routing
 ├── audit-service/          # 📋 Audit logging (LogAuditEntry & RetrieveAuditLogs) (Future)
-├── administration-service/ # ⚙️ User/role/config management (Future)
+├── administration-service/ # ⚙️ User/role/config/equipment management (Future)
 ├── customer-service/       # 👥 Customer management (Future)
-├── equipment-service/      # 🔧 Equipment tracking (Future)
 ├── expenses-service/       # 💰 Expense management (Future)
 ├── inventory-service/      # 📦 Core inventory logic (Future)
 ├── promotions-service/     # 🎉 Promotions & loyalty (Future)
@@ -160,14 +158,13 @@ local/
 2. ✅ **Data Service** (Completed)  
 3. ✅ **Gateway Service** (Completed)
 4. 🔄 **Audit Service** (LogAuditEntry & RetrieveAuditLogs APIs)
-5. 🔄 **Administration Service** (Next - Critical for other services)
+5. 🔄 **Administration Service** (Next - Critical for other services, includes equipment management)
 6. 🔄 **Customer Service**
-7. 🔄 **Equipment Service**
-8. 🔄 **Expenses Service**
-9. 🔄 **Inventory Service**
-10. 🔄 **Promotions Service**
-11. 🔄 **Orders Service**
-12. 🔄 **Waste Service**
+7. 🔄 **Expenses Service**
+8. 🔄 **Inventory Service**
+9. 🔄 **Promotions Service**
+10. 🔄 **Orders Service**
+11. 🔄 **Waste Service**
 
 ### **Development Commands**
 ```bash
@@ -219,10 +216,11 @@ make reset          # Reset database (⚠️ DELETES ALL DATA)
 - Loyalty points and promotions
 - Order history and analytics
 
-### **Equipment & Maintenance**
-- Equipment inventory and status tracking
-- Maintenance scheduling
-- Mechanic contact management
+### **Administrative Operations**
+- User, role, and permission management
+- System configuration and settings
+- Equipment inventory and maintenance scheduling
+- Employee salary and payroll management
 
 ## 📈 Monitoring & Analytics
 

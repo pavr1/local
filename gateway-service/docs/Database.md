@@ -53,13 +53,12 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 ## 🏗️ Service Architecture Integration
 
-This database schema supports a **microservices architecture** with **10 specialized services**:
+This database schema supports a **microservices architecture** with **9 specialized services**:
 
 - **🔐 Authentication Service**: JWT tokens, login/logout (reads user data from Administration Service)
 - **📋 Audit Service**: Activity logging (`audit_logs` table)
-- **⚙️ Administration Service**: User/role/permission management (`users`, `roles`, `permissions`, `system_config`, `user_salary` tables) - **Admin only**
+- **⚙️ Administration Service**: User/role/permission management, equipment tracking (`users`, `roles`, `permissions`, `system_config`, `user_salary`, `mechanics`, `equipment` tables) - **Admin only**
 - **👥 Customer Service**: Customer management (`customers` table)
-- **🔧 Equipment Service**: Equipment tracking (`mechanics`, `equipment` tables)
 - **💰 Expenses Service**: Financial management (`expense_categories`, `expenses`, `expense_receipts` tables)
 - **📦 Inventory Service**: Core business logic (`suppliers`, `ingredients`, `existences`, `runout_ingredient_report`, `recipe_categories`, `recipes`, `recipe_ingredients` tables)
 - **🎉 Promotions Service**: Loyalty programs (`promotions`, `customer_points` tables)
@@ -340,7 +339,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **customers** ← **customer_points** (One-to-Many: One customer can have multiple point records)
 - **orders** ← **customer_points** (One-to-Many: One order can award customer points)
 
-### Equipment Management
+### Administration & Equipment Management
 - **mechanics** ← **equipment** (One-to-Many: One mechanic can service multiple equipment)
 
 ### Waste & Loss Tracking
@@ -789,10 +788,6 @@ CREATE INDEX idx_user_salary_total ON user_salary(total);
 - `created_at`: When the salary record was created
 - `updated_at`: When the salary record was last modified
 
----
-
-## Equipment Management Entities
-
 ### Mechanics Table
 **Purpose:** Store contact information for equipment maintenance professionals.
 
@@ -861,7 +856,7 @@ CREATE INDEX idx_equipment_purchase_date ON equipment(purchase_date);
 - `last_maintenance_date`: Date of last maintenance performed
 - `next_maintenance_date`: Calculated next maintenance due date
 
----
+
 
 ## Waste & Loss Tracking Entities
 

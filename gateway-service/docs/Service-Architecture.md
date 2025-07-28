@@ -8,7 +8,7 @@
 
 ## 🏗️ System Overview
 
-The Ice Cream Store management system implements a **microservices architecture** with **10 specialized services**, each handling specific business domains with clear boundaries and dependencies.
+The Ice Cream Store management system implements a **microservices architecture** with **9 specialized services**, each handling specific business domains with clear boundaries and dependencies.
 
 ### 🎯 Design Principles
 
@@ -29,14 +29,13 @@ graph TD
     A2[📋 Audit Service<br/>LogAuditEntry() & RetrieveAuditLogs()<br/>Activity Logging] --> B1
 
     %% Level 1 - Administrative
-    B1 --> B2[⚙️ Administration Service<br/>👑 Admin Only<br/>User/Role/Permission CRUD]
+    B1 --> B2[⚙️ Administration Service<br/>👑 Admin Only<br/>User/Role/Permission CRUD<br/>Equipment Management]
     B1 --> B3[👥 Customer Service<br/>Customer Management]
-    B1 --> B4[🔧 Equipment Service<br/>Equipment & Maintenance]
-    B1 --> B5[💰 Expenses Service<br/>Financial Management]
+    B1 --> B4[💰 Expenses Service<br/>Financial Management]
 
     %% Level 2 - Business Logic
     B2 --> C1[📦 Inventory Service<br/>Core Business Logic]
-    B5 --> C1
+    B4 --> C1
 
     %% Level 3 - Advanced Logic
     C1 --> D1[🎉 Promotions Service<br/>Loyalty & Discounts]
@@ -58,7 +57,7 @@ graph TD
     classDef analytics fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 
     class A1,A2 foundation
-    class B2,B3,B4,B5 admin
+    class B2,B3,B4 admin
     class C1 business
     class D1 advanced
     class E1 operations
@@ -255,7 +254,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 #### 3. **Administration Service** ⚙️
 - **Authorization**: 🔒 **Admin-only for ALL operations**
-- **Tables**: `users`, `roles`, `permissions`, `system_config`, `user_salary`
+- **Tables**: `users`, `roles`, `permissions`, `system_config`, `user_salary`, `mechanics`, `equipment`
 - **Functions**:
   - **User Management**:
     - `POST /admin/users` - Create user (Admin only)
@@ -266,6 +265,11 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
   - **Permission Management**: Permission assignment (Admin only)
   - **System Configuration**: Global settings management
   - **Salary Management**: Employee payroll
+  - **Equipment Management**:
+    - Equipment inventory tracking and status management
+    - Maintenance scheduling and alerts
+    - Mechanic contact management and specializations
+    - Equipment cost tracking and reporting
 
 #### 4. **Customer Service** 👥
 - **Tables**: `customers`
@@ -275,13 +279,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
   - Customer search and filtering
   - Customer analytics and reporting
 
-#### 5. **Equipment Service** 🔧
-- **Tables**: `mechanics`, `equipment`
-- **Functions**:
-  - **Mechanics**: Contact management, specialization tracking
-  - **Equipment**: Inventory tracking, maintenance scheduling, status management
-
-#### 6. **Expenses Service** 💰
+#### 5. **Expenses Service** 💰
 - **Tables**: `expense_categories`, `expenses`, `expense_receipts`
 - **Functions**:
   - **Expense Categories**: Budget classification
@@ -290,7 +288,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 ### **🟪 Level 2: Business Logic Services**
 
-#### 7. **Inventory Service** 📦
+#### 6. **Inventory Service** 📦
 - **Tables**: `suppliers`, `ingredients`, `existences`, `runout_ingredient_report`, `recipe_categories`, `recipes`, `recipe_ingredients`
 - **Functions**:
   - **Suppliers**: Vendor management
@@ -302,7 +300,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 ### **🟢 Level 3: Advanced Business Logic**
 
-#### 8. **Promotions Service** 🎉
+#### 7. **Promotions Service** 🎉
 - **Tables**: `promotions`, `customer_points`
 - **Functions**:
   - **Promotions**: Discount campaigns, time-based offers
@@ -310,7 +308,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 ### **🔵 Level 4: Complex Operations**
 
-#### 9. **Orders Service** 🛒
+#### 8. **Orders Service** 🛒
 - **Tables**: `orders`, `ordered_receipes`
 - **Functions**:
   - **Orders**: Sales processing, payment handling, invoice generation
@@ -318,7 +316,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 ### **🟩 Level 5: Analytics Services**
 
-#### 10. **Waste Service** 🗑️
+#### 9. **Waste Service** 🗑️
 - **Tables**: `waste_loss`
 - **Functions**:
   - Waste incident reporting
@@ -392,9 +390,9 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 1. ✅ **Authentication Service** (Completed)
 2. ✅ **Data Service** (Completed)
 3. ✅ **Gateway Service** (Completed)
-4. 🔄 **Administration Service** (Next - Critical for other services)
+4. 🔄 **Administration Service** (Next - Critical for other services, includes equipment management)
 5. 🔄 **Audit Service** (Independent implementation)
-6. 🔄 **Customer, Equipment, Expenses Services** (Basic CRUD)
+6. 🔄 **Customer & Expenses Services** (Basic CRUD)
 7. 🔄 **Inventory Service** (Core business logic)
 8. 🔄 **Promotions Service** (Advanced features)
 9. 🔄 **Orders Service** (Complex integrations)
