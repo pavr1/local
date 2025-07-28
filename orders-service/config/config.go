@@ -45,7 +45,7 @@ func LoadConfig() *Config {
 		DBSSLMode:  getEnv("DB_SSL_MODE", "disable"),
 
 		// JWT
-		JWTSecret: getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-this-in-production"),
+		JWTSecret: getEnv("JWT_SECRET", "icecream-super-secret-jwt-key-change-in-production-2024"),
 
 		// Logging
 		LogLevel: getEnv("LOG_LEVEL", "info"),

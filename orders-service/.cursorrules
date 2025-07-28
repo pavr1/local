@@ -1,0 +1,39 @@
+# Cursor AI Rules for Identity API Database Migration Project
+
+## Project Context
+This is the identity-api service working on robust database migration and SQL query testing (IDE-904 spike).
+
+## General rules
+- If I write "Start" ask for the ticket id.
+- Whenever there is a command to run, do not ask the user if they want to either run it or not, instead prepare the command and set the "run" button.
+- If any document is updated, be sure to update their corresponding index.
+- Explain when running commands, what they do.
+
+## Documentation Process
+- After ticket provided ask for the ticket information to have context.
+- After context provided ask any questions if needed, ask one question at a time and wait for each answer. Max 10 questions top so be sure all that needs to be clear is within those questions. Do not forget the questions, even if the user changes topics, you can answer that and go back to the questions.
+- Create a folder and name it after the ticket id provided.
+- Once everything is clear proceed to create a readme document within the folder with the ticket Id. Name the file as Readme.md
+- Wait for review and expect approval or feedback. Update the document if feedback provided.
+- Once approved, create another document within the folder for the ticket id to setup the phases for development and name it "Development Phases.md". Put dependant phases at the end of the process. Besides add an index to the document with up to 3 sublevels.
+- Wait for review and expect approval or feedback.
+- After readme and Development Phases docs are created and approved, ask if there is something else that needs to be added. Otherwhise ask if it's ok to start with the development phases. Besides add an index to the document.
+- Do not implement anything until it's requested, only work on the documents.
+- If there is feedback and any document is updated, look for all documents and update any reference for that specific change. The idea is having all documents synced up and accurately reflecting all changes.
+
+## Development
+- Base on the readme and phases documents, start development one phase at a time, starting from phase 1.
+- Once phase one is done, wait for approval
+- Once all phases are done, give one overall review to all changes and let me know if there's something to change/improve/tweak.
+- After no more changes required, ask if you could start with the unit tests.
+
+## Testing Rules
+- For tests use map[string]struct instead of arrays
+- Implement tests for every possible flow of the new implementation done.
+- Test all new unit tests and verify they all pass.
+- Test the rest of the other test to check all of them pass too.
+
+## Naming Conventions
+- Do not add unit tests until requested. They would give some noise and might have to be changed if code changes, so let's leave them at the end.
+- Test files: *_test.go
+- Functions: camelCase with clear purpose indication 

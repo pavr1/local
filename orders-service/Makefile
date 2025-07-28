@@ -1,195 +1,230 @@
-# Ice Cream Store - Orders Service Makefile
-# Gestión de Ingresos - Órdenes y Recetas
+# Ice Cream Store Orders Service Makefile
+# This Makefile provides commands for managing the orders service
 
 # Colors for output
-RED     := \033[31m
-GREEN   := \033[32m
-YELLOW  := \033[33m
-BLUE    := \033[34m
-MAGENTA := \033[35m
-CYAN    := \033[36m
-WHITE   := \033[37m
-RESET   := \033[0m
+CYAN := \033[0;36m
+GREEN := \033[0;32m
+YELLOW := \033[1;33m
+RED := \033[0;31m
+RESET := \033[0m
 
-# Project configuration
-SERVICE_NAME := orders-service
-BINARY_NAME := orders-service
-DOCKER_IMAGE := docker-orders-service
-DOCKER_CONTAINER := icecream_orders
-PORT := 8083
+# Default target
+.DEFAULT_GOAL := help
 
-# Build configuration
-BUILD_DIR := bin
-MAIN_FILE := main.go
+# Ensure scripts are executable
+.PHONY: fix-permissions
+fix-permissions:
+	@chmod +x scripts/*.sh
 
-# Environment files
-ENV_FILE := config.env
-ENV_EXAMPLE := config.env.example
+## 🍦 Ice Cream Store Orders Service Management
 
-.PHONY: help build clean deps test start stop status info logs fresh docker-build docker-run docker-stop docker-clean
-
-## 🎯 Main Commands
 help: ## Show this help message
-	@echo "$(CYAN)🍦 Ice Cream Store - Orders Service$(RESET)"
-	@echo "$(YELLOW)Income Management - Orders and Recipes$(RESET)"
+	@echo "$(CYAN)🍦📦 Ice Cream Store Orders Service$(RESET)"
+	@echo "====================================="
 	@echo ""
-	@awk 'BEGIN {FS = ":.*##"; printf "$(BOLD)Usage: make [target]$(RESET)\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(CYAN)%-15s$(RESET) %s\n", $$1, $$2 } /^##@/ { printf "\n$(YELLOW)%s$(RESET)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@echo "$(YELLOW)📋 Available Commands:$(RESET)"
+	@echo ""
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "$(YELLOW)🚀 Common Workflows:$(RESET)"
+	@echo "  $(GREEN)make install$(RESET)          # Complete setup and start service"
+	@echo "  $(GREEN)make fresh$(RESET)            # Fresh start: clean, build, start, test"
+	@echo "  $(GREEN)make test$(RESET)             # Run comprehensive API tests"
+	@echo "  $(GREEN)make logs -f$(RESET)          # Follow live logs"
+	@echo ""
+	@echo "$(YELLOW)📖 Prerequisites:$(RESET)"
+	@echo "  • Docker and Docker Compose must be running"
+	@echo "  • Data service must be running (cd ../data-service && make start)"
 	@echo ""
 
-## 🔨 Development Commands
+## 🚀 Service Management Commands
+
+start: fix-permissions ## Start the orders service container
+	@echo "$(CYAN)🚀 Starting Orders Service...$(RESET)"
+	@./scripts/start.sh
+
+stop: ## Stop the orders service container
+	@echo "$(YELLOW)🛑 Stopping Orders Service...$(RESET)"
+	@./scripts/stop.sh
+
+restart: stop start ## Restart the orders service
+	@echo "$(GREEN)🔄 Orders Service restarted successfully!$(RESET)"
+
+reset: fix-permissions ## Reset service (rebuild and restart)
+	@echo "$(YELLOW)🔄 Resetting Orders Service...$(RESET)"
+	@./scripts/reset.sh
+
+## 📊 Monitoring & Debugging Commands
+
+logs: fix-permissions ## View service logs
+	@echo "$(CYAN)📋 Viewing Orders Service logs...$(RESET)"
+	@./scripts/logs.sh
+
+logs-follow: fix-permissions ## Follow service logs in real-time
+	@echo "$(CYAN)📋 Following Orders Service logs...$(RESET)"
+	@./scripts/logs.sh -f
+
+status: ## Show container status
+	@echo "$(CYAN)📊 Container Status:$(RESET)"
+	@cd docker && docker-compose ps
+
+health: ## Check service health
+	@echo "$(CYAN)🏥 Checking orders service health...$(RESET)"
+	@if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
+		echo "$(GREEN)✅ Orders service is healthy and ready!$(RESET)"; \
+	else \
+		echo "$(RED)❌ Orders service is not responding$(RESET)"; \
+		exit 1; \
+	fi
+
+## 🧪 Testing Commands
+
+test: fix-permissions ## Run comprehensive API tests
+	@echo "$(CYAN)🧪 Running Orders Service tests...$(RESET)"
+	@./scripts/test.sh
+
+test-basic: ## Run basic connectivity test
+	@echo "$(CYAN)🧪 Running basic connectivity test...$(RESET)"
+	@curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1 && \
+		echo "$(GREEN)✅ Basic connectivity test passed!$(RESET)" || \
+		(echo "$(RED)❌ Basic connectivity test failed!$(RESET)" && exit 1)
+
+test-orders: ## Test orders endpoint (requires auth)
+	@echo "$(CYAN)🧪 Testing orders endpoint...$(RESET)"
+	@if [ -z "$$AUTH_TOKEN" ]; then \
+		echo "$(YELLOW)⚠️  AUTH_TOKEN not set. Get token from auth service first.$(RESET)"; \
+		echo "   Run: AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"; \
+		exit 1; \
+	fi
+	@curl -s -H "Authorization: Bearer $$AUTH_TOKEN" http://localhost:8083/api/v1/orders | \
+		grep -q '"orders"' && \
+		echo "$(GREEN)✅ Orders endpoint test passed!$(RESET)" || \
+		(echo "$(RED)❌ Orders endpoint test failed!$(RESET)" && exit 1)
+
+## 🔧 Development Commands
+
+build: fix-permissions ## Build the orders service container
+	@echo "$(CYAN)🔨 Building Orders Service...$(RESET)"
+	@cd docker && docker-compose build
+	@echo "$(GREEN)✅ Build completed!$(RESET)"
+
+dev: ## Run the service in development mode (without Docker)
+	@echo "$(CYAN)🛠️  Running Orders Service in development mode...$(RESET)"
+	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
+	@go run main.go
 
 deps: ## Install Go dependencies
-	@echo "$(BLUE)📦 Installing Go dependencies...$(RESET)"
+	@echo "$(CYAN)📦 Installing Go dependencies...$(RESET)"
 	@go mod download
 	@go mod tidy
 	@echo "$(GREEN)✅ Dependencies installed$(RESET)"
 
-build: deps ## Build the orders service binary
-	@echo "$(BLUE)🔨 Building Orders Service...$(RESET)"
-	@mkdir -p $(BUILD_DIR)
-	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_FILE)
-	@echo "$(GREEN)✅ Build completed: $(BUILD_DIR)/$(BINARY_NAME)$(RESET)"
+lint: ## Run linter
+	@echo "$(CYAN)🔍 Running linter...$(RESET)"
+	@go vet ./...
+	@echo "$(GREEN)✅ Linting completed$(RESET)"
 
-clean: ## Clean build artifacts
-	@echo "$(YELLOW)🧹 Cleaning build artifacts...$(RESET)"
-	@rm -rf $(BUILD_DIR)
-	@go clean
-	@echo "$(GREEN)✅ Clean completed$(RESET)"
+format: ## Format Go code
+	@echo "$(CYAN)✨ Formatting Go code...$(RESET)"
+	@go fmt ./...
+	@echo "$(GREEN)✅ Code formatted$(RESET)"
 
-test: ## Run tests
-	@echo "$(BLUE)🧪 Running tests...$(RESET)"
-	@go test -v ./...
-	@echo "$(GREEN)✅ Tests completed$(RESET)"
+## 📦 Setup & Installation Commands
 
-## 🚀 Service Management
-
-start: build ## Start the orders service
-	@echo "$(GREEN)🚀 Starting Orders Service...$(RESET)"
-	@echo "$(CYAN)📡 Service will be available at: http://localhost:$(PORT)$(RESET)"
-	@echo "$(CYAN)🏥 Health check: http://localhost:$(PORT)/api/v1/orders/health$(RESET)"
-	@echo "$(YELLOW)💡 Press Ctrl+C to stop the service$(RESET)"
-	@./$(BUILD_DIR)/$(BINARY_NAME)
-
-stop: ## Stop the orders service
-	@echo "$(YELLOW)🛑 Stopping Orders Service...$(RESET)"
-	@pkill -f $(BINARY_NAME) || true
-	@echo "$(GREEN)✅ Orders Service stopped$(RESET)"
-
-status: ## Check orders service status
-	@echo "$(CYAN)📊 Orders Service Status:$(RESET)"
-	@if pgrep -f $(BINARY_NAME) > /dev/null; then \
-		echo "$(GREEN)✅ Service is running$(RESET)"; \
-		echo "$(CYAN)📡 Available at: http://localhost:$(PORT)$(RESET)"; \
-	else \
-		echo "$(RED)❌ Service is not running$(RESET)"; \
-	fi
-
-info: ## Show service information
-	@echo "$(CYAN)📋 Orders Service Information:$(RESET)"
-	@echo "$(WHITE)Service Name:$(RESET) $(SERVICE_NAME)"
-	@echo "$(WHITE)Binary Name:$(RESET) $(BINARY_NAME)"
-	@echo "$(WHITE)Port:$(RESET) $(PORT)"
-	@echo "$(WHITE)Build Directory:$(RESET) $(BUILD_DIR)"
+install: deps start ## Complete setup: install dependencies and start service
+	@echo "$(GREEN)🎉 Orders Service installation completed!$(RESET)"
+	@echo "$(CYAN)📝 Service Details:$(RESET)"
+	@echo "   Orders API: http://localhost:8083"
+	@echo "   Health:     http://localhost:8083/api/v1/orders/health"
+	@echo "   List:       GET http://localhost:8083/api/v1/orders"
+	@echo "   Create:     POST http://localhost:8083/api/v1/orders"
 	@echo ""
-	@echo "$(CYAN)🔗 Service Endpoints:$(RESET)"
-	@echo "  $(GREEN)Health:$(RESET) http://localhost:$(PORT)/api/v1/orders/health"
-	@echo "  $(GREEN)Orders:$(RESET) http://localhost:$(PORT)/api/v1/orders"
-	@echo "  $(GREEN)Create Order:$(RESET) POST http://localhost:$(PORT)/api/v1/orders"
-	@echo "  $(GREEN)Get Order:$(RESET) GET http://localhost:$(PORT)/api/v1/orders/{id}"
-	@echo "  $(GREEN)Update Order:$(RESET) PUT http://localhost:$(PORT)/api/v1/orders/{id}"
-	@echo "  $(GREEN)Cancel Order:$(RESET) POST http://localhost:$(PORT)/api/v1/orders/{id}/cancel"
-	@echo "  $(GREEN)Order Summary:$(RESET) GET http://localhost:$(PORT)/api/v1/orders/summary"
-	@echo "  $(GREEN)Payment Stats:$(RESET) GET http://localhost:$(PORT)/api/v1/orders/stats/payment-methods"
-	@echo ""
-	@echo "$(CYAN)🔐 Authentication Required:$(RESET)"
-	@echo "  $(YELLOW)⚠️ All endpoints (except health) require JWT token$(RESET)"
-	@echo "  $(YELLOW)⚠️ Use Authorization: Bearer <token> header$(RESET)"
-	@echo ""
-	@echo "$(CYAN)🎯 Example Usage:$(RESET)"
-	@echo "  $(WHITE)# Create order$(RESET)"
-	@echo "  curl -X POST http://localhost:$(PORT)/api/v1/orders \\"
-	@echo "    -H \"Authorization: Bearer <token>\" \\"
-	@echo "    -H \"Content-Type: application/json\" \\"
-	@echo "    -d '{\"payment_method\":\"cash\",\"items\":[{\"recipe_id\":\"...\",\"quantity\":1,\"unit_price\":5.00}]}'"
-	@echo ""
-	@echo "  $(WHITE)# Get orders$(RESET)"
-	@echo "  curl -H \"Authorization: Bearer <token>\" http://localhost:$(PORT)/api/v1/orders"
+	@echo "$(CYAN)🧪 Test Commands:$(RESET)"
+	@echo "   make test                      # Run all tests"
+	@echo "   make test-orders              # Test orders endpoint"
+	@echo "   curl http://localhost:8083/api/v1/orders/health"
 
-## 🐳 Docker Commands
-
-docker-build: ## Build Docker image
-	@echo "$(BLUE)🐳 Building Docker image...$(RESET)"
-	@docker build -t $(DOCKER_IMAGE) .
-	@echo "$(GREEN)✅ Docker image built: $(DOCKER_IMAGE)$(RESET)"
-
-docker-run: docker-build ## Run service in Docker container
-	@echo "$(GREEN)🐳 Starting Orders Service in Docker...$(RESET)"
-	@docker run -d \
-		--name $(DOCKER_CONTAINER) \
-		--network icecream_network \
-		-p $(PORT):$(PORT) \
-		-e DB_HOST=icecream_postgres \
-		-e DB_PORT=5432 \
-		-e DB_USER=postgres \
-		-e DB_PASSWORD=postgres123 \
-		-e DB_NAME=icecream_store \
-		-e SERVER_PORT=$(PORT) \
-		$(DOCKER_IMAGE)
-	@echo "$(GREEN)✅ Docker container started: $(DOCKER_CONTAINER)$(RESET)"
-	@echo "$(CYAN)📡 Service available at: http://localhost:$(PORT)$(RESET)"
-
-docker-stop: ## Stop Docker container
-	@echo "$(YELLOW)🛑 Stopping Docker container...$(RESET)"
-	@docker stop $(DOCKER_CONTAINER) || true
-	@docker rm $(DOCKER_CONTAINER) || true
-	@echo "$(GREEN)✅ Docker container stopped$(RESET)"
-
-docker-clean: docker-stop ## Clean Docker resources
-	@echo "$(YELLOW)🧹 Cleaning Docker resources...$(RESET)"
-	@docker rmi $(DOCKER_IMAGE) || true
-	@echo "$(GREEN)✅ Docker cleanup completed$(RESET)"
-
-## 📊 Monitoring Commands
-
-logs: ## Show service logs (if running in Docker)
-	@echo "$(CYAN)📋 Orders Service Logs:$(RESET)"
-	@if docker ps | grep -q $(DOCKER_CONTAINER); then \
-		docker logs -f $(DOCKER_CONTAINER); \
-	else \
-		echo "$(RED)❌ Docker container not running$(RESET)"; \
-		echo "$(YELLOW)💡 Run 'make docker-run' first$(RESET)"; \
-	fi
-
-## 🔄 Complete Workflow Commands
-
-fresh: clean deps build test info ## Fresh start: clean, build, test, and show info
+fresh: clean deps build start test status info ## Fresh start: clean, build, start, test, and show info
 	@echo "$(GREEN)🎉 Fresh Orders Service setup completed!$(RESET)"
-	@echo "$(YELLOW)💡 Service binary is ready. Run 'make start' to launch the service$(RESET)"
-	@echo "$(CYAN)🧪 All tests passed successfully$(RESET)"
 
 ## 🧹 Cleanup Commands
 
-clean-all: clean docker-clean ## Clean everything (build artifacts and Docker)
-	@echo "$(GREEN)🎉 Complete cleanup finished!$(RESET)"
+clean: ## Clean up containers and images
+	@echo "$(YELLOW)🧹 Cleaning up Orders Service...$(RESET)"
+	@cd docker && docker-compose down -v 2>/dev/null || true
+	@docker image rm orders-service_orders-service 2>/dev/null || true
+	@echo "$(GREEN)✅ Cleanup completed$(RESET)"
 
-## 📋 Development Helpers
+clean-all: clean ## Clean up everything including Go build cache
+	@echo "$(YELLOW)🧹 Deep cleaning...$(RESET)"
+	@go clean -cache -modcache -testcache 2>/dev/null || true
+	@echo "$(GREEN)✅ Deep cleanup completed$(RESET)"
 
-dev-setup: ## Setup development environment
-	@echo "$(BLUE)🔧 Setting up development environment...$(RESET)"
-	@if [ ! -f $(ENV_FILE) ]; then \
-		echo "$(YELLOW)📝 Creating config file from example...$(RESET)"; \
-		cp $(ENV_EXAMPLE) $(ENV_FILE) 2>/dev/null || echo "$(YELLOW)⚠️ No example config found$(RESET)"; \
-	fi
-	@echo "$(GREEN)✅ Development environment ready$(RESET)"
-	@echo "$(CYAN)💡 Edit $(ENV_FILE) to customize configuration$(RESET)"
+## 📋 Information Commands
 
-## 🔍 Health Check Commands
+info: ## Show service information and URLs
+	@echo "$(CYAN)📋 Orders Service Information$(RESET)"
+	@echo "=================================="
+	@echo ""
+	@echo "$(YELLOW)🔗 Service URLs:$(RESET)"
+	@echo "   Base URL:     http://localhost:8083"
+	@echo "   Health Check: http://localhost:8083/api/v1/orders/health"
+	@echo "   API Docs:     http://localhost:8083/"
+	@echo ""
+	@echo "$(YELLOW)📦 API Endpoints:$(RESET)"
+	@echo "   GET  /api/v1/orders/health    # Health check"
+	@echo "   GET  /api/v1/orders           # List orders (requires token)"
+	@echo "   POST /api/v1/orders           # Create order (requires token)"
+	@echo "   GET  /api/v1/orders/{id}      # Get order by ID (requires token)"
+	@echo "   PUT  /api/v1/orders/{id}      # Update order (requires token)"
+	@echo "   DELETE /api/v1/orders/{id}    # Cancel order (requires token)"
+	@echo ""
+	@echo "$(YELLOW)🧪 Test Commands:$(RESET)"
+	@echo "   # Health check"
+	@echo "   curl http://localhost:8083/api/v1/orders/health"
+	@echo ""
+	@echo "   # Get auth token first"
+	@echo "   AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/auth/login \\"
+	@echo "        -H 'Content-Type: application/json' \\"
+	@echo "        -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | \\"
+	@echo "        grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"
+	@echo ""
+	@echo "   # List orders"
+	@echo "   curl -H \"Authorization: Bearer \$$AUTH_TOKEN\" http://localhost:8083/api/v1/orders"
+	@echo ""
+	@echo "   # Create order"
+	@echo "   curl -X POST -H 'Content-Type: application/json' \\"
+	@echo "        -H \"Authorization: Bearer \$$AUTH_TOKEN\" \\"
+	@echo "        http://localhost:8083/api/v1/orders \\"
+	@echo "        -d '{\"customer_id\":1,\"order_type\":\"dine_in\",\"ordered_recipes\":[{\"recipe_id\":1,\"quantity\":2}]}'"
+	@echo ""
 
-health: ## Check service health
-	@echo "$(CYAN)🏥 Checking Orders Service health...$(RESET)"
-	@if curl -s http://localhost:$(PORT)/api/v1/orders/health > /dev/null 2>&1; then \
-		echo "$(GREEN)✅ Service is healthy$(RESET)"; \
-		curl -s http://localhost:$(PORT)/api/v1/orders/health | jq . 2>/dev/null || curl -s http://localhost:$(PORT)/api/v1/orders/health; \
-	else \
-		echo "$(RED)❌ Service is not responding$(RESET)"; \
-	fi 
+env: ## Show environment configuration
+	@echo "$(CYAN)📋 Environment Configuration$(RESET)"
+	@echo "====================================="
+	@echo ""
+	@echo "$(YELLOW)🔧 Default Configuration:$(RESET)"
+	@echo "   Server Host: 0.0.0.0"
+	@echo "   Server Port: 8083"
+	@echo "   Database Host: postgres (container name)"
+	@echo "   Database Port: 5432"
+	@echo "   Database Name: icecream_store"
+	@echo "   Log Level: info"
+	@echo "   Default Tax Rate: 13.0%"
+	@echo "   Default Service Rate: 10.0%"
+	@echo "   Order Timeout: 30 minutes"
+	@echo ""
+	@echo "$(YELLOW)📝 Override with environment variables:$(RESET)"
+	@echo "   JWT_SECRET, DEFAULT_TAX_RATE, ORDER_TIMEOUT, LOG_LEVEL, etc."
+	@echo "   See config.env.example for all options"
+
+version: ## Show version information
+	@echo "$(CYAN)📋 Version Information$(RESET)"
+	@echo "========================="
+	@echo "Orders Service: 1.0.0"
+	@echo "Go Version: $$(go version)"
+	@echo "Docker: $$(docker --version 2>/dev/null || echo 'Not available')"
+	@echo "Docker Compose: $$(docker-compose --version 2>/dev/null || echo 'Not available')"
+
+# List all targets for tab completion
+.PHONY: help start stop restart reset logs logs-follow status health test test-basic test-orders build dev deps lint format install fresh clean clean-all info env version fix-permissions 

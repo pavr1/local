@@ -16,6 +16,7 @@ RESET := \033[0m
 # Service directories
 DATA_SERVICE := data-service
 AUTH_SERVICE := auth-service
+ORDERS_SERVICE := orders-service
 GATEWAY_SERVICE := gateway-service
 
 ## 🍦 Ice Cream Store - Complete System Management
@@ -37,17 +38,19 @@ help: ## Show this help message
 	@echo "$(YELLOW)🛠️  Individual Service Commands:$(RESET)"
 	@echo "  $(BLUE)make fresh-data$(RESET)       # Fresh install data service only"
 	@echo "  $(BLUE)make fresh-auth$(RESET)       # Fresh install auth service only"
+	@echo "  $(BLUE)make fresh-orders$(RESET)     # Fresh install orders service only"
 	@echo "  $(BLUE)make fresh-gateway$(RESET)    # Fresh install gateway service only"
 	@echo ""
 	@echo "$(YELLOW)📖 Service URLs:$(RESET)"
 	@echo "  $(MAGENTA)Data Service:$(RESET)     http://localhost:5432 (PostgreSQL + PgAdmin: :8080)"
 	@echo "  $(MAGENTA)Auth Service:$(RESET)     http://localhost:8081"
+	@echo "  $(MAGENTA)Orders Service:$(RESET)   http://localhost:8083"
 	@echo "  $(MAGENTA)Gateway Service:$(RESET)  http://localhost:8080"
 	@echo ""
 
 ## 🚀 Complete System Commands
 
-fresh: banner fresh-data fresh-auth fresh-gateway final-status ## Fresh install of ALL services (recommended)
+fresh: banner fresh-data fresh-auth fresh-orders fresh-gateway final-status ## Fresh install of ALL services (recommended)
 	@echo ""
 	@echo "$(GREEN)🎉 COMPLETE SYSTEM FRESH INSTALLATION COMPLETED! 🎉$(RESET)"
 	@echo "$(CYAN)============================================$(RESET)"
@@ -57,32 +60,34 @@ fresh: banner fresh-data fresh-auth fresh-gateway final-status ## Fresh install 
 	@echo "$(GREEN)✅ Services Status:$(RESET)"
 	@echo "  🗄️  Data Service: $(GREEN)RUNNING$(RESET) (PostgreSQL + PgAdmin)"
 	@echo "  🔐 Auth Service: $(GREEN)RUNNING$(RESET) (JWT Authentication)"  
+	@echo "  📦 Orders Service: $(GREEN)RUNNING$(RESET) (Order Management)"
 	@echo "  🌐 Gateway Service: $(YELLOW)READY$(RESET) (Binary built, run 'make start-gateway' to launch)"
 	@echo ""
 	@echo "$(CYAN)🔗 Access Your Services:$(RESET)"
 	@echo "  • Database: http://localhost:8080 (PgAdmin)"
 	@echo "  • Auth API: http://localhost:8081/api/v1/auth/health"
+	@echo "  • Orders API: http://localhost:8083/api/v1/orders/health"
 	@echo "  • Docker UI: https://localhost:9443 (Portainer)"
 	@echo ""
 	@echo "$(YELLOW)🚀 To start Gateway Service:$(RESET) make start-gateway"
 	@echo ""
 
-start-all: start-data start-auth start-gateway ## Start all services in correct order
+start-all: start-data start-auth start-orders start-gateway ## Start all services in correct order
 	@echo "$(GREEN)🚀 All services are starting up!$(RESET)"
 
-stop-all: stop-gateway stop-auth stop-data ## Stop all services in reverse order
+stop-all: stop-gateway stop-orders stop-auth stop-data ## Stop all services in reverse order
 	@echo "$(YELLOW)🛑 All services stopped$(RESET)"
 
 restart-all: stop-all start-all ## Restart all services
 	@echo "$(GREEN)🔄 All services restarted!$(RESET)"
 
-test-all: test-data test-auth test-gateway ## Test all services
+test-all: test-data test-auth test-orders test-gateway ## Test all services
 	@echo "$(GREEN)🧪 All service tests completed!$(RESET)"
 
-status: status-data status-auth status-gateway ## Check status of all services
+status: status-data status-auth status-orders status-gateway ## Check status of all services
 	@echo "$(CYAN)📊 System status check completed$(RESET)"
 
-health-all: health-data health-auth health-gateway ## Check health of all services
+health-all: health-data health-auth health-orders health-gateway ## Check health of all services
 	@echo "$(GREEN)🏥 System health check completed!$(RESET)"
 
 final-status: ## Final status check after fresh installation
@@ -100,6 +105,12 @@ final-status: ## Final status check after fresh installation
 	fi
 	@printf "  🔐 Auth Service: "
 	@if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+		echo "$(GREEN)✅ RUNNING$(RESET)"; \
+	else \
+		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
+	fi
+	@printf "  📦 Orders Service: "
+	@if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ RUNNING$(RESET)"; \
 	else \
 		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
@@ -124,6 +135,11 @@ fresh-auth: ## Fresh install auth service only
 	@cd $(AUTH_SERVICE) && $(MAKE) fresh
 	@echo "$(GREEN)✅ Auth Service fresh install completed!$(RESET)"
 
+fresh-orders: ## Fresh install orders service only
+	@echo "$(CYAN)📦 Running fresh install for Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) fresh
+	@echo "$(GREEN)✅ Orders Service fresh install completed!$(RESET)"
+
 fresh-gateway: ## Fresh install gateway service only
 	@echo "$(CYAN)🌐 Running fresh install for Gateway Service...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) fresh
@@ -139,6 +155,10 @@ start-auth: ## Start auth service
 	@echo "$(CYAN)🔐 Starting Auth Service...$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) start
 
+start-orders: ## Start orders service
+	@echo "$(CYAN)📦 Starting Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) start
+
 start-gateway: ## Start gateway service
 	@echo "$(CYAN)🌐 Starting Gateway Service...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) start
@@ -150,6 +170,10 @@ stop-data: ## Stop data service
 stop-auth: ## Stop auth service
 	@echo "$(YELLOW)🔐 Stopping Auth Service...$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) stop
+
+stop-orders: ## Stop orders service
+	@echo "$(YELLOW)📦 Stopping Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) stop
 
 stop-gateway: ## Stop gateway service
 	@echo "$(YELLOW)🌐 Stopping Gateway Service...$(RESET)"
@@ -165,6 +189,10 @@ status-auth: ## Check auth service status
 	@echo "$(BLUE)🔐 Auth Service Status:$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) status
 
+status-orders: ## Check orders service status
+	@echo "$(BLUE)📦 Orders Service Status:$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) status
+
 status-gateway: ## Check gateway service status
 	@echo "$(BLUE)🌐 Gateway Service Status:$(RESET)"
 	@echo "$(YELLOW)Note: Gateway service doesn't have containers to check$(RESET)"
@@ -176,6 +204,10 @@ test-data: ## Test data service
 test-auth: ## Test auth service
 	@echo "$(CYAN)🧪 Testing Auth Service...$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) test
+
+test-orders: ## Test orders service
+	@echo "$(CYAN)🧪 Testing Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) test
 
 test-gateway: ## Test gateway service
 	@echo "$(CYAN)🧪 Testing Gateway Service...$(RESET)"
@@ -189,13 +221,17 @@ health-auth: ## Check auth service health
 	@echo "$(CYAN)🏥 Checking Auth Service health...$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) health
 
+health-orders: ## Check orders service health
+	@echo "$(CYAN)🏥 Checking Orders Service health...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) health
+
 health-gateway: ## Check gateway service health
 	@echo "$(CYAN)🏥 Checking Gateway Service health...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) health
 
 ## 🧹 Cleanup Commands
 
-clean-all: clean-gateway clean-auth clean-data ## Clean all services
+clean-all: clean-gateway clean-orders clean-auth clean-data ## Clean all services
 	@echo "$(YELLOW)🧹 Cleaning all services...$(RESET)"
 	@echo "$(GREEN)✅ All services cleaned!$(RESET)"
 
@@ -206,6 +242,10 @@ clean-data: ## Clean data service
 clean-auth: ## Clean auth service
 	@echo "$(YELLOW)🔐 Cleaning Auth Service...$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) clean
+
+clean-orders: ## Clean orders service
+	@echo "$(YELLOW)📦 Cleaning Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) clean
 
 clean-gateway: ## Clean gateway service
 	@echo "$(YELLOW)🌐 Cleaning Gateway Service...$(RESET)"
@@ -219,11 +259,11 @@ system-info: ## Show complete system information
 	@echo "====================================="
 	@echo ""
 	@echo "$(YELLOW)🏗️  Architecture Overview:$(RESET)"
-	@echo "  $(BLUE)┌─────────────────┐$(RESET)     $(BLUE)┌─────────────────┐$(RESET)     $(BLUE)┌─────────────────┐$(RESET)"
-	@echo "  $(BLUE)│   Data Service  │$(RESET) ──▶ $(BLUE)│   Auth Service  │$(RESET) ──▶ $(BLUE)│ Gateway Service │$(RESET)"
-	@echo "  $(BLUE)│   PostgreSQL    │$(RESET)     $(BLUE)│   JWT Auth      │$(RESET)     $(BLUE)│   API Gateway   │$(RESET)"
-	@echo "  $(BLUE)│   Port: 5432    │$(RESET)     $(BLUE)│   Port: 8081    │$(RESET)     $(BLUE)│   Port: 8080    │$(RESET)"
-	@echo "  $(BLUE)└─────────────────┘$(RESET)     $(BLUE)└─────────────────┘$(RESET)     $(BLUE)└─────────────────┘$(RESET)"
+	@echo "  $(BLUE)┌─────────────────┐$(RESET)     $(BLUE)┌─────────────────┐$(RESET)     $(BLUE)┌─────────────────┐$(RESET)     $(BLUE)┌─────────────────┐$(RESET)"
+	@echo "  $(BLUE)│   Data Service  │$(RESET) ──▶ $(BLUE)│   Auth Service  │$(RESET) ──▶ $(BLUE)│ Orders Service  │$(RESET) ──▶ $(BLUE)│ Gateway Service │$(RESET)"
+	@echo "  $(BLUE)│   PostgreSQL    │$(RESET)     $(BLUE)│   JWT Auth      │$(RESET)     $(BLUE)│   Order Mgmt    │$(RESET)     $(BLUE)│   API Gateway   │$(RESET)"
+	@echo "  $(BLUE)│   Port: 5432    │$(RESET)     $(BLUE)│   Port: 8081    │$(RESET)     $(BLUE)│   Port: 8083    │$(RESET)     $(BLUE)│   Port: 8080    │$(RESET)"
+	@echo "  $(BLUE)└─────────────────┘$(RESET)     $(BLUE)└─────────────────┘$(RESET)     $(BLUE)└─────────────────┘$(RESET)     $(BLUE)└─────────────────┘$(RESET)"
 	@echo ""
 	@echo "$(YELLOW)🔗 Service Endpoints:$(RESET)"
 	@echo "  $(GREEN)Data Service (PostgreSQL):$(RESET)"
@@ -234,6 +274,11 @@ system-info: ## Show complete system information
 	@echo "    • Base URL: http://localhost:8081"
 	@echo "    • Health:   http://localhost:8081/api/v1/auth/health"
 	@echo "    • Login:    POST http://localhost:8081/api/v1/auth/login"
+	@echo ""
+	@echo "  $(GREEN)Orders Service:$(RESET)"
+	@echo "    • Base URL: http://localhost:8083"
+	@echo "    • Health:   http://localhost:8083/api/v1/orders/health"
+	@echo "    • Orders:   GET/POST http://localhost:8083/api/v1/orders"
 	@echo ""
 	@echo "  $(GREEN)Gateway Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:8080"
@@ -246,6 +291,9 @@ system-info: ## Show complete system information
 	@echo ""
 	@echo "  # Test auth service"
 	@echo "  curl http://localhost:8081/api/v1/auth/health"
+	@echo ""
+	@echo "  # Test orders service"
+	@echo "  curl http://localhost:8083/api/v1/orders/health"
 	@echo ""
 	@echo "  # Test gateway"
 	@echo "  curl http://localhost:8080/api/health"
@@ -269,6 +317,9 @@ logs-all: ## View logs from all services
 	@echo "$(BLUE)=== Auth Service Logs ====$(RESET)"
 	@cd $(AUTH_SERVICE) && $(MAKE) logs || true
 	@echo ""
+	@echo "$(BLUE)=== Orders Service Logs ====$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) logs || true
+	@echo ""
 	@echo "$(BLUE)=== Gateway Service ====$(RESET)"
 	@echo "$(YELLOW)Gateway service runs as binary - no container logs$(RESET)"
 
@@ -286,7 +337,9 @@ version: ## Show version information for all services
 	@echo ""
 	@cd $(AUTH_SERVICE) && $(MAKE) version || true
 	@echo ""
+	@cd $(ORDERS_SERVICE) && $(MAKE) version || true
+	@echo ""
 	@cd $(GATEWAY_SERVICE) && $(MAKE) version || true
 
 # List all targets for tab completion
-.PHONY: help fresh start-all stop-all restart-all test-all status health-all final-status fresh-data fresh-auth fresh-gateway start-data start-auth start-gateway stop-data stop-auth stop-gateway status-data status-auth status-gateway test-data test-auth test-gateway health-data health-auth health-gateway clean-all clean-data clean-auth clean-gateway system-info banner logs-all version 
+.PHONY: help fresh start-all stop-all restart-all test-all status health-all final-status fresh-data fresh-auth fresh-orders fresh-gateway start-data start-auth start-orders start-gateway stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 

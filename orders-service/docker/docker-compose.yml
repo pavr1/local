@@ -1,0 +1,44 @@
+services:
+  orders-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: icecream_orders
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8083
+      
+      # JWT Configuration (must match auth-service)
+      JWT_SECRET: ${JWT_SECRET:-icecream-super-secret-jwt-key-change-in-production-2024}
+      
+      # Database Configuration (connect to existing data-service database)
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      DB_NAME: icecream_store
+      DB_SSL_MODE: disable
+      
+      # Business Configuration
+      DEFAULT_TAX_RATE: ${DEFAULT_TAX_RATE:-13.0}
+      DEFAULT_SERVICE_RATE: ${DEFAULT_SERVICE_RATE:-10.0}
+      ORDER_TIMEOUT: ${ORDER_TIMEOUT:-30}
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8083:8083"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8083/api/v1/orders/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - docker_icecream_network
+
+networks:
+  docker_icecream_network:
+    external: true 
