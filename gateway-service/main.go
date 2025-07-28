@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -22,16 +24,30 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
+// Service configuration
+type ServiceConfig struct {
+	AuthServiceURL string
+}
+
 func main() {
+	// Service configuration
+	config := &ServiceConfig{
+		AuthServiceURL: "http://localhost:8081",
+	}
+
 	r := mux.NewRouter()
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 
-	// Health check endpoint
+	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
 
-	// Example endpoint
+	// Auth service proxy - route all /api/v1/auth/* to auth service
+	authProxy := api.PathPrefix("/v1/auth").Subrouter()
+	authProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.AuthServiceURL, "/api/v1/auth"))
+
+	// Example endpoints (keeping for demo)
 	api.HandleFunc("/hello", helloHandler).Methods("GET")
 	api.HandleFunc("/hello", createHelloHandler).Methods("POST")
 
@@ -41,21 +57,99 @@ func main() {
 	// Static file serving (for client build)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/build/")))
 
-	fmt.Println("🚀 Server starting on http://localhost:8080")
-	fmt.Println("📡 API available at http://localhost:8080/api")
+	fmt.Println("🚀 Gateway Service starting on http://localhost:8082")
+	fmt.Println("📡 API available at http://localhost:8082/api")
+	fmt.Println("🔐 Auth endpoints: http://localhost:8082/api/v1/auth/*")
+	fmt.Printf("   → Proxying to: %s\n", config.AuthServiceURL)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(":8082", r))
+}
+
+// createProxyHandler creates a reverse proxy handler for a specific service
+func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
+	target, err := url.Parse(targetURL)
+	if err != nil {
+		log.Fatalf("Invalid target URL: %v", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// Customize the proxy to handle errors and modify requests
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		log.Printf("Proxy error for %s %s: %v", r.Method, r.URL.Path, err)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadGateway)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":     "Service unavailable",
+			"message":   "The authentication service is currently unavailable",
+			"timestamp": time.Now(),
+			"service":   "auth-service",
+		})
+	}
+
+	// Custom director to modify the request before forwarding
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+
+		// Log the proxy request
+		log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
+
+		// Add any custom headers if needed
+		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
+		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		proxy.ServeHTTP(w, r)
+	}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	response := HealthResponse{
-		Status:  "healthy",
-		Version: "1.0.0",
-		Time:    time.Now(),
+	// Check if auth service is healthy
+	authHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
+
+	status := "healthy"
+	if !authHealthy {
+		status = "degraded"
+	}
+
+	response := map[string]interface{}{
+		"status":  status,
+		"version": "1.0.0",
+		"time":    time.Now(),
+		"gateway": "operational",
+		"services": map[string]string{
+			"auth-service": func() string {
+				if authHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
+		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	if !authHealthy {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
 	json.NewEncoder(w).Encode(response)
+}
+
+// checkServiceHealth checks if a service is responding to health checks
+func checkServiceHealth(healthURL string) bool {
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get(healthURL)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
