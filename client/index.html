@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heladería - Iniciar Sesión</title>
+    <title>Ice Cream Store - Management System</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -14,159 +14,134 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="shared/css/style.css">
 </head>
 <body>
-    <div class="container-fluid login-container">
+    <div class="container-fluid h-100">
         <div class="row h-100">
-            <!-- Left Panel - Branding -->
-            <div class="col-lg-6 d-none d-lg-flex branding-panel">
-                <div class="branding-content">
-                    <div class="brand-logo">
-                        <i class="fas fa-ice-cream fa-4x text-white mb-4"></i>
-                        <h1 class="brand-title">Heladería</h1>
-                        <p class="brand-subtitle">Sistema de Gestión Dulce</p>
+            <!-- Service Navigation Panel -->
+            <div class="col-lg-4 service-panel">
+                <div class="service-content">
+                    <div class="brand-logo text-center mb-5">
+                        <i class="fas fa-ice-cream fa-4x text-primary mb-4"></i>
+                        <h1 class="brand-title">Ice Cream Store</h1>
+                        <p class="brand-subtitle">Management System</p>
                     </div>
-                    <div class="features-list">
-                        <div class="feature-item">
-                            <i class="fas fa-chart-line"></i>
-                            <span>Análisis de Ventas</span>
+                    
+                    <div class="services-grid">
+                        <div class="service-card" onclick="navigateToService('auth')">
+                            <div class="service-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="service-info">
+                                <h4>Authentication</h4>
+                                <p>User login and security management</p>
+                                <span class="service-status" id="auth-status">●</span>
+                            </div>
                         </div>
-                        <div class="feature-item">
-                            <i class="fas fa-boxes"></i>
-                            <span>Gestión de Inventario</span>
+                        
+                        <div class="service-card" onclick="navigateToService('orders')">
+                            <div class="service-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="service-info">
+                                <h4>Orders</h4>
+                                <p>Order management and processing</p>
+                                <span class="service-status" id="orders-status">●</span>
+                            </div>
                         </div>
-                        <div class="feature-item">
-                            <i class="fas fa-users"></i>
-                            <span>Gestión de Clientes</span>
+                        
+                        <div class="service-card disabled">
+                            <div class="service-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <div class="service-info">
+                                <h4>Gateway</h4>
+                                <p>API gateway and routing</p>
+                                <span class="service-status" id="gateway-status">●</span>
+                            </div>
                         </div>
-                        <div class="feature-item">
-                            <i class="fas fa-cog"></i>
-                            <span>Administración del Sistema</span>
+                        
+                        <div class="service-card disabled">
+                            <div class="service-icon">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <div class="service-info">
+                                <h4>Data Service</h4>
+                                <p>Database management</p>
+                                <span class="service-status" id="data-status">●</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <!-- Right Panel - Login Form -->
-            <div class="col-lg-6 login-panel">
-                <div class="login-form-container">
-                    <div class="text-center mb-5">
-                                                 <div class="mobile-brand d-lg-none mb-4">
-                             <i class="fas fa-ice-cream fa-3x text-primary"></i>
-                             <h2 class="mt-2">Heladería</h2>
-                         </div>
-                         <h3 class="login-title">¡Bienvenido de Nuevo!</h3>
-                         <p class="login-subtitle text-muted">Por favor inicia sesión en tu cuenta</p>
+            <!-- Welcome Information Panel -->
+            <div class="col-lg-8 welcome-panel">
+                <div class="welcome-content">
+                    <div class="row">
+                        <div class="col-12">
+                            <h2 class="welcome-title">Welcome to Ice Cream Store Management</h2>
+                            <p class="welcome-subtitle">Select a service to get started</p>
+                        </div>
                     </div>
-
-                    <!-- Alert Messages -->
-                    <div id="alert-container"></div>
-
-                    <!-- Login Form -->
-                    <form id="loginForm" class="login-form">
-                                                 <div class="mb-4">
-                             <label for="username" class="form-label">
-                                 <i class="fas fa-user me-2"></i>Usuario
-                             </label>
-                             <input type="text" 
-                                    class="form-control form-control-lg" 
-                                    id="username" 
-                                    name="username"
-                                    placeholder="Ingresa tu nombre de usuario"
-                                    required>
-                             <div class="invalid-feedback"></div>
-                         </div>
-
-                                                 <div class="mb-4">
-                             <label for="password" class="form-label">
-                                 <i class="fas fa-lock me-2"></i>Contraseña
-                             </label>
-                             <div class="input-group">
-                                 <input type="password" 
-                                        class="form-control form-control-lg" 
-                                        id="password" 
-                                        name="password"
-                                        placeholder="Ingresa tu contraseña"
-                                        required>
-                                 <button class="btn btn-outline-secondary" 
-                                         type="button" 
-                                         id="togglePassword">
-                                     <i class="fas fa-eye"></i>
-                                 </button>
-                             </div>
-                             <div class="invalid-feedback"></div>
-                         </div>
-
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" 
-                                       type="checkbox" 
-                                       id="rememberMe"
-                                       name="rememberMe">
-                                                                 <label class="form-check-label" for="rememberMe">
-                                     Recordarme por 30 días
-                                 </label>
+                    
+                    <div class="row mt-5">
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h5><i class="fas fa-info-circle me-2"></i>System Architecture</h5>
+                                <ul class="list-unstyled">
+                                    <li><strong>Data Service:</strong> PostgreSQL Database (Port 5432)</li>
+                                    <li><strong>Auth Service:</strong> JWT Authentication (Port 8081)</li>
+                                    <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
+                                    <li><strong>Gateway Service:</strong> API Gateway (Port 8080)</li>
+                                </ul>
                             </div>
                         </div>
-
-                        <button type="submit" 
-                                class="btn btn-primary btn-lg w-100 login-btn"
-                                id="loginBtn">
-                                                         <span class="btn-text">
-                                 <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
-                             </span>
-                             <span class="btn-loading d-none">
-                                 <i class="fas fa-spinner fa-spin me-2"></i>Iniciando Sesión...
-                             </span>
-                        </button>
-                    </form>
-
-                    <!-- Additional Links -->
-                                         <div class="text-center mt-4">
-                         <p class="text-muted">
-                             ¿Necesitas ayuda? Contacta a tu administrador del sistema
-                         </p>
-                     </div>
-
-                    <!-- System Status -->
-                                         <div class="system-status mt-5">
-                         <h6 class="text-muted mb-3">Estado del Sistema</h6>
-                         <div class="status-grid">
-                             <div class="status-item">
-                                 <div class="status-indicator" id="gateway-status"></div>
-                                 <span>Puerta de Enlace</span>
-                             </div>
-                             <div class="status-item">
-                                 <div class="status-indicator" id="auth-status"></div>
-                                 <span>Autenticación</span>
-                             </div>
-                             <div class="status-item">
-                                 <div class="status-indicator" id="database-status"></div>
-                                 <span>Base de Datos</span>
-                             </div>
-                         </div>
-                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Success Modal -->
-    <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-body text-center py-5">
-                    <div class="success-animation mb-4">
-                        <i class="fas fa-check-circle fa-4x text-success"></i>
+                        
+                        <div class="col-md-6">
+                            <div class="info-card">
+                                <h5><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary" onclick="navigateToService('auth')">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login to System
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="checkSystemHealth()">
+                                        <i class="fas fa-heartbeat me-2"></i>Check System Health
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="window.open('http://localhost:8080', '_blank')">
+                                        <i class="fas fa-external-link-alt me-2"></i>PgAdmin
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                                         <h4 class="mb-3">¡Inicio de Sesión Exitoso!</h4>
-                     <p class="text-muted mb-4">Redirigiendo al tablero...</p>
-                    <div class="progress">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                             role="progressbar" 
-                             style="width: 0%"></div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="system-status-card">
+                                <h5><i class="fas fa-server me-2"></i>System Status</h5>
+                                <div id="system-status" class="status-grid">
+                                    <div class="status-item">
+                                        <span class="status-indicator" id="status-auth"></span>
+                                        <span>Auth Service</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-indicator" id="status-orders"></span>
+                                        <span>Orders Service</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-indicator" id="status-gateway"></span>
+                                        <span>Gateway</span>
+                                    </div>
+                                    <div class="status-item">
+                                        <span class="status-indicator" id="status-data"></span>
+                                        <span>Database</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -176,8 +151,71 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Custom JS -->
-    <script src="js/auth.js"></script>
-    <script src="js/main.js"></script>
+    <script>
+        // Navigation functions
+        function navigateToService(service) {
+            switch(service) {
+                case 'auth':
+                    window.location.href = 'auth/login.html';
+                    break;
+                case 'orders':
+                    window.location.href = 'orders/index.html';
+                    break;
+                default:
+                    alert('Service not yet available');
+            }
+        }
+
+        // System health check
+        async function checkSystemHealth() {
+            const services = [
+                { name: 'auth', url: 'http://localhost:8081/api/v1/auth/health', element: 'status-auth' },
+                { name: 'orders', url: 'http://localhost:8083/api/v1/orders/health', element: 'status-orders' },
+                { name: 'gateway', url: 'http://localhost:8080/api/health', element: 'status-gateway' },
+                { name: 'data', url: 'http://localhost:5432', element: 'status-data' } // Database doesn't have HTTP endpoint
+            ];
+
+            for (const service of services) {
+                const statusElement = document.getElementById(service.element);
+                const statusServiceElement = document.getElementById(service.name + '-status');
+                
+                try {
+                    if (service.name === 'data') {
+                        // For database, we'll check if auth service is healthy (implies DB is working)
+                        const authResponse = await fetch('http://localhost:8081/api/v1/auth/health');
+                        const isHealthy = authResponse.ok;
+                        updateStatusIndicator(statusElement, isHealthy ? 'online' : 'offline');
+                        updateServiceStatus(statusServiceElement, isHealthy ? 'online' : 'offline');
+                    } else {
+                        const response = await fetch(service.url);
+                        const isHealthy = response.ok;
+                        updateStatusIndicator(statusElement, isHealthy ? 'online' : 'offline');
+                        updateServiceStatus(statusServiceElement, isHealthy ? 'online' : 'offline');
+                    }
+                } catch (error) {
+                    updateStatusIndicator(statusElement, 'offline');
+                    updateServiceStatus(statusServiceElement, 'offline');
+                }
+            }
+        }
+
+        function updateStatusIndicator(element, status) {
+            if (!element) return;
+            element.classList.remove('online', 'offline', 'loading');
+            element.classList.add(status);
+        }
+
+        function updateServiceStatus(element, status) {
+            if (!element) return;
+            element.classList.remove('online', 'offline', 'loading');
+            element.classList.add(status);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSystemHealth();
+            setInterval(checkSystemHealth, 30000); // Check every 30 seconds
+        });
+    </script>
 </body>
 </html> 

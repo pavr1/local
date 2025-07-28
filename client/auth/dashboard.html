@@ -182,10 +182,10 @@
         // Dashboard functionality
         async function loadUserInfo() {
             try {
-                if (!authService.isAuthenticated()) {
-                    window.location.href = 'index.html';
-                    return;
-                }
+                            if (!authService.isAuthenticated()) {
+                window.location.href = 'login.html';
+                return;
+            }
 
                 const userData = authService.getUserData();
                 if (userData) {
@@ -241,7 +241,7 @@
                 await authService.logout();
                 showResult('✅ Cierre de sesión exitoso - redirigiendo al login...', 'success');
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = 'login.html';
                 }, 2000);
             } catch (error) {
                 showResult(`❌ Error al cerrar sesión: ${error.message}`, 'danger');

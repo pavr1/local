@@ -84,7 +84,7 @@ run_test "Health Check" \
 # Test 2: Root endpoint
 run_test "Root Endpoint" \
     "curl -f $BASE_URL/" \
-    "Orders Service"
+    "ice-cream-orders-service"
 
 echo ""
 echo -e "${CYAN}🔐 Authentication Tests${RESET}"
