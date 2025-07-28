@@ -51,6 +51,23 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 ```
 
+## 🏗️ Service Architecture Integration
+
+This database schema supports a **microservices architecture** with **10 specialized services**:
+
+- **🔐 Authentication Service**: JWT tokens, login/logout (reads user data from Administration Service)
+- **📋 Audit Service**: Activity logging (`audit_logs` table)
+- **⚙️ Administration Service**: User/role/permission management (`users`, `roles`, `permissions`, `system_config`, `user_salary` tables) - **Admin only**
+- **👥 Customer Service**: Customer management (`customers` table)
+- **🔧 Equipment Service**: Equipment tracking (`mechanics`, `equipment` tables)
+- **💰 Expenses Service**: Financial management (`expense_categories`, `expenses`, `expense_receipts` tables)
+- **📦 Inventory Service**: Core business logic (`suppliers`, `ingredients`, `existences`, `runout_ingredient_report`, `recipe_categories`, `recipes`, `recipe_ingredients` tables)
+- **🎉 Promotions Service**: Loyalty programs (`promotions`, `customer_points` tables)
+- **🛒 Orders Service**: Sales processing (`orders`, `ordered_receipes` tables)
+- **🗑️ Waste Service**: Loss analysis (`waste_loss` table)
+
+> **Security Model**: Authentication Service handles login/JWT tokens, while Administration Service manages all user/role/permission CRUD operations with admin-only access.
+
 ## Inventory Management Entities
 
 ### Suppliers Table

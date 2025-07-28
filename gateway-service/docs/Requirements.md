@@ -528,22 +528,42 @@
 
 ## Authentication & Authorization
 
+### 🏗️ Service Architecture Overview
+The authentication and authorization system is implemented across **two specialized microservices** with clear separation of concerns:
+
+#### **🔐 Authentication Service**
+**Purpose**: Security and session management **ONLY**
+- JWT token generation, validation, and refresh
+- Login/logout endpoints and workflows
+- Password hashing and verification
+- Security middleware for all services
+- Session tracking and management
+
+#### **⚙️ Administration Service** 
+**Purpose**: User, role, and permission management with **ADMIN-ONLY** access
+- User CRUD operations (create, read, update, delete users)
+- Role management and assignment
+- Permission management and validation
+- System configuration settings
+- Employee salary and payroll management
+
 ### Internal Authentication
 - **Implementation Requirements:**
-  - Username and password-based authentication
-  - Secure password hashing (bcrypt or similar)
-  - Session management for logged-in users
-  - Login/logout functionality
-  - Password strength requirements
-  - Default admin user creation for initial system setup
-  - Password change functionality for users
+  - JWT token-based authentication with microservices integration
+  - Secure password hashing (bcrypt) handled by Authentication Service
+  - Session management for logged-in users via JWT tokens
+  - Login/logout functionality through Authentication Service
+  - Password strength requirements enforced by Administration Service
+  - Default admin user creation through Administration Service (admin-only)
+  - Password change functionality via Administration Service (admin-only)
 
 - **Authentication Workflow:**
-  1. User submits username/password via login form
-  2. Server validates credentials against users table
-  3. On success, create authenticated session
-  4. Session used for subsequent API requests
-  5. Permissions checked against user's roles and permissions tables
+  1. User submits username/password to **Authentication Service**
+  2. Authentication Service calls **Administration Service** to validate credentials
+  3. Administration Service returns user data and permissions
+  4. Authentication Service generates JWT token with user context
+  5. JWT token used for subsequent API requests across all services
+  6. Each service validates JWT and checks permissions via Administration Service
 
 ### Permission System
 - **Simplified Role-Permission Structure:**

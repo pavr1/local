@@ -1,68 +1,292 @@
-# Multi-Project Workspace
+# 🍦 Ice Cream Store - Microservices Management System
 
-This workspace contains both client and server applications for a full-stack project.
+A comprehensive business management system built with Go microservices architecture for ice cream store operations.
 
-## Project Structure
+## 🏗️ System Architecture
+
+This project implements a **microservices architecture** with 10 specialized services, each handling specific business domains with clear separation of concerns.
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Data Service  │ ──▶ │   Auth Service  │ ──▶ │ Gateway Service │
+│   PostgreSQL    │     │   JWT Auth      │     │   API Gateway   │
+│   Port: 5432    │     │   Port: 8081    │     │   Port: 8080    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+## 📦 Services Overview
+
+### 🟥 **Level 0: Foundation Services**
+- **🔐 Authentication Service** (Port: 8081) - JWT tokens, login/logout, security middleware
+- **📋 Audit Service** - Activity logging, security monitoring
+
+### 🟧 **Level 1: Administrative Services**  
+- **⚙️ Administration Service** - User/role/permission management, system config (Admin only)
+- **👥 Customer Service** - Customer management and profiles
+- **🔧 Equipment Service** - Equipment tracking and maintenance
+- **💰 Expenses Service** - Expense management and receipts
+
+### 🟪 **Level 2: Business Logic Services**
+- **📦 Inventory Service** - Suppliers, ingredients, recipes, stock management
+
+### 🟢 **Level 3: Advanced Services**
+- **🎉 Promotions Service** - Discounts, loyalty programs, customer points
+
+### 🔵 **Level 4: Operations Services**
+- **🛒 Orders Service** - Sales processing, invoicing, payment handling
+
+### 🟩 **Level 5: Analytics Services**
+- **🗑️ Waste Service** - Waste tracking and loss analysis
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Docker & Docker Compose** - Container orchestration
+- **Colima** - Docker runtime for macOS
+- **Go 1.21+** - Backend development
+- **PostgreSQL 15** - Database
+
+### Installation
+
+1. **Clone and Setup**
+   ```bash
+   git clone <repository>
+   cd local
+   ```
+
+2. **Complete System Setup**
+   ```bash
+   make fresh  # 🔥 Fresh install of ALL services
+   ```
+
+3. **Individual Service Management**
+   ```bash
+   make fresh-data     # Fresh install data service only
+   make fresh-auth     # Fresh install auth service only
+   make fresh-gateway  # Fresh install gateway service only
+   ```
+
+## 🎛️ Service Management
+
+### **System-Wide Commands**
+```bash
+make fresh          # Complete fresh installation of all services
+make start-all      # Start all services in correct order
+make stop-all       # Stop all services
+make test-all       # Test all service endpoints
+make status         # Check status of all services
+make health-all     # Health check all services
+make clean-all      # Clean all services
+```
+
+### **Individual Service Commands**
+```bash
+# Service-specific operations
+make start-data     # Start data service
+make start-auth     # Start auth service  
+make start-gateway  # Start gateway service
+
+# Testing and monitoring
+make test-data      # Test data service
+make health-auth    # Health check auth service
+make logs-all       # View logs from all services
+```
+
+## 🔗 Service Endpoints
+
+### **Core Services**
+- **Database (PostgreSQL)**: `postgresql://postgres:postgres123@localhost:5432/icecream_store`
+- **PgAdmin**: http://localhost:8080 (`admin@icecreamstore.com` / `admin123`)
+- **Auth Service**: http://localhost:8081/api/v1/auth/health
+- **Gateway Service**: http://localhost:8080/api/health
+- **Portainer (Docker UI)**: https://localhost:9443
+
+### **Management Interfaces**
+- **Database Management**: PgAdmin at http://localhost:8080
+- **Container Management**: Portainer at https://localhost:9443
+- **API Gateway**: http://localhost:8080
+
+## 🏛️ Service Architecture Details
+
+### **Authentication Flow**
+```
+1. Authentication Service → Validates credentials, issues JWT
+2. JWT Contains → User ID, role, basic permissions  
+3. Each Service → Validates JWT via Administration Service
+4. Administration Service → Central authority for user/role/permission data
+```
+
+### **Service Dependencies**
+```
+Authentication Service (No dependencies)
+    ↓
+Administration Service (Admin-only user/role management)
+    ↓  
+Business Services (Customer, Equipment, Expenses)
+    ↓
+Inventory Service (Core business logic)
+    ↓
+Promotions Service (Advanced business logic)
+    ↓
+Orders Service (Complex integrations)
+    ↓
+Waste Service (Analytics)
+```
+
+## 📁 Project Structure
 
 ```
 local/
-├── client/          # Frontend application
-├── server/          # Go backend server
-├── README.md        # This file
-└── .gitignore       # Git ignore patterns
+├── auth-service/           # 🔐 Authentication & JWT management
+├── data-service/           # 🗄️ PostgreSQL database setup
+├── gateway-service/        # 🌐 API Gateway and routing
+├── administration-service/ # ⚙️ User/role/config management (Future)
+├── customer-service/       # 👥 Customer management (Future)
+├── equipment-service/      # 🔧 Equipment tracking (Future)
+├── expenses-service/       # 💰 Expense management (Future)
+├── inventory-service/      # 📦 Core inventory logic (Future)
+├── promotions-service/     # 🎉 Promotions & loyalty (Future)
+├── orders-service/         # 🛒 Sales & orders (Future)
+├── waste-service/          # 🗑️ Waste analytics (Future)
+├── Makefile               # 🎯 Root orchestration
+└── README.md              # 📚 This documentation
 ```
 
-## Getting Started
+## 🛠️ Development Workflow
 
-### Prerequisites
+### **Service Implementation Order**
+1. ✅ **Authentication Service** (Completed)
+2. ✅ **Data Service** (Completed)  
+3. ✅ **Gateway Service** (Completed)
+4. 🔄 **Administration Service** (Next)
+5. 🔄 **Customer Service**
+6. 🔄 **Equipment Service**
+7. 🔄 **Expenses Service**
+8. 🔄 **Inventory Service**
+9. 🔄 **Promotions Service**
+10. 🔄 **Orders Service**
+11. 🔄 **Waste Service**
 
-- Go 1.19+ for the server
-- Node.js 16+ for the client
-- Git
+### **Development Commands**
+```bash
+# Service development
+cd <service-name>
+make dev            # Run in development mode
+make build          # Build service binary
+make test           # Run service tests
+make lint           # Run code linting
 
-### Development
+# Database operations
+make connect        # Connect to PostgreSQL CLI
+make reset          # Reset database (⚠️ DELETES ALL DATA)
+```
 
-1. **Server Development**
-   ```bash
-   cd server
-   go run main.go
-   ```
+## 🔐 Security & Authorization
 
-2. **Client Development**
-   ```bash
-   cd client
-   npm start
-   ```
+### **Authentication Service**
+- **Purpose**: Security & session management only
+- **Functions**: Login/logout, JWT tokens, password validation
+- **Integration**: Calls Administration Service for user data
 
-3. **Run Both Projects**
-   ```bash
-   # From the root directory
-   ./scripts/dev.sh
-   ```
+### **Administration Service** 
+- **Purpose**: User/role/permission management (Admin only)
+- **Authorization**: Requires admin permissions for ALL operations
+- **Functions**: User CRUD, role management, system configuration
 
-## Server (Go)
+### **Permission Model**
+- **Format**: `Entity-Action` (e.g., "Ingredients-Create")
+- **Validation**: Each service validates permissions via Administration Service
+- **Roles**: Admin (full access), Employee (limited access)
 
-The server is built with Go and provides the backend API.
+## 📊 Business Domains
 
-- **Port**: 8080 (default)
-- **API Base**: `http://localhost:8080/api`
+### **Inventory Management**
+- Suppliers, ingredients, existences, recipes
+- Stock tracking with FIFO logic
+- Cost calculation with margins and taxes
+- Expiration and runout reporting
 
-## Client
+### **Financial Management**
+- Expense tracking and categorization
+- Receipt management with image uploads
+- Employee salary and payroll
+- Order processing and invoicing
 
-The client is a frontend application that consumes the server API.
+### **Customer Operations**
+- Customer profiles and contact management
+- Loyalty points and promotions
+- Order history and analytics
 
-- **Port**: 3000 (default)
-- **Dev Server**: `http://localhost:3000`
+### **Equipment & Maintenance**
+- Equipment inventory and status tracking
+- Maintenance scheduling
+- Mechanic contact management
 
-## Development Workflow
+## 📈 Monitoring & Analytics
 
-1. Start the server in one terminal
-2. Start the client in another terminal
-3. Both will hot-reload on file changes
+### **System Health**
+```bash
+make final-status   # Complete system status check
+make health-all     # Health check all services
+make logs-all       # View logs from all services
+```
 
-## Contributing
+### **Business Analytics**
+- Waste tracking and loss analysis
+- Sales reporting and trends
+- Inventory optimization
+- Customer behavior insights
 
-1. Create a feature branch
-2. Make your changes
-3. Test both client and server
-4. Create a pull request 
+## 🤝 Contributing
+
+1. **Service Development**
+   - Follow microservices patterns
+   - Maintain clear service boundaries
+   - Implement proper error handling
+   - Add comprehensive tests
+
+2. **Database Changes**
+   - Update Database.md documentation
+   - Create migration scripts
+   - Test with sample data
+
+3. **API Design**
+   - Follow RESTful conventions
+   - Implement proper status codes
+   - Add request/response validation
+   - Document endpoints
+
+## 📚 Documentation
+
+- **Database Schema**: `gateway-service/docs/Database.md`
+- **Business Requirements**: `gateway-service/docs/Requirements.md`
+- **ER Diagram**: `gateway-service/docs/Database-ER-Diagram.md`
+- **Service APIs**: Each service's `README.md`
+
+## 🎯 System Features
+
+### **Operational Excellence**
+- ✅ Complete microservices architecture
+- ✅ Docker containerization  
+- ✅ Database management with PgAdmin
+- ✅ Centralized orchestration with Makefiles
+- ✅ Comprehensive logging and monitoring
+
+### **Business Capabilities**
+- 🔄 Inventory management with FIFO logic
+- 🔄 Financial tracking and reporting  
+- 🔄 Customer loyalty programs
+- 🔄 Equipment maintenance scheduling
+- 🔄 Waste tracking and optimization
+
+### **Security & Compliance**
+- ✅ JWT-based authentication
+- 🔄 Role-based access control
+- 🔄 Comprehensive audit logging
+- 🔄 Data encryption and security
+
+---
+
+**🍦 Ready to build the sweetest business management system!** 🚀
+
+For detailed service documentation, see individual service directories and the docs folder. 
