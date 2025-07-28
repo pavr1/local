@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heladería - Tablero</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .dashboard-container {
+            padding: 2rem 0;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin-bottom: 2rem;
+        }
+        
+        .user-header {
+            background: linear-gradient(135deg, #45b7d1 0%, #ff6b9d 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 2rem;
+        }
+        
+        .api-endpoint {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }
+        
+        .btn-test {
+            background: linear-gradient(135deg, #45b7d1 0%, #ff6b9d 100%);
+            border: none;
+            color: white;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-online {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container dashboard-container">
+        <!-- User Info Header -->
+        <div class="dashboard-card">
+            <div class="user-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2><i class="fas fa-ice-cream me-3"></i>Bienvenido al Tablero de la Heladería</h2>
+                        <div id="user-info">
+                            <p class="mb-1"><strong>Cargando información del usuario...</strong></p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <button class="btn btn-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available API Endpoints -->
+        <div class="dashboard-card">
+            <div class="card-body p-4">
+                <h4 class="mb-4"><i class="fas fa-api me-2"></i>Endpoints API Disponibles</h4>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Endpoints de Autenticación</h6>
+                        
+                        <div class="api-endpoint">
+                            <strong>GET /api/v1/auth/health</strong>
+                            <p class="mb-2 text-muted">Verificar el estado del servicio de autenticación</p>
+                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/health', 'GET')">
+                                Probar Endpoint
+                            </button>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <strong>GET /api/v1/auth/profile</strong>
+                            <p class="mb-2 text-muted">Obtener perfil del usuario actual</p>
+                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/profile', 'GET', true)">
+                                Probar Endpoint
+                            </button>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <strong>GET /api/v1/auth/validate</strong>
+                            <p class="mb-2 text-muted">Validar el token actual</p>
+                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/validate', 'GET', true)">
+                                Probar Endpoint
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Endpoints de Administrador</h6>
+                        
+                        <div class="api-endpoint">
+                            <strong>GET /api/v1/auth/token-info</strong>
+                            <p class="mb-2 text-muted">Obtener información detallada del token (Solo Admin)</p>
+                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/token-info', 'GET', true)">
+                                Probar Endpoint
+                            </button>
+                        </div>
+                        
+                        <div class="api-endpoint">
+                            <strong>POST /api/v1/auth/logout</strong>
+                            <p class="mb-2 text-muted">Cerrar sesión e invalidar token</p>
+                            <button class="btn btn-test btn-sm" onclick="testLogout()">
+                                Probar Cerrar Sesión
+                            </button>
+                        </div>
+                        
+                        <h6 class="mt-4">Estado del Sistema</h6>
+                        
+                        <div class="api-endpoint">
+                            <strong>GET /api/health</strong>
+                            <p class="mb-2 text-muted">Verificar el estado general del sistema</p>
+                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/health', 'GET')">
+                                Probar Endpoint
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="dashboard-card">
+            <div class="card-body p-4">
+                <h4 class="mb-4"><i class="fas fa-flask me-2"></i>Resultados de Pruebas API</h4>
+                <div id="test-results">
+                    <p class="text-muted">Haz clic en cualquier botón "Probar Endpoint" para ver los resultados aquí...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Auth Service -->
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // Dashboard functionality
+        async function loadUserInfo() {
+            try {
+                if (!authService.isAuthenticated()) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const userData = authService.getUserData();
+                if (userData) {
+                    const { user, role, permissions } = userData;
+                    document.getElementById('user-info').innerHTML = `
+                        <p class="mb-1"><strong>${user.full_name}</strong> (${user.username})</p>
+                        <p class="mb-1">Rol: <span class="badge bg-light text-dark">${role.role_name}</span></p>
+                        <p class="mb-0">Permisos: ${permissions.length} disponibles</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                showResult('Error al cargar información del usuario', 'danger');
+            }
+        }
+
+        async function testEndpoint(endpoint, method = 'GET', requiresAuth = false) {
+            try {
+                const url = `http://localhost:8082/api${endpoint}`;
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (requiresAuth) {
+                    const token = authService.getToken();
+                    if (!token) {
+                        showResult('No hay token de autenticación disponible', 'danger');
+                        return;
+                    }
+                    options.headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                showResult(`Probando ${method} ${endpoint}...`, 'info');
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`✅ ${method} ${endpoint} - Éxito`, 'success', data);
+                } else {
+                    showResult(`❌ ${method} ${endpoint} - Error: ${data.message || 'Error desconocido'}`, 'danger', data);
+                }
+            } catch (error) {
+                showResult(`❌ ${method} ${endpoint} - Error de Red: ${error.message}`, 'danger');
+            }
+        }
+
+        async function testLogout() {
+            try {
+                await authService.logout();
+                showResult('✅ Cierre de sesión exitoso - redirigiendo al login...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            } catch (error) {
+                showResult(`❌ Error al cerrar sesión: ${error.message}`, 'danger');
+            }
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                testLogout();
+            }
+        }
+
+        function showResult(message, type = 'info', data = null) {
+            const resultsDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let resultHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <strong>[${timestamp}]</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            if (data) {
+                resultHtml += `
+                    <div class="alert alert-light border mb-3">
+                        <h6>Datos de Respuesta:</h6>
+                        <pre class="mb-0"><code>${JSON.stringify(data, null, 2)}</code></pre>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserInfo();
+            console.log('🍦 ¡Tablero cargado! Prueba los endpoints API de arriba.');
+        });
+    </script>
+</body>
+</html> 
