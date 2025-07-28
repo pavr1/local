@@ -118,30 +118,92 @@ class AuthService {
     }
 
     async checkSystemHealth() {
+        const healthResults = {
+            gateway: 'offline',
+            services: {}
+        };
+
+        // Check Database (via auth service since database is internal)
+        let databaseHealthy = false;
         try {
-            const response = await fetch(`${this.baseURL}/health`, {
+            const authResponse = await fetch('http://localhost:8082/api/v1/auth/health', {
                 method: 'GET',
+                mode: 'cors'
             });
-
-            if (!response.ok) {
-                return {
-                    gateway: 'offline',
-                    services: {}
-                };
+            console.log('Auth health response status:', authResponse.status);
+            if (authResponse.ok) {
+                const authData = await authResponse.json();
+                console.log('Auth health data:', authData);
+                const authHealthy = authData.success && authData.data?.status === 'healthy';
+                healthResults.services['auth-service'] = authHealthy ? 'healthy' : 'unhealthy';
+                databaseHealthy = authHealthy; // Infer database health from auth service
+            } else {
+                healthResults.services['auth-service'] = 'unhealthy';
             }
-
-            const data = await response.json();
-            return {
-                gateway: data.status === 'healthy' ? 'online' : 'degraded',
-                services: data.services || {}
-            };
         } catch (error) {
-            console.error('Health check error:', error);
-            return {
-                gateway: 'offline',
-                services: {}
-            };
+            console.error('Auth service health check error:', error);
+            healthResults.services['auth-service'] = 'unhealthy';
         }
+
+        // Set database status
+        healthResults.services['database'] = databaseHealthy ? 'healthy' : 'unhealthy';
+
+        // Check Orders Service (via Gateway to avoid CORS)
+        try {
+            const ordersResponse = await fetch('http://localhost:8082/api/v1/orders/health', {
+                method: 'GET',
+                mode: 'cors'
+            });
+            console.log('Orders health response status:', ordersResponse.status);
+            if (ordersResponse.ok) {
+                const ordersData = await ordersResponse.json();
+                console.log('Orders health data:', ordersData);
+                const ordersHealthy = ordersData.success && ordersData.data?.status === 'healthy';
+                
+                // Orders service depends on database
+                if (!databaseHealthy) {
+                    healthResults.services['orders-service'] = 'degraded';
+                } else {
+                    healthResults.services['orders-service'] = ordersHealthy ? 'healthy' : 'unhealthy';
+                }
+            } else {
+                healthResults.services['orders-service'] = 'unhealthy';
+            }
+        } catch (error) {
+            console.error('Orders service health check error:', error);
+            healthResults.services['orders-service'] = 'unhealthy';
+        }
+
+        // Check Gateway Service
+        try {
+            const gatewayResponse = await fetch('http://localhost:8082/api/hello', {
+                method: 'GET',
+                mode: 'cors'
+            });
+            console.log('Gateway health response status:', gatewayResponse.status);
+            
+            // Gateway depends on all services
+            const allServicesHealthy = Object.values(healthResults.services).every(status => status === 'healthy');
+            const anyServiceUnhealthy = Object.values(healthResults.services).some(status => status === 'unhealthy');
+            
+            if (gatewayResponse.ok) {
+                if (allServicesHealthy) {
+                    healthResults.gateway = 'online';
+                } else if (anyServiceUnhealthy) {
+                    healthResults.gateway = 'degraded';
+                } else {
+                    healthResults.gateway = 'degraded';
+                }
+            } else {
+                healthResults.gateway = 'offline';
+            }
+        } catch (error) {
+            console.error('Gateway health check error:', error);
+            healthResults.gateway = 'offline';
+        }
+
+        console.log('Final health results:', healthResults);
+        return healthResults;
     }
 
     // === TOKEN MANAGEMENT ===

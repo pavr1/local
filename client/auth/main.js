@@ -284,11 +284,30 @@ class LoginApp {
         // Auth service status
         const authStatus = document.getElementById('auth-status');
         const authServiceStatus = health.services['auth-service'] || 'unknown';
-        this.setStatusIndicator(authStatus, authServiceStatus === 'healthy' ? 'online' : 'offline');
+        this.setStatusIndicator(authStatus, this.mapServiceStatus(authServiceStatus));
 
-        // Database status (inferred from auth service status)
+        // Orders service status
+        const ordersStatus = document.getElementById('orders-status');
+        const ordersServiceStatus = health.services['orders-service'] || 'unknown';
+        this.setStatusIndicator(ordersStatus, this.mapServiceStatus(ordersServiceStatus));
+
+        // Database status
         const databaseStatus = document.getElementById('database-status');
-        this.setStatusIndicator(databaseStatus, authServiceStatus === 'healthy' ? 'online' : 'offline');
+        const databaseServiceStatus = health.services['database'] || 'unknown';
+        this.setStatusIndicator(databaseStatus, this.mapServiceStatus(databaseServiceStatus));
+    }
+
+    mapServiceStatus(serviceStatus) {
+        switch (serviceStatus) {
+            case 'healthy':
+                return 'online';
+            case 'degraded':
+                return 'loading'; // Orange/yellow status
+            case 'unhealthy':
+            case 'unknown':
+            default:
+                return 'offline';
+        }
     }
 
     setStatusIndicator(element, status) {
