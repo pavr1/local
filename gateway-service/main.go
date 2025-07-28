@@ -26,13 +26,15 @@ type HealthResponse struct {
 
 // Service configuration
 type ServiceConfig struct {
-	AuthServiceURL string
+	AuthServiceURL   string
+	OrdersServiceURL string
 }
 
 func main() {
 	// Service configuration
 	config := &ServiceConfig{
-		AuthServiceURL: "http://localhost:8081",
+		AuthServiceURL:   "http://localhost:8081",
+		OrdersServiceURL: "http://localhost:8083",
 	}
 
 	r := mux.NewRouter()
@@ -46,6 +48,10 @@ func main() {
 	// Auth service proxy - route all /api/v1/auth/* to auth service
 	authProxy := api.PathPrefix("/v1/auth").Subrouter()
 	authProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.AuthServiceURL, "/api/v1/auth"))
+
+	// Orders service proxy - route all /api/v1/orders/* to orders service
+	ordersProxy := api.PathPrefix("/v1/orders").Subrouter()
+	ordersProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
 
 	// Example endpoints (keeping for demo)
 	api.HandleFunc("/hello", helloHandler).Methods("GET")
@@ -61,6 +67,8 @@ func main() {
 	fmt.Println("📡 API available at http://localhost:8082/api")
 	fmt.Println("🔐 Auth endpoints: http://localhost:8082/api/v1/auth/*")
 	fmt.Printf("   → Proxying to: %s\n", config.AuthServiceURL)
+	fmt.Println("🛒 Orders endpoints: http://localhost:8082/api/v1/orders/*")
+	fmt.Printf("   → Proxying to: %s\n", config.OrdersServiceURL)
 
 	log.Fatal(http.ListenAndServe(":8082", r))
 }
@@ -107,11 +115,12 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if auth service is healthy
+	// Check if services are healthy
 	authHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
+	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
 
 	status := "healthy"
-	if !authHealthy {
+	if !authHealthy || !ordersHealthy {
 		status = "degraded"
 	}
 
@@ -127,11 +136,17 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				return "unhealthy"
 			}(),
+			"orders-service": func() string {
+				if ordersHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
 		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !authHealthy {
+	if !authHealthy || !ordersHealthy {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	json.NewEncoder(w).Encode(response)
