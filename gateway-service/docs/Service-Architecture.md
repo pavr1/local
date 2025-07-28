@@ -26,7 +26,7 @@ The Ice Cream Store management system implements a **microservices architecture*
 graph TD
     %% Level 0 - Foundation
     A1[🔐 Authentication Service<br/>Security & Session Management] --> B1[Level 1 Services]
-    A2[📋 Audit Service<br/>Activity Logging] --> B1
+    A2[📋 Audit Service<br/>LogAuditEntry() & RetrieveAuditLogs()<br/>Activity Logging] --> B1
 
     %% Level 1 - Administrative
     B1 --> B2[⚙️ Administration Service<br/>👑 Admin Only<br/>User/Role/Permission CRUD]
@@ -132,13 +132,124 @@ graph TD
 
 #### 2. **Audit Service** 📋
 - **Tables**: `audit_logs`
+- **Core API Methods**:
+  - **`LogAuditEntry()`**: Insert audit records with severity levels (info, warning, error)
+  - **`RetrieveAuditLogs()`**: Query audit data with flexible filtering capabilities
 - **Functions**:
-  - Operation logging (CREATE, READ, UPDATE, DELETE)
-  - Security event monitoring
-  - Login/logout tracking
-  - Failed operation logging
-  - IP address and user agent tracking
-  - Audit search and reporting
+  - **Audit Logging**:
+    - Operation logging (CREATE, READ, UPDATE, DELETE)
+    - Security event monitoring with severity classification
+    - Login/logout tracking with IP and user agent
+    - Failed operation logging with error details
+    - Cross-service correlation tracking
+  - **Audit Retrieval**:
+    - Multi-criteria filtering (user, date range, severity, entity type, etc.)
+    - Pagination and sorting capabilities
+    - Export functionality for compliance reporting
+    - Real-time audit monitoring
+
+### **🔍 Audit Service API Specification**
+
+#### **LogAuditEntry() Method**
+```go
+func LogAuditEntry(
+    userID *uuid.UUID,           // User who performed action (nullable for system)
+    severity string,             // "info", "warning", "error"
+    actionType string,           // "create", "update", "delete", "login", etc.
+    entityType string,           // "users", "orders", "inventory", etc.
+    entityID *uuid.UUID,         // Specific record affected (nullable)
+    description string,          // Human-readable description
+    oldValues map[string]interface{}, // Previous values (nullable)
+    newValues map[string]interface{}, // New values (nullable)
+    ipAddress string,            // Client IP address
+    userAgent string,            // Browser/client info
+    correlationID *uuid.UUID,    // For tracking related operations
+    serviceName string           // Service generating the log
+) error
+```
+
+#### **RetrieveAuditLogs() Method with Variadic Filtering**
+```go
+type AuditFilter struct {
+    UserIDs        []uuid.UUID
+    SeverityLevels []string    // ["info", "warning", "error"]
+    ActionTypes    []string
+    EntityTypes    []string
+    EntityIDs      []uuid.UUID
+    DateFrom       *time.Time
+    DateTo         *time.Time
+    IPAddresses    []string
+    ServiceNames   []string
+    CorrelationIDs []uuid.UUID
+    SuccessOnly    *bool       // Filter by success/failure
+    Limit          int         // Pagination
+    Offset         int         // Pagination
+    SortBy         string      // "timestamp", "severity", "user_id"
+    SortOrder      string      // "asc", "desc"
+}
+
+func RetrieveAuditLogs(filters ...AuditFilter) ([]AuditLog, int, error)
+```
+
+### **🔄 Audit Service Integration Patterns**
+
+#### **Usage Examples:**
+
+**1. Logging a User Creation (Info Level):**
+```go
+auditService.LogAuditEntry(
+    &adminUserID,           // Admin who created the user
+    "info",                 // Severity level
+    "create",               // Action type
+    "users",                // Entity type
+    &newUserID,             // Newly created user ID
+    "Created new employee user account", // Description
+    nil,                    // No old values for creation
+    userDataMap,            // New user data
+    clientIP,               // Client IP
+    userAgent,              // Browser info
+    &correlationID,         // Request correlation ID
+    "administration-service" // Service name
+)
+```
+
+**2. Logging a Failed Login (Error Level):**
+```go
+auditService.LogAuditEntry(
+    nil,                    // No user ID (failed login)
+    "error",                // Severity level
+    "login",                // Action type
+    "authentication",       // Entity type
+    nil,                    // No specific entity
+    "Failed login attempt for username: invalid_user", // Description
+    nil,                    // No old values
+    map[string]interface{}{"username": "invalid_user"}, // Attempted username
+    clientIP,               // Client IP
+    userAgent,              // Browser info
+    &correlationID,         // Request correlation ID
+    "authentication-service" // Service name
+)
+```
+
+**3. Retrieving Audit Logs with Multiple Filters:**
+```go
+// Get all error-level audit logs from last 24 hours
+logs, count, err := auditService.RetrieveAuditLogs(AuditFilter{
+    SeverityLevels: []string{"error"},
+    DateFrom:       &yesterday,
+    DateTo:         &now,
+    Limit:          50,
+    SortBy:         "timestamp",
+    SortOrder:      "desc",
+})
+
+// Get all operations for specific user
+userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
+    UserIDs:   []uuid.UUID{userID},
+    DateFrom:  &startOfMonth,
+    Limit:     100,
+})
+```
 
 ### **🟧 Level 1: Administrative & Basic Services**
 

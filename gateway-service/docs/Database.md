@@ -1118,42 +1118,53 @@ UNION ALL SELECT r.id, 'WasteLoss-Read', 'View waste loss information', 'WasteLo
 CREATE TABLE audit_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    severity_level VARCHAR(20) NOT NULL CHECK (severity_level IN ('info', 'warning', 'error')) DEFAULT 'info',
     action_type VARCHAR(50) NOT NULL, -- create, update, delete, login, logout, etc.
     entity_type VARCHAR(50) NOT NULL, -- users, orders, inventory, etc.
     entity_id UUID, -- Specific record that was affected
     old_values JSONB, -- Previous values before change (for updates/deletes)
     new_values JSONB, -- New values after change (for creates/updates)
+    description TEXT, -- Human-readable description of the action
     ip_address INET,
     user_agent TEXT,
     timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     success BOOLEAN NOT NULL DEFAULT TRUE,
     error_message TEXT,
+    correlation_id UUID, -- For tracking related operations across services
+    service_name VARCHAR(50), -- Which service generated this log
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
 CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_severity ON audit_logs(severity_level);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action_type);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type);
 CREATE INDEX idx_audit_logs_entity_id ON audit_logs(entity_id);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX idx_audit_logs_success ON audit_logs(success);
 CREATE INDEX idx_audit_logs_ip ON audit_logs(ip_address);
+CREATE INDEX idx_audit_logs_correlation ON audit_logs(correlation_id);
+CREATE INDEX idx_audit_logs_service ON audit_logs(service_name);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `user_id`: Foreign key reference to user who performed the action (nullable for system actions)
+- `severity_level`: Severity of the audit entry (info, warning, error) - defaults to 'info'
 - `action_type`: Type of operation (create, update, delete, login, logout, etc.)
 - `entity_type`: Type of entity affected (users, orders, inventory, etc.)
 - `entity_id`: Specific record that was affected (nullable for general actions)
 - `old_values`: Previous values before change (JSON, for updates/deletes)
 - `new_values`: New values after change (JSON, for creates/updates)
+- `description`: Human-readable description of the action performed
 - `ip_address`: Client IP address where action originated
 - `user_agent`: Browser/client information
 - `timestamp`: When the action occurred
 - `success`: Whether the action was successful
 - `error_message`: Error details if action failed (nullable)
+- `correlation_id`: UUID for tracking related operations across multiple services
+- `service_name`: Name of the service that generated this audit log entry
 
 ---
 

@@ -18,7 +18,7 @@ This project implements a **microservices architecture** with 10 specialized ser
 
 ### 🟥 **Level 0: Foundation Services**
 - **🔐 Authentication Service** (Port: 8081) - JWT tokens, login/logout, security middleware
-- **📋 Audit Service** - Activity logging, security monitoring
+- **📋 Audit Service** - Activity logging with `LogAuditEntry()` & `RetrieveAuditLogs()` API methods
 
 ### 🟧 **Level 1: Administrative Services**  
 - **⚙️ Administration Service** - User/role/permission management, system config (Admin only)
@@ -140,6 +140,7 @@ local/
 ├── auth-service/           # 🔐 Authentication & JWT management
 ├── data-service/           # 🗄️ PostgreSQL database setup
 ├── gateway-service/        # 🌐 API Gateway and routing
+├── audit-service/          # 📋 Audit logging (LogAuditEntry & RetrieveAuditLogs) (Future)
 ├── administration-service/ # ⚙️ User/role/config management (Future)
 ├── customer-service/       # 👥 Customer management (Future)
 ├── equipment-service/      # 🔧 Equipment tracking (Future)
@@ -158,14 +159,15 @@ local/
 1. ✅ **Authentication Service** (Completed)
 2. ✅ **Data Service** (Completed)  
 3. ✅ **Gateway Service** (Completed)
-4. 🔄 **Administration Service** (Next)
-5. 🔄 **Customer Service**
-6. 🔄 **Equipment Service**
-7. 🔄 **Expenses Service**
-8. 🔄 **Inventory Service**
-9. 🔄 **Promotions Service**
-10. 🔄 **Orders Service**
-11. 🔄 **Waste Service**
+4. 🔄 **Audit Service** (LogAuditEntry & RetrieveAuditLogs APIs)
+5. 🔄 **Administration Service** (Next - Critical for other services)
+6. 🔄 **Customer Service**
+7. 🔄 **Equipment Service**
+8. 🔄 **Expenses Service**
+9. 🔄 **Inventory Service**
+10. 🔄 **Promotions Service**
+11. 🔄 **Orders Service**
+12. 🔄 **Waste Service**
 
 ### **Development Commands**
 ```bash
@@ -230,6 +232,13 @@ make final-status   # Complete system status check
 make health-all     # Health check all services
 make logs-all       # View logs from all services
 ```
+
+### **Audit & Security Monitoring**
+- **Audit Service API**: `LogAuditEntry()` for real-time activity logging
+- **Advanced Filtering**: `RetrieveAuditLogs()` with variadic parameters
+- **Severity Classification**: Info, warning, and error level tracking
+- **Cross-Service Correlation**: Track operations across microservices
+- **Compliance Reporting**: Flexible querying for regulatory requirements
 
 ### **Business Analytics**
 - Waste tracking and loss analysis

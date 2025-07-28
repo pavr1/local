@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// todo - need to implement administration service user features there, then login service will be able to read user data from there
 // AuthHandler interface defines the authentication operations
 type AuthHandler interface {
 	// Authentication operations

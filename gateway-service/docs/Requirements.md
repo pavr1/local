@@ -600,14 +600,22 @@ The authentication and authorization system is implemented across **two speciali
 ---
 
 ## Audit & Security
-**Description:** Comprehensive audit trail and security monitoring system to track critical operations, maintain data integrity, and ensure regulatory compliance.
+**Description:** Comprehensive audit trail and security monitoring system implemented as a specialized **Audit Service** with two core API methods for tracking critical operations, maintaining data integrity, and ensuring regulatory compliance.
 
-- **Audit Log Attributes:**
+### **🔍 Audit Service API Architecture**
+
+#### **Core API Methods:**
+1. **`LogAuditEntry()`** - Insert audit records with severity classification
+2. **`RetrieveAuditLogs()`** - Query audit data with flexible filtering using variadic parameters
+
+#### **Enhanced Audit Log Attributes:**
   - **Audit Log ID** (UUID): Unique identifier for each audit record
-  - **User ID** (foreign key): Reference to user who performed the action
+  - **User ID** (foreign key): Reference to user who performed the action (nullable for system actions)
+  - **Severity Level** (enum): Classification of audit entry - "info", "warning", "error" (defaults to "info")
   - **Action Type** (enum): Type of operation (create, update, delete, login, logout, etc.)
   - **Entity Type** (string): Type of entity affected (users, orders, inventory, etc.)
   - **Entity ID** (UUID): Specific record that was affected
+  - **Description** (text): Human-readable description of the action performed
   - **Old Values** (JSON, nullable): Previous values before change (for updates/deletes)
   - **New Values** (JSON, nullable): New values after change (for creates/updates)
   - **IP Address** (string): Client IP address where action originated
@@ -615,14 +623,38 @@ The authentication and authorization system is implemented across **two speciali
   - **Timestamp** (datetime): When the action occurred
   - **Success** (boolean): Whether the action was successful
   - **Error Message** (text, nullable): Error details if action failed
+  - **Correlation ID** (UUID): For tracking related operations across multiple services
+  - **Service Name** (string): Name of the service that generated this audit log entry
+
+#### **LogAuditEntry() Implementation Requirements:**
+- **Severity Classification**: Automatic or manual assignment of info/warning/error levels
+- **Cross-Service Integration**: All services must call Audit Service for logging operations
+- **Correlation Tracking**: Link related operations across services using correlation IDs
+- **Real-time Logging**: Immediate audit entry creation for critical operations
+- **Failure Handling**: Log failed operations with detailed error information
+
+#### **RetrieveAuditLogs() Filtering Capabilities:**
+- **Multi-Criteria Filtering**: Support variadic parameters for flexible querying
+- **Available Filters**:
+  - User IDs (multiple users)
+  - Severity levels (info, warning, error)
+  - Action types (create, update, delete, login, etc.)
+  - Entity types (users, orders, inventory, etc.)
+  - Date ranges (from/to timestamps)
+  - IP addresses and service names
+  - Success/failure status
+  - Correlation IDs for tracking operations
+- **Pagination**: Limit and offset support for large result sets
+- **Sorting**: Configurable sorting by timestamp, severity, or user
+- **Performance**: Optimized queries with proper indexing
 
 - **Critical Operations to Audit:**
-  - **User Management**: User creation, deletion, password changes, role modifications
-  - **Financial Data**: Order creation/modification, pricing changes, payment processing
-  - **Inventory Management**: Ingredient additions/modifications, existence updates, waste reporting
-  - **System Configuration**: Config changes, promotion creation/modification
-  - **Authentication**: Login attempts, logout, session timeouts, failed authentications
-  - **Sensitive Data Access**: Salary information access, financial reports generation
+  - **User Management**: User creation, deletion, password changes, role modifications (severity: info/warning)
+  - **Financial Data**: Order creation/modification, pricing changes, payment processing (severity: info/error)
+  - **Inventory Management**: Ingredient additions/modifications, existence updates, waste reporting (severity: info/warning)
+  - **System Configuration**: Config changes, promotion creation/modification (severity: warning)
+  - **Authentication**: Login attempts, logout, session timeouts, failed authentications (severity: info/error)
+  - **Sensitive Data Access**: Salary information access, financial reports generation (severity: warning)
 
 - **Security Monitoring:**
   - **Failed Login Attempts**: Track and alert on suspicious login patterns
