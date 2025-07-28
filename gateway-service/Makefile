@@ -38,37 +38,47 @@ help: ## Show this help message
 
 ## 🚀 Service Management Commands
 
-start: build ## Start the gateway service
+start: ## Start the gateway service using Docker
 	@echo "$(CYAN)🚀 Starting Gateway Service...$(RESET)"
-	@echo "$(YELLOW)📡 Gateway will be available at http://localhost:8080$(RESET)"
-	@./$(BUILD_DIR)/$(BINARY_NAME)
+	@chmod +x scripts/start.sh
+	@./scripts/start.sh
 
-stop: ## Stop the gateway service (if running in background)
+stop: ## Stop the gateway service containers
 	@echo "$(YELLOW)🛑 Stopping Gateway Service...$(RESET)"
-	@pkill -f "$(BINARY_NAME)" 2>/dev/null || echo "$(YELLOW)No running gateway service found$(RESET)"
+	@chmod +x scripts/stop.sh
+	@./scripts/stop.sh
 
 restart: stop start ## Restart the gateway service
 	@echo "$(GREEN)🔄 Gateway Service restarted successfully!$(RESET)"
+
+reset: ## Reset the gateway service (clean restart)
+	@echo "$(CYAN)🔄 Resetting Gateway Service...$(RESET)"
+	@chmod +x scripts/reset.sh
+	@./scripts/reset.sh
+
+logs: ## Show gateway service logs
+	@chmod +x scripts/logs.sh
+	@./scripts/logs.sh
+
+logs-follow: ## Follow gateway service logs
+	@chmod +x scripts/logs.sh
+	@./scripts/logs.sh -f
 
 ## 📊 Monitoring & Debugging Commands
 
 health: ## Check service health
 	@echo "$(CYAN)🏥 Checking gateway service health...$(RESET)"
-	@if curl -f http://localhost:8080/api/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8082/api/hello > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ Gateway service is healthy and ready!$(RESET)"; \
 	else \
 		echo "$(RED)❌ Gateway service is not responding$(RESET)"; \
 		exit 1; \
 	fi
 
-test: ## Run basic connectivity test
+test: ## Run comprehensive tests
 	@echo "$(CYAN)🧪 Running Gateway Service tests...$(RESET)"
-	@curl -f http://localhost:8080/api/health > /dev/null 2>&1 && \
-		echo "$(GREEN)✅ Health check test passed!$(RESET)" || \
-		(echo "$(RED)❌ Health check test failed!$(RESET)" && exit 1)
-	@curl -f http://localhost:8080/api/hello > /dev/null 2>&1 && \
-		echo "$(GREEN)✅ Hello endpoint test passed!$(RESET)" || \
-		(echo "$(RED)❌ Hello endpoint test failed!$(RESET)" && exit 1)
+	@chmod +x scripts/test.sh
+	@./scripts/test.sh
 
 ## 🔧 Development Commands
 
@@ -101,22 +111,29 @@ format: ## Format Go code
 
 ## 📦 Setup & Installation Commands
 
-install: deps build ## Complete setup: install dependencies and build service
+install: deps build-docker ## Complete setup: install dependencies and build Docker image
 	@echo "$(GREEN)🎉 Gateway Service installation completed!$(RESET)"
 	@echo "$(CYAN)📝 Service Details:$(RESET)"
-	@echo "   Gateway API: http://localhost:8080"
-	@echo "   Health:      http://localhost:8080/api/health"
-	@echo "   Hello API:   http://localhost:8080/api/hello"
+	@echo "   Gateway API: http://localhost:8082"
+	@echo "   Health:      http://localhost:8082/api/hello"
+	@echo "   Hello API:   http://localhost:8082/api/hello"
 	@echo ""
 	@echo "$(CYAN)🧪 Test Commands:$(RESET)"
 	@echo "   make test                      # Run all tests"
-	@echo "   curl http://localhost:8080/api/health"
+	@echo "   curl http://localhost:8082/api/hello"
 
-fresh: clean deps build test info ## Fresh start: clean, build, test, and show info
+fresh: clean deps build-docker start health test info ## Fresh start: clean, build Docker image, start, and test
 	@echo "$(GREEN)🎉 Fresh Gateway Service setup completed!$(RESET)"
-	@echo "$(YELLOW)💡 Service binary is ready. Run 'make start' in a separate terminal to launch the service$(RESET)"
-	@echo "$(CYAN)🧪 Running tests to verify the binary works...$(RESET)"
-	@echo "$(YELLOW)Note: Gateway tests require the service to be started manually$(RESET)"
+	@echo ""
+	@echo "$(CYAN)📊 Gateway Service Status:$(RESET)"
+	@echo "   🌐 Gateway API: $(GREEN)http://localhost:8082$(RESET)"
+	@echo "   🔌 Health Check: $(GREEN)http://localhost:8082/api/hello$(RESET)"
+	@echo "   🔐 Auth Proxy: $(GREEN)http://localhost:8082/api/v1/auth/*$(RESET)"
+	@echo "   🛒 Orders Proxy: $(GREEN)http://localhost:8082/api/v1/orders/*$(RESET)"
+
+build-docker: ## Build the Docker image
+	@echo "$(CYAN)🔨 Building Gateway Service Docker image...$(RESET)"
+	@cd docker && docker-compose build
 
 ## 🧹 Cleanup Commands
 

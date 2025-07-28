@@ -50,7 +50,7 @@ help: ## Show this help message
 
 ## 🚀 Complete System Commands
 
-fresh: banner fresh-data fresh-auth fresh-orders fresh-gateway final-status ## Fresh install of ALL services (recommended)
+fresh: banner fresh-data fresh-auth fresh-orders fresh-gateway start-gateway final-status ## Fresh install of ALL services (recommended)
 	@echo ""
 	@echo "$(GREEN)🎉 COMPLETE SYSTEM FRESH INSTALLATION COMPLETED! 🎉$(RESET)"
 	@echo "$(CYAN)============================================$(RESET)"
@@ -61,7 +61,7 @@ fresh: banner fresh-data fresh-auth fresh-orders fresh-gateway final-status ## F
 	@echo "  🗄️  Data Service: $(GREEN)RUNNING$(RESET) (PostgreSQL + PgAdmin)"
 	@echo "  🔐 Auth Service: $(GREEN)RUNNING$(RESET) (JWT Authentication)"  
 	@echo "  📦 Orders Service: $(GREEN)RUNNING$(RESET) (Order Management)"
-	@echo "  🌐 Gateway Service: $(YELLOW)READY$(RESET) (Binary built, run 'make start-gateway' to launch)"
+	@echo "  🌐 Gateway Service: $(GREEN)RUNNING$(RESET) (http://localhost:8082)"
 	@echo ""
 	@echo "$(CYAN)🔗 Access Your Services:$(RESET)"
 	@echo "  • Database: http://localhost:8080 (PgAdmin)"
@@ -69,7 +69,7 @@ fresh: banner fresh-data fresh-auth fresh-orders fresh-gateway final-status ## F
 	@echo "  • Orders API: http://localhost:8083/api/v1/orders/health"
 	@echo "  • Docker UI: https://localhost:9443 (Portainer)"
 	@echo ""
-	@echo "$(YELLOW)🚀 To start Gateway Service:$(RESET) make start-gateway"
+	@echo "  🌐 Gateway Service API: $(GREEN)http://localhost:8082$(RESET)"
 	@echo ""
 
 start-all: start-data start-auth start-orders start-gateway ## Start all services in correct order
@@ -115,11 +115,11 @@ final-status: ## Final status check after fresh installation
 	else \
 		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
 	fi
-	@printf "  🌐 Gateway Binary: "
-	@if [ -f gateway-service/bin/gateway-service ]; then \
-		echo "$(GREEN)✅ BUILT$(RESET)"; \
+	@printf "  🌐 Gateway Service: "
+	@if curl -f http://localhost:8082/api/hello > /dev/null 2>&1; then \
+		echo "$(GREEN)✅ RUNNING$(RESET)"; \
 	else \
-		echo "$(RED)❌ NOT BUILT$(RESET)"; \
+		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
 	fi
 	@echo ""
 

@@ -1,0 +1,37 @@
+services:
+  gateway-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: icecream_gateway
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      GATEWAY_SERVER_HOST: 0.0.0.0
+      GATEWAY_SERVER_PORT: 8082
+      
+      # Service URLs (internal Docker network)
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://icecream_auth:8081}
+      ORDERS_SERVICE_URL: ${ORDERS_SERVICE_URL:-http://icecream_orders:8083}
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # CORS Configuration
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS:-Content-Type,Authorization}
+    ports:
+      - "8082:8082"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/api/hello"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - docker_icecream_network
+
+networks:
+  docker_icecream_network:
+    external: true 
