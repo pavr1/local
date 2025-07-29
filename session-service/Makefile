@@ -1,5 +1,5 @@
-# Ice Cream Store Auth Service Makefile
-# This Makefile provides commands for managing the authentication service
+# Ice Cream Store Session Service Makefile
+# This Makefile provides commands for managing the session service
 
 # Colors for output
 CYAN := \033[0;36m
@@ -16,10 +16,10 @@ RESET := \033[0m
 fix-permissions:
 	@chmod +x scripts/*.sh
 
-## 🍦 Ice Cream Store Auth Service Management
+## 🍦 Ice Cream Store Session Service Management
 
 help: ## Show this help message
-	@echo "$(CYAN)🍦🔐 Ice Cream Store Auth Service$(RESET)"
+	@echo "$(CYAN)🍦🔐 Ice Cream Store Session Service$(RESET)"
 	@echo "====================================="
 	@echo ""
 	@echo "$(YELLOW)📋 Available Commands:$(RESET)"
@@ -153,7 +153,7 @@ fresh: clean deps build-fresh start test status info ## Fresh start: clean, forc
 clean: ## Clean up containers and images
 	@echo "$(YELLOW)🧹 Cleaning up Auth Service...$(RESET)"
 	@cd docker && docker-compose down -v 2>/dev/null || true
-	@docker image rm auth-service_auth-service 2>/dev/null || true
+	@docker image rm session-service_session-service 2>/dev/null || true
 	@echo "$(GREEN)✅ Cleanup completed$(RESET)"
 
 clean-all: clean ## Clean up everything including Go build cache

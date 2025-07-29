@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"auth-service/models"
-	"auth-service/utils"
+	"session-service/models"
+	"session-service/utils"
 
 	"github.com/sirupsen/logrus"
 )

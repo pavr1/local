@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"auth-service/config"
-	"auth-service/handler"
+	"session-service/config"
+	"session-service/handler"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -176,7 +176,7 @@ func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Ro
 		w.WriteHeader(http.StatusOK)
 		// Simple JSON response without encoding issues
 		fmt.Fprintf(w, `{
-			"service": "ice-cream-auth-service",
+			"service": "ice-cream-session-service",
 			"version": "1.0.0",
 			"status": "running",
 			"time": "%s"

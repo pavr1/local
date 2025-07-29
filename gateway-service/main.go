@@ -51,15 +51,15 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 // Service configuration
 type ServiceConfig struct {
-	AuthServiceURL   string
-	OrdersServiceURL string
+	SessionServiceURL string
+	OrdersServiceURL  string
 }
 
 func main() {
 	// Service configuration
 	config := &ServiceConfig{
-		AuthServiceURL:   "http://localhost:8081",
-		OrdersServiceURL: "http://localhost:8083",
+		SessionServiceURL: "http://localhost:8081",
+		OrdersServiceURL:  "http://localhost:8083",
 	}
 
 	r := mux.NewRouter()
@@ -70,9 +70,9 @@ func main() {
 	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
 
-	// Auth service proxy - route all /api/v1/auth/* to auth service
-	authProxy := api.PathPrefix("/v1/auth").Subrouter()
-	authProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.AuthServiceURL, "/api/v1/auth"))
+	// Session service proxy - route all /api/v1/auth/* to session service
+	sessionProxy := api.PathPrefix("/v1/auth").Subrouter()
+	sessionProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.SessionServiceURL, "/api/v1/auth"))
 
 	// Orders service proxy - route all /api/v1/orders/* to orders service
 	ordersProxy := api.PathPrefix("/v1/orders").Subrouter()
@@ -90,8 +90,8 @@ func main() {
 
 	fmt.Println("🚀 Gateway Service starting on http://localhost:8082")
 	fmt.Println("📡 API available at http://localhost:8082/api")
-	fmt.Println("🔐 Auth endpoints: http://localhost:8082/api/v1/auth/*")
-	fmt.Printf("   → Proxying to: %s\n", config.AuthServiceURL)
+	fmt.Println("🔐 Session endpoints: http://localhost:8082/api/v1/auth/*")
+	fmt.Printf("   → Proxying to: %s\n", config.SessionServiceURL)
 	fmt.Println("🛒 Orders endpoints: http://localhost:8082/api/v1/orders/*")
 	fmt.Printf("   → Proxying to: %s\n", config.OrdersServiceURL)
 
@@ -115,9 +115,9 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"error":     "Service unavailable",
-			"message":   "The authentication service is currently unavailable",
+			"message":   "The session service is currently unavailable",
 			"timestamp": time.Now(),
-			"service":   "auth-service",
+			"service":   "session-service",
 		})
 	}
 
@@ -141,11 +141,11 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if services are healthy
-	authHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
+	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
 
 	status := "healthy"
-	if !authHealthy || !ordersHealthy {
+	if !sessionHealthy || !ordersHealthy {
 		status = "degraded"
 	}
 
@@ -155,8 +155,8 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"time":    time.Now(),
 		"gateway": "operational",
 		"services": map[string]string{
-			"auth-service": func() string {
-				if authHealthy {
+			"session-service": func() string {
+				if sessionHealthy {
 					return "healthy"
 				}
 				return "unhealthy"
@@ -171,7 +171,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !authHealthy || !ordersHealthy {
+	if !sessionHealthy || !ordersHealthy {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	json.NewEncoder(w).Encode(response)

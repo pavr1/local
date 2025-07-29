@@ -138,14 +138,14 @@ class AuthService {
             if (authResponse.ok) {
                 const authData = await authResponse.json();
                 const authHealthy = authData.success && authData.data?.status === 'healthy';
-                healthResults.services['auth-service'] = authHealthy ? 'healthy' : 'unhealthy';
+                healthResults.services['session-service'] = authHealthy ? 'healthy' : 'unhealthy';
                 databaseHealthy = authHealthy; // Infer database health from auth service
             } else {
-                healthResults.services['auth-service'] = 'unhealthy';
+                healthResults.services['session-service'] = 'unhealthy';
             }
         } catch (error) {
             console.error('Auth service health check error:', error);
-            healthResults.services['auth-service'] = 'unhealthy';
+            healthResults.services['session-service'] = 'unhealthy';
         }
 
         // Set database status

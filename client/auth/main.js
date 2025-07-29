@@ -283,7 +283,7 @@ class LoginApp {
 
         // Auth service status
         const authStatus = document.getElementById('auth-status');
-        const authServiceStatus = health.services['auth-service'] || 'unknown';
+                    const authServiceStatus = health.services['session-service'] || 'unknown';
         this.setStatusIndicator(authStatus, this.mapServiceStatus(authServiceStatus));
 
         // Orders service status

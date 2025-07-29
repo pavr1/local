@@ -38,8 +38,8 @@ type Config struct {
 func LoadConfig() *Config {
 	return &Config{
 		// Server settings
-		ServerPort: getEnvString("AUTH_SERVER_PORT", "8081"),
-		ServerHost: getEnvString("AUTH_SERVER_HOST", "0.0.0.0"),
+		ServerPort: getEnvString("SESSION_SERVER_PORT", "8081"),
+		ServerHost: getEnvString("SESSION_SERVER_HOST", "0.0.0.0"),
 
 		// JWT settings
 		JWTSecret:           getEnvString("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),

@@ -20,15 +20,15 @@ if [[ "$1" == "-f" || "$1" == "--follow" ]]; then
 fi
 
 # Determine which service to show logs for
-SERVICE="${1:-auth-service}"
+SERVICE="${1:-session-service}"
 
 case "$SERVICE" in
-    "auth" | "auth-service")
+    "session" | "session-service")
         echo "📋 Viewing Auth Service logs..."
         if [[ -n "$FOLLOW" ]]; then
             echo "   (Following logs - press Ctrl+C to stop)"
         fi
-        docker-compose logs $FOLLOW auth-service
+        docker-compose logs $FOLLOW session-service
         ;;
     "all")
         echo "📋 Viewing all service logs..."

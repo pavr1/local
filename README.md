@@ -136,7 +136,7 @@ Waste Service (Analytics)
 
 ```
 local/
-├── auth-service/           # 🔐 Authentication & JWT management
+├── session-service/        # 🔐 Session & JWT management
 ├── data-service/           # 🗄️ PostgreSQL database setup
 ├── gateway-service/        # 🌐 API Gateway and routing
 ├── audit-service/          # 📋 Audit logging (LogAuditEntry & RetrieveAuditLogs) (Future)

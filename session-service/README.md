@@ -26,8 +26,8 @@ This service provides JWT-based authentication and authorization for the Ice Cre
 cd ../data-service
 make start
 
-# Then start the auth service
-cd ../auth-service
+# Then start the session service
+cd ../session-service
 make install
 ```
 
@@ -70,7 +70,7 @@ docker-compose build
 docker-compose up -d
 
 # View logs
-docker-compose logs -f auth-service
+docker-compose logs -f session-service
 
 # Stop
 docker-compose down
@@ -79,7 +79,7 @@ docker-compose down
 ## 📁 Project Structure
 
 ```
-auth-service/
+session-service/
 ├── docker/
 │   ├── Dockerfile             # Container build configuration
 │   └── docker-compose.yml     # Service orchestration
@@ -252,7 +252,7 @@ GET /api/v1/auth/health
   "success": true,
   "message": "Auth service is healthy",
   "data": {
-    "service": "auth-service",
+    "service": "session-service",
     "status": "healthy",
     "time": "2025-07-27T15:30:00Z"
   }
@@ -392,7 +392,7 @@ Other services can validate tokens by calling the auth service:
 
 ```go
 // Validate token
-resp, err := http.Get("http://auth-service:8081/api/v1/auth/validate", 
+resp, err := http.Get("http://session-service:8081/api/v1/auth/validate", 
     headers: {"Authorization": "Bearer " + token})
 
 // Check permissions in JWT claims
@@ -414,7 +414,7 @@ The JWT token contains the following claims:
   "iat": 1234567890,
   "exp": 1234567890,
   "sub": "uuid",
-  "iss": "icecream-auth-service",
+      "iss": "icecream-session-service",
   "aud": ["icecream-store"]
 }
 ```
@@ -439,8 +439,8 @@ networks:
 cd ../data-service
 make start
 
-# Start auth service
-cd ../auth-service  
+# Start session service
+cd ../session-service  
 make start
 
 # Both services now communicate via Docker network

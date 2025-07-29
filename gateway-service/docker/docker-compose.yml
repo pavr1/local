@@ -11,7 +11,7 @@ services:
       GATEWAY_SERVER_PORT: 8082
       
       # Service URLs (internal Docker network)
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL:-http://icecream_auth:8081}
+      SESSION_SERVICE_URL: ${SESSION_SERVICE_URL:-http://icecream_session:8081}
       ORDERS_SERVICE_URL: ${ORDERS_SERVICE_URL:-http://icecream_orders:8083}
       
       # Logging Configuration

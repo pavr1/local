@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"auth-service/models"
+	"session-service/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/sirupsen/logrus"
@@ -49,7 +49,7 @@ func (j *JWTManager) GenerateToken(profile *models.UserProfile) (string, time.Ti
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			Subject:   profile.User.ID,
-			Issuer:    "icecream-auth-service",
+			Issuer:    "icecream-session-service",
 			Audience:  []string{"icecream-store"},
 		},
 	}
@@ -146,7 +146,7 @@ func (j *JWTManager) RefreshToken(tokenString string, refreshThreshold time.Dura
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),
 			Subject:   claims.UserID,
-			Issuer:    "icecream-auth-service",
+			Issuer:    "icecream-session-service",
 			Audience:  []string{"icecream-store"},
 		},
 	}

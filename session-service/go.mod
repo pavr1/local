@@ -1,4 +1,4 @@
-module auth-service
+module session-service
 
 go 1.23.0
 

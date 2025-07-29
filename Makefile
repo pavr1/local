@@ -15,7 +15,7 @@ RESET := \033[0m
 
 # Service directories
 DATA_SERVICE := data-service
-AUTH_SERVICE := auth-service
+SESSION_SERVICE := session-service
 ORDERS_SERVICE := orders-service
 GATEWAY_SERVICE := gateway-service
 
@@ -150,7 +150,7 @@ fresh-data: ## Fresh install data service only
 
 fresh-auth: ## Fresh install auth service only
 	@echo "$(CYAN)🔐 Running fresh install for Auth Service...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) fresh
+	@cd $(SESSION_SERVICE) && $(MAKE) fresh
 	@echo "$(GREEN)✅ Auth Service fresh install completed!$(RESET)"
 
 fresh-orders: ## Fresh install orders service only
@@ -171,7 +171,7 @@ start-data: ## Start data service
 
 start-auth: ## Start auth service
 	@echo "$(CYAN)🔐 Starting Auth Service...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) start
+	@cd $(SESSION_SERVICE) && $(MAKE) start
 
 start-orders: ## Start orders service
 	@echo "$(CYAN)📦 Starting Orders Service...$(RESET)"
@@ -187,7 +187,7 @@ stop-data: ## Stop data service
 
 stop-auth: ## Stop auth service
 	@echo "$(YELLOW)🔐 Stopping Auth Service...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) stop
+	@cd $(SESSION_SERVICE) && $(MAKE) stop
 
 stop-orders: ## Stop orders service
 	@echo "$(YELLOW)📦 Stopping Orders Service...$(RESET)"
@@ -205,7 +205,7 @@ status-data: ## Check data service status
 
 status-auth: ## Check auth service status
 	@echo "$(BLUE)🔐 Auth Service Status:$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) status
+	@cd $(SESSION_SERVICE) && $(MAKE) status
 
 status-orders: ## Check orders service status
 	@echo "$(BLUE)📦 Orders Service Status:$(RESET)"
@@ -221,7 +221,7 @@ test-data: ## Test data service
 
 test-auth: ## Test auth service
 	@echo "$(CYAN)🧪 Testing Auth Service...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) test
+	@cd $(SESSION_SERVICE) && $(MAKE) test
 
 test-orders: ## Test orders service
 	@echo "$(CYAN)🧪 Testing Orders Service...$(RESET)"
@@ -237,7 +237,7 @@ health-data: ## Check data service health
 
 health-auth: ## Check auth service health
 	@echo "$(CYAN)🏥 Checking Auth Service health...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) health
+	@cd $(SESSION_SERVICE) && $(MAKE) health
 
 health-orders: ## Check orders service health
 	@echo "$(CYAN)🏥 Checking Orders Service health...$(RESET)"
@@ -259,7 +259,7 @@ clean-data: ## Clean data service
 
 clean-auth: ## Clean auth service
 	@echo "$(YELLOW)🔐 Cleaning Auth Service...$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) clean
+	@cd $(SESSION_SERVICE) && $(MAKE) clean
 
 clean-orders: ## Clean orders service
 	@echo "$(YELLOW)📦 Cleaning Orders Service...$(RESET)"
@@ -333,7 +333,7 @@ logs-all: ## View logs from all services
 	@cd $(DATA_SERVICE) && $(MAKE) logs || true
 	@echo ""
 	@echo "$(BLUE)=== Auth Service Logs ====$(RESET)"
-	@cd $(AUTH_SERVICE) && $(MAKE) logs || true
+	@cd $(SESSION_SERVICE) && $(MAKE) logs || true
 	@echo ""
 	@echo "$(BLUE)=== Orders Service Logs ====$(RESET)"
 	@cd $(ORDERS_SERVICE) && $(MAKE) logs || true
@@ -353,7 +353,7 @@ version: ## Show version information for all services
 	@echo "$(GREEN)Service Versions:$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) version || true
 	@echo ""
-	@cd $(AUTH_SERVICE) && $(MAKE) version || true
+	@cd $(SESSION_SERVICE) && $(MAKE) version || true
 	@echo ""
 	@cd $(ORDERS_SERVICE) && $(MAKE) version || true
 	@echo ""

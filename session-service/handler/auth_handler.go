@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"auth-service/config"
-	"auth-service/handler/middleware"
-	"auth-service/models"
-	sqlQueries "auth-service/sql"
-	"auth-service/utils"
+	"session-service/config"
+	"session-service/handler/middleware"
+	"session-service/models"
+	sqlQueries "session-service/sql"
+	"session-service/utils"
 
 	"github.com/sirupsen/logrus"
 )
@@ -262,7 +262,7 @@ func (h *authHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "Auth service is healthy",
 		Data: map[string]interface{}{
-			"service": "auth-service",
+			"service": "session-service",
 			"status":  "healthy",
 			"time":    time.Now(),
 		},

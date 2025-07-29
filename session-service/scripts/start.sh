@@ -67,7 +67,7 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Auth service failed to start within the expected time"
-    echo "   You can check the logs with: docker-compose logs auth-service"
+    echo "   You can check the logs with: docker-compose logs session-service"
     exit 1
 fi
 
