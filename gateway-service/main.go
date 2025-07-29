@@ -219,13 +219,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"session_management": "enabled",
 		"services": map[string]string{
 			"session-service": func() string {
-				if sessionHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"session-management": func() string {
-				if sessionMgmtHealthy {
+				if sessionHealthy && sessionMgmtHealthy {
 					return "healthy"
 				}
 				return "unhealthy"

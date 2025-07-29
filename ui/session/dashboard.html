@@ -125,6 +125,49 @@
         .nav-admin {
             background: linear-gradient(135deg, #45b7d1 0%, #96c93d 100%);
         }
+
+        /* System Status Indicators */
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #dc3545;
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        .status-indicator.online {
+            background: #28a745;
+            animation: pulse-green 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: #dc3545;
+            animation: pulse-red 2s infinite;
+        }
+        
+        .status-indicator.loading {
+            background: #ffc107;
+            animation: pulse-yellow 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
     </style>
 </head>
 <body>
@@ -245,6 +288,39 @@
                 </div>
             </div>
         </div>
+
+        <!-- System Status -->
+        <div class="dashboard-card">
+            <div class="card-body p-4">
+                <h4 class="mb-4"><i class="fas fa-heartbeat me-2"></i>Estado del Sistema</h4>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="status-item text-center p-3 border rounded">
+                            <div class="status-indicator mx-auto mb-2" id="gateway-status"></div>
+                            <h6 class="mb-0">Gateway</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="status-item text-center p-3 border rounded">
+                            <div class="status-indicator mx-auto mb-2" id="auth-status"></div>
+                            <h6 class="mb-0">Session Service</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="status-item text-center p-3 border rounded">
+                            <div class="status-indicator mx-auto mb-2" id="orders-status"></div>
+                            <h6 class="mb-0">Orders Service</h6>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="status-item text-center p-3 border rounded">
+                            <div class="status-indicator mx-auto mb-2" id="database-status"></div>
+                            <h6 class="mb-0">Database</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap 5 JS -->
@@ -361,8 +437,87 @@
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', () => {
             loadUserInfo();
+            checkSystemStatus(); // Initial system status check
+            
+            // Set up periodic status checks (every 30 seconds)
+            setInterval(() => checkSystemStatus(), 30000);
+            
             console.log('🍦 ¡Tablero cargado! Prueba los endpoints API de arriba.');
         });
+
+        // === SYSTEM STATUS METHODS ===
+        
+        async function checkSystemStatus() {
+            try {
+                const health = await authService.checkSystemHealth();
+                updateStatusIndicators(health);
+            } catch (error) {
+                console.error('Status check error:', error);
+                updateStatusIndicators({
+                    gateway: 'offline',
+                    services: {}
+                });
+            }
+        }
+
+        function updateStatusIndicators(health) {
+            // Gateway status
+            const gatewayStatus = document.getElementById('gateway-status');
+            setStatusIndicator(gatewayStatus, health.gateway);
+
+            // Auth/Session service status
+            const authStatus = document.getElementById('auth-status');
+            const authServiceStatus = health.services['session-service'] || 'unknown';
+            setStatusIndicator(authStatus, mapServiceStatus(authServiceStatus));
+
+            // Orders service status
+            const ordersStatus = document.getElementById('orders-status');
+            const ordersServiceStatus = health.services['orders-service'] || 'unknown';
+            setStatusIndicator(ordersStatus, mapServiceStatus(ordersServiceStatus));
+
+            // Database status
+            const databaseStatus = document.getElementById('database-status');
+            const databaseServiceStatus = health.services['database'] || 'unknown';
+            setStatusIndicator(databaseStatus, mapServiceStatus(databaseServiceStatus));
+        }
+
+        function mapServiceStatus(serviceStatus) {
+            switch (serviceStatus) {
+                case 'healthy':
+                    return 'online';
+                case 'degraded':
+                    return 'loading'; // Orange/yellow status
+                case 'unhealthy':
+                case 'unknown':
+                default:
+                    return 'offline';
+            }
+        }
+
+        function setStatusIndicator(element, status) {
+            if (!element) return;
+
+            // Clear existing classes
+            element.classList.remove('online', 'offline', 'loading');
+            
+            // Set new status
+            switch (status) {
+                case 'online':
+                case 'healthy':
+                    element.classList.add('online');
+                    break;
+                case 'offline':
+                case 'unhealthy':
+                    element.classList.add('offline');
+                    break;
+                case 'degraded':
+                case 'loading':
+                    element.classList.add('loading');
+                    break;
+                default:
+                    element.classList.add('offline');
+            }
+        }
     </script>
 </body>
 </html> 
