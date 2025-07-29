@@ -25,7 +25,7 @@ The Ice Cream Store management system implements a **microservices architecture*
 ```mermaid
 graph TD
     %% Level 0 - Foundation
-    A1[🔐 Authentication Service<br/>Security & Session Management] --> B1[Level 1 Services]
+    A1[🔐 Session Service<br/>Security & Session Management] --> B1[Level 1 Services]
     A2[📋 Audit Service<br/>LogAuditEntry() & RetrieveAuditLogs()<br/>Activity Logging] --> B1
 
     %% Level 1 - Administrative
@@ -68,7 +68,7 @@ graph TD
 
 ## 🔐 Authentication vs Administration Separation
 
-### **Authentication Service** 🔐
+### **Session Service** 🔐
 **Purpose**: Security and session management **ONLY**
 
 - **Core Responsibilities**:
@@ -110,7 +110,7 @@ graph TD
 
 - **Authorization Flow**:
   ```
-  Request → Authentication Service (validates JWT) → Administration Service (checks admin permissions) → Execute operation
+  Request → Session Service (validates JWT) → Administration Service (checks admin permissions) → Execute operation
   ```
 
 ---
@@ -119,7 +119,7 @@ graph TD
 
 ### **🟥 Level 0: Foundation Services (No Dependencies)**
 
-#### 1. **Authentication Service** 🔐
+#### 1. **Session Service** 🔐
 - **Port**: 8081
 - **Tables**: None (reads from Administration Service)
 - **Functions**:
@@ -226,7 +226,7 @@ auditService.LogAuditEntry(
     clientIP,               // Client IP
     userAgent,              // Browser info
     &correlationID,         // Request correlation ID
-    "authentication-service" // Service name
+    "session-service" // Service name
 )
 ```
 
@@ -329,17 +329,17 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 
 ### **Authentication Flow**
 ```
-1. User Login Request → Authentication Service
-2. Authentication Service → Administration Service (fetch user/role data)
-3. Authentication Service → Issues JWT with user context
-4. Subsequent Requests → JWT validated by Authentication Service
+1. User Login Request → Session Service
+2. Session Service → Administration Service (fetch user/role data)
+3. Session Service → Issues JWT with user context
+4. Subsequent Requests → JWT validated by Session Service
 5. Business Services → Call Administration Service for permission validation
 ```
 
 ### **Authorization Flow**
 ```
 1. Request with JWT → Service Endpoint
-2. Service → Authentication Service (validate JWT)
+2. Service → Session Service (validate JWT)
 3. Service → Administration Service (check specific permissions)
 4. Service → Execute operation if authorized
 5. Service → Audit Service (log operation)
@@ -387,7 +387,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 ## 🚀 Implementation Guidelines
 
 ### **Service Development Order**
-1. ✅ **Authentication Service** (Completed)
+1. ✅ **Session Service** (Completed)
 2. ✅ **Data Service** (Completed)
 3. ✅ **Gateway Service** (Completed)
 4. 🔄 **Administration Service** (Next - Critical for other services, includes equipment management)

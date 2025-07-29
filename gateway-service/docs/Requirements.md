@@ -531,7 +531,7 @@
 ### 🏗️ Service Architecture Overview
 The authentication and authorization system is implemented across **two specialized microservices** with clear separation of concerns:
 
-#### **🔐 Authentication Service**
+#### **🔐 Session Service**
 **Purpose**: Security and session management **ONLY**
 - JWT token generation, validation, and refresh
 - Login/logout endpoints and workflows
@@ -552,18 +552,18 @@ The authentication and authorization system is implemented across **two speciali
 ### Internal Authentication
 - **Implementation Requirements:**
   - JWT token-based authentication with microservices integration
-  - Secure password hashing (bcrypt) handled by Authentication Service
+  - Secure password hashing (bcrypt) handled by Session Service
   - Session management for logged-in users via JWT tokens
-  - Login/logout functionality through Authentication Service
+  - Login/logout functionality through Session Service
   - Password strength requirements enforced by Administration Service
   - Default admin user creation through Administration Service (admin-only)
   - Password change functionality via Administration Service (admin-only)
 
 - **Authentication Workflow:**
-  1. User submits username/password to **Authentication Service**
-  2. Authentication Service calls **Administration Service** to validate credentials
+  1. User submits username/password to **Session Service**
+2. Session Service calls **Administration Service** to validate credentials
   3. Administration Service returns user data and permissions
-  4. Authentication Service generates JWT token with user context
+  4. Session Service generates JWT token with user context
   5. JWT token used for subsequent API requests across all services
   6. Each service validates JWT and checks permissions via Administration Service
 
