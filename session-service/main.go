@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"session-service/config"
 	"session-service/handler"
+	"session-service/utils"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -23,7 +25,7 @@ func main() {
 
 	// Setup logger
 	logger := setupLogger(cfg.LogLevel)
-	logger.Info("Starting Ice Cream Store Auth Service")
+	logger.Info("Starting Ice Cream Store Session Service")
 
 	// Connect to database
 	db, err := connectToDatabase(cfg, logger)
@@ -32,11 +34,19 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create auth handler
+	// Create JWT manager
+	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
+
+	// Create session manager
+	sessionConfig := cfg.ToSessionConfig()
+	sessionManager := utils.NewSessionManager(jwtManager, sessionConfig, logger)
+
+	// Create handlers
 	authHandler := handler.New(db, cfg, logger)
+	sessionAPI := handler.NewSessionAPI(sessionManager, jwtManager, logger)
 
 	// Setup HTTP router
-	router := setupRouter(authHandler, logger)
+	router := setupRouter(authHandler, sessionAPI, logger)
 
 	// Start HTTP server
 	server := &http.Server{
@@ -52,103 +62,100 @@ func main() {
 		logger.WithFields(logrus.Fields{
 			"host": cfg.ServerHost,
 			"port": cfg.ServerPort,
-		}).Info("Auth service starting on")
+		}).Info("Starting HTTP server")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Failed to start HTTP server")
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown
+	// Wait for interrupt signal to gracefully shutdown the server
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	logger.Info("Shutting down auth service...")
+	logger.Info("Shutting down server...")
 
-	// Graceful shutdown
-	if err := server.Close(); err != nil {
-		logger.WithError(err).Error("Error during server shutdown")
+	// Gracefully shutdown with a timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.WithError(err).Error("Server forced to shutdown")
 	}
 
-	logger.Info("Auth service shutdown complete")
+	logger.Info("Server exited gracefully")
 }
 
-// setupLogger configures the logrus logger
 func setupLogger(logLevel string) *logrus.Logger {
 	logger := logrus.New()
+	logger.SetFormatter(&logrus.JSONFormatter{})
 
-	// Set log level
 	level, err := logrus.ParseLevel(logLevel)
 	if err != nil {
 		level = logrus.InfoLevel
 	}
 	logger.SetLevel(level)
 
-	// Set formatter
-	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339,
-		PrettyPrint:     false,
-	})
-
-	// Log to stdout
-	logger.SetOutput(os.Stdout)
-
 	return logger
 }
 
-// connectToDatabase establishes a connection to the PostgreSQL database
 func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
-	connStr := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseUser,
-		cfg.DatabasePassword,
-		cfg.DatabaseName,
-		cfg.DatabaseSSLMode,
-	)
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DatabaseHost, cfg.DatabasePort, cfg.DatabaseUser,
+		cfg.DatabasePassword, cfg.DatabaseName, cfg.DatabaseSSLMode)
 
-	logger.WithFields(logrus.Fields{
-		"host":   cfg.DatabaseHost,
-		"port":   cfg.DatabasePort,
-		"dbname": cfg.DatabaseName,
-		"user":   cfg.DatabaseUser,
-	}).Info("Connecting to database")
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	// Test the connection
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
 	// Configure connection pool
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(5 * time.Minute)
-	db.SetConnMaxIdleTime(5 * time.Minute)
-
-	// Test the connection
-	if err := db.Ping(); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
 
 	logger.Info("Database connection established successfully")
 	return db, nil
 }
 
-// setupRouter configures the HTTP routes
-func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Router {
+func setupRouter(authHandler handler.AuthHandler, sessionAPI *handler.SessionAPI, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
-	// Add request logging middleware
+	// Add middleware
 	router.Use(loggingMiddleware(logger))
-
-	// Add CORS middleware
-	// router.Use(corsMiddleware) // Disabled: Gateway handles CORS for all services
+	router.Use(corsMiddleware())
 
 	// Get auth middleware instance
 	authMiddleware := authHandler.GetMiddleware()
+
+	// ==== SESSION MANAGEMENT API ROUTES ====
+
+	// Public session management routes (no authentication required)
+	sessionPublicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
+	sessionPublicRouter.HandleFunc("/health", sessionAPI.HealthCheck).Methods("GET")
+	sessionPublicRouter.HandleFunc("/validate", sessionAPI.ValidateSession).Methods("POST")
+
+	// Internal routes (for gateway use - could add API key protection later)
+	sessionInternalRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
+	sessionInternalRouter.HandleFunc("", sessionAPI.CreateSession).Methods("POST")
+	sessionInternalRouter.HandleFunc("/refresh", sessionAPI.RefreshSession).Methods("POST")
+	sessionInternalRouter.HandleFunc("/logout", sessionAPI.RevokeSessionByToken).Methods("POST")
+	sessionInternalRouter.HandleFunc("/stats", sessionAPI.GetSessionStats).Methods("GET")
+
+	// Protected session management routes (authentication required)
+	sessionProtectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
+	sessionProtectedRouter.Use(authMiddleware.Authenticate)
+	sessionProtectedRouter.HandleFunc("/user/{userID}", sessionAPI.GetUserSessions).Methods("GET")
+	sessionProtectedRouter.HandleFunc("/user/{userID}", sessionAPI.RevokeAllUserSessions).Methods("DELETE")
+	sessionProtectedRouter.HandleFunc("/{sessionID}", sessionAPI.RevokeSession).Methods("DELETE")
+
+	// ==== LEGACY AUTH API ROUTES (for backward compatibility) ====
 
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()
@@ -179,12 +186,31 @@ func setupRouter(authHandler handler.AuthHandler, logger *logrus.Logger) *mux.Ro
 			"service": "ice-cream-session-service",
 			"version": "1.0.0",
 			"status": "running",
-			"time": "%s"
+			"time": "%s",
+			"session_management": "enabled"
 		}`, time.Now().Format(time.RFC3339))
 	}).Methods("GET")
 
-	logger.Info("HTTP routes configured successfully")
+	logger.Info("HTTP routes configured successfully with session management API")
 	return router
+}
+
+// corsMiddleware handles CORS headers
+func corsMiddleware() mux.MiddlewareFunc {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 // loggingMiddleware logs HTTP requests

@@ -62,21 +62,59 @@ func main() {
 		OrdersServiceURL:  "http://localhost:8083",
 	}
 
+	// Initialize session management
+	sessionManager := NewSessionManager(config.SessionServiceURL)
+	sessionMiddleware := NewSessionMiddleware(sessionManager)
+
 	r := mux.NewRouter()
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 
+	// ==== GATEWAY ENDPOINTS ====
+
 	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
 
-	// Session service proxy - route all /api/v1/auth/* to session service
-	sessionProxy := api.PathPrefix("/v1/auth").Subrouter()
-	sessionProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.SessionServiceURL, "/api/v1/auth"))
+	// ==== PUBLIC AUTH ENDPOINTS (No Session Validation) ====
 
-	// Orders service proxy - route all /api/v1/orders/* to orders service
-	ordersProxy := api.PathPrefix("/v1/orders").Subrouter()
-	ordersProxy.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
+	// Login endpoint - creates session after successful auth
+	api.HandleFunc("/v1/auth/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
+
+	// Public endpoints (no session validation required)
+	publicAuthRouter := api.PathPrefix("/v1/auth").Subrouter()
+	publicAuthRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/auth")).Methods("GET")
+
+	// ==== PROTECTED AUTH ENDPOINTS (Require Session Validation) ====
+
+	// Protected auth routes that require valid sessions
+	protectedAuthRouter := api.PathPrefix("/v1/auth").Subrouter()
+	protectedAuthRouter.Use(sessionMiddleware.ValidateSession)
+
+	// Session-aware logout
+	protectedAuthRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
+
+	// Other protected auth endpoints (proxy with session validation)
+	protectedAuthRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/auth")).Methods("POST")
+	protectedAuthRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/auth")).Methods("GET")
+	protectedAuthRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/auth")).Methods("GET")
+	protectedAuthRouter.HandleFunc("/token-info", createProxyHandler(config.SessionServiceURL, "/api/v1/auth")).Methods("GET")
+
+	// ==== PROTECTED BUSINESS SERVICE ROUTES ====
+
+	// Orders service - all routes require session validation
+	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
+	ordersRouter.Use(sessionMiddleware.ValidateSession)
+	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
+
+	// ==== SESSION MANAGEMENT ENDPOINTS ====
+
+	// Direct access to session management APIs (protected)
+	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	sessionRouter.Use(sessionMiddleware.ValidateSession)
+	sessionRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions"))
+
+	// ==== DEMO ENDPOINTS ====
 
 	// Example endpoints (keeping for demo)
 	api.HandleFunc("/hello", helloHandler).Methods("GET")
@@ -88,12 +126,32 @@ func main() {
 	// Static file serving (for client build)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/build/")))
 
-	fmt.Println("🚀 Gateway Service starting on http://localhost:8082")
+	fmt.Println("🚀 Gateway Service with Session Management starting on http://localhost:8082")
 	fmt.Println("📡 API available at http://localhost:8082/api")
-	fmt.Println("🔐 Session endpoints: http://localhost:8082/api/v1/auth/*")
-	fmt.Printf("   → Proxying to: %s\n", config.SessionServiceURL)
-	fmt.Println("🛒 Orders endpoints: http://localhost:8082/api/v1/orders/*")
-	fmt.Printf("   → Proxying to: %s\n", config.OrdersServiceURL)
+	fmt.Println("")
+	fmt.Println("🔐 AUTH ENDPOINTS:")
+	fmt.Println("   📂 Public:")
+	fmt.Printf("      POST /api/v1/auth/login    → %s (+ session creation)\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/auth/health   → %s\n", config.SessionServiceURL)
+	fmt.Println("   🔒 Protected (require valid session):")
+	fmt.Printf("      POST /api/v1/auth/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/auth/refresh  → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/auth/validate → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/auth/profile  → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/auth/token-info → %s\n", config.SessionServiceURL)
+	fmt.Println("")
+	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
+	fmt.Printf("   🔒 /api/v1/orders/*          → %s (session validated)\n", config.OrdersServiceURL)
+	fmt.Println("")
+	fmt.Println("📋 SESSION MANAGEMENT:")
+	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)
+	fmt.Println("")
+	fmt.Println("🔐 SESSION SECURITY FEATURES:")
+	fmt.Println("   ✅ Server-side token validation")
+	fmt.Println("   ✅ External token prevention")
+	fmt.Println("   ✅ Automatic token refresh")
+	fmt.Println("   ✅ Session revocation on logout")
+	fmt.Println("   ✅ User context injection")
 
 	log.Fatal(http.ListenAndServe(":8082", r))
 }
@@ -126,12 +184,15 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 
-		// Log the proxy request
-		log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
+		// Log the proxy request (only for important requests)
+		if req.URL.Path != "/api/v1/auth/health" {
+			log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
+		}
 
-		// Add any custom headers if needed
+		// Add gateway headers
 		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+		req.Header.Set("X-Gateway-Session-Managed", "true")
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -144,19 +205,29 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
 
+	// Check session management health
+	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/health")
+
 	status := "healthy"
-	if !sessionHealthy || !ordersHealthy {
+	if !sessionHealthy || !ordersHealthy || !sessionMgmtHealthy {
 		status = "degraded"
 	}
 
 	response := map[string]interface{}{
-		"status":  status,
-		"version": "1.0.0",
-		"time":    time.Now(),
-		"gateway": "operational",
+		"status":             status,
+		"version":            "1.0.0",
+		"time":               time.Now(),
+		"gateway":            "operational",
+		"session_management": "enabled",
 		"services": map[string]string{
 			"session-service": func() string {
 				if sessionHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
+			"session-management": func() string {
+				if sessionMgmtHealthy {
 					return "healthy"
 				}
 				return "unhealthy"
@@ -171,7 +242,7 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !sessionHealthy || !ordersHealthy {
+	if !sessionHealthy || !ordersHealthy || !sessionMgmtHealthy {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	json.NewEncoder(w).Encode(response)
@@ -204,24 +275,13 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func createHelloHandler(w http.ResponseWriter, r *http.Request) {
-	var requestBody map[string]interface{}
-
-	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	name := "World"
-	if n, ok := requestBody["name"].(string); ok && n != "" {
-		name = n
-	}
-
 	response := Response{
-		Message:   fmt.Sprintf("Hello, %s! Message received.", name),
+		Message:   "Hello POST request received!",
 		Timestamp: time.Now(),
 		Status:    "success",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
 }
