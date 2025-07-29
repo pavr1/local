@@ -28,17 +28,18 @@ help: ## Show this help message
 	@echo "$(YELLOW)🚀 Common Workflows:$(RESET)"
 	@echo "  $(GREEN)make install$(RESET)          # Complete setup and start service"
 	@echo "  $(GREEN)make fresh$(RESET)            # Fresh start: clean, build, start"
+	@echo "  $(GREEN)make start$(RESET)            # Build latest code and start service"
 	@echo "  $(GREEN)make dev$(RESET)              # Run in development mode"
 	@echo ""
 	@echo "$(YELLOW)📖 Prerequisites:$(RESET)"
 	@echo "  • Go 1.21+ must be installed"
 	@echo "  • Data service should be running for full functionality"
-	@echo "  • Auth service should be running for full functionality"
+	@echo "  • Session service should be running for full functionality"
 	@echo ""
 
 ## 🚀 Service Management Commands
 
-start: ## Start the gateway service using Docker
+start: ## Build and start the gateway service using Docker (always uses latest code)
 	@echo "$(CYAN)🚀 Starting Gateway Service...$(RESET)"
 	@chmod +x scripts/start.sh
 	@./scripts/start.sh
@@ -48,7 +49,7 @@ stop: ## Stop the gateway service containers
 	@chmod +x scripts/stop.sh
 	@./scripts/stop.sh
 
-restart: stop start ## Restart the gateway service
+restart: stop start ## Restart the gateway service (with fresh build)
 	@echo "$(GREEN)🔄 Gateway Service restarted successfully!$(RESET)"
 
 reset: ## Reset the gateway service (clean restart)
@@ -128,7 +129,7 @@ fresh: clean deps build-docker-fresh start health test info ## Fresh start: clea
 	@echo "$(CYAN)📊 Gateway Service Status:$(RESET)"
 	@echo "   🌐 Gateway API: $(GREEN)http://localhost:8082$(RESET)"
 	@echo "   🔌 Health Check: $(GREEN)http://localhost:8082/api/hello$(RESET)"
-	@echo "   🔐 Auth Proxy: $(GREEN)http://localhost:8082/api/v1/auth/*$(RESET)"
+	@echo "   🔐 Session Endpoints: $(GREEN)http://localhost:8082/api/v1/auth/*$(RESET)"
 	@echo "   🛒 Orders Proxy: $(GREEN)http://localhost:8082/api/v1/orders/*$(RESET)"
 
 build-docker: ## Build the Docker image
@@ -159,26 +160,30 @@ info: ## Show service information and URLs
 	@echo "================================="
 	@echo ""
 	@echo "$(YELLOW)🔗 Service URLs:$(RESET)"
-	@echo "   Base URL:     http://localhost:8080"
-	@echo "   Health Check: http://localhost:8080/api/health"
-	@echo "   API Docs:     http://localhost:8080/api/"
+	@echo "   Base URL:     http://localhost:8082"
+	@echo "   Health Check: http://localhost:8082/api/health"
+	@echo "   API Docs:     http://localhost:8082/api/"
 	@echo ""
 	@echo "$(YELLOW)🔑 API Endpoints:$(RESET)"
-	@echo "   GET  /api/health             # Health check"
+	@echo "   GET  /api/health             # Gateway health (checks all services)"
 	@echo "   GET  /api/hello              # Hello endpoint"
 	@echo "   POST /api/hello              # Hello with name"
+	@echo "   POST /api/v1/auth/login      # Login (creates session)"
+	@echo "   POST /api/v1/auth/logout     # Logout (revokes session)"
+	@echo "   ALL  /api/v1/orders/*        # Orders proxy (session required)"
+	@echo "   ALL  /api/v1/sessions/*      # Session management (session required)"
 	@echo ""
 	@echo "$(YELLOW)🧪 Test Commands:$(RESET)"
 	@echo "   # Health check"
-	@echo "   curl http://localhost:8080/api/health"
+	@echo "   curl http://localhost:8082/api/health"
 	@echo ""
 	@echo "   # Hello endpoint"
-	@echo "   curl http://localhost:8080/api/hello"
+	@echo "   curl http://localhost:8082/api/hello"
 	@echo ""
-	@echo "   # Hello with name"
-	@echo "   curl -X POST http://localhost:8080/api/hello \\"
+	@echo "   # Login test"
+	@echo "   curl -X POST http://localhost:8082/api/v1/auth/login \\"
 	@echo "        -H 'Content-Type: application/json' \\"
-	@echo "        -d '{\"name\":\"World\"}'"
+	@echo "        -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 	@echo ""
 
 version: ## Show version information

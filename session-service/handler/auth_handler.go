@@ -44,10 +44,11 @@ type authHandler struct {
 	passwordManager *utils.PasswordManager
 	queries         sqlQueries.Queries
 	middleware      *middleware.AuthMiddleware
+	sessionManager  *utils.SessionManager // Added for session management
 }
 
 // New creates a new auth handler instance
-func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) AuthHandler {
+func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger, sessionManager *utils.SessionManager) AuthHandler {
 	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
 	passwordManager := utils.NewPasswordManager(cfg.BcryptCost, logger)
 
@@ -67,6 +68,7 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) AuthHandler {
 		passwordManager: passwordManager,
 		queries:         queries,
 		middleware:      middleware.NewAuthMiddleware(jwtManager, logger),
+		sessionManager:  sessionManager,
 	}
 }
 
@@ -130,11 +132,43 @@ func (h *authHandler) Login(w http.ResponseWriter, r *http.Request) {
 		// Don't fail the login for this
 	}
 
+	// Create session in session management system
+	// This ensures the token is tracked server-side for session management
+
+	// Convert permissions from []models.Permission to []string
+	permissionNames := make([]string, len(profile.Permissions))
+	for i, perm := range profile.Permissions {
+		permissionNames[i] = perm.PermissionName
+	}
+
+	sessionRequest := &models.SessionCreateRequest{
+		UserID:      profile.User.ID,
+		Username:    profile.User.Username,
+		RoleName:    profile.Role.RoleName,
+		Permissions: permissionNames,
+		RememberMe:  false, // Could be extracted from request in the future
+		ExpiresAt:   expiresAt,
+	}
+
+	sessionData, sessionToken, err := h.sessionManager.CreateSession(sessionRequest)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to create session")
+		// Don't fail the login for session creation failure, but log it
+		// Use the original JWT token as fallback
+	} else {
+		// Use the session-managed token instead of the original JWT
+		token = sessionToken
+		h.logger.WithFields(logrus.Fields{
+			"session_id": sessionData.SessionID,
+			"user_id":    profile.User.ID,
+		}).Info("Session created successfully for login")
+	}
+
 	// Prepare response
 	response := models.LoginResponse{
 		User:  profile.User,
 		Role:  profile.Role,
-		Token: token,
+		Token: token, // This is now the session-managed token
 	}
 
 	h.logger.WithFields(logrus.Fields{

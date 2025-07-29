@@ -151,13 +151,9 @@ class AuthService {
         // Set database status
         healthResults.services['database'] = databaseHealthy ? 'healthy' : 'unhealthy';
 
-        // TODO: REVISIT ORDERS HEALTH CHECK - CORS ISSUE UNRESOLVED
-        // Commenting out orders health check due to persistent CORS duplicate headers issue
-        // The orders service is working fine, but browser keeps seeing "Access-Control-Allow-Origin: *, *"
-        // despite bulletproof CORS wrapper in gateway. Need to investigate further later.
-        // 
+
         // Check Orders Service (via Gateway to avoid CORS)
-        /*
+        
         try {
             console.log('📦 DEBUG: Checking orders service health...');
             const ordersResponse = await fetch('http://localhost:8082/api/v1/orders/health', {
@@ -191,11 +187,7 @@ class AuthService {
         } catch (error) {
             console.error('Orders service health check error:', error);
             healthResults.services['orders-service'] = 'unhealthy';
-        }
-        */
-        
-        // TEMPORARY: Set orders as healthy (skip health check)
-        healthResults.services['orders-service'] = 'healthy';
+        }        
 
         // Check Gateway Service
         try {

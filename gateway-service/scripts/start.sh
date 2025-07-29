@@ -30,6 +30,14 @@ if ! docker network ls | grep -q "docker_icecream_network"; then
     docker network create docker_icecream_network
 fi
 
+# Stop existing gateway service container if it exists
+echo -e "${YELLOW}🧹 Cleaning up existing gateway service container...${NC}"
+docker-compose down 2>/dev/null || true
+
+# Build the gateway service (CRITICAL: Always build before starting)
+echo -e "${BLUE}🔨 Building gateway service...${NC}"
+docker-compose build --no-cache
+
 # Start the service
 echo -e "${BLUE}🚀 Starting Gateway Service container...${NC}"
 docker-compose up -d

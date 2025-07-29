@@ -41,8 +41,8 @@ func main() {
 	sessionConfig := cfg.ToSessionConfig()
 	sessionManager := utils.NewSessionManager(jwtManager, sessionConfig, logger)
 
-	// Create handlers
-	authHandler := handler.New(db, cfg, logger)
+	// Create handlers (auth handler now gets session manager for login integration)
+	authHandler := handler.New(db, cfg, logger, sessionManager)
 	sessionAPI := handler.NewSessionAPI(sessionManager, jwtManager, logger)
 
 	// Setup HTTP router
@@ -129,7 +129,7 @@ func setupRouter(authHandler handler.AuthHandler, sessionAPI *handler.SessionAPI
 
 	// Add middleware
 	router.Use(loggingMiddleware(logger))
-	router.Use(corsMiddleware())
+	// CORS removed - gateway handles all CORS headers
 
 	// Get auth middleware instance
 	authMiddleware := authHandler.GetMiddleware()
@@ -193,24 +193,6 @@ func setupRouter(authHandler handler.AuthHandler, sessionAPI *handler.SessionAPI
 
 	logger.Info("HTTP routes configured successfully with session management API")
 	return router
-}
-
-// corsMiddleware handles CORS headers
-func corsMiddleware() mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-			if r.Method == "OPTIONS" {
-				w.WriteHeader(http.StatusOK)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
-	}
 }
 
 // loggingMiddleware logs HTTP requests

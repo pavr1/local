@@ -24,27 +24,21 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
-// corsMiddleware handles CORS for all services - BULLETPROOF version
+// corsMiddleware handles CORS for all services
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// OVERWRITE any CORS headers that backend services may have set
-		// This ensures clean, single CORS headers from gateway only
-		w.Header().Del("Access-Control-Allow-Origin")
-		w.Header().Del("Access-Control-Allow-Methods")
-		w.Header().Del("Access-Control-Allow-Headers")
-
-		// Set CORS headers for preflight
+		// Set CORS headers (no backend services set CORS anymore)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Handle preflight requests first
+		// Handle preflight requests
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 
-		// Call the next handler first (backend services)
+		// Call the next handler
 		next.ServeHTTP(w, r)
 	})
 }
