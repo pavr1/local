@@ -71,6 +71,60 @@
             background: #f8d7da;
             color: #721c24;
         }
+        
+        /* Navigation Menu Styles */
+        .nav-menu {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .nav-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: white;
+            display: block;
+            padding: 1.2rem 1.5rem;
+            text-align: center;
+        }
+        
+        .nav-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .nav-item i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .nav-item h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .nav-item p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        /* Different gradient colors for different menu items */
+        .nav-orders {
+            background: linear-gradient(135deg, #ff6b9d 0%, #ff8e8e 100%);
+        }
+        
+        .nav-admin {
+            background: linear-gradient(135deg, #45b7d1 0%, #96c93d 100%);
+        }
     </style>
 </head>
 <body>
@@ -94,8 +148,29 @@
             </div>
         </div>
 
+        <!-- Navigation Menu -->
+        <div class="nav-menu">
+            <h4 class="mb-4 text-center"><i class="fas fa-compass me-2"></i>Menu Principal</h4>
+            <div class="row">
+                <div class="col-md-6">
+                    <a href="../orders/index.html" class="nav-item nav-orders">
+                        <i class="fas fa-shopping-cart"></i>
+                        <h5>Gestión de Pedidos</h5>
+                        <p>Crear y administrar pedidos de helados</p>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="#api-section" class="nav-item nav-admin" onclick="scrollToSection('api-section')">
+                        <i class="fas fa-cogs"></i>
+                        <h5>Administración</h5>
+                        <p>Herramientas de administración y APIs</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Available API Endpoints -->
-        <div class="dashboard-card">
+        <div class="dashboard-card" id="api-section">
             <div class="card-body p-4">
                 <h4 class="mb-4"><i class="fas fa-api me-2"></i>Endpoints API Disponibles</h4>
                 
@@ -252,6 +327,12 @@
             if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
                 testLogout();
             }
+        }
+        
+        function scrollToSection(sectionId) {
+            document.getElementById(sectionId).scrollIntoView({
+                behavior: 'smooth'
+            });
         }
 
         function showResult(message, type = 'info', data = null) {

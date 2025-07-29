@@ -24,7 +24,7 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
-// corsMiddleware handles CORS for all services - OVERWRITES any existing CORS headers
+// corsMiddleware handles CORS for all services - BULLETPROOF version
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// OVERWRITE any CORS headers that backend services may have set
