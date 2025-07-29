@@ -105,6 +105,59 @@
             font-size: 1.5rem;
         }
         
+        /* Full-width Create Order Styles */
+        #create-section .order-card {
+            width: 100%;
+            padding: 2.5rem;
+        }
+        
+        #create-section .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.75rem;
+        }
+        
+        #create-section .form-control,
+        #create-section .form-select {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        #create-section .form-control:focus,
+        #create-section .form-select:focus {
+            border-color: #45b7d1;
+            box-shadow: 0 0 0 0.2rem rgba(69, 183, 209, 0.25);
+        }
+        
+        #create-section .order-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        #create-section .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        #create-section .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            font-size: 1.1rem;
+            padding: 1rem 2rem;
+        }
+        
+        #create-section .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
         .filter-bar {
             background: white;
             border-radius: 12px;
@@ -255,10 +308,11 @@
                         <p class="mb-0">Create a new ice cream order</p>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-lg-8">
+                    <!-- Full-width centered container -->
+                    <div class="row justify-content-center">
+                        <div class="col-12">
                             <div class="order-card">
-                                <h5>Order Details</h5>
+                                <h5 class="mb-4">Order Details</h5>
                                 <form id="create-order-form">
                                     <div class="row">
                                         <div class="col-md-6">
