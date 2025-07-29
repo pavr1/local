@@ -121,8 +121,8 @@ func main() {
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
 
-	// Static file serving (for ui build)
-	r.PathPrefix("/").Handler(http.FileServer(http.Dir("../ui/build/")))
+	// UI is now served by its own service on port 3000
+	// Static file serving removed - UI runs independently
 
 	fmt.Println("🚀 Gateway Service with Session Management starting on http://localhost:8082")
 	fmt.Println("📡 API available at http://localhost:8082/api")
