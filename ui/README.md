@@ -1,18 +1,18 @@
-# Ice Cream Store - Client Application
+# Ice Cream Store - UI Application
 
-A modern, service-oriented web client for the Ice Cream Store management system.
+A modern, service-oriented web UI for the Ice Cream Store management system.
 
-## 🏗️ Architecture
+## 📁 Project Structure
 
-The client is organized into service-specific directories for better maintainability and scalability:
+The UI is organized into service-specific directories for better maintainability and scalability:
 
 ```
-client/
+ui/
 ├── index.html                 # Main entry point & service selector
-├── auth/                      # Authentication service UI
+├── session/                   # Session service UI
 │   ├── login.html            # Login page
-│   ├── dashboard.html        # Auth dashboard
-│   ├── auth.js               # Auth service logic
+│   ├── dashboard.html        # Session dashboard
+│   ├── auth.js               # Session service logic
 │   └── main.js               # Login page logic
 ├── orders/                    # Orders service UI
 │   ├── index.html            # Orders management page
@@ -91,8 +91,8 @@ client/
    make fresh
    ```
 
-2. **Open Client**:
-   - Navigate to `client/index.html` in your browser
+2. **Open UI**:
+   - Navigate to `ui/index.html` in your browser
    - Or serve via HTTP server for development
 
 3. **Login**:

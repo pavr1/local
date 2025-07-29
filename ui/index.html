@@ -30,13 +30,13 @@
                     </div>
                     
                     <div class="services-grid">
-                        <div class="service-card" onclick="navigateToService('auth')">
+                        <div class="service-card" onclick="navigateToService('session')">
                             <div class="service-icon">
                                 <i class="fas fa-shield-alt"></i>
                             </div>
                             <div class="service-info">
-                                <h4>Authentication</h4>
-                                <p>User login and security management</p>
+                                <h4>Session Management</h4>
+                                <p>User login and session management</p>
                                 <span class="service-status" id="auth-status">●</span>
                             </div>
                         </div>
@@ -104,7 +104,7 @@
                             <div class="info-card">
                                 <h5><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-outline-primary" onclick="navigateToService('auth')">
+                                    <button class="btn btn-outline-primary" onclick="navigateToService('session')">
                                         <i class="fas fa-sign-in-alt me-2"></i>Login to System
                                     </button>
                                     <button class="btn btn-outline-success" onclick="checkSystemHealth()">
@@ -155,8 +155,8 @@
         // Navigation functions
         function navigateToService(service) {
             switch(service) {
-                case 'auth':
-                    window.location.href = 'auth/login.html';
+                case 'session':
+                    window.location.href = 'session/login.html';
                     break;
                 case 'orders':
                     window.location.href = 'orders/index.html';
@@ -171,7 +171,7 @@
             const services = [
                 { name: 'auth', url: 'http://localhost:8081/api/v1/auth/health', element: 'status-auth' },
                 { name: 'orders', url: 'http://localhost:8083/api/v1/orders/health', element: 'status-orders' },
-                { name: 'gateway', url: 'http://localhost:8080/api/health', element: 'status-gateway' },
+                { name: 'gateway', url: 'http://localhost:8082/api/health', element: 'status-gateway' },
                 { name: 'data', url: 'http://localhost:5432', element: 'status-data' } // Database doesn't have HTTP endpoint
             ];
 

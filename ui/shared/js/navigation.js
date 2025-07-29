@@ -4,9 +4,9 @@ class NavigationService {
     constructor() {
         this.routes = {
             home: '../index.html',
-            auth: {
-                login: '../auth/login.html',
-                dashboard: '../auth/dashboard.html'
+            session: {
+                login: '../session/login.html',
+                dashboard: '../session/dashboard.html'
             },
             orders: {
                 index: '../orders/index.html'
@@ -32,7 +32,7 @@ class NavigationService {
     navigateSecure(service, page = 'index') {
         if (!window.authService || !authService.isAuthenticated()) {
             alert('Please login first');
-            this.navigateTo('auth', 'login');
+            this.navigateTo('session', 'login');
             return;
         }
         this.navigateTo(service, page);
