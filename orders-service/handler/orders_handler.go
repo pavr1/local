@@ -12,7 +12,8 @@ import (
 	"orders-service/config"
 	"orders-service/models"
 	ordersql "orders-service/sql"
-	"orders-service/utils"
+
+	// Removed utils import - gateway handles all auth
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -34,8 +35,8 @@ type OrdersHandler interface {
 	// Health check
 	HealthCheck(w http.ResponseWriter, r *http.Request)
 
-	// Middleware access
-	GetJWTManager() *utils.JWTManager
+	// No longer needed - gateway handles all auth
+	// GetJWTManager() *utils.JWTManager
 }
 
 // OrderRepository defines the interface for order data operations
@@ -53,16 +54,16 @@ type OrderRepository interface {
 }
 
 type ordersHandler struct {
-	db         *sql.DB
-	config     *config.Config
-	logger     *logrus.Logger
-	jwtManager *utils.JWTManager
-	repo       OrderRepository
+	db     *sql.DB
+	config *config.Config
+	logger *logrus.Logger
+	// Removed jwtManager - gateway handles all auth
+	repo OrderRepository
 }
 
 // New creates a new orders handler instance
 func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (OrdersHandler, error) {
-	jwtManager := utils.NewJWTManager(cfg.JWTSecret)
+	// Removed jwtManager creation - gateway handles all auth
 
 	repo, err := ordersql.NewRepository(db)
 	if err != nil {
@@ -70,16 +71,12 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (OrdersHandler, 
 	}
 
 	return &ordersHandler{
-		db:         db,
-		config:     cfg,
-		logger:     logger,
-		jwtManager: jwtManager,
-		repo:       repo,
+		db:     db,
+		config: cfg,
+		logger: logger,
+		// Removed jwtManager - gateway handles all auth
+		repo: repo,
 	}, nil
-}
-
-func (h *ordersHandler) GetJWTManager() *utils.JWTManager {
-	return h.jwtManager
 }
 
 // === ORDER ENDPOINTS ===

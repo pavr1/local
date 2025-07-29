@@ -11,7 +11,8 @@ import (
 
 	"orders-service/config"
 	"orders-service/handler"
-	"orders-service/handler/middleware"
+
+	// Removed middleware import - gateway handles all auth
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -145,10 +146,10 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 	router := mux.NewRouter()
 
 	// Create middleware
-	authMiddleware := middleware.NewAuthMiddleware(ordersHandler.GetJWTManager(), logger)
+	// Removed authMiddleware - gateway handles all auth
 
 	// Add global middleware
-	router.Use(authMiddleware.LoggingMiddleware)
+	// Removed authMiddleware.LoggingMiddleware - gateway handles all logging
 	// router.Use(authMiddleware.CORS) // Disabled: Gateway handles CORS for all services
 
 	// Public routes (no authentication required)
@@ -157,32 +158,37 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 
 	// Protected routes (authentication required)
 	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
-	protectedRouter.Use(authMiddleware.Authenticate)
+	// Removed protectedRouter.Use(authMiddleware.Authenticate) - gateway handles all auth
 
 	// Order endpoints with permission checks
 	// Create order - requires orders-write permission
 	protectedRouter.Handle("/orders",
-		authMiddleware.RequireOrdersPermission("write")(http.HandlerFunc(ordersHandler.CreateOrder))).Methods("POST")
+		// Removed authMiddleware.RequireOrdersPermission("write") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.CreateOrder)).Methods("POST")
 
 	// Get order - requires orders-read permission
 	protectedRouter.Handle("/orders/{id}",
-		authMiddleware.RequireOrdersPermission("read")(http.HandlerFunc(ordersHandler.GetOrder))).Methods("GET")
+		// Removed authMiddleware.RequireOrdersPermission("read") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.GetOrder)).Methods("GET")
 
 	// Update order - requires orders-write permission
 	protectedRouter.Handle("/orders/{id}",
-		authMiddleware.RequireOrdersPermission("write")(http.HandlerFunc(ordersHandler.UpdateOrder))).Methods("PUT")
+		// Removed authMiddleware.RequireOrdersPermission("write") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.UpdateOrder)).Methods("PUT")
 
 	// Cancel order - requires orders-write permission
 	protectedRouter.Handle("/orders/{id}/cancel",
-		authMiddleware.RequireOrdersPermission("write")(http.HandlerFunc(ordersHandler.CancelOrder))).Methods("POST")
+		// Removed authMiddleware.RequireOrdersPermission("write") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.CancelOrder)).Methods("POST")
 
 	// List orders - requires orders-read permission
 	protectedRouter.Handle("/orders",
-		authMiddleware.RequireOrdersPermission("read")(http.HandlerFunc(ordersHandler.ListOrders))).Methods("GET")
+		// Removed authMiddleware.RequireOrdersPermission("read") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.ListOrders)).Methods("GET")
 
 	// Statistics endpoints - admin only
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
-	adminRouter.Use(authMiddleware.AdminOnly)
+	// Removed adminRouter.Use(authMiddleware.AdminOnly) - gateway handles all auth
 
 	adminRouter.HandleFunc("/orders/summary", ordersHandler.GetOrderSummary).Methods("GET")
 	adminRouter.HandleFunc("/orders/stats/payment-methods", ordersHandler.GetPaymentMethodStats).Methods("GET")

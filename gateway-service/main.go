@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -24,10 +25,10 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
-// corsMiddleware handles CORS for all services
+// corsMiddleware handles CORS for all services - gateway is the single source of truth
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers (no backend services set CORS anymore)
+		// Set CORS headers - only the gateway sets these
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -50,11 +51,14 @@ type ServiceConfig struct {
 }
 
 func main() {
-	// Service configuration
+	// Service configuration from environment variables
 	config := &ServiceConfig{
-		SessionServiceURL: "http://localhost:8081",
-		OrdersServiceURL:  "http://localhost:8083",
+		SessionServiceURL: getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
+		OrdersServiceURL:  getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
 	}
+
+	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
+	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 
 	// Initialize session management
 	sessionManager := NewSessionManager(config.SessionServiceURL)
@@ -114,7 +118,7 @@ func main() {
 	api.HandleFunc("/hello", helloHandler).Methods("GET")
 	api.HandleFunc("/hello", createHelloHandler).Methods("POST")
 
-	// CORS middleware
+	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
 
 	// Static file serving (for client build)
@@ -278,4 +282,12 @@ func createHelloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }
