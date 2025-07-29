@@ -24,6 +24,31 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
+// corsMiddleware handles CORS for all services - OVERWRITES any existing CORS headers
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// OVERWRITE any CORS headers that backend services may have set
+		// This ensures clean, single CORS headers from gateway only
+		w.Header().Del("Access-Control-Allow-Origin")
+		w.Header().Del("Access-Control-Allow-Methods")
+		w.Header().Del("Access-Control-Allow-Headers")
+
+		// Set CORS headers for preflight
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight requests first
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Call the next handler first (backend services)
+		next.ServeHTTP(w, r)
+	})
+}
+
 // Service configuration
 type ServiceConfig struct {
 	AuthServiceURL   string
@@ -58,7 +83,7 @@ func main() {
 	api.HandleFunc("/hello", createHelloHandler).Methods("POST")
 
 	// CORS middleware
-	//r.Use(corsMiddleware)
+	r.Use(corsMiddleware)
 
 	// Static file serving (for client build)
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("../client/build/")))
@@ -200,18 +225,3 @@ func createHelloHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
-// func corsMiddleware(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		w.Header().Set("Access-Control-Allow-Origin", "*")
-// 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-// 		if r.Method == "OPTIONS" {
-// 			w.WriteHeader(http.StatusOK)
-// 			return
-// 		}
-
-// 		next.ServeHTTP(w, r)
-// 	})
-// }
