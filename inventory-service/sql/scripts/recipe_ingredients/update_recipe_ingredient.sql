@@ -1,2 +1,0 @@
-UPDATE recipe_ingredients SET number_of_units = COALESCE($2, number_of_units), updated_at = CURRENT_TIMESTAMP
-WHERE id = $1 RETURNING id, recipe_id, ingredient_id, number_of_units, created_at, updated_at; 

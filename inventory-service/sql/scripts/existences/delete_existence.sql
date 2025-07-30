@@ -1,1 +1,0 @@
-DELETE FROM existences WHERE id = $1; 
