@@ -1,0 +1,2 @@
+UPDATE recipes SET total_recipe_cost = $2, updated_at = CURRENT_TIMESTAMP
+WHERE id = $1 RETURNING id, recipe_name, recipe_description, picture_url, recipe_category_id, total_recipe_cost, created_at, updated_at; 

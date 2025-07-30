@@ -1,0 +1,1 @@
+DELETE FROM recipe_categories WHERE id = $1; 
