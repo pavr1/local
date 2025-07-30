@@ -41,10 +41,7 @@ echo "✅ Database connectivity confirmed!"
 echo "🧹 Cleaning up existing auth service container..."
 docker-compose down 2>/dev/null || true
 
-# Build and start the auth service
-echo "🔨 Building auth service..."
-docker-compose build --no-cache
-
+# Start the auth service
 echo "🚀 Starting auth service..."
 docker-compose up -d
 

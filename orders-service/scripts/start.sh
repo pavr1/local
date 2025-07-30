@@ -41,10 +41,7 @@ echo "✅ Database connectivity confirmed!"
 echo "🧹 Cleaning up existing orders service container..."
 docker-compose down 2>/dev/null || true
 
-# Build and start the orders service
-echo "🔨 Building orders service..."
-docker-compose build --no-cache
-
+# Start the orders service
 echo "🚀 Starting orders service..."
 docker-compose up -d
 

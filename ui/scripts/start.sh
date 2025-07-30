@@ -19,10 +19,6 @@ echo -e "${BLUE}🌐 Starting Ice Cream Store ${SERVICE_NAME}...${NC}"
 echo -e "${YELLOW}🧹 Cleaning up existing ${SERVICE_NAME} container...${NC}"
 cd docker && docker-compose down 2>/dev/null || true
 
-# Build the ui service (CRITICAL: Always build before starting)
-echo -e "${BLUE}🔨 Building ${SERVICE_NAME}...${NC}"
-docker-compose build --no-cache
-
 # Start the service
 echo -e "${BLUE}🚀 Starting ${SERVICE_NAME} container...${NC}"
 docker-compose up -d

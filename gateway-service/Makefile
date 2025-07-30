@@ -28,7 +28,7 @@ help: ## Show this help message
 	@echo "$(YELLOW)🚀 Common Workflows:$(RESET)"
 	@echo "  $(GREEN)make install$(RESET)          # Complete setup and start service"
 	@echo "  $(GREEN)make fresh$(RESET)            # Fresh start: clean, build, start"
-	@echo "  $(GREEN)make start$(RESET)            # Build latest code and start service"
+	@echo "  $(GREEN)make start$(RESET)            # Start service (uses existing image)"
 	@echo "  $(GREEN)make dev$(RESET)              # Run in development mode"
 	@echo ""
 	@echo "$(YELLOW)📖 Prerequisites:$(RESET)"
@@ -39,7 +39,7 @@ help: ## Show this help message
 
 ## 🚀 Service Management Commands
 
-start: ## Build and start the gateway service using Docker (always uses latest code)
+start: ## Start the gateway service using Docker (uses existing image)
 	@echo "$(CYAN)🚀 Starting Gateway Service...$(RESET)"
 	@chmod +x scripts/start.sh
 	@./scripts/start.sh
@@ -49,7 +49,7 @@ stop: ## Stop the gateway service containers
 	@chmod +x scripts/stop.sh
 	@./scripts/stop.sh
 
-restart: stop start ## Restart the gateway service (with fresh build)
+restart: stop start ## Restart the gateway service (stop + start)
 	@echo "$(GREEN)🔄 Gateway Service restarted successfully!$(RESET)"
 
 reset: ## Reset the gateway service (clean restart)
