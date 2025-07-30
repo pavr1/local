@@ -11,14 +11,34 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DBHandlerInterface defines the database operations interface
+type DBHandlerInterface interface {
+	CreateSupplier(req models.CreateSupplierRequest) (*models.Supplier, error)
+	GetSupplierByID(id string) (*models.Supplier, error)
+	ListSuppliers() ([]models.Supplier, error)
+	UpdateSupplier(id string, req models.UpdateSupplierRequest) (*models.Supplier, error)
+	DeleteSupplier(id string) error
+}
+
+// Ensure DBHandler implements DBHandlerInterface
+var _ DBHandlerInterface = (*DBHandler)(nil)
+
 // HttpHandler handles HTTP requests for supplier operations
 type HttpHandler struct {
-	dbHandler *DBHandler
+	dbHandler DBHandlerInterface
 	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
 func NewHttpHandler(dbHandler *DBHandler, logger *logrus.Logger) *HttpHandler {
+	return &HttpHandler{
+		dbHandler: dbHandler,
+		logger:    logger,
+	}
+}
+
+// NewHttpHandlerWithInterface creates a new HTTP handler with interface (for testing)
+func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
 		logger:    logger,
