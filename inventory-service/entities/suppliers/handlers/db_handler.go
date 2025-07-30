@@ -9,13 +9,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// DBHandler handles database operations for supplier operations
+// DBHandler handles database operations for suppliers
 type DBHandler struct {
 	db     *sql.DB
 	logger *logrus.Logger
 }
 
-// NewDBHandler creates a new database handler
+// NewDBHandler creates a new database handler for suppliers
 func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
 	return &DBHandler{
 		db:     db,
@@ -24,8 +24,9 @@ func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
 }
 
 // CreateSupplier creates a new supplier in the database
-func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest) models.SupplierResponse {
+func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest) (*models.Supplier, error) {
 	var supplier models.Supplier
+
 	err := h.db.QueryRow(supplierSQL.CreateSupplierQuery,
 		req.SupplierName, req.ContactNumber, req.Email, req.Address, req.Notes).
 		Scan(&supplier.ID, &supplier.SupplierName, &supplier.ContactNumber,
@@ -33,63 +34,49 @@ func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest) models.Supp
 			&supplier.CreatedAt, &supplier.UpdatedAt)
 
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create supplier")
-		return models.SupplierResponse{
-			Success: false,
-			Data:    models.Supplier{},
-			Message: "Failed to create supplier: " + err.Error(),
-		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_name": req.SupplierName,
+		}).Error("Failed to create supplier in database")
+		return nil, err
 	}
 
-	return models.SupplierResponse{
-		Success: true,
-		Data:    supplier,
-		Message: "Supplier created successfully",
-	}
+	h.logger.WithFields(logrus.Fields{
+		"supplier_id":   supplier.ID,
+		"supplier_name": supplier.SupplierName,
+	}).Info("Supplier created successfully")
+
+	return &supplier, nil
 }
 
-// GetSupplier retrieves a supplier by ID from the database
-func (h *DBHandler) GetSupplier(req models.GetSupplierRequest) models.SupplierResponse {
+// GetSupplierByID retrieves a supplier by ID from the database
+func (h *DBHandler) GetSupplierByID(id string) (*models.Supplier, error) {
 	var supplier models.Supplier
-	err := h.db.QueryRow(supplierSQL.GetSupplierByIDQuery, req.ID).
+
+	err := h.db.QueryRow(supplierSQL.GetSupplierByIDQuery, id).
 		Scan(&supplier.ID, &supplier.SupplierName, &supplier.ContactNumber,
 			&supplier.Email, &supplier.Address, &supplier.Notes,
 			&supplier.CreatedAt, &supplier.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.SupplierResponse{
-				Success: false,
-				Data:    models.Supplier{},
-				Message: "Supplier not found",
-			}
+			// Don't log as error since "not found" is a normal business case
+			return nil, err
 		}
-		h.logger.WithError(err).Error("Failed to get supplier")
-		return models.SupplierResponse{
-			Success: false,
-			Data:    models.Supplier{},
-			Message: "Failed to get supplier: " + err.Error(),
-		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Error("Failed to retrieve supplier from database")
+		return nil, err
 	}
 
-	return models.SupplierResponse{
-		Success: true,
-		Data:    supplier,
-		Message: "Supplier retrieved successfully",
-	}
+	return &supplier, nil
 }
 
 // ListSuppliers retrieves all suppliers from the database
-func (h *DBHandler) ListSuppliers(req models.ListSuppliersRequest) models.SuppliersListResponse {
+func (h *DBHandler) ListSuppliers() ([]models.Supplier, error) {
 	rows, err := h.db.Query(supplierSQL.ListSuppliersQuery)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to list suppliers")
-		return models.SuppliersListResponse{
-			Success: false,
-			Data:    []models.Supplier{},
-			Count:   0,
-			Message: "Failed to list suppliers: " + err.Error(),
-		}
+		h.logger.WithError(err).Error("Failed to execute suppliers list query")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -100,23 +87,23 @@ func (h *DBHandler) ListSuppliers(req models.ListSuppliersRequest) models.Suppli
 			&supplier.Email, &supplier.Address, &supplier.Notes,
 			&supplier.CreatedAt, &supplier.UpdatedAt)
 		if err != nil {
-			h.logger.WithError(err).Error("Failed to scan supplier")
+			h.logger.WithError(err).Warn("Failed to scan supplier row, skipping")
 			continue
 		}
 		suppliers = append(suppliers, supplier)
 	}
 
-	return models.SuppliersListResponse{
-		Success: true,
-		Data:    suppliers,
-		Count:   len(suppliers),
-		Message: "Suppliers retrieved successfully",
-	}
+	h.logger.WithFields(logrus.Fields{
+		"suppliers_count": len(suppliers),
+	}).Info("Listed suppliers successfully")
+
+	return suppliers, nil
 }
 
 // UpdateSupplier updates a supplier in the database
-func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest) models.SupplierResponse {
+func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest) (*models.Supplier, error) {
 	var supplier models.Supplier
+
 	err := h.db.QueryRow(supplierSQL.UpdateSupplierQuery,
 		id, req.SupplierName, req.ContactNumber, req.Email, req.Address, req.Notes).
 		Scan(&supplier.ID, &supplier.SupplierName, &supplier.ContactNumber,
@@ -125,48 +112,49 @@ func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest) 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.SupplierResponse{
-				Success: false,
-				Data:    models.Supplier{},
-				Message: "Supplier not found",
-			}
+			// Don't log as error since "not found" is a normal business case
+			return nil, err
 		}
-		h.logger.WithError(err).Error("Failed to update supplier")
-		return models.SupplierResponse{
-			Success: false,
-			Data:    models.Supplier{},
-			Message: "Failed to update supplier: " + err.Error(),
-		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Error("Failed to update supplier in database")
+		return nil, err
 	}
 
-	return models.SupplierResponse{
-		Success: true,
-		Data:    supplier,
-		Message: "Supplier updated successfully",
-	}
+	h.logger.WithFields(logrus.Fields{
+		"supplier_id":   supplier.ID,
+		"supplier_name": supplier.SupplierName,
+	}).Info("Supplier updated successfully")
+
+	return &supplier, nil
 }
 
 // DeleteSupplier deletes a supplier from the database
-func (h *DBHandler) DeleteSupplier(req models.DeleteSupplierRequest) models.SupplierDeleteResponse {
-	result, err := h.db.Exec(supplierSQL.DeleteSupplierQuery, req.ID)
+func (h *DBHandler) DeleteSupplier(id string) error {
+	result, err := h.db.Exec(supplierSQL.DeleteSupplierQuery, id)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to delete supplier")
-		return models.SupplierDeleteResponse{
-			Success: false,
-			Message: "Failed to delete supplier: " + err.Error(),
-		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Error("Failed to execute supplier delete query")
+		return err
 	}
 
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Error("Failed to get rows affected after delete")
+		return err
+	}
+
 	if rowsAffected == 0 {
-		return models.SupplierDeleteResponse{
-			Success: false,
-			Message: "Supplier not found",
-		}
+		// Don't log as error since "not found" is a normal business case
+		return sql.ErrNoRows
 	}
 
-	return models.SupplierDeleteResponse{
-		Success: true,
-		Message: "Supplier deleted successfully",
-	}
+	h.logger.WithFields(logrus.Fields{
+		"supplier_id": id,
+	}).Info("Supplier deleted successfully")
+
+	return nil
 }
