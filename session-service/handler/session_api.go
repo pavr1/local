@@ -16,6 +16,7 @@ import (
 type SessionAPI struct {
 	sessionHandler *SessionHandler
 	logger         *logrus.Logger
+	jwtManager     *utils.JWTManager
 }
 
 // NewSessionAPI creates a new session API handler
@@ -23,6 +24,7 @@ func NewSessionAPI(sessionManager *utils.SessionManager, jwtManager *utils.JWTMa
 	return &SessionAPI{
 		sessionHandler: NewSessionHandler(sessionManager, jwtManager, logger),
 		logger:         logger,
+		jwtManager:     jwtManager,
 	}
 }
 
@@ -359,4 +361,63 @@ func (api *SessionAPI) writeErrorResponse(w http.ResponseWriter, statusCode int,
 	}
 
 	api.writeJSONResponse(w, statusCode, response)
+}
+
+// Login handles user authentication (temporary implementation)
+func (api *SessionAPI) Login(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		api.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Invalid request format")
+		return
+	}
+
+	// Validate required fields
+	if req.Username == "" || req.Password == "" {
+		api.writeErrorResponse(w, http.StatusBadRequest, "missing_credentials", "Username and password are required")
+		return
+	}
+
+	// TEMPORARY: Simple hardcoded validation (replace with database lookup)
+	if req.Username == "admin" && req.Password == "admin123" {
+		// Create temporary user profile
+		profile := &models.UserProfile{
+			User: models.User{
+				ID:       "1",
+				Username: "admin",
+				FullName: "Administrator",
+				RoleID:   "1",
+				IsActive: true,
+			},
+			Role: models.Role{
+				ID:       "1",
+				RoleName: "admin",
+			},
+			Permissions: []models.Permission{},
+		}
+
+		// Generate JWT token
+		token, _, err := api.jwtManager.GenerateToken(profile)
+		if err != nil {
+			api.logger.WithError(err).Error("Failed to generate token")
+			api.writeErrorResponse(w, http.StatusInternalServerError, "token_generation_failed", "Failed to generate token")
+			return
+		}
+
+		// Return response in expected format
+		response := models.LoginResponse{
+			User:  profile.User,
+			Role:  profile.Role,
+			Token: token,
+		}
+
+		api.writeJSONResponse(w, http.StatusOK, response)
+		return
+	}
+
+	// Invalid credentials
+	api.writeErrorResponse(w, http.StatusUnauthorized, "invalid_credentials", "Invalid username or password")
 }

@@ -156,7 +156,7 @@ func setupRouter(sessionHandler *handler.SessionHandler, sessionAPI *handler.Ses
 
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()
-	// publicRouter.HandleFunc("/auth/login", sessionAPI.Login).Methods("POST") // TODO: Login method not available on SessionAPI
+	publicRouter.HandleFunc("/auth/login", sessionAPI.Login).Methods("POST")
 	publicRouter.HandleFunc("/auth/health", sessionAPI.HealthCheck).Methods("GET")
 
 	// Protected routes (authentication required)

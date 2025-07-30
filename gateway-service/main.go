@@ -77,17 +77,18 @@ func main() {
 	// ==== AUTH ENDPOINTS ====
 
 	// Public auth endpoints (no session validation required)
-	api.HandleFunc("/v1/auth/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
-	api.HandleFunc("/v1/auth/health", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/health")).Methods("GET")
+	authPublicRouter := api.PathPrefix("/v1/auth").Subrouter()
+	authPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
+	authPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/health")).Methods("GET")
 
 	// Protected auth endpoints (require session validation)
-	protectedAuthRouter := api.PathPrefix("/v1/auth").Subrouter()
-	protectedAuthRouter.Use(sessionMiddleware.ValidateSession)
-	protectedAuthRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
-	protectedAuthRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/refresh")).Methods("POST")
-	protectedAuthRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/validate")).Methods("GET")
-	protectedAuthRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/profile")).Methods("GET")
-	protectedAuthRouter.HandleFunc("/token-info", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/token-info")).Methods("GET")
+	authProtectedRouter := api.PathPrefix("/v1/auth").Subrouter()
+	authProtectedRouter.Use(sessionMiddleware.ValidateSession)
+	authProtectedRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
+	authProtectedRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/refresh")).Methods("POST")
+	authProtectedRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/validate")).Methods("GET")
+	authProtectedRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/profile")).Methods("GET")
+	authProtectedRouter.HandleFunc("/token-info", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/token-info")).Methods("GET")
 
 	// ==== PROTECTED BUSINESS SERVICE ROUTES ====
 
