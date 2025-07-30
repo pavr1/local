@@ -3,7 +3,7 @@
 class NavigationService {
     constructor() {
         this.routes = {
-            home: '../index.html',
+            home: '../session/dashboard.html',
             session: {
                 login: '../session/login.html',
                 dashboard: '../session/dashboard.html'

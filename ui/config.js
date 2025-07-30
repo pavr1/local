@@ -17,6 +17,11 @@ const CONFIG = {
             url: 'http://localhost:8083/api/v1/orders/health',
             element: 'status-orders'
         },
+        inventory: {
+            name: 'Suppliers Service',
+            url: 'http://localhost:8084/api/v1/inventory/health',
+            element: 'status-inventory'
+        },
         gateway: {
             name: 'Gateway Service',
             url: 'http://localhost:8082/api/health',
@@ -34,6 +39,7 @@ const CONFIG = {
         LOGIN: '/api/v1/auth/login',
         LOGOUT: '/api/v1/auth/logout',
         ORDERS: '/api/v1/orders',
+        SUPPLIERS: '/api/v1/inventory/suppliers',
         HEALTH: '/api/health'
     }
 };

@@ -52,6 +52,17 @@
                             </div>
                         </div>
                         
+                        <div class="service-card" onclick="navigateToService('inventory')">
+                            <div class="service-icon">
+                                <i class="fas fa-warehouse"></i>
+                            </div>
+                            <div class="service-info">
+                                <h4>Inventory</h4>
+                                <p>Manage suppliers, ingredients & stock</p>
+                                <span class="service-status" id="inventory-status">●</span>
+                            </div>
+                        </div>
+                        
                         <div class="service-card disabled">
                             <div class="service-icon">
                                 <i class="fas fa-route"></i>
@@ -95,7 +106,8 @@
                                     <li><strong>Data Service:</strong> PostgreSQL Database (Port 5432)</li>
                                     <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
                                     <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
-                                    <li><strong>Gateway Service:</strong> API Gateway (Port 8080)</li>
+                                    <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
+                                    <li><strong>Gateway Service:</strong> API Gateway (Port 8082)</li>
                                 </ul>
                             </div>
                         </div>
@@ -132,6 +144,10 @@
                                         <span>Orders Service</span>
                                     </div>
                                     <div class="status-item">
+                                        <span class="status-indicator" id="status-inventory"></span>
+                                        <span>Inventory Service</span>
+                                    </div>
+                                    <div class="status-item">
                                         <span class="status-indicator" id="status-gateway"></span>
                                         <span>Gateway</span>
                                     </div>
@@ -164,6 +180,9 @@
                 case 'orders':
                     window.location.href = 'orders/index.html';
                     break;
+                case 'inventory':
+                    window.location.href = 'inventory/index.html';
+                    break;
                 default:
                     alert('Service not yet available');
             }
@@ -184,10 +203,26 @@
                     if (statusServiceElement) {
                         updateServiceStatus(statusServiceElement, isHealthy ? 'online' : 'offline');
                     }
+                    
+                    // Update inventory service status specifically
+                    if (service.name === 'Suppliers Service') {
+                        const inventoryServiceElement = document.getElementById('inventory-status');
+                        if (inventoryServiceElement) {
+                            updateServiceStatus(inventoryServiceElement, isHealthy ? 'online' : 'offline');
+                        }
+                    }
                 } catch (error) {
                     updateStatusIndicator(statusElement, 'offline');
                     if (statusServiceElement) {
                         updateServiceStatus(statusServiceElement, 'offline');
+                    }
+                    
+                    // Update inventory service status on error
+                    if (service.name === 'Suppliers Service') {
+                        const inventoryServiceElement = document.getElementById('inventory-status');
+                        if (inventoryServiceElement) {
+                            updateServiceStatus(inventoryServiceElement, 'offline');
+                        }
                     }
                 }
             }

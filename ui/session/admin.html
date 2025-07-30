@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ice Cream Store - Admin Panel</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="../shared/css/style.css">
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .admin-container {
+            padding: 2rem 0;
+        }
+        
+        .admin-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            margin-bottom: 2rem;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+            padding: 2rem;
+        }
+        
+        .api-endpoint {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }
+        
+        .btn-test {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            border: none;
+            color: white;
+        }
+        
+        .btn-test:hover {
+            background: linear-gradient(135deg, #c82333 0%, #e85d04 100%);
+            color: white;
+        }
+        
+        .access-denied {
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+        }
+        
+        .system-metrics {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #dc3545;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        /* System Status Indicators */
+        .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #dc3545;
+            position: relative;
+            margin: 0 auto;
+        }
+        
+        .status-indicator.online {
+            background: #28a745;
+            animation: pulse-green 2s infinite;
+        }
+        
+        .status-indicator.offline {
+            background: #dc3545;
+            animation: pulse-red 2s infinite;
+        }
+        
+        .status-indicator.loading {
+            background: #ffc107;
+            animation: pulse-yellow 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+        
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        
+        @keyframes pulse-yellow {
+            0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container admin-container">
+        <!-- Admin Header -->
+        <div class="admin-card">
+            <div class="admin-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2><i class="fas fa-shield-alt me-3"></i>Panel de Administración</h2>
+                        <div id="admin-info">
+                            <p class="mb-1"><strong>Verificando permisos de administrador...</strong></p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <a href="dashboard.html" class="btn btn-light me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                        </a>
+                        <button class="btn btn-outline-light" onclick="logout()">
+                            <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Content (only shown if user has admin permissions) -->
+        <div id="admin-content" style="display: none;">
+            <!-- System Metrics -->
+            <div class="admin-card">
+                <div class="card-body p-4">
+                    <h4 class="mb-4"><i class="fas fa-chart-line me-2"></i>Métricas del Sistema</h4>
+                    <div class="system-metrics">
+                        <div class="row" id="system-metrics">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="total-users">-</div>
+                                    <div class="metric-label">Usuarios Activos</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="total-orders">-</div>
+                                    <div class="metric-label">Pedidos Totales</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="total-suppliers">-</div>
+                                    <div class="metric-label">Proveedores</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="metric-value" id="system-uptime">-</div>
+                                    <div class="metric-label">Tiempo Activo</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="admin-card">
+                <div class="card-body p-4">
+                    <h4 class="mb-4"><i class="fas fa-heartbeat me-2"></i>Estado Detallado del Sistema</h4>
+                    <div class="row">
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="gateway-status"></div>
+                                <h6 class="mb-0">Gateway</h6>
+                                <small class="text-muted">Port 8082</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="auth-status"></div>
+                                <h6 class="mb-0">Session Service</h6>
+                                <small class="text-muted">Port 8081</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="orders-status"></div>
+                                <h6 class="mb-0">Orders Service</h6>
+                                <small class="text-muted">Port 8083</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="inventory-status"></div>
+                                <h6 class="mb-0">Inventory Service</h6>
+                                <small class="text-muted">Port 8084</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="database-status"></div>
+                                <h6 class="mb-0">Database</h6>
+                                <small class="text-muted">Port 5432</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4 col-6 mb-3">
+                            <div class="status-item text-center p-3 border rounded">
+                                <div class="status-indicator mx-auto mb-2" id="ui-status"></div>
+                                <h6 class="mb-0">UI Service</h6>
+                                <small class="text-muted">Port 3000</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Testing -->
+            <div class="admin-card">
+                <div class="card-body p-4">
+                    <h4 class="mb-4"><i class="fas fa-api me-2"></i>Pruebas de API - Solo Administradores</h4>
+                    
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6>Endpoints de Autenticación</h6>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/auth/health</strong>
+                                <p class="mb-2 text-muted">Verificar el estado del servicio de autenticación</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/health', 'GET')">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/auth/profile</strong>
+                                <p class="mb-2 text-muted">Obtener perfil del usuario actual</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/profile', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/auth/validate</strong>
+                                <p class="mb-2 text-muted">Validar el token actual</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/validate', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/auth/token-info</strong>
+                                <p class="mb-2 text-muted">Obtener información detallada del token (Solo Admin)</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/token-info', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <h6>Endpoints de Servicios</h6>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/orders/health</strong>
+                                <p class="mb-2 text-muted">Verificar el estado del servicio de pedidos</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/orders/health', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/inventory/health</strong>
+                                <p class="mb-2 text-muted">Verificar el estado del servicio de inventario</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/inventory/health', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/v1/inventory/suppliers</strong>
+                                <p class="mb-2 text-muted">Listar todos los proveedores</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/inventory/suppliers', 'GET', true)">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>GET /api/health</strong>
+                                <p class="mb-2 text-muted">Verificar el estado general del sistema</p>
+                                <button class="btn btn-test btn-sm" onclick="testEndpoint('/health', 'GET')">
+                                    Probar Endpoint
+                                </button>
+                            </div>
+                            
+                            <div class="api-endpoint">
+                                <strong>POST /api/v1/auth/logout</strong>
+                                <p class="mb-2 text-muted">Cerrar sesión e invalidar token</p>
+                                <button class="btn btn-test btn-sm" onclick="testLogout()">
+                                    Probar Cerrar Sesión
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Results -->
+            <div class="admin-card">
+                <div class="card-body p-4">
+                    <h4 class="mb-4"><i class="fas fa-flask me-2"></i>Resultados de Pruebas API</h4>
+                    <div id="test-results">
+                        <p class="text-muted">Haz clic en cualquier botón "Probar Endpoint" para ver los resultados aquí...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Access Denied Message -->
+        <div id="access-denied" class="admin-card" style="display: none;">
+            <div class="access-denied">
+                <i class="fas fa-lock fa-4x mb-3"></i>
+                <h3>Acceso Denegado</h3>
+                <p class="lead">Esta sección está reservada solo para administradores.</p>
+                <p>Si necesitas acceso, contacta con el administrador del sistema.</p>
+                <a href="dashboard.html" class="btn btn-light btn-lg mt-3">
+                    <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Configuration -->
+    <script src="../config.js"></script>
+    
+    <!-- Auth Service -->
+    <script src="auth.js"></script>
+    
+    <script>
+        // Admin panel functionality
+        async function initializeAdminPanel() {
+            try {
+                if (!authService.isAuthenticated()) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const userData = authService.getUserData();
+                if (!userData) {
+                    showAccessDenied();
+                    return;
+                }
+
+                const { user, role, permissions } = userData;
+                
+                // Check if user has admin permissions
+                const isAdmin = role.role_name === 'admin' || 
+                               permissions.some(p => p.permission_name === 'admin' || p.permission_name === 'system_admin');
+                
+                if (!isAdmin) {
+                    showAccessDenied();
+                    return;
+                }
+
+                // Show admin content
+                document.getElementById('admin-content').style.display = 'block';
+                document.getElementById('access-denied').style.display = 'none';
+                
+                // Update admin info
+                document.getElementById('admin-info').innerHTML = `
+                    <p class="mb-1"><strong>${user.full_name}</strong> (${user.username})</p>
+                    <p class="mb-0">Rol: <span class="badge bg-light text-dark">${role.role_name}</span> | Permisos: ${permissions.length}</p>
+                `;
+
+                // Load system data
+                await loadSystemMetrics();
+                checkSystemStatus();
+                
+                // Set up periodic status checks (every 30 seconds)
+                setInterval(() => checkSystemStatus(), 30000);
+                
+            } catch (error) {
+                console.error('Error initializing admin panel:', error);
+                showAccessDenied();
+            }
+        }
+
+        function showAccessDenied() {
+            document.getElementById('admin-content').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'block';
+        }
+
+        async function loadSystemMetrics() {
+            try {
+                // Load suppliers count
+                const token = authService.getToken();
+                const suppliersResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (suppliersResponse.ok) {
+                    const suppliersData = await suppliersResponse.json();
+                    document.getElementById('total-suppliers').textContent = suppliersData.count || 0;
+                }
+
+                // Set placeholder values for other metrics
+                document.getElementById('total-users').textContent = '1';
+                document.getElementById('total-orders').textContent = '-';
+                document.getElementById('system-uptime').textContent = 'Online';
+                
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+                // Set error values
+                document.getElementById('total-suppliers').textContent = '?';
+                document.getElementById('total-users').textContent = '?';
+                document.getElementById('total-orders').textContent = '?';
+                document.getElementById('system-uptime').textContent = '?';
+            }
+        }
+
+        async function testEndpoint(endpoint, method = 'GET', requiresAuth = false) {
+            try {
+                const url = `${CONFIG.GATEWAY_URL}/api${endpoint}`;
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+
+                if (requiresAuth) {
+                    const token = authService.getToken();
+                    if (!token) {
+                        showResult('No hay token de autenticación disponible', 'danger');
+                        return;
+                    }
+                    options.headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                showResult(`Probando ${method} ${endpoint}...`, 'info');
+
+                const response = await fetch(url, options);
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(`✅ ${method} ${endpoint} - Éxito`, 'success', data);
+                } else {
+                    showResult(`❌ ${method} ${endpoint} - Error: ${data.message || 'Error desconocido'}`, 'danger', data);
+                }
+            } catch (error) {
+                showResult(`❌ ${method} ${endpoint} - Error de Red: ${error.message}`, 'danger');
+            }
+        }
+
+        async function testLogout() {
+            try {
+                await authService.logout();
+                showResult('✅ Cierre de sesión exitoso - redirigiendo al login...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } catch (error) {
+                showResult(`❌ Error al cerrar sesión: ${error.message}`, 'danger');
+            }
+        }
+
+        function logout() {
+            if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+                testLogout();
+            }
+        }
+
+        function showResult(message, type = 'info', data = null) {
+            const resultsDiv = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            let resultHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <strong>[${timestamp}]</strong> ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            if (data) {
+                resultHtml += `
+                    <div class="alert alert-light border mb-3">
+                        <h6>Datos de Respuesta:</h6>
+                        <pre class="mb-0"><code>${JSON.stringify(data, null, 2)}</code></pre>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
+        }
+
+        // === SYSTEM STATUS METHODS ===
+        
+        async function checkSystemStatus() {
+            try {
+                const health = await authService.checkSystemHealth();
+                updateStatusIndicators(health);
+            } catch (error) {
+                console.error('Status check error:', error);
+                updateStatusIndicators({
+                    gateway: 'offline',
+                    services: {}
+                });
+            }
+        }
+
+        function updateStatusIndicators(health) {
+            // Gateway status
+            const gatewayStatus = document.getElementById('gateway-status');
+            setStatusIndicator(gatewayStatus, health.gateway);
+
+            // Auth/Session service status
+            const authStatus = document.getElementById('auth-status');
+            const authServiceStatus = health.services['session-service'] || 'unknown';
+            setStatusIndicator(authStatus, mapServiceStatus(authServiceStatus));
+
+            // Orders service status
+            const ordersStatus = document.getElementById('orders-status');
+            const ordersServiceStatus = health.services['orders-service'] || 'unknown';
+            setStatusIndicator(ordersStatus, mapServiceStatus(ordersServiceStatus));
+
+            // Inventory service status
+            const inventoryStatus = document.getElementById('inventory-status');
+            const inventoryServiceStatus = health.services['inventory-service'] || 'unknown';
+            setStatusIndicator(inventoryStatus, mapServiceStatus(inventoryServiceStatus));
+
+            // Database status
+            const databaseStatus = document.getElementById('database-status');
+            const databaseServiceStatus = health.services['database'] || 'unknown';
+            setStatusIndicator(databaseStatus, mapServiceStatus(databaseServiceStatus));
+
+            // UI Service (always online if we can run this script)
+            const uiStatus = document.getElementById('ui-status');
+            setStatusIndicator(uiStatus, 'online');
+        }
+
+        function mapServiceStatus(serviceStatus) {
+            switch (serviceStatus) {
+                case 'healthy':
+                    return 'online';
+                case 'degraded':
+                    return 'loading'; // Orange/yellow status
+                case 'unhealthy':
+                case 'unknown':
+                default:
+                    return 'offline';
+            }
+        }
+
+        function setStatusIndicator(element, status) {
+            if (!element) return;
+
+            // Clear existing classes
+            element.classList.remove('online', 'offline', 'loading');
+            
+            // Set new status
+            switch (status) {
+                case 'online':
+                case 'healthy':
+                    element.classList.add('online');
+                    break;
+                case 'offline':
+                case 'unhealthy':
+                    element.classList.add('offline');
+                    break;
+                case 'degraded':
+                case 'loading':
+                    element.classList.add('loading');
+                    break;
+                default:
+                    element.classList.add('offline');
+            }
+        }
+
+        // Initialize admin panel on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAdminPanel();
+            console.log('🔐 Panel de administración cargado!');
+        });
+    </script>
+</body>
+</html> 

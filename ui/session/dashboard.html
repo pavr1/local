@@ -39,39 +39,6 @@
             padding: 2rem;
         }
         
-        .api-endpoint {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            font-family: 'Monaco', 'Consolas', monospace;
-        }
-        
-        .btn-test {
-            background: linear-gradient(135deg, #45b7d1 0%, #ff6b9d 100%);
-            border: none;
-            color: white;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        .status-online {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-offline {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
         /* Navigation Menu Styles */
         .nav-menu {
             background: white;
@@ -120,6 +87,10 @@
         /* Different gradient colors for different menu items */
         .nav-orders {
             background: linear-gradient(135deg, #ff6b9d 0%, #ff8e8e 100%);
+        }
+        
+        .nav-inventory {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         
         .nav-admin {
@@ -195,96 +166,56 @@
         <div class="nav-menu">
             <h4 class="mb-4 text-center"><i class="fas fa-compass me-2"></i>Menu Principal</h4>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <a href="../orders/index.html" class="nav-item nav-orders">
                         <i class="fas fa-shopping-cart"></i>
                         <h5>Gestión de Pedidos</h5>
                         <p>Crear y administrar pedidos de helados</p>
                     </a>
                 </div>
-                <div class="col-md-6">
-                    <a href="#api-section" class="nav-item nav-admin" onclick="scrollToSection('api-section')">
-                        <i class="fas fa-cogs"></i>
-                        <h5>Administración</h5>
-                        <p>Herramientas de administración y APIs</p>
+                <div class="col-lg-4 col-md-6">
+                    <a href="../inventory/index.html" class="nav-item nav-inventory">
+                        <i class="fas fa-warehouse"></i>
+                        <h5>Inventario</h5>
+                        <p>Gestionar proveedores, ingredientes y stock</p>
+                    </a>
+                </div>
+                <div class="col-lg-4 col-md-12">
+                    <a href="admin.html" class="nav-item nav-admin">
+                        <i class="fas fa-shield-alt"></i>
+                        <h5>Panel de Admin</h5>
+                        <p>Herramientas y configuración del sistema</p>
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Available API Endpoints -->
-        <div class="dashboard-card" id="api-section">
-            <div class="card-body p-4">
-                <h4 class="mb-4"><i class="fas fa-api me-2"></i>Endpoints API Disponibles</h4>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Endpoints de Autenticación</h6>
-                        
-                        <div class="api-endpoint">
-                            <strong>GET /api/v1/auth/health</strong>
-                            <p class="mb-2 text-muted">Verificar el estado del servicio de autenticación</p>
-                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/health', 'GET')">
-                                Probar Endpoint
-                            </button>
-                        </div>
-                        
-                        <div class="api-endpoint">
-                            <strong>GET /api/v1/auth/profile</strong>
-                            <p class="mb-2 text-muted">Obtener perfil del usuario actual</p>
-                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/profile', 'GET', true)">
-                                Probar Endpoint
-                            </button>
-                        </div>
-                        
-                        <div class="api-endpoint">
-                            <strong>GET /api/v1/auth/validate</strong>
-                            <p class="mb-2 text-muted">Validar el token actual</p>
-                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/validate', 'GET', true)">
-                                Probar Endpoint
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h6>Endpoints de Administrador</h6>
-                        
-                        <div class="api-endpoint">
-                            <strong>GET /api/v1/auth/token-info</strong>
-                            <p class="mb-2 text-muted">Obtener información detallada del token (Solo Admin)</p>
-                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/token-info', 'GET', true)">
-                                Probar Endpoint
-                            </button>
-                        </div>
-                        
-                        <div class="api-endpoint">
-                            <strong>POST /api/v1/auth/logout</strong>
-                            <p class="mb-2 text-muted">Cerrar sesión e invalidar token</p>
-                            <button class="btn btn-test btn-sm" onclick="testLogout()">
-                                Probar Cerrar Sesión
-                            </button>
-                        </div>
-                        
-                        <h6 class="mt-4">Estado del Sistema</h6>
-                        
-                        <div class="api-endpoint">
-                            <strong>GET /api/health</strong>
-                            <p class="mb-2 text-muted">Verificar el estado general del sistema</p>
-                            <button class="btn btn-test btn-sm" onclick="testEndpoint('/health', 'GET')">
-                                Probar Endpoint
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Test Results -->
+        <!-- Quick Access Card -->
         <div class="dashboard-card">
             <div class="card-body p-4">
-                <h4 class="mb-4"><i class="fas fa-flask me-2"></i>Resultados de Pruebas API</h4>
-                <div id="test-results">
-                    <p class="text-muted">Haz clic en cualquier botón "Probar Endpoint" para ver los resultados aquí...</p>
+                <h4 class="mb-4"><i class="fas fa-rocket me-2"></i>Acceso Rápido</h4>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="../orders/index.html" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>Nuevo Pedido
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="../inventory/suppliers/index.html" class="btn btn-outline-success btn-lg">
+                                <i class="fas fa-truck me-2"></i>Ver Proveedores
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="d-grid">
+                            <a href="../session/dashboard.html" class="btn btn-outline-info btn-lg">
+                                <i class="fas fa-refresh me-2"></i>Refresh Dashboard
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -294,25 +225,31 @@
             <div class="card-body p-4">
                 <h4 class="mb-4"><i class="fas fa-heartbeat me-2"></i>Estado del Sistema</h4>
                 <div class="row">
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
                         <div class="status-item text-center p-3 border rounded">
                             <div class="status-indicator mx-auto mb-2" id="gateway-status"></div>
                             <h6 class="mb-0">Gateway</h6>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
                         <div class="status-item text-center p-3 border rounded">
                             <div class="status-indicator mx-auto mb-2" id="auth-status"></div>
                             <h6 class="mb-0">Session Service</h6>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
                         <div class="status-item text-center p-3 border rounded">
                             <div class="status-indicator mx-auto mb-2" id="orders-status"></div>
                             <h6 class="mb-0">Orders Service</h6>
                         </div>
                     </div>
-                    <div class="col-md-3 col-6 mb-3">
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
+                        <div class="status-item text-center p-3 border rounded">
+                            <div class="status-indicator mx-auto mb-2" id="inventory-status"></div>
+                            <h6 class="mb-0">Inventory Service</h6>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4 col-6 mb-3">
                         <div class="status-item text-center p-3 border rounded">
                             <div class="status-indicator mx-auto mb-2" id="database-status"></div>
                             <h6 class="mb-0">Database</h6>
@@ -327,16 +264,16 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Auth Service -->
-    <script src="js/auth.js"></script>
+    <script src="auth.js"></script>
     
     <script>
         // Dashboard functionality
         async function loadUserInfo() {
             try {
-                            if (!authService.isAuthenticated()) {
-                window.location.href = 'login.html';
-                return;
-            }
+                if (!authService.isAuthenticated()) {
+                    window.location.href = 'login.html';
+                    return;
+                }
 
                 const userData = authService.getUserData();
                 if (userData) {
@@ -349,89 +286,20 @@
                 }
             } catch (error) {
                 console.error('Error loading user info:', error);
-                showResult('Error al cargar información del usuario', 'danger');
             }
         }
 
-        async function testEndpoint(endpoint, method = 'GET', requiresAuth = false) {
-            try {
-                const url = `http://localhost:8082/api${endpoint}`;
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                };
-
-                if (requiresAuth) {
-                    const token = authService.getToken();
-                    if (!token) {
-                        showResult('No hay token de autenticación disponible', 'danger');
-                        return;
-                    }
-                    options.headers['Authorization'] = `Bearer ${token}`;
-                }
-
-                showResult(`Probando ${method} ${endpoint}...`, 'info');
-
-                const response = await fetch(url, options);
-                const data = await response.json();
-
-                if (response.ok) {
-                    showResult(`✅ ${method} ${endpoint} - Éxito`, 'success', data);
-                } else {
-                    showResult(`❌ ${method} ${endpoint} - Error: ${data.message || 'Error desconocido'}`, 'danger', data);
-                }
-            } catch (error) {
-                showResult(`❌ ${method} ${endpoint} - Error de Red: ${error.message}`, 'danger');
-            }
-        }
-
-        async function testLogout() {
-            try {
-                await authService.logout();
-                showResult('✅ Cierre de sesión exitoso - redirigiendo al login...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 2000);
-            } catch (error) {
-                showResult(`❌ Error al cerrar sesión: ${error.message}`, 'danger');
-            }
-        }
-
-        function logout() {
+        async function logout() {
             if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
-                testLogout();
+                try {
+                    await authService.logout();
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    console.error('Error al cerrar sesión:', error);
+                    // Force redirect anyway
+                    window.location.href = 'login.html';
+                }
             }
-        }
-        
-        function scrollToSection(sectionId) {
-            document.getElementById(sectionId).scrollIntoView({
-                behavior: 'smooth'
-            });
-        }
-
-        function showResult(message, type = 'info', data = null) {
-            const resultsDiv = document.getElementById('test-results');
-            const timestamp = new Date().toLocaleTimeString();
-            
-            let resultHtml = `
-                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                    <strong>[${timestamp}]</strong> ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-
-            if (data) {
-                resultHtml += `
-                    <div class="alert alert-light border mb-3">
-                        <h6>Datos de Respuesta:</h6>
-                        <pre class="mb-0"><code>${JSON.stringify(data, null, 2)}</code></pre>
-                    </div>
-                `;
-            }
-
-            resultsDiv.innerHTML = resultHtml + resultsDiv.innerHTML;
         }
 
         // Initialize dashboard
@@ -442,7 +310,7 @@
             // Set up periodic status checks (every 30 seconds)
             setInterval(() => checkSystemStatus(), 30000);
             
-            console.log('🍦 ¡Tablero cargado! Prueba los endpoints API de arriba.');
+            console.log('🍦 ¡Tablero cargado!');
         });
 
         // === SYSTEM STATUS METHODS ===
@@ -474,6 +342,11 @@
             const ordersStatus = document.getElementById('orders-status');
             const ordersServiceStatus = health.services['orders-service'] || 'unknown';
             setStatusIndicator(ordersStatus, mapServiceStatus(ordersServiceStatus));
+
+            // Inventory service status
+            const inventoryStatus = document.getElementById('inventory-status');
+            const inventoryServiceStatus = health.services['inventory-service'] || 'unknown';
+            setStatusIndicator(inventoryStatus, mapServiceStatus(inventoryServiceStatus));
 
             // Database status
             const databaseStatus = document.getElementById('database-status');
@@ -520,4 +393,5 @@
         }
     </script>
 </body>
+</html> 
 </html> 
