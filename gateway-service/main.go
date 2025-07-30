@@ -121,6 +121,12 @@ func main() {
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
 
+	// Add explicit OPTIONS handling for CORS preflight
+	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// CORS headers are already set by corsMiddleware
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// UI is now served by its own service on port 3000
 	// Static file serving removed - UI runs independently
 

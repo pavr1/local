@@ -1,0 +1,15 @@
+{
+  "name": "ice-cream-store-ui",
+  "version": "1.0.0",
+  "description": "Ice Cream Store Management UI - Static Web Application",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -c-1",
+    "dev": "npx http-server . -p 3000 -c-1 -o"
+  },
+  "keywords": ["ice-cream", "management", "ui"],
+  "author": "Ice Cream Store Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+} 
