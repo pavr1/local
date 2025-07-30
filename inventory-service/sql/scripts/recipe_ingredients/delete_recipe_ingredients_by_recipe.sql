@@ -1,0 +1,1 @@
+DELETE FROM recipe_ingredients WHERE recipe_id = $1; 
