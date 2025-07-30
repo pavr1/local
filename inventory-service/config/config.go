@@ -22,7 +22,7 @@ type Config struct {
 // LoadConfig loads configuration from environment variables with defaults
 func LoadConfig() *Config {
 	return &Config{
-		ServerPort: getEnvString("INVENTORY_SERVER_PORT", "8082"),
+		ServerPort: getEnvString("INVENTORY_SERVER_PORT", "8084"),
 		ServerHost: getEnvString("INVENTORY_SERVER_HOST", "0.0.0.0"),
 		DBHost:     getEnvString("DB_HOST", "localhost"),
 		DBPort:     getEnvString("DB_PORT", "5432"),

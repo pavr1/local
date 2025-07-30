@@ -46,19 +46,22 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 // Service configuration
 type ServiceConfig struct {
-	SessionServiceURL string
-	OrdersServiceURL  string
+	SessionServiceURL   string
+	OrdersServiceURL    string
+	InventoryServiceURL string
 }
 
 func main() {
 	// Service configuration from environment variables
 	config := &ServiceConfig{
-		SessionServiceURL: getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
-		OrdersServiceURL:  getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
+		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
+		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
+		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
 	}
 
 	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
+	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
 
 	// Initialize session management
 	sessionManager := NewSessionManager(config.SessionServiceURL)
@@ -97,6 +100,11 @@ func main() {
 	ordersRouter.Use(sessionMiddleware.ValidateSession)
 	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
 
+	// Inventory service - all routes require session validation
+	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
+	inventoryRouter.Use(sessionMiddleware.ValidateSession)
+	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
+
 	// ==== SESSION MANAGEMENT ENDPOINTS ====
 
 	// Direct access to session management APIs (protected)
@@ -132,6 +140,10 @@ func main() {
 	fmt.Println("")
 	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Printf("   🔒 /api/v1/orders/*          → %s (session validated)\n", config.OrdersServiceURL)
+	fmt.Printf("   🔒 /api/v1/inventory/*       → %s (session validated)\n", config.InventoryServiceURL)
+	fmt.Printf("       ├─ /suppliers/*          → Suppliers management\n")
+	fmt.Printf("       ├─ /ingredients/*        → [Future] Ingredients management\n")
+	fmt.Printf("       └─ /existences/*         → [Future] Stock management\n")
 	fmt.Println("")
 	fmt.Println("📋 SESSION MANAGEMENT:")
 	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)
@@ -194,12 +206,13 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if services are healthy
 	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
+	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/health")
 
 	// Check session management health
 	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/health")
 
 	status := "healthy"
-	if !sessionHealthy || !ordersHealthy || !sessionMgmtHealthy {
+	if !sessionHealthy || !ordersHealthy || !inventoryHealthy || !sessionMgmtHealthy {
 		status = "degraded"
 	}
 
@@ -222,11 +235,17 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				return "unhealthy"
 			}(),
+			"inventory-service": func() string {
+				if inventoryHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
 		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !sessionHealthy || !ordersHealthy || !sessionMgmtHealthy {
+	if !sessionHealthy || !ordersHealthy || !inventoryHealthy || !sessionMgmtHealthy {
 		w.WriteHeader(http.StatusServiceUnavailable)
 	}
 	json.NewEncoder(w).Encode(response)

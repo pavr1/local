@@ -168,28 +168,31 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 			healthData["entities"].(map[string]string)["suppliers"])
 	}).Methods("GET")
 
-	// Suppliers endpoints
-	suppliersRouter := v1.PathPrefix("/suppliers").Subrouter()
+	// Inventory module endpoints
+	inventoryRouter := v1.PathPrefix("/inventory").Subrouter()
 
-	// GET /api/v1/suppliers - List all suppliers
+	// Suppliers endpoints under inventory
+	suppliersRouter := inventoryRouter.PathPrefix("/suppliers").Subrouter()
+
+	// GET /api/v1/inventory/suppliers - List all suppliers
 	suppliersRouter.HandleFunc("", mainHandler.GetSuppliersHandler().ListSuppliers).Methods("GET")
 
-	// POST /api/v1/suppliers - Create new supplier
+	// POST /api/v1/inventory/suppliers - Create new supplier
 	suppliersRouter.HandleFunc("", mainHandler.GetSuppliersHandler().CreateSupplier).Methods("POST")
 
-	// GET /api/v1/suppliers/{id} - Get supplier by ID
+	// GET /api/v1/inventory/suppliers/{id} - Get supplier by ID
 	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().GetSupplier).Methods("GET")
 
-	// PUT /api/v1/suppliers/{id} - Update supplier
+	// PUT /api/v1/inventory/suppliers/{id} - Update supplier
 	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().UpdateSupplier).Methods("PUT")
 
-	// DELETE /api/v1/suppliers/{id} - Delete supplier
+	// DELETE /api/v1/inventory/suppliers/{id} - Delete supplier
 	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().DeleteSupplier).Methods("DELETE")
 
-	// TODO: Add other entity endpoints when implemented
-	// ingredientsRouter := v1.PathPrefix("/ingredients").Subrouter()
-	// existencesRouter := v1.PathPrefix("/existences").Subrouter()
-	// recipesRouter := v1.PathPrefix("/recipes").Subrouter()
+	// TODO: Add other entity endpoints under inventory when implemented
+	// ingredientsRouter := inventoryRouter.PathPrefix("/ingredients").Subrouter()
+	// existencesRouter := inventoryRouter.PathPrefix("/existences").Subrouter()
+	// recipesRouter := inventoryRouter.PathPrefix("/recipes").Subrouter()
 
 	// Logging middleware
 	router.Use(loggingMiddleware(logger))

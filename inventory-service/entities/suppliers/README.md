@@ -4,10 +4,15 @@ The Suppliers API manages supplier information for the Ice Cream Store Inventory
 
 ## 🚀 Quick Start
 
-The service runs on `http://localhost:8082` when started locally.
+The service runs on `http://localhost:8084` when started locally.
+**Gateway**: Available through the gateway service at `http://localhost:8082`
 
 ### Health Check
 ```bash
+# Direct to inventory service
+curl http://localhost:8084/api/v1/inventory/health
+
+# Through gateway (requires authentication)
 curl http://localhost:8082/api/v1/inventory/health
 ```
 
@@ -15,18 +20,22 @@ curl http://localhost:8082/api/v1/inventory/health
 
 ### Base URL
 ```
-http://localhost:8082/api/v1/suppliers
+# Direct to inventory service
+http://localhost:8084/api/v1/inventory/suppliers
+
+# Through gateway (recommended - includes session management)
+http://localhost:8082/api/v1/inventory/suppliers
 ```
 
 ### Endpoints Overview
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/suppliers` | List all suppliers |
-| `POST` | `/suppliers` | Create a new supplier |
-| `GET` | `/suppliers/{id}` | Get supplier by ID |
-| `PUT` | `/suppliers/{id}` | Update supplier |
-| `DELETE` | `/suppliers/{id}` | Delete supplier |
+| `GET` | `/inventory/suppliers` | List all suppliers |
+| `POST` | `/inventory/suppliers` | Create a new supplier |
+| `GET` | `/inventory/suppliers/{id}` | Get supplier by ID |
+| `PUT` | `/inventory/suppliers/{id}` | Update supplier |
+| `DELETE` | `/inventory/suppliers/{id}` | Delete supplier |
 
 ---
 
@@ -36,7 +45,7 @@ http://localhost:8082/api/v1/suppliers
 
 **Request:**
 ```http
-GET /api/v1/suppliers
+GET /api/v1/inventory/suppliers
 ```
 
 **Response:**
@@ -62,7 +71,12 @@ GET /api/v1/suppliers
 
 **Example:**
 ```bash
-curl -X GET http://localhost:8082/api/v1/suppliers
+# Through gateway (recommended)
+curl -X GET http://localhost:8082/api/v1/inventory/suppliers \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Direct to service
+curl -X GET http://localhost:8084/api/v1/inventory/suppliers
 ```
 
 ---
@@ -71,7 +85,7 @@ curl -X GET http://localhost:8082/api/v1/suppliers
 
 **Request:**
 ```http
-POST /api/v1/suppliers
+POST /api/v1/inventory/suppliers
 Content-Type: application/json
 ```
 
@@ -106,7 +120,20 @@ Content-Type: application/json
 
 **Example:**
 ```bash
-curl -X POST http://localhost:8082/api/v1/suppliers \
+# Through gateway (recommended)
+curl -X POST http://localhost:8082/api/v1/inventory/suppliers \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "name": "Premium Ingredients Inc.",
+    "contact_person": "Jane Doe",
+    "email": "jane@premium-ingredients.com",
+    "phone": "+1-555-0456",
+    "address": "456 Supply Street, Business City, BC 67890"
+  }'
+
+# Direct to service
+curl -X POST http://localhost:8084/api/v1/inventory/suppliers \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Premium Ingredients Inc.",
@@ -123,7 +150,7 @@ curl -X POST http://localhost:8082/api/v1/suppliers \
 
 **Request:**
 ```http
-GET /api/v1/suppliers/{id}
+GET /api/v1/inventory/suppliers/{id}
 ```
 
 **Response:**
@@ -146,7 +173,12 @@ GET /api/v1/suppliers/{id}
 
 **Example:**
 ```bash
-curl -X GET http://localhost:8082/api/v1/suppliers/your-supplier-id-here
+# Through gateway (recommended)
+curl -X GET http://localhost:8082/api/v1/inventory/suppliers/your-supplier-id-here \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Direct to service
+curl -X GET http://localhost:8084/api/v1/inventory/suppliers/your-supplier-id-here
 ```
 
 ---
@@ -155,7 +187,7 @@ curl -X GET http://localhost:8082/api/v1/suppliers/your-supplier-id-here
 
 **Request:**
 ```http
-PUT /api/v1/suppliers/{id}
+PUT /api/v1/inventory/suppliers/{id}
 Content-Type: application/json
 ```
 
@@ -190,7 +222,20 @@ Content-Type: application/json
 
 **Example:**
 ```bash
-curl -X PUT http://localhost:8082/api/v1/suppliers/your-supplier-id-here \
+# Through gateway (recommended)
+curl -X PUT http://localhost:8082/api/v1/inventory/suppliers/your-supplier-id-here \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "name": "Fresh Dairy Co. Updated",
+    "contact_person": "John Smith Jr.",
+    "email": "john.jr@freshdairy.com",
+    "phone": "+1-555-0124",
+    "address": "124 Dairy Lane, Farm City, FC 12345"
+  }'
+
+# Direct to service
+curl -X PUT http://localhost:8084/api/v1/inventory/suppliers/your-supplier-id-here \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Fresh Dairy Co. Updated",
@@ -207,7 +252,7 @@ curl -X PUT http://localhost:8082/api/v1/suppliers/your-supplier-id-here \
 
 **Request:**
 ```http
-DELETE /api/v1/suppliers/{id}
+DELETE /api/v1/inventory/suppliers/{id}
 ```
 
 **Response:**
@@ -220,7 +265,12 @@ DELETE /api/v1/suppliers/{id}
 
 **Example:**
 ```bash
-curl -X DELETE http://localhost:8082/api/v1/suppliers/your-supplier-id-here
+# Through gateway (recommended)
+curl -X DELETE http://localhost:8082/api/v1/inventory/suppliers/your-supplier-id-here \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Direct to service
+curl -X DELETE http://localhost:8084/api/v1/inventory/suppliers/your-supplier-id-here
 ```
 
 ---
@@ -299,7 +349,18 @@ go test -v ./entities/suppliers/...
 
 1. **Create a supplier:**
 ```bash
-curl -X POST http://localhost:8082/api/v1/suppliers \
+# Through gateway (recommended)
+curl -X POST http://localhost:8082/api/v1/inventory/suppliers \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "name": "Test Supplier",
+    "contact_person": "Test Person",
+    "email": "test@example.com"
+  }'
+
+# Direct to service
+curl -X POST http://localhost:8084/api/v1/inventory/suppliers \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Test Supplier",
@@ -310,12 +371,21 @@ curl -X POST http://localhost:8082/api/v1/suppliers \
 
 2. **List suppliers:**
 ```bash
-curl http://localhost:8082/api/v1/suppliers
+# Through gateway (recommended)
+curl http://localhost:8082/api/v1/inventory/suppliers \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# Direct to service
+curl http://localhost:8084/api/v1/inventory/suppliers
 ```
 
 3. **Health check:**
 ```bash
+# Through gateway
 curl http://localhost:8082/api/v1/inventory/health
+
+# Direct to service
+curl http://localhost:8084/api/v1/inventory/health
 ```
 
 ---
