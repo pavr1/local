@@ -75,7 +75,7 @@ fresh: banner fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start
 	@echo "$(CYAN)🔗 Access Your Services:$(RESET)"
 	@echo "  • UI Application: http://localhost:3000"
 	@echo "  • Database: http://localhost:8080 (PgAdmin)"
-	@echo "  • Session API: http://localhost:8081/api/v1/auth/health"
+	@echo "  • Session API: http://localhost:8081/api/v1/sessions/health"
 	@echo "  • Orders API: http://localhost:8083/api/v1/orders/health"
 	@echo ""
 	@echo "  🌐 Gateway Service API: $(GREEN)http://localhost:8082$(RESET)"
@@ -113,7 +113,7 @@ final-status: ## Final status check after fresh installation
 		echo "$(RED)❌ UNHEALTHY$(RESET)"; \
 	fi
 	@printf "  🔐 Auth Service: "
-	@if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ RUNNING$(RESET)"; \
 	else \
 		echo "$(RED)❌ NOT RESPONDING$(RESET)"; \
@@ -135,7 +135,7 @@ final-status: ## Final status check after fresh installation
 	if docker exec icecream_postgres pg_isready -U postgres -d icecream_store > /dev/null 2>&1; then \
 		db_healthy=true; \
 	fi; \
-	if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+	if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then \
 		auth_running=true; \
 	fi; \
 	if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
@@ -347,8 +347,8 @@ system-info: ## Show complete system information
 	@echo ""
 	@echo "  $(GREEN)Auth Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:8081"
-	@echo "    • Health:   http://localhost:8081/api/v1/auth/health"
-	@echo "    • Login:    POST http://localhost:8081/api/v1/auth/login"
+			@echo "    • Health:   http://localhost:8081/api/v1/sessions/health"
+			@echo "    • Login:    POST http://localhost:8081/api/v1/sessions/login"
 	@echo ""
 	@echo "  $(GREEN)Orders Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:8083"
@@ -369,7 +369,7 @@ system-info: ## Show complete system information
 	@echo "  curl http://localhost:5432 # PostgreSQL"
 	@echo ""
 	@echo "  # Test auth service"
-	@echo "  curl http://localhost:8081/api/v1/auth/health"
+	@echo "  curl http://localhost:8081/api/v1/sessions/health"
 	@echo ""
 	@echo "  # Test orders service"
 	@echo "  curl http://localhost:8083/api/v1/orders/health"

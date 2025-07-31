@@ -52,7 +52,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then
+    if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then
         echo "✅ Auth service is ready!"
         break
     fi
@@ -78,11 +78,11 @@ echo "🎉 Auth Service is ready!"
 echo ""
 echo "📝 Service Details:"
 echo "   Auth API: http://localhost:8081"
-echo "   Health:   http://localhost:8081/api/v1/auth/health"
-echo "   Login:    POST http://localhost:8081/api/v1/auth/login"
+echo "   Health:   http://localhost:8081/api/v1/sessions/health"
+echo "   Login:    POST http://localhost:8081/api/v1/sessions/login"
 echo ""
 echo "📋 Useful Commands:"
 echo "   Stop service:     ./scripts/stop.sh"
 echo "   View logs:        ./scripts/logs.sh"
-echo "   Test login:       curl -X POST http://localhost:8081/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
+echo "   Test login:       curl -X POST http://localhost:8081/api/v1/sessions/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 echo "" 

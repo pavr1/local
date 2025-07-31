@@ -126,7 +126,7 @@ class AuthService {
         // Check Database (via auth service since database is internal)
         let databaseHealthy = false;
         try {
-            const authResponse = await fetch('http://localhost:8082/api/v1/auth/health', {
+            const authResponse = await fetch('http://localhost:8082/api/v1/sessions/health', {
                 method: 'GET',
                 mode: 'cors',
                 headers: {

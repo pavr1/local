@@ -150,7 +150,7 @@ Then visit: `http://localhost:8000`
 ### Service Endpoints
 Each service UI integrates with its respective backend:
 
-- **Auth Service**: `http://localhost:8081/api/v1/auth/`
+- **Session Service**: `http://localhost:8081/api/v1/sessions/`
 - **Orders Service**: `http://localhost:8083/api/v1/orders/`
 
 ### Error Handling

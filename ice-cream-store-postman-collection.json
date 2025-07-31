@@ -91,7 +91,7 @@
 									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/login",
+									"raw": "{{gateway_url}}/api/v1/sessions/login",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "login"]
 								},
@@ -104,7 +104,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/health",
+									"raw": "{{gateway_url}}/api/v1/sessions/health",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "health"]
 								},
@@ -132,7 +132,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/logout",
+									"raw": "{{gateway_url}}/api/v1/sessions/logout",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "logout"]
 								},
@@ -150,7 +150,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/refresh",
+									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "refresh"]
 								},
@@ -168,7 +168,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/validate",
+									"raw": "{{gateway_url}}/api/v1/sessions/validate",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "validate"]
 								},
@@ -186,7 +186,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/profile",
+									"raw": "{{gateway_url}}/api/v1/sessions/profile",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "profile"]
 								},
@@ -204,7 +204,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/auth/token-info",
+									"raw": "{{gateway_url}}/api/v1/sessions/token-info",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "auth", "token-info"]
 								},
@@ -721,7 +721,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{session_service_url}}/api/v1/auth/health",
+									"raw": "{{session_service_url}}/api/v1/sessions/health",
 									"host": ["{{session_service_url}}"],
 									"path": ["api", "v1", "auth", "health"]
 								},

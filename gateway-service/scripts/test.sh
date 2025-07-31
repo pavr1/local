@@ -62,7 +62,7 @@ run_test "Health Endpoint Response" \
 
 # Test 3: Health check via proxy (if auth service is up)
 run_test "Auth Service Proxy Health" \
-    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/v1/auth/health" \
+    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/v1/sessions/health" \
     "200"
 
 # Test 4: Orders service proxy health (if orders service is up)

@@ -49,7 +49,7 @@ for i in {1..30}; do
         echo -e "${CYAN}📊 Gateway Service Status:${NC}"
         echo -e "   🌐 Gateway API: ${GREEN}http://localhost:8082${NC}"
         echo -e "   🔌 Health Check: ${GREEN}http://localhost:8082/api/health${NC}"
-        echo -e "   🔐 Auth Proxy: ${GREEN}http://localhost:8082/api/v1/auth/*${NC}"
+        echo -e "   🔐 Session Proxy: ${GREEN}http://localhost:8082/api/v1/sessions/*${NC}"
         echo -e "   🛒 Orders Proxy: ${GREEN}http://localhost:8082/api/v1/orders/*${NC}"
         echo ""
         echo -e "${GREEN}🎉 Gateway Service reset completed successfully!${NC}"

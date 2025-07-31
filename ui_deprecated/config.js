@@ -9,7 +9,7 @@ const CONFIG = {
     SERVICES: {
         session: {
             name: 'Session Service',
-            url: 'http://localhost:8081/api/v1/auth/health',
+            url: 'http://localhost:8081/api/v1/sessions/health',
             element: 'status-auth'
         },
         orders: {
@@ -29,15 +29,15 @@ const CONFIG = {
         },
         database: {
             name: 'Database',
-            url: 'http://localhost:8081/api/v1/auth/health', // Proxy through session service
+            url: 'http://localhost:8081/api/v1/sessions/health', // Proxy through session service
             element: 'status-data'
         }
     },
     
     // API endpoints (all go through gateway)
     API: {
-        LOGIN: '/api/v1/auth/login',
-        LOGOUT: '/api/v1/auth/logout',
+        LOGIN: '/api/v1/sessions/login',
+        LOGOUT: '/api/v1/sessions/logout',
         ORDERS: '/api/v1/orders',
         SUPPLIERS: '/api/v1/inventory/suppliers',
         HEALTH: '/api/health'

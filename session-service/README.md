@@ -213,7 +213,7 @@ docker run -d \
 
 #### Login
 ```http
-POST /api/v1/auth/login
+POST /api/v1/sessions/login
 Content-Type: application/json
 
 {
@@ -243,7 +243,7 @@ Content-Type: application/json
 
 #### Health Check
 ```http
-GET /api/v1/auth/health
+GET /api/v1/sessions/health
 ```
 
 **Response:**
@@ -268,13 +268,13 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 #### Logout
 ```http
-POST /api/v1/auth/logout
+POST /api/v1/sessions/logout
 Authorization: Bearer <token>
 ```
 
 #### Token Refresh
 ```http
-POST /api/v1/auth/refresh
+POST /api/v1/sessions/refresh
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -285,13 +285,13 @@ Authorization: Bearer <token>
 
 #### Validate Token
 ```http
-GET /api/v1/auth/validate
+POST /api/v1/sessions/validate
 Authorization: Bearer <token>
 ```
 
 #### Get Profile
 ```http
-GET /api/v1/auth/profile
+GET /api/v1/sessions/profile
 Authorization: Bearer <token>
 ```
 
@@ -299,14 +299,14 @@ Authorization: Bearer <token>
 
 #### Get Token Info
 ```http
-GET /api/v1/auth/token-info
+GET /api/v1/sessions/token-info
 Authorization: Bearer <token>
 ```
 
 ## 🔐 Authentication Flow
 
 ### 1. Login Process
-1. Client sends username/password to `/api/v1/auth/login`
+1. Client sends username/password to `/api/v1/sessions/login`
 2. Service validates credentials against database
 3. If valid, generates JWT token with user roles/permissions
 4. Returns token with user and role information
@@ -319,7 +319,7 @@ Authorization: Bearer <token>
 
 ### 3. Token Refresh
 1. When token is within refresh threshold, client can refresh it
-2. Send current token to `/api/v1/auth/refresh`
+2. Send current token to `/api/v1/sessions/refresh`
 3. Receive new token with extended expiration
 
 ## 🧪 Testing
@@ -341,10 +341,10 @@ make test-login
 
 ```bash
 # Health check
-curl http://localhost:8081/api/v1/auth/health
+curl http://localhost:8081/api/v1/sessions/health
 
 # Login
-curl -X POST http://localhost:8081/api/v1/auth/login \
+curl -X POST http://localhost:8081/api/v1/sessions/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin","password":"admin123"}'
 
@@ -352,11 +352,11 @@ curl -X POST http://localhost:8081/api/v1/auth/login \
 export TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 # Validate token
-curl -X GET http://localhost:8081/api/v1/auth/validate \
+curl -X POST http://localhost:8081/api/v1/sessions/validate \
   -H "Authorization: Bearer $TOKEN"
 
 # Get profile
-curl -X GET http://localhost:8081/api/v1/auth/profile \
+curl -X GET http://localhost:8081/api/v1/sessions/profile \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -392,7 +392,7 @@ Other services can validate tokens by calling the auth service:
 
 ```go
 // Validate token
-resp, err := http.Get("http://session-service:8081/api/v1/auth/validate", 
+resp, err := http.Post("http://session-service:8081/api/v1/sessions/validate", 
     headers: {"Authorization": "Bearer " + token})
 
 // Check permissions in JWT claims
@@ -444,7 +444,7 @@ cd ../session-service
 make start
 
 # Both services now communicate via Docker network
-curl http://localhost:8081/api/v1/auth/health
+curl http://localhost:8081/api/v1/sessions/health
 ```
 
 ### Docker Network Communication
@@ -561,7 +561,7 @@ cd ../data-service && make connect
 docker inspect icecream_auth --format='{{.State.Health.Status}}'
 
 # Force health check
-docker exec icecream_auth wget --spider http://localhost:8081/api/v1/auth/health
+docker exec icecream_auth wget --spider http://localhost:8081/api/v1/sessions/health
 ```
 
 ## 🔄 Next Steps

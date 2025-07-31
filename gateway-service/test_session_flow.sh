@@ -26,7 +26,7 @@ echo ""
 
 # Test 3: Login through gateway (creates session)
 echo "📋 3. Testing LOGIN through gateway (creates session)..."
-LOGIN_RESPONSE=$(curl -s -X POST "$GATEWAY_URL/api/v1/auth/login" \
+LOGIN_RESPONSE=$(curl -s -X POST "$GATEWAY_URL/api/v1/sessions/login" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",
@@ -69,7 +69,7 @@ echo ""
 echo "📋 7. Testing LOGOUT through gateway (revokes session)..."
 curl -s -w "Status: %{http_code}\n" \
   -H "Authorization: Bearer $TOKEN" \
-  -X POST "$GATEWAY_URL/api/v1/auth/logout" | jq '.'
+  -X POST "$GATEWAY_URL/api/v1/sessions/logout" | jq '.'
 echo ""
 
 # Test 8: Try to use token after logout (should fail)

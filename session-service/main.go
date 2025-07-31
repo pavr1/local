@@ -12,6 +12,7 @@ import (
 
 	"session-service/config"
 	"session-service/handler"
+	"session-service/middleware"
 	"session-service/utils"
 
 	"github.com/gorilla/mux"
@@ -129,6 +130,11 @@ func setupRouter(sessionHandler *handler.SessionHandler, sessionAPI *handler.Ses
 
 	// Add middleware
 	router.Use(loggingMiddleware(logger))
+
+	// Gateway validation middleware - block direct access
+	gatewayMiddleware := middleware.NewGatewayMiddleware(logger)
+	router.Use(gatewayMiddleware.ValidateGateway)
+
 	// CORS removed - gateway handles all CORS headers
 
 	// ==== SESSION MANAGEMENT API ROUTES ====
@@ -152,21 +158,11 @@ func setupRouter(sessionHandler *handler.SessionHandler, sessionAPI *handler.Ses
 	sessionProtectedRouter.HandleFunc("/user/{userID}", sessionAPI.RevokeAllUserSessions).Methods("DELETE")
 	sessionProtectedRouter.HandleFunc("/{sessionID}", sessionAPI.RevokeSession).Methods("DELETE")
 
-	// ==== LEGACY AUTH API ROUTES (for backward compatibility) ====
+	// Add login endpoint to session management (public, no auth required)
+	sessionPublicRouter.HandleFunc("/login", sessionAPI.Login).Methods("POST")
 
-	// Public routes (no authentication required)
-	publicRouter := router.PathPrefix("/api/v1").Subrouter()
-	publicRouter.HandleFunc("/auth/login", sessionAPI.Login).Methods("POST")
-	publicRouter.HandleFunc("/auth/health", sessionAPI.HealthCheck).Methods("GET")
-
-	// Protected routes (authentication required)
-	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
-	// protectedRouter.Use(authMiddleware.Authenticate) // TODO: Re-enable when middleware available
-
-	// Auth endpoints - using sessionAPI for now
-	// protectedRouter.HandleFunc("/auth/logout", sessionAPI.Logout).Methods("POST") // TODO: Logout method not available on SessionAPI
-	protectedRouter.HandleFunc("/auth/refresh", sessionAPI.RefreshSession).Methods("POST")
-	protectedRouter.HandleFunc("/auth/validate", sessionAPI.ValidateSession).Methods("POST")
+	// Add logout endpoint to session management (no auth required - token in body)
+	sessionPublicRouter.HandleFunc("/logout", sessionAPI.RevokeSessionByToken).Methods("POST")
 	// protectedRouter.HandleFunc("/auth/profile", sessionAPI.GetProfile).Methods("GET") // TODO: GetProfile method not available on SessionAPI
 
 	// Admin only endpoints - TODO: Re-implement when methods are available

@@ -70,7 +70,7 @@ status: ## Show container status
 
 health: ## Check service health
 	@echo "$(CYAN)🏥 Checking auth service health...$(RESET)"
-	@if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ Auth service is healthy and ready!$(RESET)"; \
 	else \
 		echo "$(RED)❌ Auth service is not responding$(RESET)"; \
@@ -86,7 +86,7 @@ test: ## Run unit tests
 
 test-integration: fix-permissions ## Run integration tests (requires service to be running)
 	@echo "$(CYAN)🧪 Running integration tests...$(RESET)"
-	@if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then \
 		./scripts/test.sh; \
 	else \
 		echo "$(YELLOW)⚠️  Session service is not running, skipping integration tests$(RESET)"; \
@@ -95,13 +95,13 @@ test-integration: fix-permissions ## Run integration tests (requires service to 
 
 test-basic: ## Run basic connectivity test
 	@echo "$(CYAN)🧪 Running basic connectivity test...$(RESET)"
-	@curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1 && \
+	@curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1 && \
 		echo "$(GREEN)✅ Basic connectivity test passed!$(RESET)" || \
 		(echo "$(RED)❌ Basic connectivity test failed!$(RESET)" && exit 1)
 
 test-login: ## Test admin login
 	@echo "$(CYAN)🧪 Testing admin login...$(RESET)"
-	@curl -s -X POST http://localhost:8081/api/v1/auth/login \
+	@curl -s -X POST http://localhost:8081/api/v1/sessions/login \
 		-H 'Content-Type: application/json' \
 		-d '{"username":"admin","password":"admin123"}' | \
 		grep -q '"token"' && \
@@ -147,13 +147,13 @@ install: deps start ## Complete setup: install dependencies and start service
 	@echo "$(GREEN)🎉 Auth Service installation completed!$(RESET)"
 	@echo "$(CYAN)📝 Service Details:$(RESET)"
 	@echo "   Auth API: http://localhost:8081"
-	@echo "   Health:   http://localhost:8081/api/v1/auth/health"
-	@echo "   Login:    POST http://localhost:8081/api/v1/auth/login"
+	@echo "   Health:   http://localhost:8081/api/v1/sessions/health"
+	@echo "   Login:    POST http://localhost:8081/api/v1/sessions/login"
 	@echo ""
 	@echo "$(CYAN)🧪 Test Commands:$(RESET)"
 	@echo "   make test                      # Run all tests"
 	@echo "   make test-login               # Test admin login"
-	@echo "   curl -X POST http://localhost:8081/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
+	@echo "   curl -X POST http://localhost:8081/api/v1/sessions/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 
 fresh: clean deps build-fresh start test status info ## Fresh start: clean, force rebuild, start, test, and show info
 	@echo "$(GREEN)🎉 Fresh Auth Service setup completed!$(RESET)"
@@ -179,22 +179,22 @@ info: ## Show service information and URLs
 	@echo ""
 	@echo "$(YELLOW)🔗 Service URLs:$(RESET)"
 	@echo "   Base URL:     http://localhost:8081"
-	@echo "   Health Check: http://localhost:8081/api/v1/auth/health"
+	@echo "   Health Check: http://localhost:8081/api/v1/sessions/health"
 	@echo "   API Docs:     http://localhost:8081/"
 	@echo ""
 	@echo "$(YELLOW)🔑 API Endpoints:$(RESET)"
-	@echo "   POST /api/v1/auth/login      # User login"
-	@echo "   POST /api/v1/auth/logout     # User logout (requires token)"
-	@echo "   POST /api/v1/auth/refresh    # Refresh token (requires token)"
-	@echo "   GET  /api/v1/auth/validate   # Validate token (requires token)"
-	@echo "   GET  /api/v1/auth/profile    # Get user profile (requires token)"
+	@echo "   POST /api/v1/sessions/login      # User login"
+	@echo "   POST /api/v1/sessions/logout     # User logout (requires token)"
+	@echo "   POST /api/v1/sessions/refresh    # Refresh token (requires token)"
+	@echo "   POST /api/v1/sessions/validate   # Validate token (requires token)"
+	@echo "   GET  /api/v1/sessions/profile    # Get user profile (requires token)"
 	@echo ""
 	@echo "$(YELLOW)🧪 Test Commands:$(RESET)"
 	@echo "   # Health check"
-	@echo "   curl http://localhost:8081/api/v1/auth/health"
+	@echo "   curl http://localhost:8081/api/v1/sessions/health"
 	@echo ""
 	@echo "   # Login"
-	@echo "   curl -X POST http://localhost:8081/api/v1/auth/login \\"
+	@echo "   curl -X POST http://localhost:8081/api/v1/sessions/login \\"
 	@echo "        -H 'Content-Type: application/json' \\"
 	@echo "        -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 	@echo ""

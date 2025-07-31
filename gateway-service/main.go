@@ -77,12 +77,21 @@ func main() {
 	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
 
-	// ==== AUTH ENDPOINTS ====
+	// ==== SESSION MANAGEMENT ENDPOINTS ====
 
-	// Public auth endpoints (no session validation required)
-	authPublicRouter := api.PathPrefix("/v1/auth").Subrouter()
-	authPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
-	authPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/health")).Methods("GET")
+	// Public session endpoints (no authentication required)
+	sessionPublicRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	sessionPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
+	sessionPublicRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
+	sessionPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/health")).Methods("GET")
+
+	// Protected session endpoints (require valid session)
+	sessionProtectedRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	sessionProtectedRouter.Use(sessionMiddleware.ValidateSession)
+	sessionProtectedRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
+	sessionProtectedRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh")).Methods("POST")
+	sessionProtectedRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
+	sessionProtectedRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
 
 	// Public health endpoints for other services (no session validation required)
 	ordersPublicRouter := api.PathPrefix("/v1/orders").Subrouter()
@@ -90,15 +99,6 @@ func main() {
 
 	inventoryPublicRouter := api.PathPrefix("/v1/inventory").Subrouter()
 	inventoryPublicRouter.HandleFunc("/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/health")).Methods("GET")
-
-	// Protected auth endpoints (require session validation)
-	authProtectedRouter := api.PathPrefix("/v1/auth").Subrouter()
-	authProtectedRouter.Use(sessionMiddleware.ValidateSession)
-	authProtectedRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
-	authProtectedRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/refresh")).Methods("POST")
-	authProtectedRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/validate")).Methods("GET")
-	authProtectedRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/profile")).Methods("GET")
-	authProtectedRouter.HandleFunc("/token-info", createProxyHandler(config.SessionServiceURL, "/api/v1/auth/token-info")).Methods("GET")
 
 	// ==== PROTECTED BUSINESS SERVICE ROUTES ====
 
@@ -111,13 +111,6 @@ func main() {
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
 	inventoryRouter.Use(sessionMiddleware.ValidateSession)
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
-
-	// ==== SESSION MANAGEMENT ENDPOINTS ====
-
-	// Direct access to session management APIs (protected)
-	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
-	sessionRouter.Use(sessionMiddleware.ValidateSession)
-	sessionRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions"))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
@@ -134,16 +127,16 @@ func main() {
 	fmt.Println("🚀 Gateway Service with Session Management starting on http://localhost:8082")
 	fmt.Println("📡 API available at http://localhost:8082/api")
 	fmt.Println("")
-	fmt.Println("🔐 AUTH ENDPOINTS:")
+	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	fmt.Println("   📂 Public:")
-	fmt.Printf("      POST /api/v1/auth/login    → %s (+ session creation)\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/auth/health   → %s\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/login    → %s (+ session creation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/validate → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/sessions/health   → %s\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
-	fmt.Printf("      POST /api/v1/auth/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/auth/refresh  → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/auth/validate → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/auth/profile  → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/auth/token-info → %s\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/refresh  → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/sessions/profile  → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/sessions/user/{userID} → %s\n", config.SessionServiceURL)
 	fmt.Println("")
 	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")
@@ -198,7 +191,7 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 		originalDirector(req)
 
 		// Log the proxy request (only for important requests)
-		if req.URL.Path != "/api/v1/auth/health" {
+		if req.URL.Path != "/api/v1/sessions/health" {
 			log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
 		}
 
@@ -215,7 +208,7 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if services are healthy
-	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/auth/health")
+	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
 	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/health")
 

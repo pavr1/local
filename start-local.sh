@@ -343,7 +343,7 @@ case "${1:-start}" in
         # Health checks
         echo -e "${CYAN}🏥 Performing health checks...${RESET}"
         sleep 5
-        check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/auth/health"
+        check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/sessions/health"
         check_service_health "Orders Service" "http://localhost:$ORDERS_PORT/api/v1/orders/health"
         check_service_health "Inventory Service" "http://localhost:$INVENTORY_PORT/api/v1/inventory/health"
         check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/health"
@@ -381,7 +381,7 @@ case "${1:-start}" in
     "health")
         print_banner
         echo -e "${CYAN}🏥 Health Check Results:${RESET}"
-        check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/auth/health"
+        check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/sessions/health"
         check_service_health "Orders Service" "http://localhost:$ORDERS_PORT/api/v1/orders/health"  
         check_service_health "Inventory Service" "http://localhost:$INVENTORY_PORT/api/v1/inventory/health"
         check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/health"

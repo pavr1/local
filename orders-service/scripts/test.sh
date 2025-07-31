@@ -55,12 +55,12 @@ run_test() {
 
 # Helper function to get auth token (requires auth service)
 get_auth_token() {
-    if ! curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then
+    if ! curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  Auth service not available - skipping authenticated tests${RESET}"
         return 1
     fi
     
-    local response=$(curl -s -X POST http://localhost:8081/api/v1/auth/login \
+    local response=$(curl -s -X POST http://localhost:8081/api/v1/sessions/login \
         -H 'Content-Type: application/json' \
         -d '{"username":"admin","password":"admin123"}' 2>/dev/null)
     

@@ -103,7 +103,7 @@ test-orders: ## Test orders endpoint (requires auth)
 	@echo "$(CYAN)🧪 Testing orders endpoint...$(RESET)"
 	@if [ -z "$$AUTH_TOKEN" ]; then \
 		echo "$(YELLOW)⚠️  AUTH_TOKEN not set. Get token from auth service first.$(RESET)"; \
-		echo "   Run: AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"; \
+		echo "   Run: AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"; \
 		exit 1; \
 	fi
 	@curl -s -H "Authorization: Bearer $$AUTH_TOKEN" http://localhost:8083/api/v1/orders | \
@@ -203,7 +203,7 @@ info: ## Show service information and URLs
 	@echo "   curl http://localhost:8083/api/v1/orders/health"
 	@echo ""
 	@echo "   # Get auth token first"
-	@echo "   AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/auth/login \\"
+	@echo "   AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/login \\"
 	@echo "        -H 'Content-Type: application/json' \\"
 	@echo "        -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | \\"
 	@echo "        grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"

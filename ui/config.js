@@ -19,10 +19,10 @@ const CONFIG = {
     
     // API endpoints (all go through gateway)
     API: {
-        LOGIN: '/api/v1/auth/login',
-        LOGOUT: '/api/v1/auth/logout',
+        LOGIN: '/api/v1/sessions/login',
+        LOGOUT: '/api/v1/sessions/logout',
         VALIDATE: '/api/v1/sessions/validate',
-        PROFILE: '/api/v1/auth/profile',
+        PROFILE: '/api/v1/sessions/profile',
         HEALTH: '/api/health'
     },
     
@@ -42,7 +42,7 @@ const CONFIG = {
         },
         auth: {
             name: 'Session Service', 
-            url: SERVICE_URLS.gateway + '/api/v1/auth/health',
+            url: SERVICE_URLS.gateway + '/api/v1/sessions/health',
             element: 'auth-status'
         },
         orders: {

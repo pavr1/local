@@ -318,7 +318,7 @@
                     
                 } catch (error) {
                     console.error('❌ Login failed:', error.message);
-                    this.showAlert(error.message, 'danger');
+                    this.showAlert(error.message, 'error');
                 } finally {
                     this.setLoading(false);
                 }

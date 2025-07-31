@@ -78,8 +78,21 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 			return
 		}
 
-		// Forward login request to session service
-		resp, err := http.Post(sessionServiceURL+"/api/v1/auth/login", "application/json", strings.NewReader(string(body)))
+		// Forward login request to session service with gateway headers
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/login", strings.NewReader(string(body)))
+		if err != nil {
+			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create login request")
+			return
+		}
+
+		// Add gateway headers
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+		req.Header.Set("X-Gateway-Session-Managed", "true")
+		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("Login proxy error: %v", err)
 			sm.writeErrorResponse(w, http.StatusBadGateway, "service_unavailable", "Authentication service unavailable")
@@ -158,8 +171,21 @@ func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string)
 			}
 		}
 
-		// Forward logout request to session service
-		resp, err := http.Post(sessionServiceURL+"/api/v1/auth/logout", "application/json", r.Body)
+		// Forward logout request to session service with gateway headers
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/logout", r.Body)
+		if err != nil {
+			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create logout request")
+			return
+		}
+
+		// Add gateway headers
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+		req.Header.Set("X-Gateway-Session-Managed", "true")
+		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("Logout proxy error: %v", err)
 			sm.writeErrorResponse(w, http.StatusBadGateway, "service_unavailable", "Authentication service unavailable")

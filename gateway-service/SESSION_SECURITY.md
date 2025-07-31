@@ -116,7 +116,7 @@ fetch("/api/v1/orders", {
 ### **2. Server-Side Session Validation**
 ```javascript
 // ✅ Only tokens created through login are valid
-const response = await fetch("/api/v1/auth/login", {
+const response = await fetch("/api/v1/sessions/login", {
   method: "POST",
   body: JSON.stringify({ username: "user", password: "pass" })
 });
@@ -148,7 +148,7 @@ if (newToken) {
 ### **4. Complete Session Revocation**
 ```javascript
 // Logout now completely invalidates the session
-await fetch("/api/v1/auth/logout", {
+await fetch("/api/v1/sessions/logout", {
   method: "POST",
   headers: { Authorization: `Bearer ${token}` }
 });
@@ -167,17 +167,17 @@ fetch("/api/v1/orders", {
 ### **Route Classification**
 
 #### **🌐 Public Routes (No Session Validation)**
-- `POST /api/v1/auth/login` - Login and create session
-- `GET /api/v1/auth/health` - Health check
+- `POST /api/v1/sessions/login` - Login and create session
+- `POST /api/v1/sessions/validate` - Validate token 
+- `GET /api/v1/sessions/health` - Health check
 
 #### **🔒 Protected Routes (Require Valid Session)**
-- `POST /api/v1/auth/logout` - Logout and revoke session
-- `POST /api/v1/auth/refresh` - Refresh token
-- `GET /api/v1/auth/validate` - Validate token
-- `GET /api/v1/auth/profile` - Get user profile
-- `GET /api/v1/auth/token-info` - Get token information
+- `POST /api/v1/sessions/logout` - Logout and revoke session
+- `POST /api/v1/sessions/refresh` - Refresh token
+- `GET /api/v1/sessions/profile` - Get user profile
+- `GET /api/v1/sessions/user/{userID}` - User session management
 - `ALL /api/v1/orders/*` - All order operations
-- `ALL /api/v1/sessions/*` - Session management
+- `ALL /api/v1/inventory/*` - All inventory operations
 
 ### **Request Headers Added by Gateway**
 

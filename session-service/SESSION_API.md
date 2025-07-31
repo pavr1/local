@@ -361,4 +361,4 @@ SESSION_STORAGE_TYPE=memory  # memory, redis, database
 
 ## 🔗 **Legacy Compatibility**
 
-The service maintains backward compatibility with existing auth endpoints at `/api/v1/auth/*` for gradual migration. 
+All authentication endpoints have been migrated to `/api/v1/sessions/*` for consistency. 

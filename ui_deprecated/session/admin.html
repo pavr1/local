@@ -262,7 +262,7 @@
                             <h6>Endpoints de Autenticación</h6>
                             
                             <div class="api-endpoint">
-                                <strong>GET /api/v1/auth/health</strong>
+                                <strong>GET /api/v1/sessions/health</strong>
                                 <p class="mb-2 text-muted">Verificar el estado del servicio de autenticación</p>
                                 <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/health', 'GET')">
                                     Probar Endpoint
@@ -270,7 +270,7 @@
                             </div>
                             
                             <div class="api-endpoint">
-                                <strong>GET /api/v1/auth/profile</strong>
+                                <strong>GET /api/v1/sessions/profile</strong>
                                 <p class="mb-2 text-muted">Obtener perfil del usuario actual</p>
                                 <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/profile', 'GET', true)">
                                     Probar Endpoint
@@ -278,7 +278,7 @@
                             </div>
                             
                             <div class="api-endpoint">
-                                <strong>GET /api/v1/auth/validate</strong>
+                                <strong>POST /api/v1/sessions/validate</strong>
                                 <p class="mb-2 text-muted">Validar el token actual</p>
                                 <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/validate', 'GET', true)">
                                     Probar Endpoint
@@ -286,7 +286,7 @@
                             </div>
                             
                             <div class="api-endpoint">
-                                <strong>GET /api/v1/auth/token-info</strong>
+                                <strong>GET /api/v1/sessions/token-info</strong>
                                 <p class="mb-2 text-muted">Obtener información detallada del token (Solo Admin)</p>
                                 <button class="btn btn-test btn-sm" onclick="testEndpoint('/v1/auth/token-info', 'GET', true)">
                                     Probar Endpoint
@@ -330,7 +330,7 @@
                             </div>
                             
                             <div class="api-endpoint">
-                                <strong>POST /api/v1/auth/logout</strong>
+                                <strong>POST /api/v1/sessions/logout</strong>
                                 <p class="mb-2 text-muted">Cerrar sesión e invalidar token</p>
                                 <button class="btn btn-test btn-sm" onclick="testLogout()">
                                     Probar Cerrar Sesión
