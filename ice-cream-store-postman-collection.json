@@ -91,9 +91,9 @@
 									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/login",
+									"raw": "{{gateway_url}}/api/v1/sessions/p/login",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "login"]
+									"path": ["api", "v1", "sessions", "p", "login"]
 								},
 								"description": "Login with username and password. Automatically saves auth token to collection variables."
 							}
@@ -104,9 +104,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/health",
+									"raw": "{{gateway_url}}/api/v1/sessions/p/health",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "health"]
+									"path": ["api", "v1", "sessions", "p", "health"]
 								},
 								"description": "Check authentication service health"
 							}
@@ -577,9 +577,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/health",
+							"raw": "{{gateway_url}}/api/v1/sessions/p/health",
 							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "health"]
+							"path": ["api", "v1", "sessions", "p", "health"]
 						},
 						"description": "Check session management service health"
 					}
@@ -721,9 +721,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{session_service_url}}/api/v1/sessions/health",
+									"raw": "{{session_service_url}}/api/v1/sessions/p/health",
 									"host": ["{{session_service_url}}"],
-									"path": ["api", "v1", "sessions", "health"]
+									"path": ["api", "v1", "sessions", "p", "health"]
 								},
 								"description": "Direct access to session service health check"
 							}

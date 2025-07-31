@@ -79,7 +79,7 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 		}
 
 		// Forward login request to session service with gateway headers
-		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/login", strings.NewReader(string(body)))
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/login", strings.NewReader(string(body)))
 		if err != nil {
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create login request")
 			return
@@ -172,7 +172,7 @@ func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string)
 		}
 
 		// Forward logout request to session service with gateway headers
-		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/logout", r.Body)
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/logout", r.Body)
 		if err != nil {
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create logout request")
 			return

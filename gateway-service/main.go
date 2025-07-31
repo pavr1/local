@@ -79,11 +79,11 @@ func main() {
 
 	// ==== SESSION MANAGEMENT ENDPOINTS ====
 
-	// Public session endpoints (no authentication required)
-	sessionPublicRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	// Public session endpoints (no authentication required) - /p/ prefix
+	sessionPublicRouter := api.PathPrefix("/v1/sessions/p").Subrouter()
 	sessionPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
-	sessionPublicRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
-	sessionPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/health")).Methods("GET")
+	sessionPublicRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate")).Methods("POST")
+	sessionPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
 
 	// Protected session endpoints (require valid session)
 	sessionProtectedRouter := api.PathPrefix("/v1/sessions").Subrouter()
@@ -129,11 +129,11 @@ func main() {
 	fmt.Println("")
 	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	fmt.Println("   📂 Public:")
-	fmt.Printf("      POST /api/v1/sessions/login    → %s (+ session creation)\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/sessions/validate → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/sessions/health   → %s\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/login    → %s (+ session creation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/validate → %s\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/sessions/p/health → %s\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
-	fmt.Printf("      POST /api/v1/sessions/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
 	fmt.Printf("      POST /api/v1/sessions/refresh  → %s\n", config.SessionServiceURL)
 	fmt.Printf("      GET  /api/v1/sessions/profile  → %s\n", config.SessionServiceURL)
 	fmt.Printf("      GET  /api/v1/sessions/user/{userID} → %s\n", config.SessionServiceURL)
@@ -191,7 +191,7 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 		originalDirector(req)
 
 		// Log the proxy request (only for important requests)
-		if req.URL.Path != "/api/v1/sessions/health" {
+		if req.URL.Path != "/api/v1/sessions/p/health" {
 			log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
 		}
 
@@ -208,12 +208,12 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if services are healthy
-	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/health")
+	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
 	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/health")
 
 	// Check session management health
-	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/health")
+	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
 
 	status := "healthy"
 	if !sessionHealthy || !ordersHealthy || !inventoryHealthy || !sessionMgmtHealthy {

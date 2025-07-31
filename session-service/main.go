@@ -139,30 +139,24 @@ func setupRouter(sessionHandler *handler.SessionHandler, sessionAPI *handler.Ses
 
 	// ==== SESSION MANAGEMENT API ROUTES ====
 
-	// Public session management routes (no authentication required)
-	sessionPublicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	sessionPublicRouter.HandleFunc("/health", sessionAPI.HealthCheck).Methods("GET")
-	sessionPublicRouter.HandleFunc("/validate", sessionAPI.ValidateSession).Methods("POST")
+	// Single session router to avoid routing conflicts
+	sessionRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
 
-	// Internal routes (for gateway use - could add API key protection later)
-	sessionInternalRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	sessionInternalRouter.HandleFunc("", sessionAPI.CreateSession).Methods("POST")
-	sessionInternalRouter.HandleFunc("/refresh", sessionAPI.RefreshSession).Methods("POST")
-	sessionInternalRouter.HandleFunc("/logout", sessionAPI.RevokeSessionByToken).Methods("POST")
-	sessionInternalRouter.HandleFunc("/stats", sessionAPI.GetSessionStats).Methods("GET")
+	// Public endpoints (no authentication required) - /p/ prefix
+	sessionRouter.HandleFunc("/p/health", sessionAPI.HealthCheck).Methods("GET")
+	sessionRouter.HandleFunc("/p/login", sessionAPI.Login).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", sessionAPI.ValidateSession).Methods("POST")
+	sessionRouter.HandleFunc("/p/logout", sessionAPI.RevokeSessionByToken).Methods("POST")
 
-	// Protected session management routes (authentication required)
-	sessionProtectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	// sessionProtectedRouter.Use(authMiddleware.Authenticate) // TODO: Re-enable when middleware available
-	sessionProtectedRouter.HandleFunc("/user/{userID}", sessionAPI.GetUserSessions).Methods("GET")
-	sessionProtectedRouter.HandleFunc("/user/{userID}", sessionAPI.RevokeAllUserSessions).Methods("DELETE")
-	sessionProtectedRouter.HandleFunc("/{sessionID}", sessionAPI.RevokeSession).Methods("DELETE")
+	// Internal/Gateway endpoints
+	sessionRouter.HandleFunc("", sessionAPI.CreateSession).Methods("POST")          // POST /api/v1/sessions
+	sessionRouter.HandleFunc("/refresh", sessionAPI.RefreshSession).Methods("POST") // POST /api/v1/sessions/refresh
+	sessionRouter.HandleFunc("/stats", sessionAPI.GetSessionStats).Methods("GET")   // GET /api/v1/sessions/stats
 
-	// Add login endpoint to session management (public, no auth required)
-	sessionPublicRouter.HandleFunc("/login", sessionAPI.Login).Methods("POST")
-
-	// Add logout endpoint to session management (no auth required - token in body)
-	sessionPublicRouter.HandleFunc("/logout", sessionAPI.RevokeSessionByToken).Methods("POST")
+	// Protected endpoints (TODO: add auth middleware when available)
+	sessionRouter.HandleFunc("/user/{userID}", sessionAPI.GetUserSessions).Methods("GET")          // GET /api/v1/sessions/user/{userID}
+	sessionRouter.HandleFunc("/user/{userID}", sessionAPI.RevokeAllUserSessions).Methods("DELETE") // DELETE /api/v1/sessions/user/{userID}
+	sessionRouter.HandleFunc("/{sessionID}", sessionAPI.RevokeSession).Methods("DELETE")           // DELETE /api/v1/sessions/{sessionID}
 	// protectedRouter.HandleFunc("/auth/profile", sessionAPI.GetProfile).Methods("GET") // TODO: GetProfile method not available on SessionAPI
 
 	// Admin only endpoints - TODO: Re-implement when methods are available
