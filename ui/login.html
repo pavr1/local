@@ -298,15 +298,14 @@
                     console.log('✅ Login successful:', result);
                     this.showAlert('Login successful! Welcome back.', 'success');
                     
-                    // Show success modal
+                    // Show success modal and redirect to dashboard
                     this.showSuccessModal();
                     
-                    // Redirect after delay (for demo purposes, show success for now)
+                    // Redirect to dashboard after brief delay
                     setTimeout(() => {
-                        console.log('🎉 Login complete - would redirect to dashboard');
-                        // For now, just show a message since we only have login page
-                        this.showAlert('Login complete! Dashboard not implemented yet.', 'warning');
-                    }, 2000);
+                        console.log('🎉 Login complete - redirecting to dashboard');
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
                     
                 } catch (error) {
                     console.error('❌ Login failed:', error.message);
