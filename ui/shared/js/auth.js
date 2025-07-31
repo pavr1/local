@@ -224,10 +224,28 @@ class StatusService {
                 method: 'GET',
                 timeout: 5000 // 5 second timeout
             });
-            return response.ok;
+            
+            // Handle different response cases
+            if (response.ok) {
+                return 'healthy';
+            }
+            
+            // For 503 responses, check if it's degraded (partial failure) vs completely down
+            if (response.status === 503) {
+                try {
+                    const data = await response.json();
+                    if (data && data.status === 'degraded') {
+                        return 'degraded';
+                    }
+                } catch (parseError) {
+                    console.warn(`Could not parse 503 response for ${url}:`, parseError.message);
+                }
+            }
+            
+            return 'unhealthy';
         } catch (error) {
             console.warn(`Service health check failed for ${url}:`, error.message);
-            return false;
+            return 'unhealthy';
         }
     }
 
@@ -237,12 +255,26 @@ class StatusService {
         const results = {};
         
         for (const [serviceKey, service] of Object.entries(this.services)) {
-            const isHealthy = await this.checkServiceHealth(service.url);
-            results[serviceKey] = isHealthy;
+            const healthStatus = await this.checkServiceHealth(service.url);
+            results[serviceKey] = healthStatus;
             
             const indicator = document.getElementById(service.element);
             if (indicator) {
-                this.updateStatusIndicator(indicator, isHealthy ? 'online' : 'offline');
+                // Map health status to indicator status
+                let indicatorStatus;
+                switch (healthStatus) {
+                    case 'healthy':
+                        indicatorStatus = 'online';
+                        break;
+                    case 'degraded':
+                        indicatorStatus = 'warning';
+                        break;
+                    case 'unhealthy':
+                    default:
+                        indicatorStatus = 'offline';
+                        break;
+                }
+                this.updateStatusIndicator(indicator, indicatorStatus);
             }
         }
 
@@ -253,7 +285,7 @@ class StatusService {
     updateStatusIndicator(element, status) {
         if (!element) return;
         
-        element.classList.remove('online', 'offline', 'loading');
+        element.classList.remove('online', 'offline', 'warning', 'loading');
         element.classList.add(status);
     }
 

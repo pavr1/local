@@ -230,6 +230,12 @@ body {
     animation: pulse-red 1.8s infinite;
 }
 
+.status-indicator.warning {
+    background: var(--warning-color);
+    box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+    animation: pulse-yellow 2s infinite;
+}
+
 .status-indicator.loading {
     background: var(--warning-color);
     box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
