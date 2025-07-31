@@ -79,19 +79,19 @@ func main() {
 
 	// ==== SESSION MANAGEMENT ENDPOINTS ====
 
-	// Create main session router
-	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
-
 	// Public session endpoints (no authentication required)
-	sessionRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
-	sessionRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
-	sessionRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/health")).Methods("GET")
+	sessionPublicRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	sessionPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
+	sessionPublicRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
+	sessionPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/health")).Methods("GET")
 
-	// Protected session endpoints (require valid session) - apply middleware individually
-	sessionRouter.Handle("/logout", sessionMiddleware.ValidateSession(http.HandlerFunc(sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)))).Methods("POST")
-	sessionRouter.Handle("/refresh", sessionMiddleware.ValidateSession(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh"))).Methods("POST")
-	sessionRouter.Handle("/profile", sessionMiddleware.ValidateSession(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile"))).Methods("GET")
-	sessionRouter.Handle("/user/{userID}", sessionMiddleware.ValidateSession(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user"))).Methods("GET", "DELETE")
+	// Protected session endpoints (require valid session)
+	sessionProtectedRouter := api.PathPrefix("/v1/sessions").Subrouter()
+	sessionProtectedRouter.Use(sessionMiddleware.ValidateSession)
+	sessionProtectedRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
+	sessionProtectedRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh")).Methods("POST")
+	sessionProtectedRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
+	sessionProtectedRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
 
 	// Public health endpoints for other services (no session validation required)
 	ordersPublicRouter := api.PathPrefix("/v1/orders").Subrouter()

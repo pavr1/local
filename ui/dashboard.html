@@ -462,6 +462,9 @@
     <!-- Authentication Service -->
     <script src="shared/js/auth.js?v=1.2"></script>
     
+    <!-- Status Service -->
+    <script src="shared/js/status.js?v=1.0"></script>
+    
     <!-- Dashboard JavaScript -->
     <script>
         class Dashboard {
@@ -506,22 +509,28 @@
 
             startSystemMonitoring() {
                 if (statusService) {
-                    // Start periodic health checks
+                    // Start periodic health checks (shared service handles this)
                     statusService.startPeriodicHealthCheck(15000); // Every 15 seconds
                     
-                    // Initial health check
-                    this.updateSystemStatus();
-                    
-                    // Update every 30 seconds
+                    // Update UI status indicators every 30 seconds
                     setInterval(() => {
                         this.updateSystemStatus();
                     }, 30000);
+                    
+                    // Initial status update
+                    setTimeout(() => {
+                        this.updateSystemStatus();
+                    }, 1000); // Wait a bit for initial health check to complete
                 }
             }
 
             async updateSystemStatus() {
                 try {
-                    const results = await statusService.checkAllServices();
+                    // Get latest health check results from shared service
+                    const healthCheck = statusService.getLastHealthCheck();
+                    if (!healthCheck) return;
+                    
+                    const results = healthCheck.results;
                     
                     // Map service keys to status element IDs
                     const statusMapping = {
@@ -537,7 +546,7 @@
                         if (elementId) {
                             const element = document.getElementById(elementId);
                             if (element) {
-                                statusService.updateStatusIndicator(element, this.mapStatusToIndicator(status));
+                                statusService.updateStatusIndicator(element, status);
                             }
                         }
                         
@@ -548,7 +557,7 @@
                         }
                     }
                 } catch (error) {
-                    console.error('❌ Error updating system status:', error);
+                    console.error('❌ Dashboard status update failed:', error);
                 }
             }
 
