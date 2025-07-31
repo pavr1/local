@@ -316,6 +316,7 @@
     <script>
         let suppliers = [];
         let currentSupplierId = null;
+        let authService;
         
         // Navigation
         function goBack() {
@@ -326,13 +327,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚚 Suppliers page loaded');
             
+            // Initialize AuthService
+            authService = new AuthService();
+            
             // Check authentication before loading suppliers
             checkAuthentication();
         });
 
         // Check if user is authenticated
-        function checkAuthentication() {
-            const token = localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);
+        async function checkAuthentication() {
+            const token = authService.getToken();
             console.log('🔐 Checking authentication...');
             console.log('🔐 Token exists:', !!token);
             console.log('🔐 CONFIG.AUTH:', CONFIG.AUTH);
@@ -345,7 +349,27 @@
                 return false;
             }
 
-            console.log('✅ Token found, proceeding to load suppliers...');
+            // Skip validation if we just came from login (indicated by referrer)
+            const fromLogin = document.referrer && document.referrer.includes('login.html');
+            
+            if (fromLogin) {
+                console.log('✅ Token found and user came from login, proceeding directly...');
+                loadSuppliers();
+                return true;
+            }
+
+            console.log('🔍 Validating existing token with server...');
+            const isValid = await authService.validateToken();
+            
+            if (!isValid) {
+                console.log('❌ Token validation failed - token is expired or invalid');
+                Alert.error('Session Expired', 'Your authentication session has expired or is invalid. You will be redirected to login.').then(() => {
+                    window.location.href = '../login.html';
+                });
+                return false;
+            }
+
+            console.log('✅ Token validated successfully, proceeding to load suppliers...');
             loadSuppliers();
             return true;
         }
@@ -355,7 +379,7 @@
             try {
                 showLoadingState();
                 
-                const token = localStorage.getItem(CONFIG.AUTH.TOKEN_KEY);
+                const token = authService.getToken();
                 console.log('🔐 Making API request with token:', token ? 'Token exists' : 'No token');
                 console.log('🌐 API URL:', `${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
                 
@@ -373,9 +397,17 @@
                 if (!response.ok) {
                     if (response.status === 401) {
                         console.log('❌ Authentication failed - 401 Unauthorized');
+                        
+                        // Get detailed error information
+                        const errorText = await response.text();
+                        console.log('❌ 401 Error details:', errorText);
+                        
                         hideLoadingState();
+                        
+                        // Clear invalid token
+                        authService.clearAuthData();
+                        
                         Alert.error('Authentication Failed', 'Your session has expired. Please login again.').then(() => {
-                            localStorage.removeItem(CONFIG.AUTH.TOKEN_KEY);
                             window.location.href = '../login.html';
                         });
                         return;
@@ -572,7 +604,7 @@
                 const response = await fetch(url, {
                     method: method,
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.AUTH.TOKEN_KEY)}`,
+                        'Authorization': `Bearer ${authService.getToken()}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify(supplierData)
@@ -621,7 +653,7 @@
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem(CONFIG.AUTH.TOKEN_KEY)}`,
+                        'Authorization': `Bearer ${authService.getToken()}`,
                         'Content-Type': 'application/json'
                     }
                 });

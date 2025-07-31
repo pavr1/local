@@ -126,11 +126,17 @@ class AuthService {
 
             if (!response.ok) {
                 console.log('❌ Token validation failed:', response.status);
+                
+                // Get detailed error information
+                const errorData = await response.json().catch(() => ({}));
+                console.log('❌ Validation error details:', errorData);
+                
                 this.clearAuthData();
                 return false;
             }
 
-            console.log('✅ Token is valid');
+            const data = await response.json();
+            console.log('✅ Token is valid:', data);
             return true;
         } catch (error) {
             console.error('❌ Token validation error:', error.message);
