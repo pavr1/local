@@ -10,10 +10,10 @@ The service runs on `http://localhost:8084` when started locally.
 ### Health Check
 ```bash
 # Direct to inventory service
-curl http://localhost:8084/api/v1/inventory/health
+curl http://localhost:8084/api/v1/inventory/p/health
 
 # Through gateway (requires authentication)
-curl http://localhost:8082/api/v1/inventory/health
+curl http://localhost:8082/api/v1/inventory/p/health
 ```
 
 ## 📋 API Endpoints
@@ -382,10 +382,10 @@ curl http://localhost:8084/api/v1/inventory/suppliers
 3. **Health check:**
 ```bash
 # Through gateway
-curl http://localhost:8082/api/v1/inventory/health
+curl http://localhost:8082/api/v1/inventory/p/health
 
 # Direct to service
-curl http://localhost:8084/api/v1/inventory/health
+curl http://localhost:8084/api/v1/inventory/p/health
 ```
 
 ---

@@ -95,10 +95,10 @@ func main() {
 
 	// Public health endpoints for other services (no session validation required)
 	ordersPublicRouter := api.PathPrefix("/v1/orders").Subrouter()
-	ordersPublicRouter.HandleFunc("/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/health")).Methods("GET")
+	ordersPublicRouter.HandleFunc("/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
 
 	inventoryPublicRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	inventoryPublicRouter.HandleFunc("/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/health")).Methods("GET")
+	inventoryPublicRouter.HandleFunc("/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 
 	// ==== PROTECTED BUSINESS SERVICE ROUTES ====
 
@@ -140,8 +140,8 @@ func main() {
 	fmt.Println("")
 	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")
-	fmt.Printf("      GET  /api/v1/orders/health     → %s\n", config.OrdersServiceURL)
-	fmt.Printf("      GET  /api/v1/inventory/health  → %s\n", config.InventoryServiceURL)
+	fmt.Printf("      GET  /api/v1/orders/p/health     → %s\n", config.OrdersServiceURL)
+	fmt.Printf("      GET  /api/v1/inventory/p/health  → %s\n", config.InventoryServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
 	fmt.Printf("      ALL  /api/v1/orders/*          → %s\n", config.OrdersServiceURL)
 	fmt.Printf("      ALL  /api/v1/inventory/*       → %s\n", config.InventoryServiceURL)
@@ -209,8 +209,8 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 func healthHandler(w http.ResponseWriter, r *http.Request) {
 	// Check if services are healthy
 	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
-	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/health")
-	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/health")
+	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/p/health")
+	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/p/health")
 
 	// Check session management health
 	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")

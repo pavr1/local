@@ -67,7 +67,7 @@ run_test "Auth Service Proxy Health" \
 
 # Test 4: Orders service proxy health (if orders service is up)
 run_test "Orders Service Proxy Health" \
-    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/v1/orders/health" \
+    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/v1/orders/p/health" \
     "200"
 
 # Test 5: CORS headers

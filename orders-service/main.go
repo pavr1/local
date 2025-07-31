@@ -154,7 +154,7 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()
-	publicRouter.HandleFunc("/orders/health", ordersHandler.HealthCheck).Methods("GET")
+	publicRouter.HandleFunc("/orders/p/health", ordersHandler.HealthCheck).Methods("GET")
 
 	// Protected routes (authentication required)
 	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
@@ -203,7 +203,7 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 			"status": "healthy",
 			"timestamp": "%s",
 			"endpoints": {
-				"health": "/api/v1/orders/health",
+				"health": "/api/v1/orders/p/health",
 				"orders": "/api/v1/orders",
 				"statistics": "/api/v1/orders/summary"
 			}

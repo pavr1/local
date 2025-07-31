@@ -148,7 +148,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	v1 := router.PathPrefix("/api/v1").Subrouter()
 
 	// Health check endpoint
-	v1.HandleFunc("/inventory/health", func(w http.ResponseWriter, r *http.Request) {
+	v1.HandleFunc("/inventory/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

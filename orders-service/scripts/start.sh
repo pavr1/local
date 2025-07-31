@@ -52,7 +52,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then
+    if curl -f http://localhost:8083/api/v1/orders/p/health > /dev/null 2>&1; then
         echo "✅ Orders service is ready!"
         break
     fi
@@ -78,11 +78,11 @@ echo "🎉 Orders Service is ready!"
 echo ""
 echo "📝 Service Details:"
 echo "   Orders API: http://localhost:8083"
-echo "   Health:     http://localhost:8083/api/v1/orders/health"
+echo "   Health:     http://localhost:8083/api/v1/orders/p/health"
 echo "   Create:     POST http://localhost:8083/api/v1/orders"
 echo ""
 echo "📋 Useful Commands:"
 echo "   Stop service:     ./scripts/stop.sh"
 echo "   View logs:        ./scripts/logs.sh"
-echo "   Test service:     curl http://localhost:8083/api/v1/orders/health"
+echo "   Test service:     curl http://localhost:8083/api/v1/orders/p/health"
 echo "" 

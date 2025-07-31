@@ -116,7 +116,7 @@ fetch("/api/v1/orders", {
 ### **2. Server-Side Session Validation**
 ```javascript
 // ✅ Only tokens created through login are valid
-const response = await fetch("/api/v1/sessions/login", {
+const response = await fetch("/api/v1/sessions/p/login", {
   method: "POST",
   body: JSON.stringify({ username: "user", password: "pass" })
 });

@@ -47,12 +47,12 @@ const CONFIG = {
         },
         orders: {
             name: 'Orders Service',
-            url: SERVICE_URLS.gateway + '/api/v1/orders/health', 
+            url: SERVICE_URLS.gateway + '/api/v1/orders/p/health', 
             element: 'orders-status'
         },
         inventory: {
             name: 'Inventory Service',
-            url: SERVICE_URLS.gateway + '/api/v1/inventory/health',
+            url: SERVICE_URLS.gateway + '/api/v1/inventory/p/health',
             element: 'inventory-status'
         }
     }

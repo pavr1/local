@@ -70,7 +70,7 @@ status: ## Show container status
 
 health: ## Check service health
 	@echo "$(CYAN)🏥 Checking orders service health...$(RESET)"
-	@if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8083/api/v1/orders/p/health > /dev/null 2>&1; then \
 		echo "$(GREEN)✅ Orders service is healthy and ready!$(RESET)"; \
 	else \
 		echo "$(RED)❌ Orders service is not responding$(RESET)"; \
@@ -86,7 +86,7 @@ test: ## Run unit tests
 
 test-integration: fix-permissions ## Run integration tests (requires service to be running)
 	@echo "$(CYAN)🧪 Running integration tests...$(RESET)"
-	@if curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1; then \
+	@if curl -f http://localhost:8083/api/v1/orders/p/health > /dev/null 2>&1; then \
 		./scripts/test.sh; \
 	else \
 		echo "$(YELLOW)⚠️  Orders service is not running, skipping integration tests$(RESET)"; \
@@ -95,7 +95,7 @@ test-integration: fix-permissions ## Run integration tests (requires service to 
 
 test-basic: ## Run basic connectivity test
 	@echo "$(CYAN)🧪 Running basic connectivity test...$(RESET)"
-	@curl -f http://localhost:8083/api/v1/orders/health > /dev/null 2>&1 && \
+	@curl -f http://localhost:8083/api/v1/orders/p/health > /dev/null 2>&1 && \
 		echo "$(GREEN)✅ Basic connectivity test passed!$(RESET)" || \
 		(echo "$(RED)❌ Basic connectivity test failed!$(RESET)" && exit 1)
 
@@ -103,7 +103,7 @@ test-orders: ## Test orders endpoint (requires auth)
 	@echo "$(CYAN)🧪 Testing orders endpoint...$(RESET)"
 	@if [ -z "$$AUTH_TOKEN" ]; then \
 		echo "$(YELLOW)⚠️  AUTH_TOKEN not set. Get token from auth service first.$(RESET)"; \
-		echo "   Run: AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"; \
+		echo "   Run: AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/p/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"; \
 		exit 1; \
 	fi
 	@curl -s -H "Authorization: Bearer $$AUTH_TOKEN" http://localhost:8083/api/v1/orders | \
@@ -150,14 +150,14 @@ install: deps start ## Complete setup: install dependencies and start service
 	@echo "$(GREEN)🎉 Orders Service installation completed!$(RESET)"
 	@echo "$(CYAN)📝 Service Details:$(RESET)"
 	@echo "   Orders API: http://localhost:8083"
-	@echo "   Health:     http://localhost:8083/api/v1/orders/health"
+	@echo "   Health:     http://localhost:8083/api/v1/orders/p/health"
 	@echo "   List:       GET http://localhost:8083/api/v1/orders"
 	@echo "   Create:     POST http://localhost:8083/api/v1/orders"
 	@echo ""
 	@echo "$(CYAN)🧪 Test Commands:$(RESET)"
 	@echo "   make test                      # Run all tests"
 	@echo "   make test-orders              # Test orders endpoint"
-	@echo "   curl http://localhost:8083/api/v1/orders/health"
+	@echo "   curl http://localhost:8083/api/v1/orders/p/health"
 
 fresh: clean deps build-fresh start test status info ## Fresh start: clean, force rebuild, start, test, and show info
 	@echo "$(GREEN)🎉 Fresh Orders Service setup completed!$(RESET)"
@@ -200,10 +200,10 @@ info: ## Show service information and URLs
 	@echo ""
 	@echo "$(YELLOW)🧪 Test Commands:$(RESET)"
 	@echo "   # Health check"
-	@echo "   curl http://localhost:8083/api/v1/orders/health"
+	@echo "   curl http://localhost:8083/api/v1/orders/p/health"
 	@echo ""
 	@echo "   # Get auth token first"
-	@echo "   AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/login \\"
+	@echo "   AUTH_TOKEN=\$$(curl -s -X POST http://localhost:8081/api/v1/sessions/p/login \\"
 	@echo "        -H 'Content-Type: application/json' \\"
 	@echo "        -d '{\"username\":\"admin\",\"password\":\"admin123\"}' | \\"
 	@echo "        grep -o '\"token\":\"[^\"]*\"' | cut -d'\"' -f4)"

@@ -226,9 +226,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/health",
+							"raw": "{{gateway_url}}/api/v1/orders/p/health",
 							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", "health"]
+							"path": ["api", "v1", "orders", "p", "health"]
 						},
 						"description": "Check orders service health (public endpoint)"
 					}
@@ -425,9 +425,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/inventory/health",
+							"raw": "{{gateway_url}}/api/v1/inventory/p/health",
 							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "inventory", "health"]
+							"path": ["api", "v1", "inventory", "p", "health"]
 						},
 						"description": "Check inventory service health"
 					}
@@ -740,9 +740,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{orders_service_url}}/api/v1/orders/health",
+									"raw": "{{orders_service_url}}/api/v1/orders/p/health",
 									"host": ["{{orders_service_url}}"],
-									"path": ["api", "v1", "orders", "health"]
+									"path": ["api", "v1", "orders", "p", "health"]
 								},
 								"description": "Direct access to orders service health check"
 							}
@@ -772,9 +772,9 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{inventory_service_url}}/api/v1/inventory/health",
+									"raw": "{{inventory_service_url}}/api/v1/inventory/p/health",
 									"host": ["{{inventory_service_url}}"],
-									"path": ["api", "v1", "inventory", "health"]
+									"path": ["api", "v1", "inventory", "p", "health"]
 								},
 								"description": "Direct access to inventory service health check"
 							}

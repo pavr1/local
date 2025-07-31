@@ -123,7 +123,7 @@ graph TD
 - **Port**: 8081
 - **Tables**: None (reads from Administration Service)
 - **Functions**:
-  - Login/logout endpoint (`POST /api/v1/sessions/login`)
+  - Login/logout endpoint (`POST /api/v1/sessions/p/login`)
 - JWT token management (`POST /api/v1/sessions/refresh`)
   - Token validation middleware
   - Password operations

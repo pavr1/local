@@ -26,7 +26,7 @@ echo ""
 
 # Test 3: Login through gateway (creates session)
 echo "📋 3. Testing LOGIN through gateway (creates session)..."
-LOGIN_RESPONSE=$(curl -s -X POST "$GATEWAY_URL/api/v1/sessions/login" \
+LOGIN_RESPONSE=$(curl -s -X POST "$GATEWAY_URL/api/v1/sessions/p/login" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "admin",

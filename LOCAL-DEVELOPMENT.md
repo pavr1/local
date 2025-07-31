@@ -95,9 +95,9 @@ View specific service logs:
 
 # Individual service health
 curl http://localhost:8082/api/health                    # Gateway
-curl http://localhost:8081/api/v1/sessions/health        # Session
-curl http://localhost:8083/api/v1/orders/health          # Orders
-curl http://localhost:8084/api/v1/inventory/health       # Inventory
+curl http://localhost:8081/api/v1/sessions/p/health      # Session
+curl http://localhost:8083/api/v1/orders/p/health        # Orders
+curl http://localhost:8084/api/v1/inventory/p/health     # Inventory
 ```
 
 ### API Testing Examples
