@@ -1,7 +1,7 @@
 # Ice Cream Store Data Service Makefile
 # This Makefile provides convenient commands to manage the PostgreSQL database service
 
-.PHONY: help start stop restart reset logs connect status health test build example clean install deps fresh
+.PHONY: help start stop restart reset logs connect status health test build run clean install deps fresh
 
 # Default target
 .DEFAULT_GOAL := help
@@ -93,14 +93,14 @@ health: ## Check database health
 
 ## 🔧 Development Commands
 
-build: ## Build the example Go application
-	@echo "$(CYAN)🔨 Building example application...$(RESET)"
-	@go build -o bin/example example/main.go
-	@echo "$(GREEN)✅ Build completed: bin/example$(RESET)"
+build: ## Build the data service application
+	@echo "$(CYAN)🔨 Building data service application...$(RESET)"
+	@go build -o bin/data-service .
+	@echo "$(GREEN)✅ Build completed: bin/data-service$(RESET)"
 
-example: build ## Run the example application to test database connection
-	@echo "$(CYAN)🧪 Running example application...$(RESET)"
-	@./bin/example
+run: build ## Run the data service application to test database connection
+	@echo "$(CYAN)🧪 Running data service application...$(RESET)"
+	@./bin/data-service
 
 test: health ## Run basic database connectivity tests
 	@echo "$(CYAN)🧪 Running connectivity tests...$(RESET)"
@@ -195,11 +195,11 @@ help: ## Show this help message
 	@echo "   make install    # Complete setup and start services"
 	@echo "   make start      # Start database containers"
 	@echo "   make test       # Test database connectivity"
-	@echo "   make example    # Run example application"
+	@echo "   make run        # Run data service application"
 	@echo ""
 	@echo "$(YELLOW)📋 Common Workflows:$(RESET)"
 	@echo "   First Time:     make fresh (complete setup from scratch)"
-	@echo "   Development:    make start → make test → make example"
+	@echo "   Development:    make start → make test → make run"
 	@echo "   Reset Data:     make reset → make start"
 	@echo "   Fresh Start:    make fresh (when something is broken)"
 	@echo "   Cleanup:        make clean"
