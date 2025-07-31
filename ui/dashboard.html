@@ -207,6 +207,44 @@
             color: var(--white);
             border-color: rgba(255, 255, 255, 0.5);
         }
+        
+        .feature-btn {
+            min-height: 80px;
+            padding: 1rem;
+            text-align: center;
+            border-width: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-icon i {
+            font-size: 1.5rem;
+        }
+        
+        .feature-content h6 {
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0;
+        }
+        
+        .btn-outline-success:hover .feature-content h6,
+        .btn-outline-info:hover .feature-content h6,
+        .btn-outline-warning:hover .feature-content h6,
+        .btn-outline-primary:hover .feature-content h6,
+        .btn-outline-danger:hover .feature-content h6,
+        .btn-outline-secondary:hover .feature-content h6 {
+            color: inherit;
+        }
     </style>
 </head>
 <body>
@@ -294,41 +332,52 @@
                         <div class="row mt-4">
                             <div class="col-md-6">
                                 <div class="info-card">
-                                    <h5><i class="fas fa-info-circle me-2"></i>System Architecture</h5>
-                                    <ul class="list-unstyled">
-                                        <li><strong>Gateway Service:</strong> API Gateway (Port 8082)</li>
-                                        <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
-                                        <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
-                                        <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
-                                        <li><strong>Database:</strong> PostgreSQL (Port 5432)</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <div class="info-card">
                                     <h5><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
-                                    <div class="d-grid gap-2">
-                                        <button class="btn btn-outline-primary" onclick="checkSystemHealth()">
-                                            <i class="fas fa-heartbeat me-2"></i>Check System Health
-                                        </button>
-                                        <button class="btn btn-outline-success" onclick="navigateToService('orders')">
-                                            <i class="fas fa-plus me-2"></i>Create New Order
-                                        </button>
-                                        <button class="btn btn-outline-info" onclick="window.open('http://localhost:8080', '_blank')">
-                                            <i class="fas fa-external-link-alt me-2"></i>Database Admin (PgAdmin)
-                                        </button>
-                                        <button class="btn btn-outline-warning" onclick="refreshDashboard()">
-                                            <i class="fas fa-sync-alt me-2"></i>Refresh Dashboard
-                                        </button>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button class="btn feature-btn btn-outline-primary w-100" onclick="checkSystemHealth()">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-heartbeat"></i>
+                                                </div>
+                                                <div class="feature-content">
+                                                    <h6>System Health</h6>
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn feature-btn btn-outline-success w-100" onclick="navigateToService('orders')">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-plus"></i>
+                                                </div>
+                                                <div class="feature-content">
+                                                    <h6>New Order</h6>
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn feature-btn btn-outline-info w-100" onclick="window.open('http://localhost:8080', '_blank')">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-external-link-alt"></i>
+                                                </div>
+                                                <div class="feature-content">
+                                                    <h6>PgAdmin</h6>
+                                                </div>
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn feature-btn btn-outline-warning w-100" onclick="refreshDashboard()">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </div>
+                                                <div class="feature-content">
+                                                    <h6>Refresh</h6>
+                                                </div>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-4">
-                            <div class="col-12">
-                                <div class="system-status-card">
+                                
+                                <div class="info-card mt-3">
                                     <h5><i class="fas fa-server me-2"></i>Real-time System Status</h5>
                                     <div id="system-status" class="status-grid">
                                         <div class="status-item">
@@ -348,6 +397,19 @@
                                             <span>Inventory Service</span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="info-card">
+                                    <h5><i class="fas fa-info-circle me-2"></i>System Architecture</h5>
+                                    <ul class="list-unstyled">
+                                        <li><strong>Gateway Service:</strong> API Gateway (Port 8082)</li>
+                                        <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
+                                        <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
+                                        <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
+                                        <li><strong>Database:</strong> PostgreSQL (Port 5432)</li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>

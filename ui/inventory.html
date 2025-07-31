@@ -68,6 +68,50 @@
             color: var(--white);
             border-color: rgba(255, 255, 255, 0.5);
         }
+        
+        .feature-btn {
+            min-height: 140px;
+            padding: 1.5rem;
+            text-align: center;
+            border-width: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            margin-bottom: 1rem;
+        }
+        
+        .feature-icon i {
+            font-size: 2.5rem;
+        }
+        
+        .feature-content h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-content p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            opacity: 0.8;
+        }
+        
+        .btn-outline-success:hover .feature-content p,
+        .btn-outline-info:hover .feature-content p,
+        .btn-outline-warning:hover .feature-content p,
+        .btn-outline-primary:hover .feature-content p,
+        .btn-outline-danger:hover .feature-content p,
+        .btn-outline-secondary:hover .feature-content p {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -94,31 +138,73 @@
                     <p class="lead">This module is currently being developed and will include:</p>
                     
                     <div class="row mt-4">
-                        <div class="col-md-6 offset-md-3">
-                            <div class="list-group">
-                                <div class="list-group-item">
-                                    <i class="fas fa-truck text-success me-2"></i>
-                                    <strong>Supplier Management</strong> - Add and manage ingredient suppliers
+                        <div class="col-md-8 offset-md-2">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="alert('🚧 Supplier Management coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-truck"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Supplier Management</h5>
+                                            <p>Add and manage ingredient suppliers</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-apple-alt text-info me-2"></i>
-                                    <strong>Ingredient Tracking</strong> - Monitor ingredient types and quantities
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="alert('🚧 Ingredient Tracking coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-apple-alt"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Ingredient Tracking</h5>
+                                            <p>Monitor ingredient types and quantities</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-chart-bar text-warning me-2"></i>
-                                    <strong>Stock Levels</strong> - Track current inventory and low stock alerts
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="alert('🚧 Stock Levels coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-chart-bar"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Stock Levels</h5>
+                                            <p>Track current inventory and low stock alerts</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-history text-primary me-2"></i>
-                                    <strong>Purchase History</strong> - View past orders and supplier transactions
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="alert('🚧 Purchase History coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-history"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Purchase History</h5>
+                                            <p>View past orders and supplier transactions</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-bell text-danger me-2"></i>
-                                    <strong>Alerts & Notifications</strong> - Get notified of low stock and expiring items
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="alert('🚧 Alerts & Notifications coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-bell"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Alerts & Notifications</h5>
+                                            <p>Get notified of low stock and expiring items</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-calculator text-secondary me-2"></i>
-                                    <strong>Cost Analysis</strong> - Track ingredient costs and optimize spending
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="alert('🚧 Cost Analysis coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-calculator"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Cost Analysis</h5>
+                                            <p>Track ingredient costs and optimize spending</p>
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         </div>

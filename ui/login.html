@@ -230,9 +230,9 @@
                 this.form.addEventListener('submit', this.handleLogin.bind(this));
                 this.togglePasswordBtn.addEventListener('click', this.togglePassword.bind(this));
                 
-                // Add input validation
-                this.usernameInput.addEventListener('input', this.validateUsername.bind(this));
-                this.passwordInput.addEventListener('input', this.validatePassword.bind(this));
+                // Add validation on field blur (when user leaves the field)
+                this.usernameInput.addEventListener('blur', this.validateUsername.bind(this));
+                this.passwordInput.addEventListener('blur', this.validatePassword.bind(this));
                 
                 // Check if already authenticated
                 this.checkExistingAuth();
@@ -341,7 +341,7 @@
                 if (username.length >= 3) {
                     this.setFieldValid(this.usernameInput);
                 } else if (username.length > 0) {
-                    this.setFieldError(this.usernameInput, 'Username must be at least 3 characters');
+                    this.setFieldError(this.usernameInput, 'Invalid length');
                 } else {
                     this.clearFieldValidation(this.usernameInput);
                 }
@@ -352,7 +352,7 @@
                 if (password.length >= 3) {
                     this.setFieldValid(this.passwordInput);
                 } else if (password.length > 0) {
-                    this.setFieldError(this.passwordInput, 'Password must be at least 3 characters');
+                    this.setFieldError(this.passwordInput, 'Invalid length');
                 } else {
                     this.clearFieldValidation(this.passwordInput);
                 }

@@ -68,6 +68,50 @@
             color: var(--white);
             border-color: rgba(255, 255, 255, 0.5);
         }
+        
+        .feature-btn {
+            min-height: 140px;
+            padding: 1.5rem;
+            text-align: center;
+            border-width: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            margin-bottom: 1rem;
+        }
+        
+        .feature-icon i {
+            font-size: 2.5rem;
+        }
+        
+        .feature-content h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-content p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            opacity: 0.8;
+        }
+        
+        .btn-outline-success:hover .feature-content p,
+        .btn-outline-info:hover .feature-content p,
+        .btn-outline-warning:hover .feature-content p,
+        .btn-outline-primary:hover .feature-content p,
+        .btn-outline-danger:hover .feature-content p,
+        .btn-outline-secondary:hover .feature-content p {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -94,27 +138,73 @@
                     <p class="lead">This module is currently being developed and will include:</p>
                     
                     <div class="row mt-4">
-                        <div class="col-md-6 offset-md-3">
-                            <div class="list-group">
-                                <div class="list-group-item">
-                                    <i class="fas fa-plus-circle text-success me-2"></i>
-                                    <strong>Create New Orders</strong> - Add customer orders with multiple items
+                        <div class="col-md-8 offset-md-2">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="alert('🚧 Create New Orders coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-plus-circle"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Create New Orders</h5>
+                                            <p>Add customer orders with multiple items</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-list text-info me-2"></i>
-                                    <strong>View Order History</strong> - Browse all past and current orders
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="alert('🚧 View Order History coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-list"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>View Order History</h5>
+                                            <p>Browse all past and current orders</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-edit text-warning me-2"></i>
-                                    <strong>Update Order Status</strong> - Track order fulfillment progress
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="alert('🚧 Update Order Status coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-edit"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Update Order Status</h5>
+                                            <p>Track order fulfillment progress</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-chart-line text-primary me-2"></i>
-                                    <strong>Order Analytics</strong> - View sales trends and popular items
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="alert('🚧 Order Analytics coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-chart-line"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Order Analytics</h5>
+                                            <p>View sales trends and popular items</p>
+                                        </div>
+                                    </button>
                                 </div>
-                                <div class="list-group-item">
-                                    <i class="fas fa-search text-secondary me-2"></i>
-                                    <strong>Search & Filter</strong> - Find orders by customer, date, or status
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="alert('🚧 Search & Filter coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-search"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Search & Filter</h5>
+                                            <p>Find orders by customer, date, or status</p>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-md-6">
+                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="alert('🚧 Order Reports coming soon!')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-file-alt"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h5>Order Reports</h5>
+                                            <p>Generate detailed order and sales reports</p>
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         </div>
