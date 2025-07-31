@@ -60,56 +60,66 @@
             margin-bottom: 0;
         }
         
-        .service-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: var(--border-radius);
+        .service-btn {
+            min-height: 140px;
             padding: 1.5rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            border-width: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         
-        .service-card:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
+        .service-btn:hover {
+            transform: translateY(-3px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
         
-        .service-card.disabled {
+        .service-btn.disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
         
-        .service-card.disabled:hover {
-            background: rgba(255, 255, 255, 0.1);
+        .service-btn.disabled:hover {
             transform: none;
             box-shadow: none;
         }
         
         .service-icon {
-            font-size: 2rem;
             margin-bottom: 1rem;
-            opacity: 0.9;
         }
         
-        .service-info h4 {
-            font-size: 1.2rem;
+        .service-icon i {
+            font-size: 2.5rem;
+        }
+        
+        .service-content h5 {
+            font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
         }
         
-        .service-info p {
+        .service-content p {
             font-size: 0.9rem;
+            margin-bottom: 0;
             opacity: 0.8;
-            margin-bottom: 0.5rem;
         }
         
         .service-status {
-            font-size: 1.2rem;
-            margin-left: auto;
+            font-size: 1rem;
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
         }
+        
+        .btn-outline-success:hover .service-content p,
+        .btn-outline-info:hover .service-content p,
+        .btn-outline-warning:hover .service-content p,
+        .btn-outline-primary:hover .service-content p,
+        .btn-outline-danger:hover .service-content p,
+        .btn-outline-secondary:hover .service-content p {
+            opacity: 1;
+                }
         
         .welcome-title {
             font-size: 2.5rem;
@@ -168,6 +178,7 @@
             gap: 0.5rem;
             padding: 0.5rem;
             background: var(--white);
+            color: var(--dark-color);
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-light);
         }
@@ -187,6 +198,27 @@
         }
         
         .user-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .user-info-header {
+            text-align: right;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-info-header h6 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .user-info-header p {
             margin: 0;
             font-size: 0.9rem;
             opacity: 0.8;
@@ -251,7 +283,7 @@
     <div class="dashboard-container">
         <div class="container-fluid h-100">
             <div class="row h-100">
-                <!-- Service Navigation Panel -->
+                <!-- System Info & Controls Panel -->
                 <div class="col-lg-4 service-panel">
                     <div class="service-content">
                         <!-- Brand Logo -->
@@ -261,156 +293,165 @@
                             <p class="brand-subtitle">Management Dashboard</p>
                         </div>
                         
-                        <!-- User Info -->
-                        <div class="user-info">
-                            <h6 id="user-name">Welcome!</h6>
-                            <p id="user-role">Loading user information...</p>
-                            <button class="btn logout-btn btn-sm mt-2" onclick="logout()">
-                                <i class="fas fa-sign-out-alt me-1"></i>Logout
-                            </button>
+                        <!-- TODO: Revisit System Architecture section - useful for admin users only -->
+                        <!-- System Architecture section temporarily hidden -->
+                        <!--
+                        <div class="info-card mt-3">
+                            <h5><i class="fas fa-info-circle me-2"></i>System Architecture</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Gateway Service:</strong> API Gateway (Port 8082)</li>
+                                <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
+                                <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
+                                <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
+                                <li><strong>Database:</strong> PostgreSQL (Port 5432)</li>
+                            </ul>
+                        </div>
+                        -->
+                        
+                        <div class="info-card mt-3">
+                            <h5><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button class="btn feature-btn btn-outline-primary w-100" onclick="checkSystemHealth()">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-heartbeat"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h6>System Health</h6>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn feature-btn btn-outline-success w-100" onclick="navigateToService('orders')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-plus"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h6>New Order</h6>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn feature-btn btn-outline-info w-100" onclick="window.open('http://localhost:8080', '_blank')">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h6>PgAdmin</h6>
+                                        </div>
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn feature-btn btn-outline-warning w-100" onclick="refreshDashboard()">
+                                        <div class="feature-icon">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </div>
+                                        <div class="feature-content">
+                                            <h6>Refresh</h6>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <!-- Service Cards -->
-                        <div class="services-grid">
-                            <div class="service-card" onclick="navigateToService('orders')">
-                                <div class="service-icon">
-                                    <i class="fas fa-shopping-cart"></i>
+                        <div class="info-card mt-3">
+                            <h5><i class="fas fa-server me-2"></i>Real-time System Status</h5>
+                            <div id="system-status" class="status-grid">
+                                <div class="status-item">
+                                    <span class="status-indicator" id="gateway-status"></span>
+                                    <span>Gateway Service</span>
                                 </div>
-                                <div class="service-info">
-                                    <h4>Orders Management</h4>
-                                    <p>Create, view, and manage customer orders</p>
-                                    <span class="service-status" id="orders-status">●</span>
+                                <div class="status-item">
+                                    <span class="status-indicator" id="auth-status"></span>
+                                    <span>Session Service</span>
                                 </div>
-                            </div>
-                            
-                            <div class="service-card" onclick="navigateToService('inventory')">
-                                <div class="service-icon">
-                                    <i class="fas fa-warehouse"></i>
+                                <div class="status-item">
+                                    <span class="status-indicator" id="orders-service-status"></span>
+                                    <span>Orders Service</span>
                                 </div>
-                                <div class="service-info">
-                                    <h4>Inventory</h4>
-                                    <p>Manage suppliers, ingredients & stock</p>
-                                    <span class="service-status" id="inventory-status">●</span>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card" onclick="navigateToService('reports')">
-                                <div class="service-icon">
-                                    <i class="fas fa-chart-bar"></i>
-                                </div>
-                                <div class="service-info">
-                                    <h4>Reports & Analytics</h4>
-                                    <p>Sales reports and business insights</p>
-                                    <span class="service-status" id="reports-status">●</span>
-                                </div>
-                            </div>
-                            
-                            <div class="service-card disabled">
-                                <div class="service-icon">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <div class="service-info">
-                                    <h4>User Management</h4>
-                                    <p>Manage staff and user permissions</p>
-                                    <span class="service-status" id="users-status">●</span>
+                                <div class="status-item">
+                                    <span class="status-indicator" id="inventory-service-status"></span>
+                                    <span>Inventory Service</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Welcome Information Panel -->
+                <!-- Service Navigation Panel -->
                 <div class="col-lg-8 welcome-panel">
                     <div class="welcome-content">
                         <div class="row">
                             <div class="col-12">
-                                <h2 class="welcome-title">Dashboard Overview</h2>
-                                <p class="welcome-subtitle">Select a service to get started or monitor system status below</p>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h2 class="welcome-title mb-1">Service Management</h2>
+                                        <p class="welcome-subtitle mb-0">Select a service to get started</p>
+                                    </div>
+                                    <!-- User Info moved to upper right -->
+                                    <div class="user-info-header">
+                                        <h6 id="user-name" class="mb-1">Welcome!</h6>
+                                        <p id="user-role" class="mb-2 text-muted">Loading user information...</p>
+                                        <button class="btn logout-btn btn-sm" onclick="logout()">
+                                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="row mt-4">
+                        <!-- Service Cards -->
+                        <div class="row g-3 mt-3">
                             <div class="col-md-6">
-                                <div class="info-card">
-                                    <h5><i class="fas fa-cogs me-2"></i>Quick Actions</h5>
-                                    <div class="row g-2">
-                                        <div class="col-6">
-                                            <button class="btn feature-btn btn-outline-primary w-100" onclick="checkSystemHealth()">
-                                                <div class="feature-icon">
-                                                    <i class="fas fa-heartbeat"></i>
-                                                </div>
-                                                <div class="feature-content">
-                                                    <h6>System Health</h6>
-                                                </div>
-                                            </button>
-                                        </div>
-                                        <div class="col-6">
-                                            <button class="btn feature-btn btn-outline-success w-100" onclick="navigateToService('orders')">
-                                                <div class="feature-icon">
-                                                    <i class="fas fa-plus"></i>
-                                                </div>
-                                                <div class="feature-content">
-                                                    <h6>New Order</h6>
-                                                </div>
-                                            </button>
-                                        </div>
-                                        <div class="col-6">
-                                            <button class="btn feature-btn btn-outline-info w-100" onclick="window.open('http://localhost:8080', '_blank')">
-                                                <div class="feature-icon">
-                                                    <i class="fas fa-external-link-alt"></i>
-                                                </div>
-                                                <div class="feature-content">
-                                                    <h6>PgAdmin</h6>
-                                                </div>
-                                            </button>
-                                        </div>
-                                        <div class="col-6">
-                                            <button class="btn feature-btn btn-outline-warning w-100" onclick="refreshDashboard()">
-                                                <div class="feature-icon">
-                                                    <i class="fas fa-sync-alt"></i>
-                                                </div>
-                                                <div class="feature-content">
-                                                    <h6>Refresh</h6>
-                                                </div>
-                                            </button>
-                                        </div>
+                                <button class="btn service-btn btn-outline-success w-100 h-100" onclick="navigateToService('orders')">
+                                    <div class="service-icon">
+                                        <i class="fas fa-shopping-cart"></i>
                                     </div>
-                                </div>
-                                
-                                <div class="info-card mt-3">
-                                    <h5><i class="fas fa-server me-2"></i>Real-time System Status</h5>
-                                    <div id="system-status" class="status-grid">
-                                        <div class="status-item">
-                                            <span class="status-indicator" id="gateway-status"></span>
-                                            <span>Gateway Service</span>
-                                        </div>
-                                        <div class="status-item">
-                                            <span class="status-indicator" id="auth-status"></span>
-                                            <span>Session Service</span>
-                                        </div>
-                                        <div class="status-item">
-                                            <span class="status-indicator" id="orders-service-status"></span>
-                                            <span>Orders Service</span>
-                                        </div>
-                                        <div class="status-item">
-                                            <span class="status-indicator" id="inventory-service-status"></span>
-                                            <span>Inventory Service</span>
-                                        </div>
+                                    <div class="service-content">
+                                        <h5>Orders Management</h5>
+                                        <p>Create, view, and manage customer orders</p>
                                     </div>
-                                </div>
+                                    <span class="service-status" id="orders-status">●</span>
+                                </button>
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="info-card">
-                                    <h5><i class="fas fa-info-circle me-2"></i>System Architecture</h5>
-                                    <ul class="list-unstyled">
-                                        <li><strong>Gateway Service:</strong> API Gateway (Port 8082)</li>
-                                        <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
-                                        <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
-                                        <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
-                                        <li><strong>Database:</strong> PostgreSQL (Port 5432)</li>
-                                    </ul>
-                                </div>
+                                <button class="btn service-btn btn-outline-info w-100 h-100" onclick="navigateToService('inventory')">
+                                    <div class="service-icon">
+                                        <i class="fas fa-warehouse"></i>
+                                    </div>
+                                    <div class="service-content">
+                                        <h5>Inventory</h5>
+                                        <p>Manage suppliers, ingredients & stock</p>
+                                    </div>
+                                    <span class="service-status" id="inventory-status">●</span>
+                                </button>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <button class="btn service-btn btn-outline-warning w-100 h-100" onclick="navigateToService('reports')">
+                                    <div class="service-icon">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </div>
+                                    <div class="service-content">
+                                        <h5>Reports & Analytics</h5>
+                                        <p>Sales reports and business insights</p>
+                                    </div>
+                                    <span class="service-status" id="reports-status">●</span>
+                                </button>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <button class="btn service-btn btn-outline-secondary w-100 h-100 disabled" onclick="alert('🚧 User Management coming soon!')">
+                                    <div class="service-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="service-content">
+                                        <h5>User Management</h5>
+                                        <p>Manage staff and user permissions</p>
+                                    </div>
+                                    <span class="service-status" id="users-status">●</span>
+                                </button>
                             </div>
                         </div>
                     </div>
