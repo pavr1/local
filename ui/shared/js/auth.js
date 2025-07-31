@@ -2,10 +2,41 @@
 
 class AuthService {
     constructor() {
+        // Ensure CONFIG is available
+        if (typeof CONFIG === 'undefined') {
+            console.error('❌ CONFIG not available when creating AuthService');
+            throw new Error('CONFIG must be loaded before AuthService');
+        }
+        
+        // Debug: Log the raw CONFIG values
+        console.log('🔍 Raw CONFIG in AuthService:', {
+            GATEWAY_URL: CONFIG.GATEWAY_URL,
+            API: CONFIG.API,
+            AUTH: CONFIG.AUTH
+        });
+        
+        // Ensure CONFIG.AUTH exists with defaults
+        if (!CONFIG.AUTH) {
+            console.warn('⚠️ CONFIG.AUTH not found, using defaults');
+            CONFIG.AUTH = {
+                TOKEN_KEY: 'icecream_auth_token',
+                USER_KEY: 'icecream_user_data',
+                REMEMBER_KEY: 'icecream_remember_me'
+            };
+        }
+        
+        // Use the environment-aware gateway URL
         this.baseURL = CONFIG.GATEWAY_URL;
         this.tokenKey = CONFIG.AUTH.TOKEN_KEY;
         this.userKey = CONFIG.AUTH.USER_KEY;
         this.rememberKey = CONFIG.AUTH.REMEMBER_KEY;
+        
+        console.log('🔧 AuthService initialized with:', {
+            baseURL: this.baseURL,
+            tokenKey: this.tokenKey,
+            userKey: this.userKey,
+            rememberKey: this.rememberKey
+        });
     }
 
     // === MAIN LOGIN METHOD ===
@@ -239,8 +270,27 @@ class StatusService {
 
 // === GLOBAL INSTANCES ===
 
-// Create global instances
-window.authService = new AuthService();
-window.statusService = new StatusService();
+// Function to safely create services when CONFIG is available
+function initializeServices() {
+    try {
+        if (typeof CONFIG === 'undefined') {
+            console.warn('⚠️ CONFIG not yet available, retrying...');
+            // Retry after a short delay
+            setTimeout(initializeServices, 100);
+            return;
+        }
+        
+        // Create global instances
+        window.authService = new AuthService();
+        window.statusService = new StatusService();
+        
+        console.log('🔧 Authentication and Status services initialized');
+    } catch (error) {
+        console.error('❌ Failed to initialize services:', error);
+        // Retry after a delay
+        setTimeout(initializeServices, 500);
+    }
+}
 
-console.log('🔧 Authentication and Status services initialized'); 
+// Start initialization
+initializeServices(); 

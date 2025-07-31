@@ -221,6 +221,11 @@
             init() {
                 console.log('🔧 Initializing login page...');
                 
+                // Debug: Check if services are available
+                console.log('🔍 CONFIG available:', typeof CONFIG !== 'undefined');
+                console.log('🔍 authService available:', typeof window.authService !== 'undefined');
+                console.log('🔍 statusService available:', typeof window.statusService !== 'undefined');
+                
                 // Bind event listeners
                 this.form.addEventListener('submit', this.handleLogin.bind(this));
                 this.togglePasswordBtn.addEventListener('click', this.togglePassword.bind(this));
@@ -235,6 +240,8 @@
                 // Start system health checks
                 if (window.statusService) {
                     window.statusService.startPeriodicHealthCheck();
+                } else {
+                    console.warn('⚠️ StatusService not available');
                 }
                 
                 console.log('✅ Login page initialized');
@@ -272,8 +279,18 @@
                 try {
                     console.log('🔑 Starting login process...');
                     
+                    // Debug and try to fix authService if missing
                     if (!window.authService) {
-                        throw new Error('Authentication service not available');
+                        console.warn('⚠️ authService not found, attempting to recreate...');
+                        if (typeof CONFIG !== 'undefined' && typeof AuthService !== 'undefined') {
+                            window.authService = new AuthService();
+                            console.log('✅ authService recreated');
+                        } else {
+                            console.error('❌ Cannot recreate authService - missing dependencies');
+                            console.log('CONFIG available:', typeof CONFIG !== 'undefined');
+                            console.log('AuthService class available:', typeof AuthService !== 'undefined');
+                            throw new Error('Authentication service not available - missing CONFIG or AuthService class');
+                        }
                     }
                     
                     const result = await window.authService.login(username, password, rememberMe);
