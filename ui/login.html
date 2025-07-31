@@ -14,6 +14,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
     <!-- Shared CSS -->
     <link rel="stylesheet" href="shared/css/style.css?v=1.2">
     
@@ -200,6 +203,12 @@
     
     <!-- Authentication Service -->
     <script src="shared/js/auth.js?v=1.2"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js"></script>
+    
+    <!-- Custom Alert System -->
+    <script src="shared/js/alerts.js?v=1.0"></script>
     
     <!-- Login Page JavaScript -->
     <script>
@@ -408,24 +417,29 @@
             }
 
             showAlert(message, type = 'info') {
-                const alertHtml = `
-                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `;
-                this.alertContainer.innerHTML = alertHtml;
-                
-                // Auto-dismiss success messages
-                if (type === 'success') {
-                    setTimeout(() => {
-                        this.clearAlerts();
-                    }, 5000);
-                }
+                Swal.fire({
+                    icon: type,
+                    title: message,
+                    showConfirmButton: false,
+                    timer: 3000,
+                    toast: true,
+                    position: 'top-end',
+                    background: '#f8f9fa',
+                    color: '#343a40',
+                    customClass: {
+                        popup: 'swal-popup',
+                        title: 'swal-title',
+                        content: 'swal-content',
+                        confirmButton: 'swal-confirm-button',
+                        cancelButton: 'swal-cancel-button',
+                        footer: 'swal-footer'
+                    }
+                });
             }
 
             clearAlerts() {
-                this.alertContainer.innerHTML = '';
+                // Clear SweetAlert2 messages
+                Swal.close();
             }
 
             showSuccessModal() {

@@ -144,7 +144,7 @@
                         <div class="col-md-8 offset-md-2">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="alert('🚧 Create New Orders coming soon!')">
+                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Create New Orders')">
                                         <div class="feature-icon">
                                             <i class="fas fa-plus-circle"></i>
                                         </div>
@@ -155,7 +155,7 @@
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="alert('🚧 View Order History coming soon!')">
+                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('View Order History')">
                                         <div class="feature-icon">
                                             <i class="fas fa-list"></i>
                                         </div>
@@ -166,7 +166,7 @@
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="alert('🚧 Update Order Status coming soon!')">
+                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Update Order Status')">
                                         <div class="feature-icon">
                                             <i class="fas fa-edit"></i>
                                         </div>
@@ -177,35 +177,35 @@
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="alert('🚧 Order Analytics coming soon!')">
+                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Order Analytics')">
                                         <div class="feature-icon">
                                             <i class="fas fa-chart-line"></i>
                                         </div>
                                         <div class="feature-content">
                                             <h5>Order Analytics</h5>
-                                            <p>View sales trends and popular items</p>
+                                            <p>View detailed order statistics and trends</p>
                                         </div>
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="alert('🚧 Search & Filter coming soon!')">
+                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="Alert.comingSoon('Search & Filter')">
                                         <div class="feature-icon">
                                             <i class="fas fa-search"></i>
                                         </div>
                                         <div class="feature-content">
                                             <h5>Search & Filter</h5>
-                                            <p>Find orders by customer, date, or status</p>
+                                            <p>Find specific orders with advanced filters</p>
                                         </div>
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="alert('🚧 Order Reports coming soon!')">
+                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="Alert.comingSoon('Order Reports')">
                                         <div class="feature-icon">
                                             <i class="fas fa-file-alt"></i>
                                         </div>
                                         <div class="feature-content">
                                             <h5>Order Reports</h5>
-                                            <p>Generate detailed order and sales reports</p>
+                                            <p>Generate comprehensive order reports</p>
                                         </div>
                                     </button>
                                 </div>
@@ -225,6 +225,12 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Custom Alert System -->
+    <script src="shared/js/alerts.js?v=1.0"></script>
     
     <!-- Configuration -->
     <script src="config.js?v=1.2"></script>
