@@ -23,26 +23,18 @@
             <p class="text-white opacity-75">Redirecting to login...</p>
         </div>
     </div>
-    <script src="config.js"></script>
-    <script src="shared/js/auth.js"></script>
+    
     <script>
+        // Simple redirect to login page for now (no auth dependencies)
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('�� Ice Cream Store UI starting...');
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            if (authService && authService.isAuthenticated()) {
-                console.log('🔍 User authenticated, validating token...');
-                const isValid = await authService.validateToken();
-                if (isValid) {
-                    console.log('✅ Token valid, would redirect to dashboard');
-                    window.location.href = 'login.html';
-                } else {
-                    console.log('❌ Token invalid, redirecting to login');
-                    window.location.href = 'login.html';
-                }
-            } else {
-                console.log('🔑 No authentication found, redirecting to login');
-                window.location.href = 'login.html';
-            }
+            console.log('🔧 Ice Cream Store UI starting...');
+            
+            // Small delay for visual effect (3 seconds)
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // For now, always redirect to login since we only have login page implemented
+            console.log('🔑 Redirecting to login page...');
+            window.location.href = 'login.html';
         });
     </script>
 </body>

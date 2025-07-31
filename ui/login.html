@@ -220,15 +220,17 @@
                 this.checkExistingAuth();
                 
                 // Start system health checks
-                statusService.startPeriodicHealthCheck();
+                if (window.statusService) {
+                    window.statusService.startPeriodicHealthCheck();
+                }
                 
                 console.log('✅ Login page initialized');
             }
 
             async checkExistingAuth() {
-                if (authService.isAuthenticated()) {
+                if (window.authService && window.authService.isAuthenticated()) {
                     console.log('🔍 User already authenticated, validating token...');
-                    const isValid = await authService.validateToken();
+                    const isValid = await window.authService.validateToken();
                     
                     if (isValid) {
                         console.log('✅ Token valid, redirecting...');
@@ -257,7 +259,11 @@
                 try {
                     console.log('🔑 Starting login process...');
                     
-                    const result = await authService.login(username, password, rememberMe);
+                    if (!window.authService) {
+                        throw new Error('Authentication service not available');
+                    }
+                    
+                    const result = await window.authService.login(username, password, rememberMe);
                     
                     console.log('✅ Login successful:', result);
                     this.showAlert('Login successful! Welcome back.', 'success');
