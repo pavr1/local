@@ -17,6 +17,7 @@ RESET := \033[0m
 DATA_SERVICE := data-service
 SESSION_SERVICE := session-service
 ORDERS_SERVICE := orders-service
+INVENTORY_SERVICE := inventory-service
 GATEWAY_SERVICE := gateway-service
 UI_SERVICE := ui
 
@@ -40,6 +41,7 @@ help: ## Show this help message
 	@echo "  $(BLUE)make fresh-data$(RESET)       # Fresh install data service only"
 	@echo "  $(BLUE)make fresh-session$(RESET)    # Fresh install session service only"
 	@echo "  $(BLUE)make fresh-orders$(RESET)     # Fresh install orders service only"
+	@echo "  $(BLUE)make fresh-inventory$(RESET)  # Fresh install inventory service only"
 	@echo "  $(BLUE)make fresh-gateway$(RESET)    # Fresh install gateway service only"
 	@echo "  $(BLUE)make fresh-ui$(RESET)         # Fresh install UI service only"
 	@echo ""
@@ -47,6 +49,7 @@ help: ## Show this help message
 	@echo "  $(MAGENTA)Data Service:$(RESET)     http://localhost:5432 (PostgreSQL + PgAdmin: :8080)"
 	@echo "  $(MAGENTA)Session Service:$(RESET)  http://localhost:8081"
 	@echo "  $(MAGENTA)Orders Service:$(RESET)   http://localhost:8083"
+	@echo "  $(MAGENTA)Inventory Service:$(RESET) http://localhost:8084"
 	@echo "  $(MAGENTA)Gateway Service:$(RESET)  http://localhost:8082"
 	@echo "  $(MAGENTA)UI Service:$(RESET)       http://localhost:3000"
 	@echo ""
@@ -85,7 +88,7 @@ stop-all: stop-ui stop-gateway stop-orders stop-auth stop-data ## Stop all servi
 restart-all: stop-all start-all ## Restart all services
 	@echo "$(GREEN)🔄 All services restarted!$(RESET)"
 
-test-all: test-data test-auth test-orders test-gateway test-ui ## Test all services
+test-all: test-data test-auth test-orders test-inventory test-gateway test-ui ## Test all services
 	@echo "$(GREEN)🧪 All service tests completed!$(RESET)"
 
 status: status-data status-auth status-orders status-gateway status-ui ## Check status of all services
@@ -247,6 +250,10 @@ test-auth: ## Test auth service
 test-orders: ## Test orders service
 	@echo "$(CYAN)🧪 Testing Orders Service...$(RESET)"
 	@cd $(ORDERS_SERVICE) && $(MAKE) test
+
+test-inventory: ## Test inventory service
+	@echo "$(CYAN)🧪 Testing Inventory Service...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) test
 
 test-gateway: ## Test gateway service
 	@echo "$(CYAN)🧪 Testing Gateway Service...$(RESET)"
