@@ -1,8 +1,5 @@
 # Cursor AI Rules for Identity API Database Migration Project
 
-## Project Context
-This is the identity-api service working on robust database migration and SQL query testing (IDE-904 spike).
-
 ## General rules
 - If I write "Start" ask for the ticket id.
 - Whenever there is a command to run, do not ask the user if they want to either run it or not, instead prepare the command and set the "run" button.

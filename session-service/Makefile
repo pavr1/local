@@ -29,7 +29,7 @@ help: ## Show this help message
 	@echo "$(YELLOW)🚀 Common Workflows:$(RESET)"
 	@echo "  $(GREEN)make install$(RESET)          # Complete setup and start service"
 	@echo "  $(GREEN)make fresh$(RESET)            # Fresh start: clean, build, start, test"
-	@echo "  $(GREEN)make test$(RESET)             # Run comprehensive API tests"
+	@echo "  $(GREEN)make test$(RESET)             # Run unit tests"
 	@echo "  $(GREEN)make logs -f$(RESET)          # Follow live logs"
 	@echo ""
 	@echo "$(YELLOW)📖 Prerequisites:$(RESET)"
@@ -79,9 +79,19 @@ health: ## Check service health
 
 ## 🧪 Testing Commands
 
-test: fix-permissions ## Run comprehensive API tests
-	@echo "$(CYAN)🧪 Running Auth Service tests...$(RESET)"
-	@./scripts/test.sh
+test: ## Run unit tests
+	@echo "$(CYAN)🧪 Running unit tests...$(RESET)"
+	@go test ./... -v -count=1
+	@echo "$(GREEN)✅ Unit tests completed!$(RESET)"
+
+test-integration: fix-permissions ## Run integration tests (requires service to be running)
+	@echo "$(CYAN)🧪 Running integration tests...$(RESET)"
+	@if curl -f http://localhost:8081/api/v1/auth/health > /dev/null 2>&1; then \
+		./scripts/test.sh; \
+	else \
+		echo "$(YELLOW)⚠️  Session service is not running, skipping integration tests$(RESET)"; \
+		echo "$(YELLOW)   Start the service with 'make start' to run integration tests$(RESET)"; \
+	fi
 
 test-basic: ## Run basic connectivity test
 	@echo "$(CYAN)🧪 Running basic connectivity test...$(RESET)"
@@ -216,4 +226,4 @@ version: ## Show version information
 	@echo "Docker Compose: $$(docker-compose --version 2>/dev/null || echo 'Not available')"
 
 # List all targets for tab completion
-.PHONY: help start stop restart reset logs logs-follow status health test test-basic test-login build dev deps lint format install fresh clean clean-all info env version fix-permissions 
+.PHONY: help start stop restart reset logs logs-follow status health test test-integration test-basic test-login build dev deps lint format install fresh clean clean-all info env version fix-permissions 
