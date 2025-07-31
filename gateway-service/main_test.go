@@ -171,7 +171,7 @@ func TestResponseStructures(t *testing.T) {
 // TestCreateProxyHandler tests proxy handler creation
 func TestCreateProxyHandler(t *testing.T) {
 	targetURL := "http://localhost:8081"
-	stripPrefix := "/api/v1/auth"
+	stripPrefix := "/api/v1/sessions"
 
 	handler := createProxyHandler(targetURL, stripPrefix)
 	assert.NotNil(t, handler)

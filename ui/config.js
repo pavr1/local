@@ -40,10 +40,10 @@ const CONFIG = {
             url: SERVICE_URLS.gateway + '/api/health',
             element: 'gateway-status'
         },
-        auth: {
+        session: {
             name: 'Session Service', 
             url: SERVICE_URLS.gateway + '/api/v1/sessions/health',
-            element: 'auth-status'
+            element: 'session-status'
         },
         orders: {
             name: 'Orders Service',
@@ -62,7 +62,7 @@ console.log('🔧 CONFIG.JS: CONFIG object created');
 console.log('🔧 CONFIG.AUTH =', CONFIG.AUTH);
 console.log('🔧 CONFIG.GATEWAY_URL =', CONFIG.GATEWAY_URL);
 console.log('🔧 Health check URLs:', {
-    auth: CONFIG.SERVICES.auth.url,
+    session: CONFIG.SERVICES.session.url,
     orders: CONFIG.SERVICES.orders.url,
     gateway: CONFIG.SERVICES.gateway.url,
     inventory: CONFIG.SERVICES.inventory.url

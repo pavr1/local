@@ -93,7 +93,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/login",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "login"]
+									"path": ["api", "v1", "sessions", "login"]
 								},
 								"description": "Login with username and password. Automatically saves auth token to collection variables."
 							}
@@ -106,7 +106,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/health",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "health"]
+									"path": ["api", "v1", "sessions", "health"]
 								},
 								"description": "Check authentication service health"
 							}
@@ -134,7 +134,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/logout",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "logout"]
+									"path": ["api", "v1", "sessions", "logout"]
 								},
 								"description": "Logout and revoke current session"
 							}
@@ -152,7 +152,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "refresh"]
+									"path": ["api", "v1", "sessions", "refresh"]
 								},
 								"description": "Refresh JWT token if within refresh threshold"
 							}
@@ -170,7 +170,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/validate",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "validate"]
+									"path": ["api", "v1", "sessions", "validate"]
 								},
 								"description": "Validate current session and token"
 							}
@@ -188,7 +188,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/profile",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "profile"]
+									"path": ["api", "v1", "sessions", "profile"]
 								},
 								"description": "Get current user profile information"
 							}
@@ -206,7 +206,7 @@
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/token-info",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "auth", "token-info"]
+									"path": ["api", "v1", "sessions", "token-info"]
 								},
 								"description": "Get detailed information about current JWT token"
 							}
@@ -723,7 +723,7 @@
 								"url": {
 									"raw": "{{session_service_url}}/api/v1/sessions/health",
 									"host": ["{{session_service_url}}"],
-									"path": ["api", "v1", "auth", "health"]
+									"path": ["api", "v1", "sessions", "health"]
 								},
 								"description": "Direct access to session service health check"
 							}

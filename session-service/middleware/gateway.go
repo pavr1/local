@@ -23,10 +23,18 @@ func NewGatewayMiddleware(logger *logrus.Logger) *GatewayMiddleware {
 // ValidateGateway ensures the request comes through the gateway
 func (gm *GatewayMiddleware) ValidateGateway(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow health checks to bypass gateway validation for monitoring
-		if r.URL.Path == "/api/v1/sessions/health" {
-			next.ServeHTTP(w, r)
-			return
+		// Allow certain endpoints to bypass gateway validation
+		exemptPaths := []string{
+			"/api/v1/sessions/health",   // Health checks for monitoring
+			"/api/v1/sessions/login",    // Login is public, gateway adds headers
+			"/api/v1/sessions/validate", // Validation is public, gateway adds headers
+		}
+
+		for _, path := range exemptPaths {
+			if r.URL.Path == path {
+				next.ServeHTTP(w, r)
+				return
+			}
 		}
 
 		// Check for gateway headers
