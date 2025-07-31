@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     
     <!-- Shared CSS -->
-    <link rel="stylesheet" href="shared/css/style.css?v=1.2">
+    <link rel="stylesheet" href="../shared/css/style.css?v=1.2">
     
     <style>
         body {
@@ -144,13 +144,13 @@
                         <div class="col-md-8 offset-md-2">
                             <div class="row g-3">
                                 <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Supplier Management')">
+                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="window.location.href='suppliers.html'">
                                         <div class="feature-icon">
                                             <i class="fas fa-truck"></i>
                                         </div>
                                         <div class="feature-content">
                                             <h5>Supplier Management</h5>
-                                            <p>Add and manage ingredient suppliers</p>
+                                            <p>Manage suppliers and vendor relationships</p>
                                         </div>
                                     </button>
                                 </div>
@@ -230,13 +230,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Custom Alert System -->
-    <script src="shared/js/alerts.js?v=1.0"></script>
+    <script src="../shared/js/alerts.js?v=1.0"></script>
     
     <!-- Configuration -->
-    <script src="config.js?v=1.2"></script>
+    <script src="../config.js?v=1.2"></script>
     
     <!-- Authentication Service -->
-    <script src="shared/js/auth.js?v=1.2"></script>
+    <script src="../shared/js/auth.js?v=1.2"></script>
     
     <script>
         // Check authentication
@@ -257,7 +257,7 @@
         });
         
         function goBack() {
-            window.location.href = 'dashboard.html';
+            window.location.href = '../dashboard.html';
         }
     </script>
 </body>
