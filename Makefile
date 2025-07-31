@@ -33,8 +33,10 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(YELLOW)🚀 Quick Start Commands:$(RESET)"
 	@echo "  $(GREEN)make fresh$(RESET)            # 🔥 Fresh install of ALL services"
-	@echo "  $(GREEN)make start-all$(RESET)        # Start all services"
-	@echo "  $(GREEN)make stop-all$(RESET)         # Stop all services"
+	@echo "  $(GREEN)make start$(RESET)            # 🚀 Start all services using start-local.sh"
+	@echo "  $(GREEN)make stop$(RESET)             # 🛑 Stop all services using stop-local.sh"
+	@echo "  $(GREEN)make start-all$(RESET)        # Start all services (individual Makefiles)"
+	@echo "  $(GREEN)make stop-all$(RESET)         # Stop all services (individual Makefiles)"
 	@echo "  $(GREEN)make status$(RESET)           # Check status of all services"
 	@echo ""
 	@echo "$(YELLOW)🛠️  Individual Service Commands:$(RESET)"
@@ -147,6 +149,21 @@ final-status: ## Final status check after fresh installation
 		echo "$(GREEN)✅ RUNNING$(RESET)"; \
 	fi
 	@echo ""
+
+## 🚀 Local Environment Commands (Using Shell Scripts)
+
+start: ## Start all services using start-local.sh script
+	@echo "$(CYAN)🚀 Starting all services with start-local.sh...$(RESET)"
+	@./start-local.sh
+	@echo "$(GREEN)✅ All services started successfully!$(RESET)"
+
+stop: ## Stop all services using stop-local.sh script
+	@echo "$(YELLOW)🛑 Stopping all services with stop-local.sh...$(RESET)"
+	@./stop-local.sh
+	@echo "$(YELLOW)✅ All services stopped successfully!$(RESET)"
+
+restart: stop start ## Restart all services using shell scripts
+	@echo "$(GREEN)🔄 All services restarted using shell scripts!$(RESET)"
 
 ## 📊 Individual Service - Fresh Install Commands
 
@@ -413,4 +430,4 @@ version: ## Show version information for all services
 	@cd $(UI_SERVICE) && $(MAKE) version || true
 
 # List all targets for tab completion
-.PHONY: help fresh start-all stop-all restart-all test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-auth start-orders start-gateway stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 
+.PHONY: help fresh start stop restart start-all stop-all restart-all test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-auth start-orders start-gateway stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 
