@@ -129,7 +129,7 @@ final-status: ## Final status check after fresh installation
 	db_healthy=false; \
 	auth_running=false; \
 	orders_running=false; \
-	if curl -f http://localhost:8082/api/hello > /dev/null 2>&1; then \
+	if curl -f http://localhost:8082/api/health > /dev/null 2>&1; then \
 		gateway_running=true; \
 	fi; \
 	if docker exec icecream_postgres pg_isready -U postgres -d icecream_store > /dev/null 2>&1; then \
@@ -356,9 +356,8 @@ system-info: ## Show complete system information
 	@echo "    • Orders:   GET/POST http://localhost:8083/api/v1/orders"
 	@echo ""
 	@echo "  $(GREEN)Gateway Service:$(RESET)"
-	@echo "    • Base URL: http://localhost:8080"
-	@echo "    • Health:   http://localhost:8080/api/health"
-	@echo "    • Hello:    http://localhost:8080/api/hello"
+	@echo "    • Base URL: http://localhost:8082"
+	@echo "    • Health:   http://localhost:8082/api/health"
 	@echo ""
 	@echo "  $(GREEN)UI Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:3000"

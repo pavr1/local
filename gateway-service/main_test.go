@@ -113,35 +113,18 @@ func TestHealthHandler(t *testing.T) {
 
 	healthHandler(w, req)
 
-	assert.Equal(t, http.StatusOK, w.Code)
+	// When backend services are not running, health handler returns degraded status with 503
+	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 
-	var response HealthResponse
+	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, "healthy", response.Status)
-	assert.Equal(t, "1.0.0", response.Version)
-	assert.True(t, time.Since(response.Time) < time.Second)
-}
-
-// TestHelloHandler tests the hello endpoint
-func TestHelloHandler(t *testing.T) {
-	req := httptest.NewRequest("GET", "/hello", nil)
-	w := httptest.NewRecorder()
-
-	helloHandler(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-
-	var response Response
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	require.NoError(t, err)
-
-	assert.Equal(t, "Hello from the Go server!", response.Message)
-	assert.Equal(t, "success", response.Status)
-	assert.True(t, time.Since(response.Timestamp) < time.Second)
+	assert.Equal(t, "degraded", response["status"])
+	assert.Equal(t, "1.0.0", response["version"])
+	assert.Equal(t, "operational", response["gateway"])
+	assert.Equal(t, "enabled", response["session_management"])
 }
 
 // TestResponseStructures tests the response data structures
@@ -197,7 +180,7 @@ func TestCreateProxyHandler(t *testing.T) {
 
 // TestConcurrentRequests tests handling of concurrent requests
 func TestConcurrentRequests(t *testing.T) {
-	handler := corsMiddleware(http.HandlerFunc(helloHandler))
+	handler := corsMiddleware(http.HandlerFunc(healthHandler))
 
 	const numRequests = 10
 	responses := make(chan *httptest.ResponseRecorder, numRequests)
@@ -205,7 +188,7 @@ func TestConcurrentRequests(t *testing.T) {
 	// Launch concurrent requests
 	for i := 0; i < numRequests; i++ {
 		go func() {
-			req := httptest.NewRequest("GET", "/hello", nil)
+			req := httptest.NewRequest("GET", "/health", nil)
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, req)
 			responses <- w
@@ -215,7 +198,8 @@ func TestConcurrentRequests(t *testing.T) {
 	// Collect and verify responses
 	for i := 0; i < numRequests; i++ {
 		w := <-responses
-		assert.Equal(t, http.StatusOK, w.Code)
+		// Health handler returns 503 when backend services are not running
+		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
 		assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 	}
 }
@@ -344,15 +328,5 @@ func BenchmarkHealthHandler(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
 		healthHandler(w, req)
-	}
-}
-
-func BenchmarkHelloHandler(b *testing.B) {
-	req := httptest.NewRequest("GET", "/hello", nil)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		w := httptest.NewRecorder()
-		helloHandler(w, req)
 	}
 }

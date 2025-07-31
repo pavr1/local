@@ -112,12 +112,6 @@ func main() {
 	sessionRouter.Use(sessionMiddleware.ValidateSession)
 	sessionRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.SessionServiceURL, "/api/v1/sessions"))
 
-	// ==== DEMO ENDPOINTS ====
-
-	// Example endpoints (keeping for demo)
-	api.HandleFunc("/hello", helloHandler).Methods("GET")
-	api.HandleFunc("/hello", createHelloHandler).Methods("POST")
-
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
 
@@ -270,29 +264,6 @@ func checkServiceHealth(healthURL string) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
-}
-
-func helloHandler(w http.ResponseWriter, r *http.Request) {
-	response := Response{
-		Message:   "Hello from the Go server!",
-		Timestamp: time.Now(),
-		Status:    "success",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-func createHelloHandler(w http.ResponseWriter, r *http.Request) {
-	response := Response{
-		Message:   "Hello POST request received!",
-		Timestamp: time.Now(),
-		Status:    "success",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
 }
 
 func getEnv(key, defaultValue string) string {

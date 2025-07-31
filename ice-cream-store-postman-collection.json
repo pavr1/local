@@ -49,41 +49,6 @@
 						},
 						"description": "Check gateway service health status"
 					}
-				},
-				{
-					"name": "Hello Demo - GET",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/hello",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "hello"]
-						},
-						"description": "Demo endpoint that returns a greeting"
-					}
-				},
-				{
-					"name": "Hello Demo - POST",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Doe\",\n  \"message\": \"Hello from Ice Cream Store!\"\n}"
-						},
-						"url": {
-							"raw": "{{gateway_url}}/api/hello",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "hello"]
-						},
-						"description": "Demo endpoint with custom message"
-					}
 				}
 			],
 			"description": "Gateway service endpoints - main entry point for all API requests"

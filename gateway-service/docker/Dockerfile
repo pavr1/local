@@ -46,7 +46,7 @@ EXPOSE 8082
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 http://localhost:8082/api/hello -O /dev/null || exit 1
+  CMD wget --no-verbose --tries=1 http://localhost:8082/api/health -O /dev/null || exit 1
 
 # Set timezone
 ENV TZ=UTC
