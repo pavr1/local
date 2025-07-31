@@ -1,0 +1,24 @@
+{
+  "name": "ice-cream-store-ui",
+  "version": "1.0.0", 
+  "description": "Ice Cream Store Management System - Frontend UI",
+  "main": "login.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -c-1 --cors",
+    "dev": "npx http-server . -p 3000 -c-1 --cors -o",
+    "build": "echo \"No build process needed for static HTML/CSS/JS\"",
+    "test": "echo \"No tests defined yet\""
+  },
+  "keywords": [
+    "ice-cream",
+    "management", 
+    "frontend",
+    "bootstrap",
+    "vanilla-js"
+  ],
+  "author": "Ice Cream Store Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
