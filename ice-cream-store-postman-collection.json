@@ -1,0 +1,861 @@
+{
+	"info": {
+		"_postman_id": "ice-cream-store-api",
+		"name": "🍦 Ice Cream Store API Collection",
+		"description": "Complete API collection for the Ice Cream Store microservices system. This collection includes all endpoints across Gateway, Session, Orders, and Inventory services.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "ice-cream-store"
+	},
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "session_service_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "orders_service_url",
+			"value": "http://localhost:8083",
+			"type": "string"
+		},
+		{
+			"key": "inventory_service_url",
+			"value": "http://localhost:8084",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🌐 Gateway Service (Port 8082)",
+			"item": [
+				{
+					"name": "Gateway Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "health"]
+						},
+						"description": "Check gateway service health status"
+					}
+				},
+				{
+					"name": "Hello Demo - GET",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/hello",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "hello"]
+						},
+						"description": "Demo endpoint that returns a greeting"
+					}
+				},
+				{
+					"name": "Hello Demo - POST",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"message\": \"Hello from Ice Cream Store!\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/hello",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "hello"]
+						},
+						"description": "Demo endpoint with custom message"
+					}
+				}
+			],
+			"description": "Gateway service endpoints - main entry point for all API requests"
+		},
+		{
+			"name": "🔐 Authentication (via Gateway)",
+			"item": [
+				{
+					"name": "Public Endpoints",
+					"item": [
+						{
+							"name": "Login",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.token) {",
+											"        pm.collectionVariables.set('auth_token', response.token);",
+											"        console.log('Auth token saved:', response.token);",
+											"    }",
+											"}"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/login",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "login"]
+								},
+								"description": "Login with username and password. Automatically saves auth token to collection variables."
+							}
+						},
+						{
+							"name": "Auth Health Check",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/health",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "health"]
+								},
+								"description": "Check authentication service health"
+							}
+						}
+					],
+					"description": "Public authentication endpoints (no token required)"
+				},
+				{
+					"name": "Protected Endpoints",
+					"item": [
+						{
+							"name": "Logout",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/logout",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "logout"]
+								},
+								"description": "Logout and revoke current session"
+							}
+						},
+						{
+							"name": "Refresh Token",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/refresh",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "refresh"]
+								},
+								"description": "Refresh JWT token if within refresh threshold"
+							}
+						},
+						{
+							"name": "Validate Session",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/validate",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "validate"]
+								},
+								"description": "Validate current session and token"
+							}
+						},
+						{
+							"name": "User Profile",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/profile",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "profile"]
+								},
+								"description": "Get current user profile information"
+							}
+						},
+						{
+							"name": "Token Info",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/auth/token-info",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "auth", "token-info"]
+								},
+								"description": "Get detailed information about current JWT token"
+							}
+						}
+					],
+					"description": "Protected authentication endpoints (require valid session)"
+				}
+			],
+			"description": "Authentication endpoints proxied through gateway to session service"
+		},
+		{
+			"name": "📦 Orders Management (via Gateway)",
+			"item": [
+				{
+					"name": "Orders Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", "health"]
+						},
+						"description": "Check orders service health (public endpoint)"
+					}
+				},
+				{
+					"name": "Create Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"payment_method\": \"card\",\n  \"items\": [\n    {\n      \"recipe_id\": \"vanilla-cone\",\n      \"recipe_name\": \"Vanilla Ice Cream Cone\",\n      \"quantity\": 2,\n      \"unit_price\": 3.50,\n      \"discount\": 0.00\n    },\n    {\n      \"recipe_id\": \"chocolate-sundae\",\n      \"recipe_name\": \"Chocolate Sundae\",\n      \"quantity\": 1,\n      \"unit_price\": 5.99,\n      \"discount\": 0.50\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders"]
+						},
+						"description": "Create a new ice cream order with items"
+					}
+				},
+				{
+					"name": "Get Order by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/:orderId",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"description": "UUID of the order"
+								}
+							]
+						},
+						"description": "Retrieve a specific order by its ID"
+					}
+				},
+				{
+					"name": "Update Order",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"payment_method\": \"cash\",\n  \"status\": \"completed\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/:orderId",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", ":orderId"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"description": "UUID of the order"
+								}
+							]
+						},
+						"description": "Update an existing order"
+					}
+				},
+				{
+					"name": "Cancel Order",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/:orderId/cancel",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", ":orderId", "cancel"],
+							"variable": [
+								{
+									"key": "orderId",
+									"value": "123e4567-e89b-12d3-a456-426614174000",
+									"description": "UUID of the order"
+								}
+							]
+						},
+						"description": "Cancel a specific order"
+					}
+				},
+				{
+					"name": "List Orders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders?status=pending&limit=10&offset=0",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders"],
+							"query": [
+								{
+									"key": "status",
+									"value": "pending",
+									"description": "Filter by order status (pending, completed, cancelled)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of orders to return"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of orders to skip"
+								}
+							]
+						},
+						"description": "List orders with optional filtering"
+					}
+				},
+				{
+					"name": "Get Order Summary (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/summary",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", "summary"]
+						},
+						"description": "Get order statistics and summary (admin only)"
+					}
+				},
+				{
+					"name": "Get Payment Method Stats (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/stats/payment-methods",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", "stats", "payment-methods"]
+						},
+						"description": "Get payment method usage statistics (admin only)"
+					}
+				}
+			],
+			"description": "Orders management endpoints for ice cream orders"
+		},
+		{
+			"name": "📦 Inventory Management (via Gateway)",
+			"item": [
+				{
+					"name": "Inventory Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "health"]
+						},
+						"description": "Check inventory service health"
+					}
+				},
+				{
+					"name": "Suppliers",
+					"item": [
+						{
+							"name": "List All Suppliers",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers"]
+								},
+								"description": "Get list of all suppliers"
+							}
+						},
+						{
+							"name": "Create Supplier",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Premium Dairy Co.\",\n  \"contact_info\": {\n    \"email\": \"orders@premiumdairy.com\",\n    \"phone\": \"+1-555-0123\",\n    \"address\": \"123 Dairy Lane, Farm Valley, CA 95432\"\n  },\n  \"products_supplied\": [\"milk\", \"cream\", \"cheese\"],\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers"]
+								},
+								"description": "Create a new supplier"
+							}
+						},
+						{
+							"name": "Get Supplier by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "1",
+											"description": "ID of the supplier"
+										}
+									]
+								},
+								"description": "Get details of a specific supplier"
+							}
+						},
+						{
+							"name": "Update Supplier",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Premium Dairy Co. Ltd.\",\n  \"contact_info\": {\n    \"email\": \"orders@premiumdairy.com\",\n    \"phone\": \"+1-555-0123\",\n    \"address\": \"456 Updated Address, Farm Valley, CA 95432\"\n  },\n  \"products_supplied\": [\"milk\", \"cream\", \"cheese\", \"butter\"],\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "1",
+											"description": "ID of the supplier"
+										}
+									]
+								},
+								"description": "Update an existing supplier"
+							}
+						},
+						{
+							"name": "Delete Supplier",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
+									"variable": [
+										{
+											"key": "supplierId",
+											"value": "1",
+											"description": "ID of the supplier"
+										}
+									]
+								},
+								"description": "Delete a supplier"
+							}
+						}
+					],
+					"description": "Supplier management endpoints"
+				}
+			],
+			"description": "Inventory management endpoints for suppliers and stock"
+		},
+		{
+			"name": "📋 Session Management (via Gateway)",
+			"item": [
+				{
+					"name": "Session Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", "health"]
+						},
+						"description": "Check session management service health"
+					}
+				},
+				{
+					"name": "Validate Session Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/validate",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", "validate"]
+						},
+						"description": "Validate a JWT token against stored sessions"
+					}
+				},
+				{
+					"name": "Get Session Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/stats",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", "stats"]
+						},
+						"description": "Get session statistics and analytics"
+					}
+				},
+				{
+					"name": "Get User Sessions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/user/:userId",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", "user", ":userId"],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid",
+									"description": "UUID of the user"
+								}
+							]
+						},
+						"description": "Get all active sessions for a specific user"
+					}
+				},
+				{
+					"name": "Revoke Specific Session",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/:sessionId",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", ":sessionId"],
+							"variable": [
+								{
+									"key": "sessionId",
+									"value": "session-uuid",
+									"description": "UUID of the session to revoke"
+								}
+							]
+						},
+						"description": "Revoke a specific session by session ID"
+					}
+				},
+				{
+					"name": "Revoke All User Sessions",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/sessions/user/:userId?exclude_current=true",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "sessions", "user", ":userId"],
+							"query": [
+								{
+									"key": "exclude_current",
+									"value": "true",
+									"description": "Exclude current session from revocation"
+								}
+							],
+							"variable": [
+								{
+									"key": "userId",
+									"value": "user-uuid",
+									"description": "UUID of the user"
+								}
+							]
+						},
+						"description": "Revoke all sessions for a user (optionally excluding current session)"
+					}
+				}
+			],
+			"description": "Session management endpoints for user sessions and tokens"
+		},
+		{
+			"name": "🔧 Direct Service Access (Dev/Debug)",
+			"item": [
+				{
+					"name": "Session Service Direct",
+					"item": [
+						{
+							"name": "Session Service Health",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{session_service_url}}/api/v1/auth/health",
+									"host": ["{{session_service_url}}"],
+									"path": ["api", "v1", "auth", "health"]
+								},
+								"description": "Direct access to session service health check"
+							}
+						}
+					],
+					"description": "Direct access to session service (port 8081)"
+				},
+				{
+					"name": "Orders Service Direct",
+					"item": [
+						{
+							"name": "Orders Service Health",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{orders_service_url}}/api/v1/orders/health",
+									"host": ["{{orders_service_url}}"],
+									"path": ["api", "v1", "orders", "health"]
+								},
+								"description": "Direct access to orders service health check"
+							}
+						},
+						{
+							"name": "Orders Service Root",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{orders_service_url}}/",
+									"host": ["{{orders_service_url}}"],
+									"path": [""]
+								},
+								"description": "Orders service root endpoint with service info"
+							}
+						}
+					],
+					"description": "Direct access to orders service (port 8083)"
+				},
+				{
+					"name": "Inventory Service Direct",
+					"item": [
+						{
+							"name": "Inventory Service Health",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{inventory_service_url}}/api/v1/inventory/health",
+									"host": ["{{inventory_service_url}}"],
+									"path": ["api", "v1", "inventory", "health"]
+								},
+								"description": "Direct access to inventory service health check"
+							}
+						}
+					],
+					"description": "Direct access to inventory service (port 8084)"
+				}
+			],
+			"description": "Direct service access endpoints for development and debugging (bypasses gateway)"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global pre-request script for the Ice Cream Store API",
+					"console.log('🍦 Ice Cream Store API Request:', pm.request.name);"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script for the Ice Cream Store API",
+					"if (pm.response.code >= 400) {",
+					"    console.log('❌ Request failed:', pm.response.code, pm.response.status);",
+					"    console.log('Response:', pm.response.text());",
+					"} else {",
+					"    console.log('✅ Request successful:', pm.response.code, pm.response.status);",
+					"}"
+				]
+			}
+		}
+	]
+} 
