@@ -115,13 +115,13 @@ class AuthService {
                 return false;
             }
 
-            console.log('🔍 Validating token...');
+            console.log('🔍 Validating token with session service...');
             const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
-                method: 'GET',
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                }
+                },
+                body: JSON.stringify({ token: token })
             });
 
             if (!response.ok) {
@@ -136,8 +136,17 @@ class AuthService {
             }
 
             const data = await response.json();
-            console.log('✅ Token is valid:', data);
-            return true;
+            console.log('✅ Token validation response:', data);
+            
+            // Check if the session is actually valid
+            if (data.is_valid === true) {
+                console.log('✅ Session is valid for user:', data.session?.username);
+                return true;
+            } else {
+                console.log('❌ Session is not valid:', data.error_code, data.error_message);
+                this.clearAuthData();
+                return false;
+            }
         } catch (error) {
             console.error('❌ Token validation error:', error.message);
             this.clearAuthData();

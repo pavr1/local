@@ -21,7 +21,7 @@ const CONFIG = {
     API: {
         LOGIN: '/api/v1/auth/login',
         LOGOUT: '/api/v1/auth/logout',
-        VALIDATE: '/api/v1/auth/validate',
+        VALIDATE: '/api/v1/sessions/validate',
         PROFILE: '/api/v1/auth/profile',
         HEALTH: '/api/health'
     },
