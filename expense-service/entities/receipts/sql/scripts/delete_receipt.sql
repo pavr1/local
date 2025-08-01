@@ -1,0 +1,1 @@
+DELETE FROM receipts WHERE id = $1 
