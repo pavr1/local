@@ -54,7 +54,7 @@
 			"description": "Gateway service endpoints - main entry point for all API requests"
 		},
 		{
-			"name": "🔐 Authentication (via Gateway)",
+			"name": "🔐 Session Service (via Gateway)",
 			"item": [
 				{
 					"name": "Public Endpoints",
@@ -319,7 +319,7 @@
 					"description": "Protected authentication endpoints (token required)"
 				}
 			],
-			"description": "Authentication and session management endpoints"
+			"description": "Session service endpoints for authentication and session management"
 		},
 		{
 			"name": "📦 Orders Management (via Gateway)",
