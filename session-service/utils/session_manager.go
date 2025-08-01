@@ -44,6 +44,12 @@ type SessionStorage interface {
 	Cleanup() error
 }
 
+// ExtendedSessionStorage defines additional methods available for some storage backends
+type ExtendedSessionStorage interface {
+	SessionStorage
+	CleanupUserExpiredSessions(userID string) error
+}
+
 // SessionMetrics tracks basic session-related metrics
 type SessionMetrics struct {
 	TotalSessions  int64
@@ -80,6 +86,9 @@ func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, sto
 
 // CreateSession creates a new session
 func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*models.SessionData, string, error) {
+	// Clean up expired sessions for this user first (in background to avoid blocking)
+	go sm.cleanupUserExpiredSessions(req.UserID)
+
 	// Check concurrent session limits
 	if err := sm.checkConcurrentSessions(req.UserID); err != nil {
 		return nil, "", err
@@ -302,55 +311,27 @@ func (sm *SessionManager) hashToken(token string) string {
 }
 
 func (sm *SessionManager) checkConcurrentSessions(userID string) error {
-	// Use database-optimized count if available
-	if dbStorage, ok := sm.storage.(*DatabaseSessionStorage); ok {
-		activeCount, err := dbStorage.CountUserActiveSessions(userID)
-		if err != nil {
-			return err
-		}
-
-		if activeCount >= sm.config.MaxConcurrentSessions {
-			// Get user sessions to find oldest and remove it
-			sessions, err := sm.storage.GetUserSessions(userID)
-			if err != nil {
-				return err
-			}
-
-			// Find oldest active session
-			var oldestSession *models.SessionData
-			now := time.Now()
-			for _, session := range sessions {
-				if session.IsActive && now.Before(session.ExpiresAt) {
-					if oldestSession == nil || session.CreatedAt.Before(oldestSession.CreatedAt) {
-						oldestSession = session
-					}
-				}
-			}
-
-			if oldestSession != nil {
-				sm.storage.Delete(oldestSession.SessionID)
-			}
-		}
-		return nil
+	// Use database-optimized count (only database storage is supported)
+	dbStorage, ok := sm.storage.(*DatabaseSessionStorage)
+	if !ok {
+		return fmt.Errorf("unsupported storage type - only database storage is supported")
 	}
 
-	// Fallback for memory storage
-	sessions, err := sm.storage.GetUserSessions(userID)
+	activeCount, err := dbStorage.CountUserActiveSessions(userID)
 	if err != nil {
 		return err
 	}
 
-	activeCount := 0
-	now := time.Now()
-	for _, session := range sessions {
-		if session.IsActive && now.Before(session.ExpiresAt) {
-			activeCount++
-		}
-	}
-
 	if activeCount >= sm.config.MaxConcurrentSessions {
-		// Remove oldest session
+		// Get user sessions to find oldest and remove it
+		sessions, err := sm.storage.GetUserSessions(userID)
+		if err != nil {
+			return err
+		}
+
+		// Find oldest active session
 		var oldestSession *models.SessionData
+		now := time.Now()
 		for _, session := range sessions {
 			if session.IsActive && now.Before(session.ExpiresAt) {
 				if oldestSession == nil || session.CreatedAt.Before(oldestSession.CreatedAt) {
@@ -358,6 +339,7 @@ func (sm *SessionManager) checkConcurrentSessions(userID string) error {
 				}
 			}
 		}
+
 		if oldestSession != nil {
 			sm.storage.Delete(oldestSession.SessionID)
 		}
@@ -435,4 +417,34 @@ func (sm *SessionManager) performCleanup() {
 	sm.logger.Debug("Session cleanup completed")
 }
 
-// Database storage is now passed directly to constructor - no temporary storage needed
+// cleanupUserExpiredSessions performs user-specific cleanup in background
+func (sm *SessionManager) cleanupUserExpiredSessions(userID string) {
+	sm.logger.WithField("user_id", userID).Debug("Starting user-specific expired session cleanup")
+
+	// Check if storage supports user-specific cleanup
+	if extStorage, ok := sm.storage.(ExtendedSessionStorage); ok {
+		if err := extStorage.CleanupUserExpiredSessions(userID); err != nil {
+			sm.logger.WithError(err).WithField("user_id", userID).Warn("Failed to cleanup user expired sessions")
+		} else {
+			sm.logger.WithField("user_id", userID).Debug("User expired session cleanup completed successfully")
+		}
+	} else {
+		// Fallback: perform general cleanup (should not happen with database storage)
+		sm.logger.WithField("user_id", userID).Warn("Database storage doesn't implement ExtendedSessionStorage, using general cleanup")
+		if err := sm.storage.Cleanup(); err != nil {
+			sm.logger.WithError(err).Warn("Failed to perform general cleanup during user login")
+		}
+	}
+}
+
+// CleanupUserExpiredSessions provides a public method to trigger user-specific cleanup (for testing/admin purposes)
+func (sm *SessionManager) CleanupUserExpiredSessions(userID string) error {
+	if extStorage, ok := sm.storage.(ExtendedSessionStorage); ok {
+		return extStorage.CleanupUserExpiredSessions(userID)
+	}
+	// Fallback to general cleanup (should not happen with database storage)
+	sm.logger.Warn("Database storage doesn't implement ExtendedSessionStorage, using general cleanup")
+	return sm.storage.Cleanup()
+}
+
+// Session manager now only supports database storage - memory storage has been removed

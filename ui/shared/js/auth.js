@@ -241,11 +241,11 @@ function initializeAuthService() {
             return;
         }
         
-        // Create global AuthService instance
+        // Create global AuthService instance  
         // StatusService is created in shared/js/status.js
         window.authService = new AuthService();
         
-        console.log('🔧 Authentication service initialized');
+        console.log('🔧 AuthService initialized (connects to Session Service)');
     } catch (error) {
         console.error('❌ Failed to initialize AuthService:', error);
         // Retry after a delay

@@ -1,4 +1,4 @@
--- Get session by token hash
+-- Get session by token hash (most recent first)
 SELECT 
     session_id,
     user_id,
@@ -11,4 +11,6 @@ SELECT
     last_activity,
     is_active
 FROM sessions 
-WHERE token_hash = $1 AND is_active = true; 
+WHERE token_hash = $1 AND is_active = true
+ORDER BY created_at DESC
+LIMIT 1; 

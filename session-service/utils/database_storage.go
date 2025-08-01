@@ -132,6 +132,17 @@ func (s *DatabaseSessionStorage) GetByTokenHash(tokenHash string) (*models.Sessi
 	}
 
 	session.Permissions = []string(permissions)
+
+	// Log debug info about retrieved session for troubleshooting
+	s.logger.WithFields(logrus.Fields{
+		"session_id":    session.SessionID,
+		"user_id":       session.UserID,
+		"username":      session.Username,
+		"created_at":    session.CreatedAt,
+		"expires_at":    session.ExpiresAt,
+		"last_activity": session.LastActivity,
+	}).Debug("Retrieved session by token hash (most recent)")
+
 	return session, nil
 }
 
@@ -295,4 +306,29 @@ func (s *DatabaseSessionStorage) CountUserActiveSessions(userID string) (int, er
 	}
 
 	return count, nil
+}
+
+// CleanupUserExpiredSessions removes expired sessions for a specific user
+func (s *DatabaseSessionStorage) CleanupUserExpiredSessions(userID string) error {
+	query, err := s.queries.Get("cleanup_user_expired_sessions")
+	if err != nil {
+		return fmt.Errorf("failed to get user cleanup query: %w", err)
+	}
+
+	result, err := s.db.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("failed to cleanup user expired sessions: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		s.logger.WithError(err).Warn("Failed to get user cleanup rows affected count")
+	} else if rowsAffected > 0 {
+		s.logger.WithFields(logrus.Fields{
+			"user_id":          userID,
+			"expired_sessions": rowsAffected,
+		}).Info("User expired sessions cleaned up")
+	}
+
+	return nil
 }
