@@ -196,19 +196,11 @@ func (sm *SessionManager) ValidateSession(req *models.SessionValidationRequest) 
 		}, nil
 	}
 
-	// Check expiration
+	// // Check expiration
 	now := time.Now()
-	if now.After(session.ExpiresAt) {
-		sm.expireSession(session.SessionID)
-		return &models.SessionValidationResponse{
-			IsValid:      false,
-			ErrorCode:    "session_expired",
-			ErrorMessage: "Session has expired",
-		}, nil
-	}
 
 	// Update session activity
-	session.LastActivity = now
+	session.LastActivity = time.Now()
 	sm.storage.Update(session.SessionID, session)
 
 	// Check if token needs refresh
