@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // SessionAPI handles REST API endpoints for session management
@@ -17,14 +19,16 @@ type SessionAPI struct {
 	sessionHandler *SessionHandler
 	logger         *logrus.Logger
 	jwtManager     *utils.JWTManager
+	db             *sql.DB
 }
 
 // NewSessionAPI creates a new session API handler
-func NewSessionAPI(sessionManager *utils.SessionManager, jwtManager *utils.JWTManager, logger *logrus.Logger) *SessionAPI {
+func NewSessionAPI(sessionManager *utils.SessionManager, jwtManager *utils.JWTManager, db *sql.DB, logger *logrus.Logger) *SessionAPI {
 	return &SessionAPI{
 		sessionHandler: NewSessionHandler(sessionManager, jwtManager, logger),
 		logger:         logger,
 		jwtManager:     jwtManager,
+		db:             db,
 	}
 }
 
@@ -76,11 +80,6 @@ func (api *SessionAPI) ValidateSession(w http.ResponseWriter, r *http.Request) {
 	var req models.SessionValidationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		api.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Invalid request format")
-		return
-	}
-
-	if req.Token == "" {
-		api.writeErrorResponse(w, http.StatusBadRequest, "missing_token", "Token is required")
 		return
 	}
 
@@ -363,7 +362,69 @@ func (api *SessionAPI) writeErrorResponse(w http.ResponseWriter, statusCode int,
 	api.writeJSONResponse(w, statusCode, response)
 }
 
-// Login handles user authentication (temporary implementation)
+// authenticateUser validates user credentials against the database
+func (api *SessionAPI) authenticateUser(username, password string) (*models.UserProfile, error) {
+	// Query to get user with role information
+	query := `
+		SELECT u.id, u.username, u.password_hash, u.full_name, u.role_id, u.is_active,
+		       r.id as role_id, r.role_name
+		FROM users u
+		JOIN roles r ON u.role_id = r.id
+		WHERE u.username = $1 AND u.is_active = true
+	`
+
+	var user models.User
+	var role models.Role
+	var passwordHash string
+
+	err := api.db.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &passwordHash, &user.FullName,
+		&user.RoleID, &user.IsActive, &role.ID, &role.RoleName,
+	)
+
+	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return nil, nil // User not found
+		}
+		return nil, err
+	}
+
+	// Verify password using bcrypt
+	if err := bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(password)); err != nil {
+		return nil, nil // Invalid password
+	}
+
+	// Get user permissions
+	permQuery := `
+		SELECT permission_name, description
+		FROM permissions
+		WHERE role_id = $1
+	`
+
+	rows, err := api.db.Query(permQuery, role.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []models.Permission
+	for rows.Next() {
+		var perm models.Permission
+		if err := rows.Scan(&perm.PermissionName, &perm.Description); err != nil {
+			return nil, err
+		}
+		perm.RoleID = role.ID
+		permissions = append(permissions, perm)
+	}
+
+	return &models.UserProfile{
+		User:        user,
+		Role:        role,
+		Permissions: permissions,
+	}, nil
+}
+
+// Login handles user authentication (database-backed implementation)
 func (api *SessionAPI) Login(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
@@ -381,23 +442,15 @@ func (api *SessionAPI) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TEMPORARY: Simple hardcoded validation (replace with database lookup)
-	if req.Username == "admin" && req.Password == "admin123" {
-		// Create temporary user profile
-		profile := &models.UserProfile{
-			User: models.User{
-				ID:       "1",
-				Username: "admin",
-				FullName: "Administrator",
-				RoleID:   "1",
-				IsActive: true,
-			},
-			Role: models.Role{
-				ID:       "1",
-				RoleName: "admin",
-			},
-			Permissions: []models.Permission{},
-		}
+	// Authenticate user against database
+	profile, err := api.authenticateUser(req.Username, req.Password)
+	if err != nil {
+		api.logger.WithError(err).Warn("Authentication failed for user: " + req.Username)
+		api.writeErrorResponse(w, http.StatusUnauthorized, "authentication_failed", "Invalid username or password")
+		return
+	}
+
+	if profile != nil {
 
 		// Create session properly using SessionManager
 		session, token, err := api.sessionHandler.CreateSessionFromLogin(profile, r, false)

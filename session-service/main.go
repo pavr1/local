@@ -51,7 +51,7 @@ func main() {
 
 	// Create handlers (auth handler now gets session manager for login integration)
 	sessionHandler := handler.NewSessionHandler(sessionManager, jwtManager, logger)
-	sessionAPI := handler.NewSessionAPI(sessionManager, jwtManager, logger)
+	sessionAPI := handler.NewSessionAPI(sessionManager, jwtManager, db, logger)
 
 	// Setup HTTP router
 	router := setupRouter(sessionHandler, sessionAPI, logger)

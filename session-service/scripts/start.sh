@@ -57,7 +57,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         break
     fi
     
-    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Auth service not ready yet..."
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Session service not ready yet..."
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT + 1))
 done

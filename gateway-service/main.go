@@ -63,9 +63,7 @@ func main() {
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
 
-	// Initialize session management
-	sessionManager := NewSessionManager(config.SessionServiceURL)
-	sessionMiddleware := NewSessionMiddleware(sessionManager)
+	// Gateway is pure routing - no session management logic
 
 	r := mux.NewRouter()
 

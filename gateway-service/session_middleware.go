@@ -107,41 +107,9 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 			return
 		}
 
-		// If login was successful (200 OK), create a session
+		// Gateway acts as pure proxy - session service handles all session creation logic
 		if resp.StatusCode == http.StatusOK {
-			var loginResp map[string]interface{}
-			if err := json.Unmarshal(respBody, &loginResp); err == nil {
-				// Extract user information from login response
-				if userInfo, ok := loginResp["user"].(map[string]interface{}); ok {
-					// Create session request
-					sessionReq := &SessionCreateRequest{
-						UserID:      getString(userInfo, "id"),
-						Username:    getString(userInfo, "username"),
-						RoleName:    getString(userInfo, "role"),
-						Permissions: getStringSlice(userInfo, "permissions"),
-						RememberMe:  getBool(loginResp, "remember_me"),
-					}
-
-					// Create session in session service
-					sessionResp, err := sm.sessionManager.CreateSession(sessionReq)
-					if err != nil {
-						log.Printf("Failed to create session: %v", err)
-						// Return original login response even if session creation fails
-					} else {
-						// Update response with session token instead of original token
-						loginResp["token"] = sessionResp.Token
-						loginResp["session_id"] = sessionResp.SessionID
-						loginResp["expires_at"] = sessionResp.ExpiresAt
-
-						// Re-marshal the updated response
-						if updatedBody, err := json.Marshal(loginResp); err == nil {
-							respBody = updatedBody
-						}
-
-						log.Printf("Session created for user %s (session: %s)", sessionReq.Username, sessionResp.SessionID)
-					}
-				}
-			}
+			log.Printf("Login successful - session service handled session creation")
 		}
 
 		// Copy headers from session service response
