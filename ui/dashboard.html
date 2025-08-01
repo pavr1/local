@@ -494,83 +494,11 @@
             }
 
             startSystemMonitoring() {
-                if (window.statusService) {
-                    // Start periodic health checks (shared service handles this)
-                    window.statusService.startPeriodicHealthCheck(); // Use default 30-second interval
-                    
-                    // Update UI status indicators when health checks complete
-                    // Listen for health check events instead of using separate timer
-                    setInterval(() => {
-                        this.updateSystemStatus();
-                    }, 30000); // Sync with health check interval
-                    
-                    // Initial status update
-                    setTimeout(() => {
-                        this.updateSystemStatus();
-                    }, 2000); // Give initial health check more time to complete
-                }
+                // Status monitoring is now handled by the system-status component itself
+                console.log('📊 Dashboard: System monitoring delegated to status component');
             }
 
-            async updateSystemStatus() {
-                try {
-                    // Ensure statusService is available and has the method
-                    if (!window.statusService || typeof window.statusService.getLastHealthCheck !== 'function') {
-                        console.warn('⚠️ StatusService not ready yet, skipping status update');
-                        return;
-                    }
-                    
-                    // Get latest health check results from shared service
-                    const healthCheck = window.statusService.getLastHealthCheck();
-                    if (!healthCheck) return;
-                    
-                    const results = healthCheck.results;
-                    
-                    // Map service keys to status element IDs
-                    const statusMapping = {
-                        'gateway': 'gateway-status',
-                        'session': 'session-status', 
-                        'orders': 'orders-status',
-                        'inventory': 'inventory-status'
-                    };
 
-                    // Update status indicators
-                    for (const [serviceKey, status] of Object.entries(results)) {
-                        const elementId = statusMapping[serviceKey];
-                        if (elementId) {
-                            const element = document.getElementById(elementId);
-                            if (element) {
-                                window.statusService.updateStatusIndicator(element, status);
-                            }
-                        }
-                        
-                        // Also update service card status
-                        const cardStatus = document.getElementById(serviceKey + '-status');
-                        if (cardStatus) {
-                            cardStatus.style.color = this.getStatusColor(status);
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ Dashboard status update failed:', error);
-                }
-            }
-
-            mapStatusToIndicator(status) {
-                switch (status) {
-                    case 'healthy': return 'online';
-                    case 'degraded': return 'warning';
-                    case 'unhealthy': return 'offline';
-                    default: return 'offline';
-                }
-            }
-
-            getStatusColor(status) {
-                switch (status) {
-                    case 'healthy': return '#28a745';
-                    case 'degraded': return '#ffc107';
-                    case 'unhealthy': return '#dc3545';
-                    default: return '#6c757d';
-                }
-            }
         }
 
         // Navigation functions

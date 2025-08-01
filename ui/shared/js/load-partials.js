@@ -28,7 +28,7 @@ class PartialLoader {
     }
     
     static async loadSystemStatus(targetElementId = 'system-status-container') {
-        return await this.loadPartial('/shared/partials/system-status.html', targetElementId);
+        return await this.loadPartial('shared/partials/system-status.html', targetElementId);
     }
 }
 

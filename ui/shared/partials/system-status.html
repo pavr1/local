@@ -1,4 +1,4 @@
-<!-- System Status Component -->
+<!-- System Status Component - Self-Contained -->
 <div class="system-status mt-5">
     <h6 class="text-muted mb-3">System Status</h6>
     <div class="status-grid">
@@ -19,4 +19,144 @@
             <span>Inventory</span>
         </div>
     </div>
-</div> 
+</div>
+
+<script>
+// System Status Component - Self-Contained Logic
+(function() {
+    'use strict';
+    
+    console.log('🔧 System Status Component: Initializing...');
+    
+    class SystemStatusComponent {
+        constructor() {
+            this.updateInterval = null;
+            this.statusMapping = {
+                'gateway': 'gateway-status',
+                'session': 'session-status', 
+                'orders': 'orders-status',
+                'inventory': 'inventory-status'
+            };
+            
+            this.init();
+        }
+        
+        init() {
+            // Wait for StatusService to be available
+            this.waitForStatusService().then(() => {
+                this.startMonitoring();
+            });
+        }
+        
+        async waitForStatusService() {
+            return new Promise((resolve) => {
+                const checkService = () => {
+                    // Check for all required dependencies
+                    const hasConfig = typeof CONFIG !== 'undefined';
+                    const hasStatusService = window.statusService && typeof window.statusService.startPeriodicHealthCheck === 'function';
+                    const isStatusServiceReady = hasStatusService && window.statusService.lastHealthCheck !== undefined;
+                    
+                    console.log('🔍 System Status Component: Dependency check:', {
+                        hasConfig,
+                        hasStatusService,
+                        statusServiceType: typeof window.statusService
+                    });
+                    
+                    if (hasConfig && hasStatusService) {
+                        console.log('✅ System Status Component: All dependencies ready');
+                        resolve();
+                    } else {
+                        console.log('⏳ System Status Component: Waiting for dependencies...', {
+                            needsConfig: !hasConfig,
+                            needsStatusService: !hasStatusService
+                        });
+                        setTimeout(checkService, 200);
+                    }
+                };
+                checkService();
+            });
+        }
+        
+        startMonitoring() {
+            console.log('🏥 System Status Component: Starting health monitoring...');
+            
+            // Check if StatusService is already doing health checks
+            if (!window.statusService.healthCheckInterval) {
+                console.log('🔄 Starting StatusService health checks...');
+                window.statusService.startPeriodicHealthCheck();
+            } else {
+                console.log('✅ StatusService health checks already running');
+            }
+            
+            // Update UI status indicators when health checks complete
+            this.updateInterval = setInterval(() => {
+                this.updateStatusIndicators();
+            }, 30000); // Sync with health check interval
+            
+            // More frequent initial checks to get status quickly
+            setTimeout(() => this.updateStatusIndicators(), 500);
+            setTimeout(() => this.updateStatusIndicators(), 1500);
+            setTimeout(() => this.updateStatusIndicators(), 3000);
+        }
+        
+        updateStatusIndicators() {
+            try {
+                // Ensure statusService is available and has the method
+                if (!window.statusService || typeof window.statusService.getLastHealthCheck !== 'function') {
+                    console.warn('⚠️ System Status Component: StatusService not ready yet, skipping update');
+                    return;
+                }
+                
+                // Get latest health check results from shared service
+                const healthCheck = window.statusService.getLastHealthCheck();
+                if (!healthCheck) {
+                    console.log('📊 System Status Component: No health check results yet');
+                    return;
+                }
+                
+                const results = healthCheck.results;
+                console.log('📊 System Status Component: Updating indicators with results:', results);
+                
+                // Update status indicators
+                for (const [serviceKey, status] of Object.entries(results)) {
+                    const elementId = this.statusMapping[serviceKey];
+                    if (elementId) {
+                        const element = document.getElementById(elementId);
+                        if (element) {
+                            window.statusService.updateStatusIndicator(element, status);
+                            console.log(`🔄 Updated ${serviceKey} status to ${status}`);
+                        } else {
+                            console.warn(`⚠️ Element #${elementId} not found for service ${serviceKey}`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('❌ System Status Component: Error updating indicators:', error);
+            }
+        }
+        
+        destroy() {
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = null;
+                console.log('🧹 System Status Component: Cleaned up');
+            }
+        }
+    }
+    
+    // Auto-initialize when this partial is loaded
+    // Use a longer delay to ensure all dependencies are loaded
+    setTimeout(() => {
+        window.systemStatusComponent = new SystemStatusComponent();
+        console.log('✅ System Status Component: Initialized and running independently');
+    }, 500);
+    
+    // Cleanup when page unloads
+    window.addEventListener('beforeunload', () => {
+        if (window.systemStatusComponent) {
+            window.systemStatusComponent.destroy();
+        }
+    });
+    
+})();
+</script> 

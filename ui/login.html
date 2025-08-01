@@ -232,12 +232,7 @@
                 // Check if already authenticated
                 this.checkExistingAuth();
                 
-                // Start system health checks
-                if (window.statusService) {
-                    window.statusService.startPeriodicHealthCheck();
-                } else {
-                    console.warn('⚠️ StatusService not available');
-                }
+                // Status monitoring is now handled by the system-status component itself
                 
                 console.log('✅ Login page initialized');
             }
@@ -447,6 +442,8 @@
                     }
                 }, 50);
             }
+
+
         }
 
         // Initialize login page when DOM is ready
