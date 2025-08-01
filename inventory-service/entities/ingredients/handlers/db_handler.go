@@ -28,21 +28,19 @@ func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest) (*model
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.CreateIngredientQuery,
-		req.IngredientName, req.IngredientType, req.UnitOfMeasure, req.CostPerUnit, req.SupplierID, req.MinimumStockLevel, req.Notes).
-		Scan(&ingredient.ID, &ingredient.IngredientName, &ingredient.IngredientType,
-			&ingredient.UnitOfMeasure, &ingredient.CostPerUnit, &ingredient.SupplierID, &ingredient.MinimumStockLevel, &ingredient.Notes,
-			&ingredient.CreatedAt, &ingredient.UpdatedAt)
+		req.Name, req.SupplierID).
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
 
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
-			"ingredient_name": req.IngredientName,
+			"ingredient_name": req.Name,
 		}).Error("Failed to create ingredient in database")
 		return nil, err
 	}
 
 	h.logger.WithFields(logrus.Fields{
 		"ingredient_id":   ingredient.ID,
-		"ingredient_name": ingredient.IngredientName,
+		"ingredient_name": ingredient.Name,
 	}).Info("Ingredient created successfully")
 
 	return &ingredient, nil
@@ -53,9 +51,7 @@ func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.GetIngredientByIDQuery, id).
-		Scan(&ingredient.ID, &ingredient.IngredientName, &ingredient.IngredientType,
-			&ingredient.UnitOfMeasure, &ingredient.CostPerUnit, &ingredient.SupplierID, &ingredient.MinimumStockLevel, &ingredient.Notes,
-			&ingredient.CreatedAt, &ingredient.UpdatedAt)
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -83,9 +79,7 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 	var ingredients []models.Ingredient
 	for rows.Next() {
 		var ingredient models.Ingredient
-		err := rows.Scan(&ingredient.ID, &ingredient.IngredientName, &ingredient.IngredientType,
-			&ingredient.UnitOfMeasure, &ingredient.CostPerUnit, &ingredient.SupplierID, &ingredient.MinimumStockLevel, &ingredient.Notes,
-			&ingredient.CreatedAt, &ingredient.UpdatedAt)
+		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
 		if err != nil {
 			h.logger.WithError(err).Warn("Failed to scan ingredient row, skipping")
 			continue
@@ -105,10 +99,8 @@ func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientReque
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.UpdateIngredientQuery,
-		id, req.IngredientName, req.IngredientType, req.UnitOfMeasure, req.CostPerUnit, req.SupplierID, req.MinimumStockLevel, req.Notes).
-		Scan(&ingredient.ID, &ingredient.IngredientName, &ingredient.IngredientType,
-			&ingredient.UnitOfMeasure, &ingredient.CostPerUnit, &ingredient.SupplierID, &ingredient.MinimumStockLevel, &ingredient.Notes,
-			&ingredient.CreatedAt, &ingredient.UpdatedAt)
+		id, req.Name, req.SupplierID).
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -123,7 +115,7 @@ func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientReque
 
 	h.logger.WithFields(logrus.Fields{
 		"ingredient_id":   ingredient.ID,
-		"ingredient_name": ingredient.IngredientName,
+		"ingredient_name": ingredient.Name,
 	}).Info("Ingredient updated successfully")
 
 	return &ingredient, nil

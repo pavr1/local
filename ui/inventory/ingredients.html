@@ -253,54 +253,13 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
-                                    <label for="category" class="form-label">Category</label>
-                                    <select class="form-control" id="category">
-                                        <option value="">Select category...</option>
-                                        <option value="dairy">Dairy</option>
-                                        <option value="fruits">Fruits</option>
-                                        <option value="nuts">Nuts</option>
-                                        <option value="sweeteners">Sweeteners</option>
-                                        <option value="flavoring">Flavoring</option>
-                                        <option value="additives">Additives</option>
-                                        <option value="chocolate">Chocolate</option>
-                                        <option value="spices">Spices</option>
-                                        <option value="other">Other</option>
+                                    <label for="supplierId" class="form-label">Supplier</label>
+                                    <select class="form-control" id="supplierId">
+                                        <option value="">Select supplier...</option>
+                                        <!-- Suppliers will be loaded dynamically -->
                                     </select>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="unit" class="form-label">Unit</label>
-                                    <select class="form-control" id="unit">
-                                        <option value="">Select unit...</option>
-                                        <option value="kg">Kilograms (kg)</option>
-                                        <option value="g">Grams (g)</option>
-                                        <option value="l">Liters (l)</option>
-                                        <option value="ml">Milliliters (ml)</option>
-                                        <option value="pieces">Pieces</option>
-                                        <option value="cups">Cups</option>
-                                        <option value="tbsp">Tablespoons</option>
-                                        <option value="tsp">Teaspoons</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="costPerUnit" class="form-label">Cost per Unit</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">$</span>
-                                        <input type="number" class="form-control" id="costPerUnit" step="0.01" min="0">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="notes" class="form-label">Notes</label>
-                            <textarea class="form-control" id="notes" rows="3" placeholder="Additional notes about this ingredient..."></textarea>
                         </div>
                     </form>
                 </div>
@@ -462,7 +421,7 @@
                 ingredients = data.data || [];
                 
                 hideLoadingState();
-                renderIngredients();
+                renderIngredientsList(ingredients);
                 
             } catch (error) {
                 console.error('❌ Error loading ingredients:', error);
@@ -477,7 +436,7 @@
         }
 
         // Render ingredients list
-        function renderIngredients() {
+        function renderIngredientsList(ingredients) {
             const ingredientsList = document.getElementById('ingredients-list');
             const emptyState = document.getElementById('empty-state');
 
@@ -495,17 +454,13 @@
                     <div class="row align-items-center">
                         <div class="col-auto">
                             <div class="ingredient-avatar">
-                                ${ingredient.ingredient_name.charAt(0).toUpperCase()}
+                                ${ingredient.name.charAt(0).toUpperCase()}
                             </div>
                         </div>
                         <div class="col">
-                            <h5 class="mb-1">${ingredient.ingredient_name}</h5>
-                            <div class="mb-2">
-                                ${ingredient.category ? `<span class="category-badge me-2">${ingredient.category}</span>` : ''}
-                                ${ingredient.unit ? `<span class="unit-badge">${ingredient.unit}</span>` : ''}
-                            </div>
+                            <h5 class="mb-1">${ingredient.name}</h5>
                             <div class="text-muted">
-                                ${ingredient.cost_per_unit ? `<i class="fas fa-dollar-sign me-1"></i>$${parseFloat(ingredient.cost_per_unit).toFixed(2)} per ${ingredient.unit || 'unit'}` : ''}
+                                <i class="fas fa-industry me-1"></i>Supplier: ${ingredient.supplier_id || 'Not specified'}
                             </div>
                         </div>
                         <div class="col-auto">
@@ -515,7 +470,7 @@
                             <button class="btn btn-outline-warning action-btn" onclick="editIngredient('${ingredient.id}')" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn btn-outline-danger action-btn" onclick="deleteIngredient('${ingredient.id}', '${ingredient.ingredient_name}')" title="Delete">
+                            <button class="btn btn-outline-danger action-btn" onclick="deleteIngredient('${ingredient.id}', '${ingredient.name}')" title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -537,11 +492,46 @@
             document.getElementById('loading-state').style.display = 'none';
         }
 
+        // Load suppliers for dropdown
+        async function loadSuppliers() {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authService.getToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const suppliers = result.data || [];
+                
+                const supplierSelect = document.getElementById('supplierId');
+                supplierSelect.innerHTML = '<option value="">Select supplier...</option>';
+                
+                suppliers.forEach(supplier => {
+                    const option = document.createElement('option');
+                    option.value = supplier.id;
+                    option.textContent = supplier.supplier_name;
+                    supplierSelect.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error('❌ Error loading suppliers:', error);
+                // Don't show error for supplier loading, it's optional
+            }
+        }
+
         // Modal functions
         function showAddIngredientModal() {
             currentIngredientId = null;
             document.getElementById('ingredientModalLabel').innerHTML = '<i class="fas fa-leaf me-2"></i>Add New Ingredient';
             resetIngredientForm();
+            loadSuppliers(); // Load suppliers when opening modal
             new bootstrap.Modal(document.getElementById('ingredientModal')).show();
         }
 
@@ -555,13 +545,12 @@
             currentIngredientId = ingredientId;
             document.getElementById('ingredientModalLabel').innerHTML = '<i class="fas fa-edit me-2"></i>Edit Ingredient';
             
-            // Populate form
-            document.getElementById('ingredientId').value = ingredient.id;
-            document.getElementById('ingredientName').value = ingredient.ingredient_name;
-            document.getElementById('category').value = ingredient.category || '';
-            document.getElementById('unit').value = ingredient.unit || '';
-            document.getElementById('costPerUnit').value = ingredient.cost_per_unit || '';
-            document.getElementById('notes').value = ingredient.notes || '';
+            // Load suppliers first, then populate form
+            loadSuppliers().then(() => {
+                document.getElementById('ingredientId').value = ingredient.id;
+                document.getElementById('ingredientName').value = ingredient.name;
+                document.getElementById('supplierId').value = ingredient.supplier_id || '';
+            });
 
             new bootstrap.Modal(document.getElementById('ingredientModal')).show();
         }
@@ -579,26 +568,19 @@
                 <div class="row">
                     <div class="col-md-2 text-center">
                         <div class="ingredient-avatar mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
-                            ${ingredient.ingredient_name.charAt(0).toUpperCase()}
+                            ${ingredient.name.charAt(0).toUpperCase()}
                         </div>
                     </div>
                     <div class="col-md-10">
-                        <h4>${ingredient.ingredient_name}</h4>
-                        <div class="mb-3">
-                            ${ingredient.category ? `<span class="category-badge me-2">${ingredient.category}</span>` : ''}
-                            ${ingredient.unit ? `<span class="unit-badge">${ingredient.unit}</span>` : ''}
-                        </div>
+                        <h4>${ingredient.name}</h4>
                         <div class="row mt-3">
                             <div class="col-md-6">
-                                <p><strong>Category:</strong><br>${ingredient.category || 'Not specified'}</p>
-                                <p><strong>Unit:</strong><br>${ingredient.unit || 'Not specified'}</p>
+                                <p><strong>Ingredient ID:</strong><br>${ingredient.id}</p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Cost per Unit:</strong><br>${ingredient.cost_per_unit ? `$${parseFloat(ingredient.cost_per_unit).toFixed(2)}` : 'Not specified'}</p>
-                                <p><strong>Added:</strong><br>${new Date(ingredient.created_at).toLocaleDateString()}</p>
+                                <p><strong>Supplier:</strong><br>${ingredient.supplier_id || 'Not specified'}</p>
                             </div>
                         </div>
-                        ${ingredient.notes ? `<p><strong>Notes:</strong><br>${ingredient.notes}</p>` : ''}
                     </div>
                 </div>
             `;
@@ -629,11 +611,8 @@
             }
 
             const ingredientData = {
-                ingredient_name: document.getElementById('ingredientName').value.trim(),
-                category: document.getElementById('category').value.trim() || null,
-                unit: document.getElementById('unit').value.trim() || null,
-                cost_per_unit: document.getElementById('costPerUnit').value ? parseFloat(document.getElementById('costPerUnit').value) : null,
-                notes: document.getElementById('notes').value.trim() || null
+                name: document.getElementById('ingredientName').value.trim(),
+                supplier_id: document.getElementById('supplierId').value.trim() || null
             };
 
             try {
@@ -670,7 +649,7 @@
                 // Show success message
                 Alert.success(
                     isEdit ? 'Ingredient Updated!' : 'Ingredient Added!',
-                    `${ingredientData.ingredient_name} has been ${isEdit ? 'updated' : 'added'} successfully`
+                    `${ingredientData.name} has been ${isEdit ? 'updated' : 'added'} successfully`
                 );
                 
                 // Reload ingredients

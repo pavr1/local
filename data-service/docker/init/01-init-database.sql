@@ -29,15 +29,8 @@ CREATE TABLE suppliers (
 -- Ingredients Table
 CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    ingredient_name VARCHAR(255) NOT NULL UNIQUE,
-    ingredient_type VARCHAR(100),
-    unit_of_measure VARCHAR(50),
-    cost_per_unit DECIMAL(10,2) CHECK (cost_per_unit >= 0),
-    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
-    minimum_stock_level INTEGER CHECK (minimum_stock_level >= 0),
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    name VARCHAR(255) NOT NULL UNIQUE,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL
 );
 
 -- Existences Table
@@ -488,9 +481,6 @@ $$ language 'plpgsql';
 
 -- Apply update triggers to all tables with updated_at
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_ingredients_updated_at BEFORE UPDATE ON ingredients 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_existences_updated_at BEFORE UPDATE ON existences 

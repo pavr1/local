@@ -1,43 +1,22 @@
 package models
 
-import (
-	"time"
-)
-
 // Ingredient represents an ingredient used in ice cream production
 type Ingredient struct {
-	ID                string    `json:"id" db:"id"`
-	IngredientName    string    `json:"ingredient_name" db:"ingredient_name"`
-	IngredientType    *string   `json:"ingredient_type" db:"ingredient_type"`
-	UnitOfMeasure     *string   `json:"unit_of_measure" db:"unit_of_measure"`
-	CostPerUnit       *float64  `json:"cost_per_unit" db:"cost_per_unit"`
-	SupplierID        *string   `json:"supplier_id" db:"supplier_id"`
-	MinimumStockLevel *int      `json:"minimum_stock_level" db:"minimum_stock_level"`
-	Notes             *string   `json:"notes" db:"notes"`
-	CreatedAt         time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+	ID         string  `json:"id" db:"id"`
+	Name       string  `json:"name" db:"name"`
+	SupplierID *string `json:"supplier_id" db:"supplier_id"`
 }
 
 // CreateIngredientRequest represents the request to create a new ingredient
 type CreateIngredientRequest struct {
-	IngredientName    string   `json:"ingredient_name" validate:"required,min=1,max=255"`
-	IngredientType    *string  `json:"ingredient_type,omitempty" validate:"omitempty,max=100"`
-	UnitOfMeasure     *string  `json:"unit_of_measure,omitempty" validate:"omitempty,max=50"`
-	CostPerUnit       *float64 `json:"cost_per_unit,omitempty" validate:"omitempty,min=0"`
-	SupplierID        *string  `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
-	MinimumStockLevel *int     `json:"minimum_stock_level,omitempty" validate:"omitempty,min=0"`
-	Notes             *string  `json:"notes,omitempty"`
+	Name       string  `json:"name" validate:"required,min=1,max=255"`
+	SupplierID *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // UpdateIngredientRequest represents the request to update an ingredient
 type UpdateIngredientRequest struct {
-	IngredientName    *string  `json:"ingredient_name,omitempty" validate:"omitempty,min=1,max=255"`
-	IngredientType    *string  `json:"ingredient_type,omitempty" validate:"omitempty,max=100"`
-	UnitOfMeasure     *string  `json:"unit_of_measure,omitempty" validate:"omitempty,max=50"`
-	CostPerUnit       *float64 `json:"cost_per_unit,omitempty" validate:"omitempty,min=0"`
-	SupplierID        *string  `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
-	MinimumStockLevel *int     `json:"minimum_stock_level,omitempty" validate:"omitempty,min=0"`
-	Notes             *string  `json:"notes,omitempty"`
+	Name       *string `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
+	SupplierID *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // GetIngredientRequest represents the request to get an ingredient by ID
