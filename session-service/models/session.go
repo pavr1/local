@@ -41,9 +41,10 @@ type SessionStats struct {
 	ExpiredSessions int `json:"expired_sessions"`
 }
 
-// SessionValidationRequest represents a token validation request
+// SessionValidationRequest represents a token or session validation request
 type SessionValidationRequest struct {
-	Token string `json:"token"`
+	Token     string `json:"token,omitempty"`
+	SessionID string `json:"session_id,omitempty"`
 }
 
 // SessionValidationResponse represents the result of session validation
@@ -84,9 +85,6 @@ type SessionConfig struct {
 
 	// Basic Security Configuration
 	MaxConcurrentSessions int `json:"max_concurrent_sessions"`
-
-	// Storage Configuration
-	StorageType string `json:"storage_type"` // "memory", "redis", "database"
 }
 
 // Default configuration with simple settings
@@ -97,6 +95,5 @@ func DefaultSessionConfig() *SessionConfig {
 		RefreshThreshold:      5 * time.Minute,
 		CleanupInterval:       10 * time.Minute,
 		MaxConcurrentSessions: 5,
-		StorageType:           "memory",
 	}
 }

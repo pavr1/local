@@ -275,7 +275,7 @@ func TestSessionConfig(t *testing.T) {
 		RefreshThreshold:      5 * time.Minute,
 		CleanupInterval:       10 * time.Minute,
 		MaxConcurrentSessions: 5,
-		StorageType:           "memory",
+		// StorageType removed - database storage is always used
 	}
 
 	jsonData, err := json.Marshal(config)
@@ -290,7 +290,7 @@ func TestSessionConfig(t *testing.T) {
 	assert.Equal(t, config.RefreshThreshold, unmarshaled.RefreshThreshold)
 	assert.Equal(t, config.CleanupInterval, unmarshaled.CleanupInterval)
 	assert.Equal(t, config.MaxConcurrentSessions, unmarshaled.MaxConcurrentSessions)
-	assert.Equal(t, config.StorageType, unmarshaled.StorageType)
+	// StorageType removed - database storage is always used
 }
 
 // TestDefaultSessionConfig tests the default session configuration
@@ -303,7 +303,7 @@ func TestDefaultSessionConfig(t *testing.T) {
 	assert.Equal(t, 5*time.Minute, config.RefreshThreshold)
 	assert.Equal(t, 10*time.Minute, config.CleanupInterval)
 	assert.Equal(t, 5, config.MaxConcurrentSessions)
-	assert.Equal(t, "memory", config.StorageType)
+	// StorageType removed - database storage is always used
 
 	// Test that refresh threshold is less than default expiration
 	assert.True(t, config.RefreshThreshold < config.DefaultExpiration)
@@ -339,7 +339,7 @@ func TestSessionConfigValidation(t *testing.T) {
 				RefreshThreshold:      10 * time.Minute,
 				CleanupInterval:       15 * time.Minute,
 				MaxConcurrentSessions: 10,
-				StorageType:           "redis",
+				// StorageType removed - database storage is always used
 			},
 			valid: true,
 		},
@@ -351,7 +351,7 @@ func TestSessionConfigValidation(t *testing.T) {
 				RefreshThreshold:      5 * time.Minute,
 				CleanupInterval:       10 * time.Minute,
 				MaxConcurrentSessions: 5,
-				StorageType:           "memory",
+				// StorageType removed - database storage is always used
 			},
 			valid: false,
 		},
@@ -363,7 +363,7 @@ func TestSessionConfigValidation(t *testing.T) {
 				RefreshThreshold:      5 * time.Minute,
 				CleanupInterval:       10 * time.Minute,
 				MaxConcurrentSessions: -1,
-				StorageType:           "memory",
+				// StorageType removed - database storage is always used
 			},
 			valid: false,
 		},
@@ -377,7 +377,7 @@ func TestSessionConfigValidation(t *testing.T) {
 				tt.config.RefreshThreshold >= 0 &&
 				tt.config.CleanupInterval > 0 &&
 				tt.config.MaxConcurrentSessions >= 0 &&
-				tt.config.StorageType != ""
+				true // StorageType removed - database storage is always used
 
 			assert.Equal(t, tt.valid, isValid)
 		})

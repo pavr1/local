@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, 168*time.Hour, config.SessionRememberMeExpiration) // 7 days
 	assert.Equal(t, 10*time.Minute, config.SessionCleanupInterval)
 	assert.Equal(t, 5, config.SessionMaxConcurrent)
-	assert.Equal(t, "memory", config.SessionStorageType)
+	// SessionStorageType removed - database storage is always used
 
 	// Security settings
 	assert.Equal(t, 12, config.BcryptCost)
@@ -61,17 +61,17 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 		"SESSION_REMEMBER_ME_EXPIRATION": "240h", // 10 days
 		"SESSION_CLEANUP_INTERVAL":       "15m",
 		"SESSION_MAX_CONCURRENT":         "10",
-		"SESSION_STORAGE_TYPE":           "redis",
-		"BCRYPT_COST":                    "14",
-		"MAX_LOGIN_ATTEMPTS":             "3",
-		"LOGIN_COOLDOWN_TIME":            "30m",
-		"DB_HOST":                        "db.example.com",
-		"DB_PORT":                        "3306",
-		"DB_USER":                        "testuser",
-		"DB_PASSWORD":                    "testpass",
-		"DB_NAME":                        "testdb",
-		"DB_SSLMODE":                     "require",
-		"LOG_LEVEL":                      "debug",
+		// "SESSION_STORAGE_TYPE" removed - database storage is always used
+		"BCRYPT_COST":         "14",
+		"MAX_LOGIN_ATTEMPTS":  "3",
+		"LOGIN_COOLDOWN_TIME": "30m",
+		"DB_HOST":             "db.example.com",
+		"DB_PORT":             "3306",
+		"DB_USER":             "testuser",
+		"DB_PASSWORD":         "testpass",
+		"DB_NAME":             "testdb",
+		"DB_SSLMODE":          "require",
+		"LOG_LEVEL":           "debug",
 	}
 
 	// Set environment variables and defer cleanup
@@ -92,7 +92,7 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 	assert.Equal(t, 240*time.Hour, config.SessionRememberMeExpiration)
 	assert.Equal(t, 15*time.Minute, config.SessionCleanupInterval)
 	assert.Equal(t, 10, config.SessionMaxConcurrent)
-	assert.Equal(t, "redis", config.SessionStorageType)
+	// SessionStorageType removed - database storage is always used
 	assert.Equal(t, 14, config.BcryptCost)
 	assert.Equal(t, 3, config.MaxLoginAttempts)
 	assert.Equal(t, 30*time.Minute, config.LoginCooldownTime)
@@ -113,7 +113,7 @@ func TestToSessionConfig(t *testing.T) {
 		JWTRefreshThreshold:         10 * time.Minute,
 		SessionCleanupInterval:      20 * time.Minute,
 		SessionMaxConcurrent:        8,
-		SessionStorageType:          "database",
+		// SessionStorageType removed - database storage is always used
 	}
 
 	sessionConfig := config.ToSessionConfig()
@@ -123,7 +123,7 @@ func TestToSessionConfig(t *testing.T) {
 	assert.Equal(t, 10*time.Minute, sessionConfig.RefreshThreshold)
 	assert.Equal(t, 20*time.Minute, sessionConfig.CleanupInterval)
 	assert.Equal(t, 8, sessionConfig.MaxConcurrentSessions)
-	assert.Equal(t, "database", sessionConfig.StorageType)
+	// StorageType removed - database storage is always used
 
 	// Verify it implements the SessionConfig interface correctly
 	var _ *models.SessionConfig = sessionConfig
@@ -376,13 +376,7 @@ func TestConfigEnvironmentVariableOverrides(t *testing.T) {
 		assert.Equal(t, "prod_icecream_store", config.DatabaseName)
 	})
 
-	t.Run("Session storage type override", func(t *testing.T) {
-		os.Setenv("SESSION_STORAGE_TYPE", "redis")
-		defer os.Unsetenv("SESSION_STORAGE_TYPE")
-
-		config := LoadConfig()
-		assert.Equal(t, "redis", config.SessionStorageType)
-	})
+	// Session storage type override test removed - database storage is always used
 }
 
 // BenchmarkLoadConfig benchmarks the configuration loading process
@@ -416,7 +410,7 @@ func TestConfigStructFieldsAreParsedCorrectly(t *testing.T) {
 	require.NotZero(t, config.SessionRememberMeExpiration)
 	require.NotZero(t, config.SessionCleanupInterval)
 	require.NotZero(t, config.SessionMaxConcurrent)
-	require.NotEmpty(t, config.SessionStorageType)
+	// SessionStorageType removed - database storage is always used
 	require.NotZero(t, config.BcryptCost)
 	require.NotZero(t, config.MaxLoginAttempts)
 	require.NotZero(t, config.LoginCooldownTime)

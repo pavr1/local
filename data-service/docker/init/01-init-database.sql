@@ -305,6 +305,20 @@ CREATE TABLE permissions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Sessions Table (for database-backed session management)
+CREATE TABLE sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(255) NOT NULL,
+    role_name VARCHAR(255) NOT NULL,
+    permissions TEXT[], -- Array of permission strings
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    last_activity TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active BOOLEAN NOT NULL DEFAULT true
+);
+
 -- =============================================================================
 -- AUDIT & SECURITY ENTITIES
 -- =============================================================================
@@ -353,6 +367,13 @@ CREATE INDEX idx_customer_points_customer_id ON customer_points(customer_id);
 CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX idx_audit_logs_table_name ON audit_logs(table_name);
+
+-- Session indexes for performance
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+CREATE INDEX idx_sessions_is_active ON sessions(is_active);
+CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active);
 
 -- =============================================================================
 -- ADD FOREIGN KEY CONSTRAINTS THAT WERE DEFERRED

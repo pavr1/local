@@ -400,18 +400,19 @@ func (api *SessionAPI) Login(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create session properly using SessionManager
-		_, token, err := api.sessionHandler.CreateSessionFromLogin(profile, r, false)
+		session, token, err := api.sessionHandler.CreateSessionFromLogin(profile, r, false)
 		if err != nil {
 			api.logger.WithError(err).Error("Failed to create session")
 			api.writeErrorResponse(w, http.StatusInternalServerError, "session_creation_failed", "Failed to create session")
 			return
 		}
 
-		// Return response in expected format
+		// Return response in expected format with session ID
 		response := models.LoginResponse{
-			User:  profile.User,
-			Role:  profile.Role,
-			Token: token,
+			User:      profile.User,
+			Role:      profile.Role,
+			Token:     token,
+			SessionID: session.SessionID,
 		}
 
 		api.writeJSONResponse(w, http.StatusOK, response)

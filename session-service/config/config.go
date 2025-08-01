@@ -24,7 +24,6 @@ type Config struct {
 	SessionRememberMeExpiration time.Duration
 	SessionCleanupInterval      time.Duration
 	SessionMaxConcurrent        int
-	SessionStorageType          string
 
 	// Basic security settings
 	BcryptCost        int
@@ -60,7 +59,6 @@ func LoadConfig() *Config {
 		SessionRememberMeExpiration: getEnvDuration("SESSION_REMEMBER_ME_EXPIRATION", "168h"), // 7 days
 		SessionCleanupInterval:      getEnvDuration("SESSION_CLEANUP_INTERVAL", "10m"),
 		SessionMaxConcurrent:        getEnvInt("SESSION_MAX_CONCURRENT", 5),
-		SessionStorageType:          getEnvString("SESSION_STORAGE_TYPE", "memory"),
 
 		// Basic security settings
 		BcryptCost:        getEnvInt("BCRYPT_COST", 12),
@@ -88,7 +86,6 @@ func (c *Config) ToSessionConfig() *models.SessionConfig {
 		RefreshThreshold:      c.JWTRefreshThreshold,
 		CleanupInterval:       c.SessionCleanupInterval,
 		MaxConcurrentSessions: c.SessionMaxConcurrent,
-		StorageType:           c.SessionStorageType,
 	}
 }
 

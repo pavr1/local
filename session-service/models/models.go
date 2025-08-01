@@ -53,9 +53,10 @@ type LoginRequest struct {
 
 // LoginResponse represents a successful login response
 type LoginResponse struct {
-	User  User   `json:"user"`
-	Role  Role   `json:"role"`
-	Token string `json:"token"`
+	User      User   `json:"user"`
+	Role      Role   `json:"role"`
+	Token     string `json:"token"`
+	SessionID string `json:"session_id"`
 }
 
 // RefreshTokenRequest represents a token refresh request

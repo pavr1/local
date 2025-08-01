@@ -72,7 +72,6 @@ func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, log
 	go sm.startCleanupProcess()
 
 	logger.WithFields(logrus.Fields{
-		"storage_type":     config.StorageType,
 		"max_sessions":     config.MaxConcurrentSessions,
 		"cleanup_interval": config.CleanupInterval,
 	}).Info("Session manager initialized")
@@ -150,11 +149,28 @@ func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*mode
 	return session, token, nil
 }
 
-// ValidateSession validates a token against stored sessions
+// ValidateSession validates a token or session ID against stored sessions
 func (sm *SessionManager) ValidateSession(req *models.SessionValidationRequest) (*models.SessionValidationResponse, error) {
-	// Get session from storage
-	tokenHash := sm.hashToken(req.Token)
-	session, err := sm.storage.GetByTokenHash(tokenHash)
+	var session *models.SessionData
+	var err error
+
+	// Validate input parameters
+	if req.Token == "" && req.SessionID == "" {
+		return &models.SessionValidationResponse{
+			IsValid:      false,
+			ErrorCode:    "missing_parameter",
+			ErrorMessage: "Either token or session_id must be provided",
+		}, nil
+	}
+
+	// Get session from storage - prefer session ID for better performance
+	if req.SessionID != "" {
+		session, err = sm.storage.Get(req.SessionID)
+	} else {
+		tokenHash := sm.hashToken(req.Token)
+		session, err = sm.storage.GetByTokenHash(tokenHash)
+	}
+
 	if err != nil {
 		return &models.SessionValidationResponse{
 			IsValid:      false,
@@ -287,6 +303,39 @@ func (sm *SessionManager) hashToken(token string) string {
 }
 
 func (sm *SessionManager) checkConcurrentSessions(userID string) error {
+	// Use database-optimized count if available
+	if dbStorage, ok := sm.storage.(*DatabaseSessionStorage); ok {
+		activeCount, err := dbStorage.CountUserActiveSessions(userID)
+		if err != nil {
+			return err
+		}
+
+		if activeCount >= sm.config.MaxConcurrentSessions {
+			// Get user sessions to find oldest and remove it
+			sessions, err := sm.storage.GetUserSessions(userID)
+			if err != nil {
+				return err
+			}
+
+			// Find oldest active session
+			var oldestSession *models.SessionData
+			now := time.Now()
+			for _, session := range sessions {
+				if session.IsActive && now.Before(session.ExpiresAt) {
+					if oldestSession == nil || session.CreatedAt.Before(oldestSession.CreatedAt) {
+						oldestSession = session
+					}
+				}
+			}
+
+			if oldestSession != nil {
+				sm.storage.Delete(oldestSession.SessionID)
+			}
+		}
+		return nil
+	}
+
+	// Fallback for memory storage
 	sessions, err := sm.storage.GetUserSessions(userID)
 	if err != nil {
 		return err
@@ -302,13 +351,17 @@ func (sm *SessionManager) checkConcurrentSessions(userID string) error {
 
 	if activeCount >= sm.config.MaxConcurrentSessions {
 		// Remove oldest session
-		oldestSession := sessions[0]
-		for _, session := range sessions[1:] {
-			if session.CreatedAt.Before(oldestSession.CreatedAt) {
-				oldestSession = session
+		var oldestSession *models.SessionData
+		for _, session := range sessions {
+			if session.IsActive && now.Before(session.ExpiresAt) {
+				if oldestSession == nil || session.CreatedAt.Before(oldestSession.CreatedAt) {
+					oldestSession = session
+				}
 			}
 		}
-		sm.storage.Delete(oldestSession.SessionID)
+		if oldestSession != nil {
+			sm.storage.Delete(oldestSession.SessionID)
+		}
 	}
 
 	return nil
@@ -383,18 +436,17 @@ func (sm *SessionManager) performCleanup() {
 	sm.logger.Debug("Session cleanup completed")
 }
 
-// Storage initialization
+// Storage initialization - database storage is always set externally via SetDatabaseStorage
 func (sm *SessionManager) initializeStorage() SessionStorage {
-	switch sm.config.StorageType {
-	case "redis":
-		// TODO: Implement Redis storage
-		sm.logger.Warn("Redis storage not implemented, falling back to memory storage")
-		return NewMemorySessionStorage()
-	case "database":
-		// TODO: Implement database storage
-		sm.logger.Warn("Database storage not implemented, falling back to memory storage")
-		return NewMemorySessionStorage()
-	default:
-		return NewMemorySessionStorage()
-	}
+	// Temporary memory storage until database storage is set
+	sm.logger.Info("Using temporary memory storage until database storage is configured")
+	return NewMemorySessionStorage()
+}
+
+// SetDatabaseStorage sets the database storage after initialization
+func (sm *SessionManager) SetDatabaseStorage(storage SessionStorage) {
+	sm.mutex.Lock()
+	defer sm.mutex.Unlock()
+	sm.storage = storage
+	sm.logger.Info("Session manager switched to database storage")
 }

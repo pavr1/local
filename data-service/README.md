@@ -67,6 +67,7 @@ The database includes the following management areas:
 - **Waste & Loss Tracking:** Waste reporting with financial loss calculation
 - **Administration:** System Configuration, User Salary management
 - **Authentication & Authorization:** Users, Roles, Permissions with RBAC
+- **Session Management:** Database-backed user sessions for the session service
 - **Audit & Security:** Comprehensive audit logging
 
 ### Key Features

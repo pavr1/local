@@ -19,10 +19,10 @@ This service provides JWT-based authentication and authorization for the Ice Cre
 ### Prerequisites
 
 1. **Docker & Docker Compose**: Ensure Docker is running
-2. **Data Service**: The database must be running first
+2. **Data Service**: The database must be running first with schema initialized
 
 ```bash
-# Start the database first
+# Start the database first (this creates the sessions table)
 cd ../data-service
 make start
 
@@ -30,6 +30,16 @@ make start
 cd ../session-service
 make install
 ```
+
+### Database Schema
+
+The session service uses a `sessions` table for database-backed session storage. **This table is automatically created by the data-service** - you don't need to run any additional schema migrations.
+
+The sessions table is defined in `data-service/docker/init/01-init-database.sql` and includes:
+- Session ID and user information
+- JWT token hashes for validation
+- Session expiration and activity tracking
+- Proper indexes for performance
 
 ### Using Make Commands
 

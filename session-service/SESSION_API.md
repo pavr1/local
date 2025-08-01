@@ -329,7 +329,7 @@ SESSION_CLEANUP_INTERVAL=10m
 SESSION_MAX_CONCURRENT=5
 
 # Storage
-SESSION_STORAGE_TYPE=memory  # memory, redis, database
+# SESSION_STORAGE_TYPE removed - database storage is now always used
 ```
 
 ---

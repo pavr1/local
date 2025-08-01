@@ -42,6 +42,13 @@ func main() {
 	sessionConfig := cfg.ToSessionConfig()
 	sessionManager := utils.NewSessionManager(jwtManager, sessionConfig, logger)
 
+	// Set up database storage (always enabled)
+	dbStorage, err := utils.NewDatabaseSessionStorage(db, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to initialize database session storage")
+	}
+	sessionManager.SetDatabaseStorage(dbStorage)
+
 	// Create handlers (auth handler now gets session manager for login integration)
 	sessionHandler := handler.NewSessionHandler(sessionManager, jwtManager, logger)
 	sessionAPI := handler.NewSessionAPI(sessionManager, jwtManager, logger)
