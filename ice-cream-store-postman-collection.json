@@ -168,7 +168,7 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/validate",
+									"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "validate"]
 								},
@@ -599,7 +599,7 @@
 							"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
 						},
 						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/validate",
+							"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "sessions", "validate"]
 						},

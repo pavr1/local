@@ -49,7 +49,7 @@ EXPOSE 8081
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8081/api/v1/sessions/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8081/api/v1/sessions/p/health || exit 1
 
 # Set timezone
 ENV TZ=UTC

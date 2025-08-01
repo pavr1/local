@@ -399,11 +399,11 @@ func (api *SessionAPI) Login(w http.ResponseWriter, r *http.Request) {
 			Permissions: []models.Permission{},
 		}
 
-		// Generate JWT token
-		token, _, err := api.jwtManager.GenerateToken(profile)
+		// Create session properly using SessionManager
+		_, token, err := api.sessionHandler.CreateSessionFromLogin(profile, r, false)
 		if err != nil {
-			api.logger.WithError(err).Error("Failed to generate token")
-			api.writeErrorResponse(w, http.StatusInternalServerError, "token_generation_failed", "Failed to generate token")
+			api.logger.WithError(err).Error("Failed to create session")
+			api.writeErrorResponse(w, http.StatusInternalServerError, "session_creation_failed", "Failed to create session")
 			return
 		}
 

@@ -52,7 +52,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f http://localhost:8081/api/v1/sessions/health > /dev/null 2>&1; then
+    if curl -f http://localhost:8081/api/v1/sessions/p/health > /dev/null 2>&1; then
         echo "✅ Auth service is ready!"
         break
     fi
