@@ -513,6 +513,12 @@
 
             async updateSystemStatus() {
                 try {
+                    // Ensure statusService is available and has the method
+                    if (!window.statusService || typeof window.statusService.getLastHealthCheck !== 'function') {
+                        console.warn('⚠️ StatusService not ready yet, skipping status update');
+                        return;
+                    }
+                    
                     // Get latest health check results from shared service
                     const healthCheck = window.statusService.getLastHealthCheck();
                     if (!healthCheck) return;

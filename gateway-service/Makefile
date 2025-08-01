@@ -57,6 +57,12 @@ build: ## Build the gateway service binary
 
 start-locally: deps ## Run the service locally (no Docker)
 	@echo "$(CYAN)🛠️  Starting Gateway Service locally...$(RESET)"
+	@echo "$(YELLOW)🔍 Checking for existing processes on port 8082...$(RESET)"
+	@if lsof -ti:8082 >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Found process using port 8082, killing it...$(RESET)"; \
+		lsof -ti:8082 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
 	@echo "$(YELLOW)⚠️  Make sure all backend services are running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8082$(RESET)"
 	@go run main.go

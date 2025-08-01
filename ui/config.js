@@ -23,7 +23,7 @@ const CONFIG = {
         LOGOUT: '/api/v1/sessions/p/logout',
         VALIDATE: '/api/v1/sessions/p/validate',
         PROFILE: '/api/v1/sessions/profile',
-        HEALTH: '/api/health'
+        HEALTH: '/api/v1/sessions/p/health'  // Default health endpoint through gateway
     },
     
     // Authentication settings

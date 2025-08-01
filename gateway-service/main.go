@@ -250,7 +250,17 @@ func checkServiceHealth(healthURL string) bool {
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := client.Get(healthURL)
+	// Create request with proper gateway headers
+	req, err := http.NewRequest("GET", healthURL, nil)
+	if err != nil {
+		return false
+	}
+
+	// Add required gateway headers
+	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return false
 	}

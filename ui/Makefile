@@ -32,6 +32,12 @@ install: ## Install dependencies
 
 start-locally: ## Start UI development server locally
 	@echo "$(CYAN)🚀 Starting UI development server locally...$(RESET)"
+	@echo "$(YELLOW)🔍 Checking for existing processes on port 3000...$(RESET)"
+	@if lsof -ti:3000 >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Found process using port 3000, killing it...$(RESET)"; \
+		lsof -ti:3000 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:3000$(RESET)"
 	@npm start
 

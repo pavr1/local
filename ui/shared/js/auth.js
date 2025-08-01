@@ -227,117 +227,31 @@ class AuthService {
 }
 
 // === STATUS CHECKER SERVICE ===
-
-class StatusService {
-    constructor() {
-        this.services = CONFIG.SERVICES;
-    }
-
-    async checkServiceHealth(url) {
-        try {
-            const response = await fetch(url, {
-                method: 'GET',
-                timeout: 5000 // 5 second timeout
-            });
-            
-            // Handle different response cases
-            if (response.ok) {
-                return 'healthy';
-            }
-            
-            // For 503 responses, check if it's degraded (partial failure) vs completely down
-            if (response.status === 503) {
-                try {
-                    const data = await response.json();
-                    if (data && data.status === 'degraded') {
-                        return 'degraded';
-                    }
-                } catch (parseError) {
-                    console.warn(`Could not parse 503 response for ${url}:`, parseError.message);
-                }
-            }
-            
-            return 'unhealthy';
-        } catch (error) {
-            console.warn(`Service health check failed for ${url}:`, error.message);
-            return 'unhealthy';
-        }
-    }
-
-    async checkAllServices() {
-        console.log('🏥 Checking system health...');
-        
-        const results = {};
-        
-        for (const [serviceKey, service] of Object.entries(this.services)) {
-            const healthStatus = await this.checkServiceHealth(service.url);
-            results[serviceKey] = healthStatus;
-            
-            const indicator = document.getElementById(service.element);
-            if (indicator) {
-                // Map health status to indicator status
-                let indicatorStatus;
-                switch (healthStatus) {
-                    case 'healthy':
-                        indicatorStatus = 'online';
-                        break;
-                    case 'degraded':
-                        indicatorStatus = 'warning';
-                        break;
-                    case 'unhealthy':
-                    default:
-                        indicatorStatus = 'offline';
-                        break;
-                }
-                this.updateStatusIndicator(indicator, indicatorStatus);
-            }
-        }
-
-        console.log('🏥 Health check results:', results);
-        return results;
-    }
-
-    updateStatusIndicator(element, status) {
-        if (!element) return;
-        
-        element.classList.remove('online', 'offline', 'warning', 'loading');
-        element.classList.add(status);
-    }
-
-    startPeriodicHealthCheck(intervalMs = 30000) {
-        // Check immediately
-        this.checkAllServices();
-        
-        // Then check every interval
-        setInterval(() => {
-            this.checkAllServices();
-        }, intervalMs);
-    }
-}
+// Note: StatusService is defined in shared/js/status.js - using that implementation instead
 
 // === GLOBAL INSTANCES ===
 
-// Function to safely create services when CONFIG is available
-function initializeServices() {
+// Function to safely create AuthService when CONFIG is available
+function initializeAuthService() {
     try {
         if (typeof CONFIG === 'undefined') {
             console.warn('⚠️ CONFIG not yet available, retrying...');
             // Retry after a short delay
-            setTimeout(initializeServices, 100);
+            setTimeout(initializeAuthService, 100);
             return;
         }
         
-        // Create global instances
+        // Create global AuthService instance
+        // StatusService is created in shared/js/status.js
         window.authService = new AuthService();
-        window.statusService = new StatusService();
         
-        console.log('🔧 Authentication and Status services initialized');
+        console.log('🔧 Authentication service initialized');
     } catch (error) {
-        console.error('❌ Failed to initialize services:', error);
+        console.error('❌ Failed to initialize AuthService:', error);
         // Retry after a delay
-        setTimeout(initializeServices, 500);
+        setTimeout(initializeAuthService, 500);
     }
 }
 
 // Start initialization
-initializeServices(); 
+initializeAuthService(); 

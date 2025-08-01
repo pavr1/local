@@ -45,6 +45,12 @@ help: ## Show this help message
 
 start-locally: deps ## Run the service locally (no Docker)
 	@echo "$(CYAN)🛠️  Starting Session Service locally...$(RESET)"
+	@echo "$(YELLOW)🔍 Checking for existing processes on port 8081...$(RESET)"
+	@if lsof -ti:8081 >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Found process using port 8081, killing it...$(RESET)"; \
+		lsof -ti:8081 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8081$(RESET)"
 	@go run main.go

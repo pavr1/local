@@ -57,6 +57,12 @@ build: ## Build the inventory service binary
 
 start-locally: deps ## Run the service locally (no Docker)
 	@echo "$(CYAN)🛠️  Starting Inventory Service locally...$(RESET)"
+	@echo "$(YELLOW)🔍 Checking for existing processes on port 8084...$(RESET)"
+	@if lsof -ti:8084 >/dev/null 2>&1; then \
+		echo "$(YELLOW)⚠️  Found process using port 8084, killing it...$(RESET)"; \
+		lsof -ti:8084 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8084$(RESET)"
 	@go run main.go main_http_handler.go
