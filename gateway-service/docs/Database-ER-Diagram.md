@@ -8,14 +8,14 @@
 
 ## 📊 Database Overview
 
-This diagram represents the complete relational structure of the ice cream store management system database, showing all **22 tables** and their interconnections.
+This diagram represents the complete relational structure of the ice cream store management system database, showing all **21 tables** and their interconnections.
 
 ### Table Categories:
 
 - **🔐 Authentication & Authorization** (3 tables): Users, roles, and permissions
 - **👥 Customer Management** (1 table): Customer information and contact details  
 - **📦 Inventory Management** (7 tables): Suppliers, ingredients, stock, recipe categories, recipes, and waste tracking
-- **💰 Expenses Management** (3 tables): Expense categories, records, and receipt documentation
+- **💰 Expenses Management** (3 tables): Expense categories, receipts, and receipt items
 - **🛒 Orders Management** (2 tables): Customer transactions and order line items
 - **🎁 Promotions & Loyalty** (2 tables): Promotional campaigns and customer points
 - **🔧 Equipment Management** (2 tables): Equipment tracking and mechanic contacts
@@ -96,7 +96,7 @@ erDiagram
         uuid id PK
         integer existence_reference_code UK
         uuid ingredient_id FK
-        uuid expense_receipt_id FK
+        uuid receipt_item_id FK
         decimal units_purchased
         decimal units_available
         varchar unit_type
@@ -167,23 +167,29 @@ erDiagram
         timestamp updated_at
     }
     
-    EXPENSES {
+    RECEIPTS {
         uuid id PK
+        varchar receipt_number UK
+        date purchase_date
+        uuid supplier_id FK
         uuid expense_category_id FK
-        text description
+        decimal total_amount
+        varchar image_url
+        text notes
         timestamp created_at
         timestamp updated_at
     }
     
-    EXPENSE_RECEIPTS {
+    RECEIPT_ITEMS {
         uuid id PK
-        uuid expense_id FK
-        varchar receipt_number UK
-        date purchase_date
-        uuid supplier_id FK
-        decimal total_amount
-        varchar image_url
-        text notes
+        uuid receipt_id FK
+        uuid ingredient_id FK
+        text detail
+        decimal count
+        varchar unit_type
+        decimal price
+        decimal total
+        date expiration_date
         timestamp created_at
         timestamp updated_at
     }
@@ -308,7 +314,7 @@ erDiagram
     USER_SALARY {
         uuid id PK
         uuid user_id FK
-        uuid expense_id FK
+        uuid receipt_id FK
         decimal salary
         decimal additional_expenses
         decimal total
@@ -341,15 +347,17 @@ erDiagram
     CUSTOMERS ||--o{ CUSTOMER_POINTS : "customer_id"
     
     SUPPLIERS ||--o{ INGREDIENTS : "supplier_id"
-    SUPPLIERS ||--o{ EXPENSE_RECEIPTS : "supplier_id"
+    SUPPLIERS ||--o{ RECEIPTS : "supplier_id"
     
     INGREDIENTS ||--o{ EXISTENCES : "ingredient_id"
     INGREDIENTS ||--o{ RECIPE_INGREDIENTS : "ingredient_id"
+    INGREDIENTS ||--o{ RECEIPT_ITEMS : "ingredient_id"
     
     EXISTENCES ||--o{ RUNOUT_INGREDIENT_REPORT : "existence_id"
     EXISTENCES ||--o{ WASTE_LOSS : "existence_id"
     
-    EXPENSE_RECEIPTS ||--o{ EXISTENCES : "expense_receipt_id"
+    RECEIPTS ||--o{ RECEIPT_ITEMS : "receipt_id"
+    RECEIPT_ITEMS ||--o{ EXISTENCES : "receipt_item_id"
     
     RECIPE_CATEGORIES ||--o{ RECIPES : "recipe_category_id"
     
@@ -357,9 +365,8 @@ erDiagram
     RECIPES ||--o{ ORDERED_RECEIPES : "recipe_id"
     RECIPES ||--o{ PROMOTIONS : "recipe_id"
     
-    EXPENSE_CATEGORIES ||--o{ EXPENSES : "expense_category_id"
-    EXPENSES ||--o{ EXPENSE_RECEIPTS : "expense_id"
-    EXPENSES ||--o{ USER_SALARY : "expense_id"
+    EXPENSE_CATEGORIES ||--o{ RECEIPTS : "expense_category_id"
+    RECEIPTS ||--o{ USER_SALARY : "receipt_id"
     
     USERS ||--o{ ORDERS : "sales_representative_id"
     USERS ||--o{ RUNOUT_INGREDIENT_REPORT : "employee_id"
@@ -394,9 +401,9 @@ Customer Points (Loyalty Program)
 
 ### **Complete Inventory Traceability**
 ```
-Suppliers → Ingredients → Existences → Recipe Usage
-                ↓           ↓
-         Expense Receipts   Waste/Loss Reports
+Suppliers → Receipts → Receipt Items → Existences → Recipe Usage
+                                         ↓
+                                  Waste/Loss Reports
 ```
 
 ### **Recipe & Product System**
@@ -405,8 +412,9 @@ Suppliers → Ingredients → Existences → Recipe Usage
 - Promotion integration with recipe-specific discounts
 
 ### **Financial Integration**
-- Expenses link to receipts and existences for cost tracking
-- Salary management through expense system
+- Receipts link directly to expense categories for cost tracking
+- Receipt items provide detailed expense breakdown
+- Salary management through receipt system
 - Complete financial audit trail
 
 ### **Promotion & Loyalty Logic**
@@ -418,9 +426,9 @@ Suppliers → Ingredients → Existences → Recipe Usage
 
 ## 📋 Business Logic Summary
 
-1. **Inventory Flow**: Suppliers → Ingredients → Existences → Usage/Waste
+1. **Inventory Flow**: Suppliers → Receipts → Receipt Items → Existences → Usage/Waste
 2. **Order Processing**: Customers → Orders → Order Items + Points
-3. **Financial Tracking**: All monetary transactions tracked through expenses/orders
+3. **Financial Tracking**: All monetary transactions tracked through receipts/orders
 4. **User Management**: Role-based permissions with granular access control
 5. **Audit Trail**: Complete operation logging for compliance and security
 6. **Equipment Lifecycle**: Purchase → Maintenance → Status tracking
@@ -429,5 +437,5 @@ Suppliers → Ingredients → Existences → Recipe Usage
 ---
 
 **Diagram Generated:** `r new Date().toISOString()`  
-**Total Tables:** 22  
-**Total Relationships:** 26+ foreign key constraints 
+**Total Tables:** 21  
+**Total Relationships:** 25+ foreign key constraints 

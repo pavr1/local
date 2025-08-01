@@ -15,7 +15,8 @@
    - [Recipe Categories](#recipe-categories)
    - [Recipes](#recipes)
 2. [Expenses Management](#expenses-management)
-   - [Expense Receipts](#expense-receipts)
+   - [Receipts](#receipts)
+   - [Receipt Items](#receipt-items)
 3. [Customer Management](#customer-management)
 4. [Income Managements (Orders)](#income-managements-orders)
 5. [Promotions & Loyalty System](#promotions--loyalty-system)
@@ -96,7 +97,7 @@
 - **Attributes:**
   - **Existence Reference Code** (integer, auto-increment): Simple numeric consecutive code for easy identification
   - **Ingredient Reference** (foreign key): Link to ingredient
-  - **Expense Receipt ID** (foreign key): Reference to expense receipt/invoice table
+  - **Receipt Item ID** (foreign key): Reference to receipt items table (must reference ingredients if category is ingredient only)
   - **Units Purchased** (decimal): Original quantity purchased
   - **Units Available** (decimal): Current quantity available (at creation same as units_purchased, decreases as used)
   - **Unit Type** (enum): Unit of measurement for this existence (Liters, Gallons, Units, Bag)
@@ -139,12 +140,12 @@
     - Validates reported quantities against available stock
   - Support FIFO (First In, First Out) consumption by using oldest batches first
   - Prevent usage of expired materials by checking expiration dates at existence level
-  - Expense receipt traceability for audit and accounting purposes (links to expense receipt table)
+  - Receipt item traceability for audit and accounting purposes (links to receipt items table)
   - Each purchase batch maintains its own cost, pricing, and expiration tracking
   - Pricing calculations (margins, taxes) happen at existence level for inventory items
   - Final pricing can be adjusted from calculated price (rounded up to next 100)
-  - Purchase date and supplier information accessed through expense receipt relationship
-  - Different ingredients on same receipt can have different expiration dates
+  - Purchase date and supplier information accessed through receipt relationship via receipt items
+  - Different ingredients on same receipt can have different expiration dates through receipt items
 
 ### Recipe Categories
 **Description:** Product categorization system to organize recipes by type for better management and customer browsing.
@@ -205,18 +206,30 @@
     - Other operational expenses
   - **Description:** Brief description of expense.
 
-- **Expense Receipt Attributes:**
+- **Receipt Attributes:**
   - **Receipt Number:** Unique identifier for the receipt/invoice
   - **Purchase Date:** When the purchase was made
-  - **Total Amount:** Monetary amount of the receipt/invoice
-  - **Image Upload:** Mandatory receipt/invoice image documentation
   - **Supplier Reference:** Optional reference to supplier (nullable for supermarket purchases)
+  - **Expense Category:** Direct link to expense category
+  - **Total Amount:** Monetary amount of the receipt/invoice (calculated from receipt items)
+  - **Image Upload:** Mandatory receipt/invoice image documentation
+  - **Notes:** Additional notes about the purchase
+
+- **Receipt Item Attributes:**
+  - **Receipt Reference:** Link to parent receipt
+  - **Ingredient Reference:** Reference to ingredient (only for "Ingredients" category)
+  - **Detail:** Description of the item/expense line
+  - **Count:** Quantity or amount of the item
+  - **Unit Type:** Unit of measurement (Liters, Gallons, Units, Bag)
+  - **Price:** Unit price of the item
+  - **Total:** Calculated total for this line item (count × price)
+  - **Expiration Date:** Expiration date for this specific item (nullable)
   
 - **Digital Invoice Requirements:**
-  - All expense receipts must include digital invoice image upload
+  - All receipts must include digital invoice image upload
   - Supported formats: JPG, PNG, PDF
   - Mandatory documentation for expense validation
-  - Each expense receipt is linked to an expense category through the parent expense record
+  - Each receipt is directly linked to an expense category
   
 - **Automatic File Organization:**
   - **Monthly Directory Creation**: System automatically creates `.../invoices/MM-yyyy` directories
@@ -246,22 +259,44 @@
   - **Expense Reports**: Generate detailed monthly/yearly expense reports
   - **Audit Trail**: Complete record of all expense transactions with supporting documentation
 
-### Expense Receipts
-**Description:** Purchase receipt/invoice management system that tracks purchases from suppliers or supermarkets. Each expense receipt can contain multiple ingredient purchases.
+### Receipts
+**Description:** Purchase receipt/invoice management system that tracks purchases from suppliers or supermarkets. Each receipt represents a complete purchase transaction with main information.
 
 - **Attributes:**
   - **Receipt Number** (string): Receipt/invoice number (unique)
   - **Purchase Date** (date): When the purchase was made
   - **Supplier Reference** (foreign key, nullable): Reference to supplier (nullable for supermarket purchases)
-  - **Total Amount** (decimal, nullable): Total amount of the receipt/invoice
+  - **Expense Category** (foreign key): Direct link to expense category
+  - **Total Amount** (decimal): Total amount of the receipt/invoice (calculated from receipt items)
+  - **Image URL** (string): URL/path to uploaded receipt/invoice image (mandatory)
   - **Notes** (text, nullable): Additional notes about the purchase
 
 - **Business Logic:**
-  - One expense receipt can contain multiple ingredient existences (line items)
+  - One receipt can contain multiple receipt items (line items)
   - Centralizes purchase date and supplier information
-  - Links to expense management for accounting purposes
+  - Directly linked to expense categories for accounting purposes
   - Supports both supplier and supermarket purchases
-  - Provides audit trail for all ingredient acquisitions
+  - Provides audit trail for all purchases
+
+### Receipt Items
+**Description:** Individual line items/details for each receipt, acting as expense line items that detail the expenses within a receipt.
+
+- **Attributes:**
+  - **Receipt Reference** (foreign key): Link to parent receipt
+  - **Ingredient Reference** (foreign key, nullable): Reference to ingredient (only populated if expense category is 'Ingredients')
+  - **Detail** (text): Description of the item/expense line
+  - **Count** (decimal): Quantity or amount of the item
+  - **Unit Type** (enum): Unit of measurement (Liters, Gallons, Units, Bag)
+  - **Price** (decimal): Unit price of the item
+  - **Total** (decimal, calculated): Calculated total for this line item (count × price)
+  - **Expiration Date** (date, nullable): Expiration date for this specific item
+
+- **Business Logic:**
+  - Each receipt item belongs to exactly one receipt
+  - Ingredient reference only populated when expense category is "Ingredients"
+  - Supports detailed expense breakdown within receipts
+  - Individual expiration dates for ingredient items
+  - Provides granular traceability for inventory management
 
 ## Customer Management
 **Description:** Customer relationship management system for tracking customer information, enabling targeted marketing, and supporting loyalty programs.
