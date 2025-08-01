@@ -196,11 +196,9 @@ func (sm *SessionManager) ValidateSession(req *models.SessionValidationRequest) 
 		}, nil
 	}
 
-	// // Check expiration
-	now := time.Now()
-
 	// Update session activity
-	session.LastActivity = time.Now()
+	now := time.Now()
+	session.LastActivity = now
 	sm.storage.Update(session.SessionID, session)
 
 	// Check if token needs refresh
