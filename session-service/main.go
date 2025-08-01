@@ -38,16 +38,15 @@ func main() {
 	// Create JWT manager
 	jwtManager := utils.NewJWTManager(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
 
-	// Create session manager
-	sessionConfig := cfg.ToSessionConfig()
-	sessionManager := utils.NewSessionManager(jwtManager, sessionConfig, logger)
-
 	// Set up database storage (always enabled)
 	dbStorage, err := utils.NewDatabaseSessionStorage(db, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize database session storage")
 	}
-	sessionManager.SetDatabaseStorage(dbStorage)
+
+	// Create session manager with database storage
+	sessionConfig := cfg.ToSessionConfig()
+	sessionManager := utils.NewSessionManager(jwtManager, sessionConfig, dbStorage, logger)
 
 	// Create handlers (auth handler now gets session manager for login integration)
 	sessionHandler := handler.NewSessionHandler(sessionManager, jwtManager, logger)

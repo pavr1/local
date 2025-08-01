@@ -52,8 +52,8 @@ type SessionMetrics struct {
 	mutex          sync.RWMutex
 }
 
-// NewSessionManager creates a new simplified session manager
-func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, logger *logrus.Logger) *SessionManager {
+// NewSessionManager creates a new session manager with database storage
+func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, storage SessionStorage, logger *logrus.Logger) *SessionManager {
 	if config == nil {
 		config = models.DefaultSessionConfig()
 	}
@@ -62,11 +62,9 @@ func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, log
 		jwtManager: jwtManager,
 		logger:     logger,
 		config:     config,
+		storage:    storage,
 		metrics:    &SessionMetrics{},
 	}
-
-	// Initialize storage based on configuration
-	sm.storage = sm.initializeStorage()
 
 	// Start background cleanup process
 	go sm.startCleanupProcess()
@@ -74,7 +72,8 @@ func NewSessionManager(jwtManager *JWTManager, config *models.SessionConfig, log
 	logger.WithFields(logrus.Fields{
 		"max_sessions":     config.MaxConcurrentSessions,
 		"cleanup_interval": config.CleanupInterval,
-	}).Info("Session manager initialized")
+		"storage_type":     "database",
+	}).Info("Session manager initialized with database storage")
 
 	return sm
 }
@@ -436,17 +435,4 @@ func (sm *SessionManager) performCleanup() {
 	sm.logger.Debug("Session cleanup completed")
 }
 
-// Storage initialization - database storage is always set externally via SetDatabaseStorage
-func (sm *SessionManager) initializeStorage() SessionStorage {
-	// Temporary memory storage until database storage is set
-	sm.logger.Info("Using temporary memory storage until database storage is configured")
-	return NewMemorySessionStorage()
-}
-
-// SetDatabaseStorage sets the database storage after initialization
-func (sm *SessionManager) SetDatabaseStorage(storage SessionStorage) {
-	sm.mutex.Lock()
-	defer sm.mutex.Unlock()
-	sm.storage = storage
-	sm.logger.Info("Session manager switched to database storage")
-}
+// Database storage is now passed directly to constructor - no temporary storage needed
