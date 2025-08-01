@@ -53,14 +53,38 @@ build: ## Build the inventory service binary
 	@go build -o bin/inventory-service .
 	@echo "$(GREEN)✅ Build completed: bin/inventory-service$(RESET)"
 
-run: build ## Run the inventory service locally
+## 🚀 Local Development Commands
+
+start-locally: deps ## Run the service locally (no Docker)
+	@echo "$(CYAN)🛠️  Starting Inventory Service locally...$(RESET)"
+	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
+	@echo "$(CYAN)📝 Service will be available at: http://localhost:8084$(RESET)"
+	@go run main.go main_http_handler.go
+
+stop-locally: ## Stop local service (if running in background)
+	@echo "$(YELLOW)🛑 Stopping local Inventory Service...$(RESET)"
+	@pkill -f "go run main.go" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@pkill -f "inventory-service" 2>/dev/null || true
+	@echo "$(GREEN)✅ Local service stopped$(RESET)"
+
+## 🐳 Container Management Commands
+
+start-container: ## Start the inventory service in container (not implemented)
+	@echo "$(YELLOW)⚠️  Container mode not yet implemented for inventory service$(RESET)"
+	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
+
+stop-container: ## Stop the inventory service container (not implemented)
+	@echo "$(YELLOW)⚠️  Container mode not yet implemented for inventory service$(RESET)"
+
+# Legacy aliases for backward compatibility
+run: build ## [DEPRECATED] Use start-locally instead - Run the inventory service locally
 	@echo "$(CYAN)🚀 Running Inventory Service locally...$(RESET)"
 	@./bin/inventory-service
 
-dev: ## Run the service in development mode with auto-reload
-	@echo "$(CYAN)🛠️  Running Inventory Service in development mode...$(RESET)"
-	@echo "$(YELLOW)⚠️  Make sure database is running first!$(RESET)"
-	@go run main.go main_http_handler.go
+dev: start-locally ## [DEPRECATED] Use start-locally instead
+
+start: start-locally ## [DEPRECATED] Use start-locally instead
+stop: stop-locally ## [DEPRECATED] Use stop-locally instead
 
 clean: ## Clean build artifacts and cache
 	@echo "$(CYAN)🧹 Cleaning build artifacts...$(RESET)"

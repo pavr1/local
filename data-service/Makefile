@@ -45,6 +45,8 @@ fresh: clean deps start init test status info ## Complete fresh installation: cl
 	@echo "   Password: admin123"
 	@echo "   Role: super_admin (full system access)"
 
+## 🐳 Container Management Commands (Data Service Always Uses Containers)
+
 start: ## Start PostgreSQL and PgAdmin containers
 	@echo "$(CYAN)🍦 Starting Ice Cream Store Data Service...$(RESET)"
 	@./scripts/start.sh
@@ -55,6 +57,14 @@ stop: ## Stop all database containers
 
 restart: stop start ## Restart all database containers
 	@echo "$(GREEN)🔄 Data Service restarted successfully!$(RESET)"
+
+# Aliases for consistency with other services (data service always uses containers)
+start-locally: start ## [ALIAS] Start data service (always uses containers)
+stop-locally: stop ## [ALIAS] Stop data service containers
+
+start-docker: start ## [ALIAS] Start data service containers
+stop-docker: stop ## [ALIAS] Stop data service containers
+restart-docker: restart ## [ALIAS] Restart data service containers
 
 reset: ## Reset database (⚠️  DELETES ALL DATA)
 	@echo "$(RED)⚠️  WARNING: This will delete ALL database data!$(RESET)"

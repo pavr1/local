@@ -26,33 +26,57 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(YELLOW)🚀 Common Workflows:$(RESET)"
-	@echo "  $(GREEN)make install$(RESET)          # Complete setup and start service"
-	@echo "  $(GREEN)make fresh$(RESET)            # Fresh start: clean, build, start, test"
+	@echo "$(YELLOW)🚀 Local Development Workflows:$(RESET)"
+	@echo "  $(GREEN)make start-locally$(RESET)    # Run service locally (no Docker)"
+	@echo "  $(GREEN)make stop-locally$(RESET)     # Stop local service"
 	@echo "  $(GREEN)make test$(RESET)             # Run unit tests"
-	@echo "  $(GREEN)make logs -f$(RESET)          # Follow live logs"
+	@echo ""
+	@echo "$(YELLOW)🐳 Container Workflows:$(RESET)"
+	@echo "  $(GREEN)make start-container$(RESET)  # Start service in Docker"
+	@echo "  $(GREEN)make stop-container$(RESET)   # Stop Docker container"
+	@echo "  $(GREEN)make fresh$(RESET)            # Fresh container: clean, build, start, test"
 	@echo ""
 	@echo "$(YELLOW)📖 Prerequisites:$(RESET)"
-	@echo "  • Docker and Docker Compose must be running"
-	@echo "  • Data service must be running (cd ../data-service && make start)"
+	@echo "  Local: Go 1.21+, Data service running"
+	@echo "  Container: Docker and Docker Compose"
 	@echo ""
 
-## 🚀 Service Management Commands
+## 🚀 Local Development Commands
 
-start: fix-permissions ## Start the auth service container
-	@echo "$(CYAN)🚀 Starting Auth Service...$(RESET)"
+start-locally: deps ## Run the service locally (no Docker)
+	@echo "$(CYAN)🛠️  Starting Session Service locally...$(RESET)"
+	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
+	@echo "$(CYAN)📝 Service will be available at: http://localhost:8081$(RESET)"
+	@go run main.go
+
+stop-locally: ## Stop local service (if running in background)
+	@echo "$(YELLOW)🛑 Stopping local Session Service...$(RESET)"
+	@pkill -f "go run main.go" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@pkill -f "session-service" 2>/dev/null || true
+	@echo "$(GREEN)✅ Local service stopped$(RESET)"
+
+## 🐳 Container Management Commands
+
+start-container: fix-permissions ## Start the auth service container
+	@echo "$(CYAN)🚀 Starting Session Service container...$(RESET)"
 	@./scripts/start.sh
 
-stop: ## Stop the auth service container
-	@echo "$(YELLOW)🛑 Stopping Auth Service...$(RESET)"
+stop-container: ## Stop the auth service container
+	@echo "$(YELLOW)🛑 Stopping Session Service container...$(RESET)"
 	@./scripts/stop.sh
 
-restart: stop start ## Restart the auth service
-	@echo "$(GREEN)🔄 Auth Service restarted successfully!$(RESET)"
+restart-container: stop-container start-container ## Restart the auth service container
+	@echo "$(GREEN)🔄 Session Service container restarted successfully!$(RESET)"
 
-reset: fix-permissions ## Reset service (rebuild and restart)
-	@echo "$(YELLOW)🔄 Resetting Auth Service...$(RESET)"
+reset: fix-permissions ## Reset service (rebuild and restart container)
+	@echo "$(YELLOW)🔄 Resetting Session Service...$(RESET)"
 	@./scripts/reset.sh
+
+# Legacy aliases for backward compatibility
+start: start-container ## [DEPRECATED] Use start-container instead
+stop: stop-container ## [DEPRECATED] Use stop-container instead
+restart: restart-container ## [DEPRECATED] Use restart-container instead
+dev: start-locally ## [DEPRECATED] Use start-locally instead
 
 ## 📊 Monitoring & Debugging Commands
 
@@ -90,7 +114,7 @@ test-integration: fix-permissions ## Run integration tests (requires service to 
 		./scripts/test.sh; \
 	else \
 		echo "$(YELLOW)⚠️  Session service is not running, skipping integration tests$(RESET)"; \
-		echo "$(YELLOW)   Start the service with 'make start' to run integration tests$(RESET)"; \
+		echo "$(YELLOW)   Start the service with 'make start-locally' or 'make start-container'$(RESET)"; \
 	fi
 
 test-basic: ## Run basic connectivity test
@@ -120,10 +144,7 @@ build-fresh: fix-permissions ## Force rebuild the auth service container (no cac
 	@cd docker && docker-compose build --no-cache --force-rm
 	@echo "$(GREEN)✅ Fresh build completed!$(RESET)"
 
-dev: ## Run the service in development mode (without Docker)
-	@echo "$(CYAN)🛠️  Running Auth Service in development mode...$(RESET)"
-	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
-	@go run main.go
+
 
 deps: ## Install Go dependencies
 	@echo "$(CYAN)📦 Installing Go dependencies...$(RESET)"
@@ -143,7 +164,7 @@ format: ## Format Go code
 
 ## 📦 Setup & Installation Commands
 
-install: deps start ## Complete setup: install dependencies and start service
+install: deps start-container ## Complete setup: install dependencies and start service in container
 	@echo "$(GREEN)🎉 Auth Service installation completed!$(RESET)"
 	@echo "$(CYAN)📝 Service Details:$(RESET)"
 	@echo "   Auth API: http://localhost:8081"
@@ -155,7 +176,7 @@ install: deps start ## Complete setup: install dependencies and start service
 	@echo "   make test-login               # Test admin login"
 	@echo "   curl -X POST http://localhost:8081/api/v1/sessions/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}'"
 
-fresh: clean deps build-fresh start test status info ## Fresh start: clean, force rebuild, start, test, and show info
+fresh: clean deps build-fresh start-container test status info ## Fresh start: clean, force rebuild, start container, test, and show info
 	@echo "$(GREEN)🎉 Fresh Auth Service setup completed!$(RESET)"
 
 ## 🧹 Cleanup Commands
@@ -226,4 +247,4 @@ version: ## Show version information
 	@echo "Docker Compose: $$(docker-compose --version 2>/dev/null || echo 'Not available')"
 
 # List all targets for tab completion
-.PHONY: help start stop restart reset logs logs-follow status health test test-integration test-basic test-login build dev deps lint format install fresh clean clean-all info env version fix-permissions 
+.PHONY: help start-locally stop-locally start-container stop-container restart-container reset logs logs-follow status health test test-integration test-basic test-login build deps lint format install fresh clean clean-all info env version fix-permissions start stop restart dev 

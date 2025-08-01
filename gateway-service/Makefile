@@ -53,24 +53,41 @@ build: ## Build the gateway service binary
 	@go build -o bin/gateway-service .
 	@echo "$(GREEN)✅ Build completed: bin/gateway-service$(RESET)"
 
-run: build ## Run the gateway service locally
+## 🚀 Local Development Commands
+
+start-locally: deps ## Run the service locally (no Docker)
+	@echo "$(CYAN)🛠️  Starting Gateway Service locally...$(RESET)"
+	@echo "$(YELLOW)⚠️  Make sure all backend services are running first!$(RESET)"
+	@echo "$(CYAN)📝 Service will be available at: http://localhost:8082$(RESET)"
+	@go run *.go
+
+stop-locally: ## Stop local service (if running in background)
+	@echo "$(YELLOW)🛑 Stopping local Gateway Service...$(RESET)"
+	@pkill -f "go run" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@pkill -f "gateway-service" 2>/dev/null || true
+	@echo "$(GREEN)✅ Local service stopped$(RESET)"
+
+## 🐳 Container Management Commands
+
+start-container: ## Start the gateway service in container (not implemented)
+	@echo "$(YELLOW)⚠️  Container mode not yet implemented for gateway service$(RESET)"
+	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
+
+stop-container: ## Stop the gateway service container (not implemented)
+	@echo "$(YELLOW)⚠️  Container mode not yet implemented for gateway service$(RESET)"
+
+# Legacy aliases for backward compatibility
+run: build ## [DEPRECATED] Use start-locally instead - Run the gateway service locally
 	@echo "$(CYAN)🚀 Running Gateway Service locally...$(RESET)"
 	@./bin/gateway-service
 
-dev: ## Run the service in development mode
-	@echo "$(CYAN)🛠️  Running Gateway Service in development mode...$(RESET)"
-	@echo "$(YELLOW)⚠️  Make sure all backend services are running first!$(RESET)"
-	@go run *.go
+dev: start-locally ## [DEPRECATED] Use start-locally instead
 
-start: build ## Start the gateway service (production mode)
-	@echo "$(CYAN)🚀 Starting Gateway Service...$(RESET)"
-	@./bin/gateway-service
+start: start-locally ## [DEPRECATED] Use start-locally instead
 
-stop: ## Stop the gateway service
-	@echo "$(CYAN)🛑 Stopping Gateway Service...$(RESET)"
-	@pkill -f gateway-service || echo "$(YELLOW)Service was not running$(RESET)"
+stop: stop-locally ## [DEPRECATED] Use stop-locally instead
 
-restart: stop start ## Restart the gateway service
+restart: stop-locally start-locally ## [DEPRECATED] Use stop-locally then start-locally instead
 	@echo "$(GREEN)✅ Gateway Service restarted!$(RESET)"
 
 clean: ## Clean build artifacts and cache

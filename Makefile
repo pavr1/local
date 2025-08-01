@@ -31,13 +31,16 @@ help: ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(CYAN)%-20s$(RESET) %s\n", $$1, $$2}'
 	@echo ""
-	@echo "$(YELLOW)🚀 Quick Start Commands:$(RESET)"
-	@echo "  $(GREEN)make fresh$(RESET)            # 🔥 Fresh install of ALL services"
-	@echo "  $(GREEN)make start$(RESET)            # 🚀 Start all services using start-local.sh"
-	@echo "  $(GREEN)make stop$(RESET)             # 🛑 Stop all services using stop-local.sh"
-	@echo "  $(GREEN)make start-all$(RESET)        # Start all services (individual Makefiles)"
-	@echo "  $(GREEN)make stop-all$(RESET)         # Stop all services (individual Makefiles)"
+	@echo "$(YELLOW)🚀 Local Development Commands:$(RESET)"
+	@echo "  $(GREEN)make start-locally$(RESET)    # 🚀 Start all services locally (no Docker)"
+	@echo "  $(GREEN)make stop-locally$(RESET)     # 🛑 Stop all local services"
+	@echo "  $(GREEN)make restart-locally$(RESET)  # 🔄 Restart all local services"
 	@echo "  $(GREEN)make status$(RESET)           # Check status of all services"
+	@echo ""
+	@echo "$(YELLOW)🐳 Container Commands:$(RESET)"
+	@echo "  $(GREEN)make start-docker$(RESET)     # Start all services in Docker containers"
+	@echo "  $(GREEN)make stop-docker$(RESET)      # Stop all Docker containers"
+	@echo "  $(GREEN)make fresh$(RESET)            # 🔥 Fresh install of ALL services"
 	@echo ""
 	@echo "$(YELLOW)🛠️  Individual Service Commands:$(RESET)"
 	@echo "  $(BLUE)make fresh-data$(RESET)       # Fresh install data service only"
@@ -81,19 +84,28 @@ fresh: banner fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start
 	@echo "  🌐 Gateway Service API: $(GREEN)http://localhost:8082$(RESET)"
 	@echo ""
 
-start-all: start-data start-auth start-orders start-gateway start-ui ## Start all services in correct order
-	@echo "$(GREEN)🚀 All services are starting up!$(RESET)"
+start-locally: start-data start-session start-orders start-inventory start-gateway ## Start all services locally in correct order
+	@echo "$(GREEN)🚀 All services are starting locally!$(RESET)"
 
-stop-all: stop-ui stop-gateway stop-orders stop-auth stop-data ## Stop all services in reverse order
-	@echo "$(YELLOW)🛑 All services stopped$(RESET)"
+stop-locally: stop-gateway stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
+	@echo "$(YELLOW)🛑 All local services stopped$(RESET)"
 
-restart-all: stop-all start-all ## Restart all services
-	@echo "$(GREEN)🔄 All services restarted!$(RESET)"
+restart-locally: stop-locally start-locally ## Restart all local services
+	@echo "$(GREEN)🔄 All local services restarted!$(RESET)"
 
-test-all: test-data test-auth test-orders test-inventory test-gateway test-ui ## Test all services
+start-docker: start-data-container start-session-container start-orders-container start-inventory-container start-gateway-container ## Start all services in Docker containers
+	@echo "$(GREEN)🚀 All services are starting in Docker containers!$(RESET)"
+
+stop-docker: stop-gateway-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
+	@echo "$(YELLOW)🛑 All Docker containers stopped$(RESET)"
+
+restart-docker: stop-docker start-docker ## Restart all Docker containers
+	@echo "$(GREEN)🔄 All Docker containers restarted!$(RESET)"
+
+test-all: test-data test-session test-orders test-inventory test-gateway ## Test all services
 	@echo "$(GREEN)🧪 All service tests completed!$(RESET)"
 
-status: status-data status-auth status-orders status-gateway status-ui ## Check status of all services
+status: status-data status-session status-orders status-inventory status-gateway ## Check status of all services
 	@echo "$(CYAN)📊 System status check completed$(RESET)"
 
 health-all: health-data health-auth health-orders health-gateway health-ui ## Check health of all services
@@ -152,17 +164,17 @@ final-status: ## Final status check after fresh installation
 
 ## 🚀 Local Environment Commands (Using Shell Scripts)
 
-start: ## Start all services using start-local.sh script
+start-script: ## Start all services using start-local.sh script
 	@echo "$(CYAN)🚀 Starting all services with start-local.sh...$(RESET)"
 	@./start-local.sh
 	@echo "$(GREEN)✅ All services started successfully!$(RESET)"
 
-stop: ## Stop all services using stop-local.sh script
+stop-script: ## Stop all services using stop-local.sh script
 	@echo "$(YELLOW)🛑 Stopping all services with stop-local.sh...$(RESET)"
 	@./stop-local.sh
 	@echo "$(YELLOW)✅ All services stopped successfully!$(RESET)"
 
-restart: stop start ## Restart all services using shell scripts
+restart-script: stop-script start-script ## Restart all services using shell scripts
 	@echo "$(GREEN)🔄 All services restarted using shell scripts!$(RESET)"
 
 ## 📊 Individual Service - Fresh Install Commands
@@ -194,45 +206,89 @@ fresh-ui: ## Fresh install UI service only
 
 ## 🎛️  Individual Service - Management Commands
 
-start-data: ## Start data service
+## 🚀 Local Development Service Commands
+
+start-data: ## Start data service locally (containers for DB only)
 	@echo "$(CYAN)🗄️  Starting Data Service...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) start
 
-start-auth: ## Start auth service
-	@echo "$(CYAN)🔐 Starting Auth Service...$(RESET)"
-	@cd $(SESSION_SERVICE) && $(MAKE) start
+start-session: ## Start session service locally
+	@echo "$(CYAN)🔐 Starting Session Service locally...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) start-locally
 
-start-orders: ## Start orders service
-	@echo "$(CYAN)📦 Starting Orders Service...$(RESET)"
-	@cd $(ORDERS_SERVICE) && $(MAKE) start
+start-orders: ## Start orders service locally
+	@echo "$(CYAN)📦 Starting Orders Service locally...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) start-locally
 
-start-gateway: ## Start gateway service
-	@echo "$(CYAN)🌐 Starting Gateway Service...$(RESET)"
-	@cd $(GATEWAY_SERVICE) && $(MAKE) start
+start-inventory: ## Start inventory service locally
+	@echo "$(CYAN)📋 Starting Inventory Service locally...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) start-locally
 
-start-ui: ## Start UI service
-	@echo "$(CYAN)🎨 Starting UI Service...$(RESET)"
-	@cd $(UI_SERVICE) && $(MAKE) start
+start-gateway: ## Start gateway service locally
+	@echo "$(CYAN)🌐 Starting Gateway Service locally...$(RESET)"
+	@cd $(GATEWAY_SERVICE) && $(MAKE) start-locally
 
 stop-data: ## Stop data service
 	@echo "$(YELLOW)🗄️  Stopping Data Service...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) stop
 
-stop-auth: ## Stop auth service
-	@echo "$(YELLOW)🔐 Stopping Auth Service...$(RESET)"
-	@cd $(SESSION_SERVICE) && $(MAKE) stop
+stop-session: ## Stop session service locally
+	@echo "$(YELLOW)🔐 Stopping Session Service...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) stop-locally
 
-stop-orders: ## Stop orders service
+stop-orders: ## Stop orders service locally
 	@echo "$(YELLOW)📦 Stopping Orders Service...$(RESET)"
-	@cd $(ORDERS_SERVICE) && $(MAKE) stop
+	@cd $(ORDERS_SERVICE) && $(MAKE) stop-locally
 
-stop-gateway: ## Stop gateway service
+stop-inventory: ## Stop inventory service locally
+	@echo "$(YELLOW)📋 Stopping Inventory Service...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-locally
+
+stop-gateway: ## Stop gateway service locally
 	@echo "$(YELLOW)🌐 Stopping Gateway Service...$(RESET)"
-	@cd $(GATEWAY_SERVICE) && $(MAKE) stop
+	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-locally
 
-stop-ui: ## Stop UI service
-	@echo "$(YELLOW)🎨 Stopping UI Service...$(RESET)"
-	@cd $(UI_SERVICE) && $(MAKE) stop
+## 🐳 Container Service Commands
+
+start-data-container: ## Start data service in container
+	@echo "$(CYAN)🗄️  Starting Data Service container...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) start
+
+start-session-container: ## Start session service in container
+	@echo "$(CYAN)🔐 Starting Session Service container...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) start-container
+
+start-orders-container: ## Start orders service in container
+	@echo "$(CYAN)📦 Starting Orders Service container...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) start-container
+
+start-inventory-container: ## Start inventory service in container
+	@echo "$(CYAN)📋 Starting Inventory Service container...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) start-container
+
+start-gateway-container: ## Start gateway service in container
+	@echo "$(CYAN)🌐 Starting Gateway Service container...$(RESET)"
+	@cd $(GATEWAY_SERVICE) && $(MAKE) start-container
+
+stop-data-container: ## Stop data service container
+	@echo "$(YELLOW)🗄️  Stopping Data Service container...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) stop
+
+stop-session-container: ## Stop session service container
+	@echo "$(YELLOW)🔐 Stopping Session Service container...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) stop-container
+
+stop-orders-container: ## Stop orders service container
+	@echo "$(YELLOW)📦 Stopping Orders Service container...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) stop-container
+
+stop-inventory-container: ## Stop inventory service container
+	@echo "$(YELLOW)📋 Stopping Inventory Service container...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-container
+
+stop-gateway-container: ## Stop gateway service container
+	@echo "$(YELLOW)🌐 Stopping Gateway Service container...$(RESET)"
+	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-container
 
 ## 🔍 Individual Service - Status & Testing Commands
 
@@ -429,4 +485,4 @@ version: ## Show version information for all services
 	@cd $(UI_SERVICE) && $(MAKE) version || true
 
 # List all targets for tab completion
-.PHONY: help fresh start stop restart start-all stop-all restart-all test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-auth start-orders start-gateway stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-gateway start-script stop-script restart-script stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 

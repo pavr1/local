@@ -75,39 +75,30 @@ func main() {
 	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
 
-	// ==== SESSION MANAGEMENT ENDPOINTS ====
+	// ==== PURE PROXY ROUTING TO SERVICES ====
+
+	// Session service endpoints - pure proxy routing
+	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionPublicRouter := api.PathPrefix("/v1/sessions/p").Subrouter()
-	sessionPublicRouter.HandleFunc("/login", sessionMiddleware.SessionAwareLoginHandler(config.SessionServiceURL)).Methods("POST")
-	sessionPublicRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate")).Methods("POST")
-	sessionPublicRouter.HandleFunc("/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login")).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate")).Methods("POST")
+	sessionRouter.HandleFunc("/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
 
-	// Protected session endpoints (require valid session)
-	sessionProtectedRouter := api.PathPrefix("/v1/sessions").Subrouter()
-	sessionProtectedRouter.Use(sessionMiddleware.ValidateSession)
-	sessionProtectedRouter.HandleFunc("/logout", sessionMiddleware.SessionAwareLogoutHandler(config.SessionServiceURL)).Methods("POST")
-	sessionProtectedRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh")).Methods("POST")
-	sessionProtectedRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
-	sessionProtectedRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
+	// Protected session endpoints - session service handles authentication
+	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout")).Methods("POST")
+	sessionRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh")).Methods("POST")
+	sessionRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
+	sessionRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
 
-	// Public health endpoints for other services (no session validation required) - /p/ prefix
-	ordersPublicRouter := api.PathPrefix("/v1/orders/p").Subrouter()
-	ordersPublicRouter.HandleFunc("/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
-
-	inventoryPublicRouter := api.PathPrefix("/v1/inventory/p").Subrouter()
-	inventoryPublicRouter.HandleFunc("/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
-
-	// ==== PROTECTED BUSINESS SERVICE ROUTES ====
-
-	// Orders service - all routes require session validation
+	// Orders service endpoints - pure proxy routing
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
-	ordersRouter.Use(sessionMiddleware.ValidateSession)
+	ordersRouter.HandleFunc("/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
 	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
 
-	// Inventory service - all routes require session validation
+	// Inventory service endpoints - pure proxy routing
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	inventoryRouter.Use(sessionMiddleware.ValidateSession)
+	inventoryRouter.HandleFunc("/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS

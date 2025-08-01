@@ -28,11 +28,30 @@ install: ## Install dependencies
 	@npm install
 	@echo "$(GREEN)✅ Dependencies installed!$(RESET)"
 
-start: ## Start UI development server
-	@echo "$(CYAN)🚀 Starting UI development server...$(RESET)"
+## 🚀 Local Development Commands
+
+start-locally: ## Start UI development server locally
+	@echo "$(CYAN)🚀 Starting UI development server locally...$(RESET)"
+	@echo "$(CYAN)📝 Service will be available at: http://localhost:3000$(RESET)"
 	@npm start
 
-dev: ## Start UI server and open browser
+stop-locally: ## Stop UI development server (manual process)
+	@echo "$(YELLOW)🛑 To stop UI development server:$(RESET)"
+	@echo "$(YELLOW)   Press Ctrl+C in the terminal running the server$(RESET)"
+	@echo "$(YELLOW)   Or run: pkill -f 'npm start' || pkill -f 'live-server'$(RESET)"
+
+## 🐳 Container Management Commands
+
+start-docker: ## Start UI in Docker container (not implemented)
+	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
+	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
+
+stop-docker: ## Stop UI Docker container (not implemented)
+	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
+
+# Legacy aliases for backward compatibility
+start: start-locally ## [DEPRECATED] Use start-locally instead
+dev: ## [DEPRECATED] Start UI server and open browser - use start-locally instead
 	@echo "$(CYAN)🚀 Starting UI development server with browser...$(RESET)"
 	@npm run dev
 
@@ -98,4 +117,4 @@ version: ## Show version information
 	@npm --version 2>/dev/null || echo "NPM: Not installed"
 
 # List all targets for tab completion
-.PHONY: help install start dev build test status health clean fresh info logs version 
+.PHONY: help install start-locally stop-locally start-docker stop-docker start dev build test status health clean fresh info logs version 

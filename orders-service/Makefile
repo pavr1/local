@@ -37,18 +37,38 @@ help: ## Show this help message
 	@echo "  • Data service must be running (cd ../data-service && make start)"
 	@echo ""
 
-## 🚀 Service Management Commands
+## 🚀 Local Development Commands
 
-start: fix-permissions ## Start the orders service container
-	@echo "$(CYAN)🚀 Starting Orders Service...$(RESET)"
+start-locally: deps ## Run the service locally (no Docker)
+	@echo "$(CYAN)🛠️  Starting Orders Service locally...$(RESET)"
+	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
+	@echo "$(CYAN)📝 Service will be available at: http://localhost:8083$(RESET)"
+	@go run main.go
+
+stop-locally: ## Stop local service (if running in background)
+	@echo "$(YELLOW)🛑 Stopping local Orders Service...$(RESET)"
+	@pkill -f "go run main.go" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@pkill -f "orders-service" 2>/dev/null || true
+	@echo "$(GREEN)✅ Local service stopped$(RESET)"
+
+## 🐳 Container Management Commands
+
+start-container: fix-permissions ## Start the orders service container
+	@echo "$(CYAN)🚀 Starting Orders Service container...$(RESET)"
 	@./scripts/start.sh
 
-stop: ## Stop the orders service container
-	@echo "$(YELLOW)🛑 Stopping Orders Service...$(RESET)"
+stop-container: ## Stop the orders service container
+	@echo "$(YELLOW)🛑 Stopping Orders Service container...$(RESET)"
 	@./scripts/stop.sh
 
-restart: stop start ## Restart the orders service
-	@echo "$(GREEN)🔄 Orders Service restarted successfully!$(RESET)"
+restart-container: stop-container start-container ## Restart the orders service container
+	@echo "$(GREEN)🔄 Orders Service container restarted successfully!$(RESET)"
+
+# Legacy aliases for backward compatibility
+start: start-container ## [DEPRECATED] Use start-container instead
+stop: stop-container ## [DEPRECATED] Use stop-container instead
+restart: restart-container ## [DEPRECATED] Use restart-container instead
+dev: start-locally ## [DEPRECATED] Use start-locally instead
 
 reset: fix-permissions ## Reset service (rebuild and restart)
 	@echo "$(YELLOW)🔄 Resetting Orders Service...$(RESET)"
