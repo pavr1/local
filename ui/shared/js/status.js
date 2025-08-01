@@ -114,29 +114,22 @@ class StatusService {
     updateStatusIndicator(element, status) {
         if (!element) return;
         
-        // Remove existing status classes
-        element.classList.remove('status-healthy', 'status-degraded', 'status-unhealthy');
+        // Remove existing status classes (correct classes that exist in CSS)
+        element.classList.remove('online', 'warning', 'offline', 'loading');
         
-        // Add appropriate status class
-        element.classList.add(`status-${status}`);
-        
-        // Update indicator content/color
+        // Add appropriate status class based on health status
         switch (status) {
             case 'healthy':
-                element.style.color = '#28a745';
-                element.textContent = '●';
+                element.classList.add('online');
                 break;
             case 'degraded':
-                element.style.color = '#ffc107';
-                element.textContent = '●';
+                element.classList.add('warning');
                 break;
             case 'unhealthy':
-                element.style.color = '#dc3545';
-                element.textContent = '●';
+                element.classList.add('offline');
                 break;
             default:
-                element.style.color = '#6c757d';
-                element.textContent = '○';
+                element.classList.add('loading');
         }
     }
 
