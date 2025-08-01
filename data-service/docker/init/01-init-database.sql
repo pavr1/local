@@ -30,8 +30,12 @@ CREATE TABLE suppliers (
 CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ingredient_name VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
+    ingredient_type VARCHAR(100),
+    unit_of_measure VARCHAR(50),
+    cost_per_unit DECIMAL(10,2) CHECK (cost_per_unit >= 0),
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    minimum_stock_level INTEGER CHECK (minimum_stock_level >= 0),
+    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

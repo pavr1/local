@@ -159,13 +159,15 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 			"status": "%s",
 			"timestamp": "%s",
 			"entities": {
-				"suppliers": "%s"
+				"suppliers": "%s",
+				"ingredients": "%s"
 			}
 		}`,
 			healthData["service"],
 			healthData["status"],
 			time.Now().Format(time.RFC3339),
-			healthData["entities"].(map[string]string)["suppliers"])
+			healthData["entities"].(map[string]string)["suppliers"],
+			healthData["entities"].(map[string]string)["ingredients"])
 	}).Methods("GET")
 
 	// Inventory module endpoints
@@ -189,8 +191,25 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// DELETE /api/v1/inventory/suppliers/{id} - Delete supplier
 	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().DeleteSupplier).Methods("DELETE")
 
+	// Ingredients endpoints under inventory
+	ingredientsRouter := inventoryRouter.PathPrefix("/ingredients").Subrouter()
+
+	// GET /api/v1/inventory/ingredients - List all ingredients
+	ingredientsRouter.HandleFunc("", mainHandler.GetIngredientsHandler().ListIngredients).Methods("GET")
+
+	// POST /api/v1/inventory/ingredients - Create new ingredient
+	ingredientsRouter.HandleFunc("", mainHandler.GetIngredientsHandler().CreateIngredient).Methods("POST")
+
+	// GET /api/v1/inventory/ingredients/{id} - Get ingredient by ID
+	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().GetIngredient).Methods("GET")
+
+	// PUT /api/v1/inventory/ingredients/{id} - Update ingredient
+	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().UpdateIngredient).Methods("PUT")
+
+	// DELETE /api/v1/inventory/ingredients/{id} - Delete ingredient
+	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().DeleteIngredient).Methods("DELETE")
+
 	// TODO: Add other entity endpoints under inventory when implemented
-	// ingredientsRouter := inventoryRouter.PathPrefix("/ingredients").Subrouter()
 	// existencesRouter := inventoryRouter.PathPrefix("/existences").Subrouter()
 	// recipesRouter := inventoryRouter.PathPrefix("/recipes").Subrouter()
 
