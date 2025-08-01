@@ -131,11 +131,11 @@
 										"value": "application/json"
 									}
 								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/logout",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "logout"]
-								},
+											"url": {
+				"raw": "{{gateway_url}}/api/v1/sessions/logout",
+				"host": ["{{gateway_url}}"],
+				"path": ["api", "v1", "sessions", "logout"]
+			},
 								"description": "Logout and revoke current session"
 							}
 						},
@@ -160,19 +160,23 @@
 						{
 							"name": "Validate Session",
 							"request": {
-								"method": "GET",
+								"method": "POST",
 								"header": [
 									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
+										"key": "Content-Type",
+										"value": "application/json"
 									}
 								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
+								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "validate"]
+									"path": ["api", "v1", "sessions", "p", "validate"]
 								},
-								"description": "Validate current session and token"
+								"description": "Validate a JWT token against stored sessions"
 							}
 						},
 						{
@@ -208,14 +212,114 @@
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "token-info"]
 								},
-								"description": "Get detailed information about current JWT token"
+								"description": "Get detailed token information and metadata"
+							}
+						},
+						{
+							"name": "Get Session Statistics",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/sessions/stats",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "sessions", "stats"]
+								},
+								"description": "Get session statistics and analytics"
+							}
+						},
+						{
+							"name": "Get User Sessions",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/sessions/user/:userId",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "sessions", "user", ":userId"],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "user-uuid",
+											"description": "UUID of the user"
+										}
+									]
+								},
+								"description": "Get all active sessions for a specific user"
+							}
+						},
+						{
+							"name": "Revoke Specific Session",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/sessions/:sessionId",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "sessions", ":sessionId"],
+									"variable": [
+										{
+											"key": "sessionId",
+											"value": "session-uuid",
+											"description": "UUID of the session to revoke"
+										}
+									]
+								},
+								"description": "Revoke a specific session by ID"
+							}
+						},
+						{
+							"name": "Revoke All User Sessions",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/sessions/user/:userId?exclude_current=true",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "sessions", "user", ":userId"],
+									"query": [
+										{
+											"key": "exclude_current",
+											"value": "true",
+											"description": "Whether to exclude the current session from revocation"
+										}
+									],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "user-uuid",
+											"description": "UUID of the user"
+										}
+									]
+								},
+								"description": "Revoke all sessions for a user (optionally excluding current session)"
 							}
 						}
 					],
-					"description": "Protected authentication endpoints (require valid session)"
+					"description": "Protected authentication endpoints (token required)"
 				}
 			],
-			"description": "Authentication endpoints proxied through gateway to session service"
+			"description": "Authentication and session management endpoints"
 		},
 		{
 			"name": "📦 Orders Management (via Gateway)",
@@ -567,147 +671,6 @@
 				}
 			],
 			"description": "Inventory management endpoints for suppliers and stock"
-		},
-		{
-			"name": "📋 Session Management (via Gateway)",
-			"item": [
-				{
-					"name": "Session Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/p/health",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "p", "health"]
-						},
-						"description": "Check session management service health"
-					}
-				},
-				{
-					"name": "Validate Session Token",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
-						},
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "validate"]
-						},
-						"description": "Validate a JWT token against stored sessions"
-					}
-				},
-				{
-					"name": "Get Session Statistics",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/stats",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "stats"]
-						},
-						"description": "Get session statistics and analytics"
-					}
-				},
-				{
-					"name": "Get User Sessions",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/user/:userId",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "user", ":userId"],
-							"variable": [
-								{
-									"key": "userId",
-									"value": "user-uuid",
-									"description": "UUID of the user"
-								}
-							]
-						},
-						"description": "Get all active sessions for a specific user"
-					}
-				},
-				{
-					"name": "Revoke Specific Session",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/:sessionId",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", ":sessionId"],
-							"variable": [
-								{
-									"key": "sessionId",
-									"value": "session-uuid",
-									"description": "UUID of the session to revoke"
-								}
-							]
-						},
-						"description": "Revoke a specific session by session ID"
-					}
-				},
-				{
-					"name": "Revoke All User Sessions",
-					"request": {
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/sessions/user/:userId?exclude_current=true",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "sessions", "user", ":userId"],
-							"query": [
-								{
-									"key": "exclude_current",
-									"value": "true",
-									"description": "Exclude current session from revocation"
-								}
-							],
-							"variable": [
-								{
-									"key": "userId",
-									"value": "user-uuid",
-									"description": "UUID of the user"
-								}
-							]
-						},
-						"description": "Revoke all sessions for a user (optionally excluding current session)"
-					}
-				}
-			],
-			"description": "Session management endpoints for user sessions and tokens"
 		},
 		{
 			"name": "🔧 Direct Service Access (Dev/Debug)",

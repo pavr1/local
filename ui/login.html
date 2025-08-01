@@ -148,28 +148,8 @@
                         </p>
                     </div>
 
-                    <!-- System Status -->
-                    <div class="system-status mt-5">
-                        <h6 class="text-muted mb-3">System Status</h6>
-                        <div class="status-grid">
-                            <div class="status-item">
-                                <div class="status-indicator loading" id="gateway-status"></div>
-                                <span>Gateway</span>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-indicator loading" id="auth-status"></div>
-                                <span>Auth</span>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-indicator loading" id="orders-status"></div>
-                                <span>Orders</span>
-                            </div>
-                            <div class="status-item">
-                                <div class="status-indicator loading" id="inventory-status"></div>
-                                <span>Inventory</span>
-                            </div>
-                        </div>
-                    </div>
+                    <!-- System Status (Loaded Dynamically) -->
+                    <div id="system-status-container"></div>
                 </div>
             </div>
         </div>
@@ -212,6 +192,9 @@
     
     <!-- Custom Alert System -->
     <script src="shared/js/alerts.js?v=1.0"></script>
+    
+    <!-- Partial loader -->
+    <script src="shared/js/load-partials.js?v=1.0"></script>
     
     <!-- Login Page JavaScript -->
     <script>
@@ -467,7 +450,13 @@
         }
 
         // Initialize login page when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load system status partial
+            const loaded = await window.PartialLoader.loadSystemStatus('system-status-container');
+            if (loaded) {
+                console.log('✅ System status partial loaded');
+            }
+            
             new LoginPage();
         });
     </script>

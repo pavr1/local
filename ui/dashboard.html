@@ -343,24 +343,7 @@
                         
                         <div class="info-card mt-3">
                             <h5><i class="fas fa-server me-2"></i>Real-time System Status</h5>
-                            <div id="system-status" class="status-grid">
-                                <div class="status-item">
-                                    <span class="status-indicator" id="gateway-status"></span>
-                                    <span>Gateway Service</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-indicator" id="session-status"></span>
-                                    <span>Session Service</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-indicator" id="orders-service-status"></span>
-                                    <span>Orders Service</span>
-                                </div>
-                                <div class="status-item">
-                                    <span class="status-indicator" id="inventory-service-status"></span>
-                                    <span>Inventory Service</span>
-                                </div>
-                            </div>
+                            <div id="system-status-container"></div>
                         </div>
                     </div>
                 </div>
@@ -465,6 +448,9 @@
     <!-- Status Service -->
     <script src="shared/js/status.js?v=1.0"></script>
     
+    <!-- Partial loader -->
+    <script src="shared/js/load-partials.js?v=1.0"></script>
+    
     <!-- Dashboard JavaScript -->
     <script>
         class Dashboard {
@@ -508,26 +494,27 @@
             }
 
             startSystemMonitoring() {
-                if (statusService) {
+                if (window.statusService) {
                     // Start periodic health checks (shared service handles this)
-                    statusService.startPeriodicHealthCheck(15000); // Every 15 seconds
+                    window.statusService.startPeriodicHealthCheck(); // Use default 30-second interval
                     
-                    // Update UI status indicators every 30 seconds
+                    // Update UI status indicators when health checks complete
+                    // Listen for health check events instead of using separate timer
                     setInterval(() => {
                         this.updateSystemStatus();
-                    }, 30000);
+                    }, 30000); // Sync with health check interval
                     
                     // Initial status update
                     setTimeout(() => {
                         this.updateSystemStatus();
-                    }, 1000); // Wait a bit for initial health check to complete
+                    }, 2000); // Give initial health check more time to complete
                 }
             }
 
             async updateSystemStatus() {
                 try {
                     // Get latest health check results from shared service
-                    const healthCheck = statusService.getLastHealthCheck();
+                    const healthCheck = window.statusService.getLastHealthCheck();
                     if (!healthCheck) return;
                     
                     const results = healthCheck.results;
@@ -546,7 +533,7 @@
                         if (elementId) {
                             const element = document.getElementById(elementId);
                             if (element) {
-                                statusService.updateStatusIndicator(element, status);
+                                window.statusService.updateStatusIndicator(element, status);
                             }
                         }
                         
@@ -601,13 +588,13 @@
         async function checkSystemHealth() {
             console.log('🏥 Running manual health check...');
             
-            if (!statusService) {
+            if (!window.statusService) {
                 Alert.error('Status Service Unavailable', 'Cannot perform health check at this time');
                 return;
             }
 
             try {
-                const results = await statusService.checkAllServices();
+                const results = await window.statusService.checkAllServices();
                 
                 let healthyCount = 0;
                 let totalCount = 0;
@@ -658,10 +645,16 @@
         }
 
         // Initialize dashboard when DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load system status partial
+            const loaded = await window.PartialLoader.loadSystemStatus('system-status-container');
+            if (loaded) {
+                console.log('✅ System status partial loaded');
+            }
+            
             // Wait for auth service to be available
             const checkServices = () => {
-                if (window.authService && window.statusService) {
+                if (window.authService && window.statusService && window.PartialLoader) {
                     new Dashboard();
                 } else {
                     console.log('⏳ Waiting for services to initialize...');
