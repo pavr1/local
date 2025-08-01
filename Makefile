@@ -86,6 +86,10 @@ fresh: banner fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start
 
 start-locally: start-data start-session start-orders start-inventory start-gateway ## Start all services locally in correct order
 	@echo "$(GREEN)🚀 All services are starting locally!$(RESET)"
+	@echo "$(YELLOW)⏳ Waiting for services to initialize...$(RESET)"
+	@sleep 3
+	@echo "$(GREEN)✅ All services should now be running in background$(RESET)"
+	@echo "$(CYAN)💡 Use 'make status' to check service health$(RESET)"
 
 stop-locally: stop-gateway stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
 	@echo "$(YELLOW)🛑 All local services stopped$(RESET)"
@@ -214,19 +218,23 @@ start-data: ## Start data service locally (containers for DB only)
 
 start-session: ## Start session service locally
 	@echo "$(CYAN)🔐 Starting Session Service locally...$(RESET)"
-	@cd $(SESSION_SERVICE) && $(MAKE) start-locally
+	@cd $(SESSION_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
 
 start-orders: ## Start orders service locally
 	@echo "$(CYAN)📦 Starting Orders Service locally...$(RESET)"
-	@cd $(ORDERS_SERVICE) && $(MAKE) start-locally
+	@cd $(ORDERS_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
 
 start-inventory: ## Start inventory service locally
 	@echo "$(CYAN)📋 Starting Inventory Service locally...$(RESET)"
-	@cd $(INVENTORY_SERVICE) && $(MAKE) start-locally
+	@cd $(INVENTORY_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
 
 start-gateway: ## Start gateway service locally
 	@echo "$(CYAN)🌐 Starting Gateway Service locally...$(RESET)"
-	@cd $(GATEWAY_SERVICE) && $(MAKE) start-locally
+	@cd $(GATEWAY_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
 
 stop-data: ## Stop data service
 	@echo "$(YELLOW)🗄️  Stopping Data Service...$(RESET)"

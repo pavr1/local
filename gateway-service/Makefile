@@ -59,7 +59,7 @@ start-locally: deps ## Run the service locally (no Docker)
 	@echo "$(CYAN)🛠️  Starting Gateway Service locally...$(RESET)"
 	@echo "$(YELLOW)⚠️  Make sure all backend services are running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8082$(RESET)"
-	@go run *.go
+	@go run main.go
 
 stop-locally: ## Stop local service (if running in background)
 	@echo "$(YELLOW)🛑 Stopping local Gateway Service...$(RESET)"
