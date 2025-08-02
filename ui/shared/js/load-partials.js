@@ -28,7 +28,12 @@ class PartialLoader {
     }
     
     static async loadSystemStatus(targetElementId = 'system-status-container') {
-        return await this.loadPartial('shared/partials/system-status.html', targetElementId);
+        // Determine the correct path based on current location
+        const currentPath = window.location.pathname;
+        const isInSubdirectory = currentPath.includes('/inventory/') || currentPath.includes('/expense/');
+        const partialPath = isInSubdirectory ? '../shared/partials/system-status.html' : 'shared/partials/system-status.html';
+        
+        return await this.loadPartial(partialPath, targetElementId);
     }
 }
 

@@ -290,6 +290,7 @@
                                 <li><strong>Session Service:</strong> JWT Authentication (Port 8081)</li>
                                 <li><strong>Orders Service:</strong> Order Management (Port 8083)</li>
                                 <li><strong>Inventory Service:</strong> Suppliers & Stock (Port 8084)</li>
+                                <li><strong>Expense Service:</strong> Receipts & Expenses (Port 8085)</li>
                                 <li><strong>Database:</strong> PostgreSQL (Port 5432)</li>
                             </ul>
                         </div>
@@ -395,6 +396,19 @@
                                         <p>Manage suppliers, ingredients & stock</p>
                                     </div>
                                     <span class="service-status" id="inventory-status">●</span>
+                                </button>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <button class="btn service-btn btn-outline-success w-100 h-100" onclick="navigateToService('expenses')">
+                                    <div class="service-icon">
+                                        <i class="fas fa-receipt"></i>
+                                    </div>
+                                    <div class="service-content">
+                                        <h5>Expense Management</h5>
+                                        <p>Track receipts, expenses & spending</p>
+                                    </div>
+                                    <span class="service-status" id="expenses-status">●</span>
                                 </button>
                             </div>
                             
@@ -509,6 +523,9 @@
                     break;
                 case 'inventory':
                     window.location.href = 'inventory/';
+                    break;
+                case 'expenses':
+                    window.location.href = 'expense/';
                     break;
                 case 'reports':
                     Alert.comingSoon('Reports & Analytics');
