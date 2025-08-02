@@ -64,24 +64,30 @@ func TestCorsMiddleware(t *testing.T) {
 
 // TestServiceConfigDefaults tests the default service configuration
 func TestServiceConfigDefaults(t *testing.T) {
-	config := ServiceConfig{
+	config := Config{
+		Port:                "8082",
 		SessionServiceURL:   "http://localhost:8081",
 		OrdersServiceURL:    "http://localhost:8083",
 		InventoryServiceURL: "http://localhost:8084",
+		ExpenseServiceURL:   "http://localhost:8085",
 	}
 
+	assert.Equal(t, "8082", config.Port)
 	assert.Equal(t, "http://localhost:8081", config.SessionServiceURL)
 	assert.Equal(t, "http://localhost:8083", config.OrdersServiceURL)
 	assert.Equal(t, "http://localhost:8084", config.InventoryServiceURL)
+	assert.Equal(t, "http://localhost:8085", config.ExpenseServiceURL)
 }
 
 // TestServiceConfigWithEnvironmentVariables tests service configuration with environment variables
 func TestServiceConfigWithEnvironmentVariables(t *testing.T) {
 	// Set environment variables
 	envVars := map[string]string{
+		"GATEWAY_PORT":          "9090",
 		"SESSION_SERVICE_URL":   "http://session.example.com:8081",
 		"ORDERS_SERVICE_URL":    "http://orders.example.com:8083",
 		"INVENTORY_SERVICE_URL": "http://inventory.example.com:8084",
+		"EXPENSE_SERVICE_URL":   "http://expense.example.com:8085",
 	}
 
 	for key, value := range envVars {
@@ -92,17 +98,21 @@ func TestServiceConfigWithEnvironmentVariables(t *testing.T) {
 	// Create configuration using environment variables
 	config := getServiceConfig()
 
+	assert.Equal(t, "9090", config.Port)
 	assert.Equal(t, "http://session.example.com:8081", config.SessionServiceURL)
 	assert.Equal(t, "http://orders.example.com:8083", config.OrdersServiceURL)
 	assert.Equal(t, "http://inventory.example.com:8084", config.InventoryServiceURL)
+	assert.Equal(t, "http://expense.example.com:8085", config.ExpenseServiceURL)
 }
 
 // Helper function to get service config (extracted for testing)
-func getServiceConfig() ServiceConfig {
-	return ServiceConfig{
+func getServiceConfig() Config {
+	return Config{
+		Port:                getEnv("GATEWAY_PORT", "8082"),
 		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
 		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
 		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
+		ExpenseServiceURL:   getEnv("EXPENSE_SERVICE_URL", "http://localhost:8085"),
 	}
 }
 
@@ -285,6 +295,7 @@ func TestGatewayServiceSpecifics(t *testing.T) {
 		assert.Contains(t, config.SessionServiceURL, "localhost:8081")
 		assert.Contains(t, config.OrdersServiceURL, "localhost:8083")
 		assert.Contains(t, config.InventoryServiceURL, "localhost:8084")
+		assert.Contains(t, config.ExpenseServiceURL, "localhost:8085")
 	})
 
 	t.Run("gateway acts as single entry point", func(t *testing.T) {
