@@ -39,7 +39,7 @@ help: ## Display this help message
 build: deps ## Build the expense service binary
 	@echo "Building $(SERVICE_NAME)..."
 	@mkdir -p $(BUILD_DIR)
-	@go build -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_FILE)
+	@go build -o $(BUILD_DIR)/$(BINARY_NAME) .
 	@echo "✅ Build completed: $(BUILD_DIR)/$(BINARY_NAME)"
 
 clean: ## Clean build artifacts and coverage reports
