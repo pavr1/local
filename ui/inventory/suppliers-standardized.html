@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ice Cream Store - Suppliers Management</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="../shared/css/style.css?v=1.2">
+    
+    <style>
+        /* Page-specific styles only - layout handled by framework */
+        .suppliers-header {
+            background: var(--gradient-success);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 2rem;
+        }
+
+        .filter-controls {
+            background: var(--light-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+
+        .supplier-card {
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .supplier-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .supplier-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .supplier-info h5 {
+            color: var(--primary-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .supplier-contact {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .supplier-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .supplier-status.active {
+            background: var(--success-light);
+            color: var(--success-color);
+        }
+
+        .supplier-status.inactive {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .supplier-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .stats-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stats-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-label {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-color);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Header -->
+    <div class="suppliers-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-truck me-3"></i>Suppliers Management</h1>
+                <p class="mb-0 opacity-75">Manage supplier relationships and contact information</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-light" onclick="refreshSuppliers()" title="Refresh">
+                    <i class="fas fa-refresh"></i>
+                </button>
+                <button class="btn btn-light" onclick="createNewSupplier()">
+                    <i class="fas fa-plus me-2"></i>New Supplier
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">12</div>
+                <div class="stats-label">Total Suppliers</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="border-left-color: var(--success-color);">
+                <div class="stats-number" style="color: var(--success-color);">10</div>
+                <div class="stats-label">Active</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="border-left-color: var(--warning-color);">
+                <div class="stats-number" style="color: var(--warning-color);">2</div>
+                <div class="stats-label">Inactive</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card" style="border-left-color: var(--info-color);">
+                <div class="stats-number" style="color: var(--info-color);">5</div>
+                <div class="stats-label">This Month</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search Controls -->
+    <div class="filter-controls">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" class="form-control search-input" placeholder="Search suppliers...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select id="status-filter" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="sort-order" class="form-select">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-info w-100" onclick="importSuppliers()">
+                    <i class="fas fa-upload me-2"></i>Import
+                </button>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" onclick="exportSuppliers()">
+                    <i class="fas fa-download me-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppliers List -->
+    <div id="suppliers-container">
+        <!-- Sample supplier cards for demo -->
+        <div class="supplier-card" onclick="viewSupplier('demo-1')">
+            <div class="d-flex align-items-center">
+                <div class="supplier-avatar me-3">
+                    FD
+                </div>
+                <div class="supplier-info flex-grow-1">
+                    <h5>Fresh Dairy Co.</h5>
+                    <div class="supplier-contact">
+                        <i class="fas fa-envelope me-2"></i>contact@freshdairy.com
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-phone me-2"></i>(555) 123-4567
+                    </div>
+                    <div class="mt-2">
+                        <span class="supplier-status active">Active</span>
+                        <small class="text-muted ms-2">Last order: 3 days ago</small>
+                    </div>
+                </div>
+                <div class="supplier-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewSupplier('demo-1')">
+                        <i class="fas fa-eye me-1"></i>View
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editSupplier('demo-1')">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); createOrder('demo-1')">
+                        <i class="fas fa-plus me-1"></i>Order
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="supplier-card" onclick="viewSupplier('demo-2')">
+            <div class="d-flex align-items-center">
+                <div class="supplier-avatar me-3" style="background: var(--gradient-info);">
+                    SS
+                </div>
+                <div class="supplier-info flex-grow-1">
+                    <h5>Sweet Supply Inc.</h5>
+                    <div class="supplier-contact">
+                        <i class="fas fa-envelope me-2"></i>orders@sweetsupply.com
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-phone me-2"></i>(555) 987-6543
+                    </div>
+                    <div class="mt-2">
+                        <span class="supplier-status active">Active</span>
+                        <small class="text-muted ms-2">Last order: 1 week ago</small>
+                    </div>
+                </div>
+                <div class="supplier-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewSupplier('demo-2')">
+                        <i class="fas fa-eye me-1"></i>View
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editSupplier('demo-2')">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" onclick="event.stopPropagation(); createOrder('demo-2')">
+                        <i class="fas fa-plus me-1"></i>Order
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="supplier-card" onclick="viewSupplier('demo-3')">
+            <div class="d-flex align-items-center">
+                <div class="supplier-avatar me-3" style="background: var(--gradient-warning);">
+                    GO
+                </div>
+                <div class="supplier-info flex-grow-1">
+                    <h5>Gourmet Organics</h5>
+                    <div class="supplier-contact">
+                        <i class="fas fa-envelope me-2"></i>info@gourmetorganics.com
+                        <span class="mx-2">•</span>
+                        <i class="fas fa-phone me-2"></i>(555) 456-7890
+                    </div>
+                    <div class="mt-2">
+                        <span class="supplier-status inactive">Inactive</span>
+                        <small class="text-muted ms-2">Last order: 2 months ago</small>
+                    </div>
+                </div>
+                <div class="supplier-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewSupplier('demo-3')">
+                        <i class="fas fa-eye me-1"></i>View
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editSupplier('demo-3')">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" onclick="event.stopPropagation(); reactivateSupplier('demo-3')">
+                        <i class="fas fa-power-off me-1"></i>Reactivate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Suppliers pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Previous</a>
+            </li>
+            <li class="page-item active">
+                <a class="page-link" href="#">1</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">2</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">3</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Font Awesome JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Configuration -->
+    <script src="../config.js?v=1.1"></script>
+    
+    <!-- Shared JavaScript -->
+    <script src="../shared/js/auth.js"></script>
+    <script src="../shared/js/status.js"></script>
+    <script src="../shared/js/alerts.js"></script>
+    <script src="../shared/js/load-partials.js"></script>
+
+    <script>
+        class SuppliersPageStandardized {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                console.log('🚚 Initializing Suppliers Management Page (Standardized Layout)...');
+                
+                // Setup standardized layout framework
+                await window.PartialLoader.setupStandardLayout({
+                    pageTitle: 'Suppliers Management',
+                    includeSidebar: true,
+                    includeHeader: true
+                });
+                
+                // Initialize authentication
+                const auth = new AuthService();
+                if (!auth.isAuthenticated()) {
+                    console.log('❌ User not authenticated, redirecting to login');
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                console.log('✅ Suppliers Management Page (Standardized) initialized successfully');
+            }
+
+            setupEventListeners() {
+                // Search and filter functionality
+                document.getElementById('search-input')?.addEventListener('input', () => this.applyFilters());
+                document.getElementById('status-filter')?.addEventListener('change', () => this.applyFilters());
+                document.getElementById('sort-order')?.addEventListener('change', () => this.applyFilters());
+            }
+
+            applyFilters() {
+                console.log('🔍 Applying supplier filters (demo functionality)');
+                // In real implementation, this would filter the suppliers
+            }
+        }
+
+        // Demo functions
+        function createNewSupplier() {
+            Swal.fire({
+                title: 'Create New Supplier',
+                text: 'This would open the supplier creation form in the real implementation.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Continue',
+                cancelButtonText: 'Cancel'
+            });
+        }
+
+        function viewSupplier(supplierId) {
+            Swal.fire({
+                title: 'View Supplier',
+                text: `This would show details for supplier ${supplierId} in the real implementation.`,
+                icon: 'info'
+            });
+        }
+
+        function editSupplier(supplierId) {
+            Swal.fire({
+                title: 'Edit Supplier',
+                text: `This would open the edit form for supplier ${supplierId}.`,
+                icon: 'info'
+            });
+        }
+
+        function createOrder(supplierId) {
+            Swal.fire({
+                title: 'Create Order',
+                text: `This would create a new order for supplier ${supplierId}.`,
+                icon: 'info'
+            });
+        }
+
+        function reactivateSupplier(supplierId) {
+            Swal.fire({
+                title: 'Reactivate Supplier?',
+                text: `This would reactivate supplier ${supplierId}.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, reactivate!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Reactivated!', 'Supplier has been reactivated.', 'success');
+                }
+            });
+        }
+
+        function refreshSuppliers() {
+            Swal.fire({
+                title: 'Refreshing...',
+                text: 'This would reload the suppliers data.',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function importSuppliers() {
+            Swal.fire({
+                title: 'Import Suppliers',
+                text: 'This would open the import dialog for CSV/Excel files.',
+                icon: 'info'
+            });
+        }
+
+        function exportSuppliers() {
+            Swal.fire({
+                title: 'Export Suppliers',
+                text: 'This would export suppliers to Excel/PDF.',
+                icon: 'info'
+            });
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.suppliersPageStandardized = new SuppliersPageStandardized();
+        });
+    </script>
+</body>
+</html> 

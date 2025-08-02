@@ -21,203 +21,243 @@
     <link rel="stylesheet" href="shared/css/style.css?v=1.2">
     
     <style>
-        body {
-            background: var(--gradient-primary);
-            min-height: 100vh;
-        }
-        
-        .main-container {
-            background: var(--white);
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-heavy);
-            margin: 2rem auto;
-            max-width: 1200px;
-            min-height: calc(100vh - 4rem);
-        }
-        
-        .page-header {
+        /* Page-specific styles only - layout handled by framework */
+        .orders-header {
             background: var(--gradient-primary);
             color: var(--white);
-            padding: 2rem;
-            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+            padding: 3rem 2rem;
+            text-align: center;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 2rem;
         }
-        
-        .page-content {
-            padding: 2rem;
-        }
-        
+
         .coming-soon {
             text-align: center;
-            padding: 4rem 2rem;
+            padding: 3rem 2rem;
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-light);
+            margin-bottom: 2rem;
         }
-        
+
         .coming-soon i {
             font-size: 4rem;
             color: var(--primary-color);
             margin-bottom: 2rem;
+            opacity: 0.8;
         }
-        
-        .back-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--white);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
-            transition: var(--transition);
+
+        .coming-soon h2 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
         }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: var(--white);
-            border-color: rgba(255, 255, 255, 0.5);
+
+        .coming-soon .lead {
+            color: var(--secondary-color);
+            margin-bottom: 3rem;
         }
-        
+
         .feature-btn {
-            min-height: 140px;
-            padding: 1.5rem;
+            background: var(--white);
+            border: 2px solid transparent;
+            border-radius: var(--border-radius-lg);
+            padding: 2rem 1.5rem;
             text-align: center;
-            border-width: 2px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        
+
         .feature-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-heavy);
         }
-        
+
+        .feature-btn.btn-outline-success:hover {
+            border-color: var(--success-color);
+            background: var(--success-light);
+        }
+
+        .feature-btn.btn-outline-info:hover {
+            border-color: var(--info-color);
+            background: var(--info-light);
+        }
+
+        .feature-btn.btn-outline-warning:hover {
+            border-color: var(--warning-color);
+            background: var(--warning-light);
+        }
+
+        .feature-btn.btn-outline-primary:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-light);
+        }
+
         .feature-icon {
             margin-bottom: 1rem;
         }
-        
+
         .feature-icon i {
             font-size: 2.5rem;
+            transition: var(--transition);
         }
-        
+
         .feature-content h5 {
             font-size: 1.1rem;
             font-weight: 600;
             margin-bottom: 0.5rem;
+            color: var(--dark-color);
         }
-        
+
         .feature-content p {
             font-size: 0.9rem;
             margin-bottom: 0;
             opacity: 0.8;
+            color: var(--secondary-color);
         }
-        
-        .btn-outline-success:hover .feature-content p,
-        .btn-outline-info:hover .feature-content p,
-        .btn-outline-warning:hover .feature-content p,
-        .btn-outline-primary:hover .feature-content p,
-        .btn-outline-danger:hover .feature-content p,
-        .btn-outline-secondary:hover .feature-content p {
+
+        .feature-btn:hover .feature-content p {
             opacity: 1;
+        }
+
+        .roadmap-section {
+            background: var(--light-color);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 2rem;
+        }
+
+        .roadmap-section h4 {
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .roadmap-item {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .roadmap-item h6 {
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .roadmap-item p {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .orders-header {
+                padding: 2rem 1rem;
+            }
+
+            .feature-btn {
+                padding: 1.5rem 1rem;
+                min-height: 150px;
+            }
+
+            .feature-icon i {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="main-container">
-            <!-- Page Header -->
-            <div class="page-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1><i class="fas fa-shopping-cart me-3"></i>Orders Management</h1>
-                        <p class="mb-0">Create, view, and manage customer orders</p>
+    <!-- Page Header -->
+    <div class="orders-header">
+        <div>
+            <i class="fas fa-shopping-cart fa-4x mb-3"></i>
+            <h1>Orders Management</h1>
+            <p class="mb-0 opacity-75">Create, view, and manage customer orders</p>
+        </div>
+    </div>
+
+    <!-- Coming Soon Section -->
+    <div class="coming-soon">
+        <i class="fas fa-tools"></i>
+        <h2>Orders Module Under Development</h2>
+        <p class="lead">This module is currently being developed and will include comprehensive order management features.</p>
+        
+        <!-- Feature Grid -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Create New Orders')">
+                    <div class="feature-icon">
+                        <i class="fas fa-plus-circle"></i>
                     </div>
-                    <button class="btn back-btn" onclick="goBack()">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                    </button>
+                    <div class="feature-content">
+                        <h5>Create New Orders</h5>
+                        <p>Add customer orders with multiple items and customizations</p>
+                    </div>
+                </button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('View Order History')">
+                    <div class="feature-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h5>View Order History</h5>
+                        <p>Browse all past and current orders with detailed tracking</p>
+                    </div>
+                </button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Order Analytics')">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h5>Order Analytics</h5>
+                        <p>View sales trends and popular items statistics</p>
+                    </div>
+                </button>
+            </div>
+            <div class="col-md-6">
+                <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Customer Management')">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="feature-content">
+                        <h5>Customer Management</h5>
+                        <p>Manage customer profiles and order preferences</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Development Roadmap -->
+    <div class="roadmap-section">
+        <h4><i class="fas fa-road me-2"></i>Development Roadmap</h4>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="roadmap-item">
+                    <h6>Phase 1: Order Creation</h6>
+                    <p>Basic order creation with item selection and customer details</p>
+                </div>
+                <div class="roadmap-item">
+                    <h6>Phase 2: Order Tracking</h6>
+                    <p>Order status updates and tracking functionality</p>
                 </div>
             </div>
-            
-            <!-- Page Content -->
-            <div class="page-content">
-                <div class="coming-soon">
-                    <i class="fas fa-tools"></i>
-                    <h2>Orders Module Under Development</h2>
-                    <p class="lead">This module is currently being developed and will include:</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-8 offset-md-2">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Create New Orders')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-plus-circle"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Create New Orders</h5>
-                                            <p>Add customer orders with multiple items</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('View Order History')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-list"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>View Order History</h5>
-                                            <p>Browse all past and current orders</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Update Order Status')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-edit"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Update Order Status</h5>
-                                            <p>Track order fulfillment progress</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Order Analytics')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-chart-line"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Order Analytics</h5>
-                                            <p>View detailed order statistics and trends</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="Alert.comingSoon('Search & Filter')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-search"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Search & Filter</h5>
-                                            <p>Find specific orders with advanced filters</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="Alert.comingSoon('Order Reports')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-file-alt"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Order Reports</h5>
-                                            <p>Generate comprehensive order reports</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button class="btn btn-primary btn-lg" onclick="goBack()">
-                            <i class="fas fa-home me-2"></i>Return to Dashboard
-                        </button>
-                    </div>
+            <div class="col-md-6">
+                <div class="roadmap-item">
+                    <h6>Phase 3: Analytics</h6>
+                    <p>Sales reports and customer analytics dashboard</p>
+                </div>
+                <div class="roadmap-item">
+                    <h6>Phase 4: Integration</h6>
+                    <p>Integration with inventory and payment systems</p>
                 </div>
             </div>
         </div>
@@ -229,36 +269,47 @@
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Custom Alert System -->
-    <script src="shared/js/alerts.js?v=1.0"></script>
-    
     <!-- Configuration -->
     <script src="config.js?v=1.2"></script>
     
-    <!-- Authentication Service -->
-    <script src="shared/js/auth.js?v=1.2"></script>
-    
+    <!-- Shared JavaScript -->
+    <script src="shared/js/auth.js"></script>
+    <script src="shared/js/status.js"></script>
+    <script src="shared/js/alerts.js"></script>
+    <script src="shared/js/load-partials.js"></script>
+
     <script>
-        // Check authentication
-        document.addEventListener('DOMContentLoaded', () => {
-            // Wait for auth service to be available
-            const checkAuth = () => {
-                if (window.authService) {
-                    if (!authService.isAuthenticated()) {
-                        console.warn('⚠️ User not authenticated, redirecting to login');
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                } else {
-                    setTimeout(checkAuth, 100);
+        class OrdersPage {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                console.log('🛒 Initializing Orders Management Page (Standardized Layout)...');
+                
+                // Setup standardized layout framework
+                await window.PartialLoader.setupStandardLayout({
+                    pageTitle: 'Orders Management',
+                    includeSidebar: true,
+                    includeHeader: true
+                });
+                
+                // Initialize authentication
+                const auth = new AuthService();
+                if (!auth.isAuthenticated()) {
+                    console.log('❌ User not authenticated, redirecting to login');
+                    window.location.href = 'login.html';
+                    return;
                 }
-            };
-            checkAuth();
-        });
-        
-        function goBack() {
-            window.location.href = 'dashboard.html';
+                
+                console.log('✅ Orders Management Page initialized successfully');
+            }
         }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.ordersPage = new OrdersPage();
+        });
     </script>
 </body>
 </html> 

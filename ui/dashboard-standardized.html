@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ice Cream Store - Dashboard</title>
+    <title>Ice Cream Store - Management Dashboard</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -68,16 +68,12 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
-            text-decoration: none;
-            color: var(--dark-color);
         }
 
         .service-btn:hover {
             transform: translateY(-5px);
             box-shadow: var(--shadow-heavy);
             border-color: var(--primary-color);
-            text-decoration: none;
-            color: var(--dark-color);
         }
 
         .service-btn.primary:hover {
@@ -98,18 +94,6 @@
         .service-btn.warning:hover {
             border-color: var(--warning-color);
             background: var(--warning-light);
-        }
-
-        .service-btn.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .service-btn.disabled:hover {
-            transform: none;
-            box-shadow: var(--shadow-light);
-            border-color: transparent;
-            background: var(--white);
         }
 
         .service-icon {
@@ -140,7 +124,6 @@
         .service-content p {
             color: var(--secondary-color);
             margin-bottom: 1rem;
-            line-height: 1.5;
         }
 
         .service-status {
@@ -230,10 +213,6 @@
             .service-btn {
                 padding: 1.5rem;
             }
-
-            .service-icon {
-                font-size: 2.5rem;
-            }
         }
     </style>
 </head>
@@ -262,7 +241,7 @@
     <!-- Service Cards -->
     <div class="service-cards">
         <!-- Orders Service -->
-        <a href="orders.html" class="service-btn primary">
+        <div class="service-btn primary" onclick="navigateToService('orders')">
             <span class="service-status" id="orders-status"></span>
             <div class="service-icon">
                 <i class="fas fa-shopping-cart"></i>
@@ -272,10 +251,10 @@
                 <p>Create, view, and manage customer orders</p>
                 <small class="text-muted">Port 8083</small>
             </div>
-        </a>
+        </div>
 
         <!-- Inventory Service -->
-        <a href="inventory/" class="service-btn success">
+        <div class="service-btn success" onclick="navigateToService('inventory')">
             <span class="service-status" id="inventory-status"></span>
             <div class="service-icon">
                 <i class="fas fa-warehouse"></i>
@@ -285,10 +264,10 @@
                 <p>Manage suppliers, ingredients & stock</p>
                 <small class="text-muted">Port 8084</small>
             </div>
-        </a>
+        </div>
 
         <!-- Expense Service -->
-        <a href="expense/" class="service-btn info">
+        <div class="service-btn info" onclick="navigateToService('expenses')">
             <span class="service-status" id="expenses-status"></span>
             <div class="service-icon">
                 <i class="fas fa-receipt"></i>
@@ -298,10 +277,10 @@
                 <p>Track receipts, expenses & spending</p>
                 <small class="text-muted">Port 8085</small>
             </div>
-        </a>
+        </div>
 
         <!-- Reports Service -->
-        <div class="service-btn warning disabled" onclick="navigateToService('reports')">
+        <div class="service-btn warning" onclick="navigateToService('reports')">
             <span class="service-status offline"></span>
             <div class="service-icon">
                 <i class="fas fa-chart-bar"></i>
@@ -318,15 +297,15 @@
     <div class="quick-actions">
         <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
         <div class="action-grid">
-            <a href="orders.html" class="btn action-btn btn-outline-primary">
+            <button class="btn action-btn btn-outline-primary" onclick="navigateToService('orders')">
                 <i class="fas fa-plus me-2"></i>New Order
-            </a>
-            <a href="expense/" class="btn action-btn btn-outline-success">
+            </button>
+            <button class="btn action-btn btn-outline-success" onclick="navigateToService('expenses')">
                 <i class="fas fa-receipt me-2"></i>Add Receipt
-            </a>
-            <a href="inventory/" class="btn action-btn btn-outline-info">
+            </button>
+            <button class="btn action-btn btn-outline-info" onclick="navigateToService('inventory')">
                 <i class="fas fa-truck me-2"></i>Manage Suppliers
-            </a>
+            </button>
             <button class="btn action-btn btn-outline-secondary" onclick="checkSystemHealth()">
                 <i class="fas fa-heartbeat me-2"></i>Health Check
             </button>
@@ -368,7 +347,7 @@
             async init() {
                 console.log('🏠 Initializing Dashboard (Standardized Layout)...');
                 
-                // Special setup for dashboard - header only, no sidebar
+                // Special setup for dashboard - no sidebar, but include header
                 await window.PartialLoader.setupStandardLayout({
                     pageTitle: 'Dashboard',
                     includeSidebar: false,  // Dashboard has its own layout
@@ -428,7 +407,7 @@
             }
         }
 
-        // Navigation function
+        // Navigation function (same as before)
         function navigateToService(service) {
             switch(service) {
                 case 'orders':

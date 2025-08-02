@@ -1,0 +1,283 @@
+<!-- Ice Cream Store - Shared Header Layout -->
+<div class="layout-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <!-- Brand Section -->
+            <div class="col-md-6">
+                <div class="brand-section">
+                    <a href="../dashboard.html" class="brand-link">
+                        <i class="fas fa-ice-cream brand-icon"></i>
+                        <span class="brand-text">Ice Cream Store</span>
+                    </a>
+                    <span class="page-title" id="layout-page-title">Dashboard</span>
+                </div>
+            </div>
+            
+            <!-- Navigation & User Info -->
+            <div class="col-md-6">
+                <div class="header-actions">
+                    <!-- Breadcrumb Navigation -->
+                    <nav aria-label="breadcrumb" class="header-breadcrumb">
+                        <ol class="breadcrumb" id="layout-breadcrumb">
+                            <li class="breadcrumb-item"><a href="../dashboard.html">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page" id="layout-current-page">Home</li>
+                        </ol>
+                    </nav>
+                    
+                    <!-- User Info -->
+                    <div class="user-info-header">
+                        <div class="user-details">
+                            <span id="layout-user-name" class="user-name">Loading...</span>
+                            <span id="layout-user-role" class="user-role">User</span>
+                        </div>
+                        <div class="user-actions">
+                            <button class="btn btn-outline-primary btn-sm me-2" onclick="window.location.href='../dashboard.html'" title="Dashboard">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm me-2" onclick="checkSystemHealth()" title="System Health">
+                                <i class="fas fa-heartbeat"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="logout()" title="Logout">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.layout-header {
+    background: var(--gradient-primary);
+    color: var(--white);
+    padding: 1rem 0;
+    box-shadow: var(--shadow-medium);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.brand-section {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--white);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: var(--transition);
+}
+
+.brand-link:hover {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+}
+
+.brand-icon {
+    font-size: 1.5rem;
+}
+
+.page-title {
+    font-size: 1.1rem;
+    opacity: 0.8;
+    border-left: 1px solid rgba(255, 255, 255, 0.3);
+    padding-left: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.header-breadcrumb .breadcrumb {
+    background: transparent;
+    margin-bottom: 0;
+    padding: 0;
+}
+
+.header-breadcrumb .breadcrumb-item a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+}
+
+.header-breadcrumb .breadcrumb-item a:hover {
+    color: var(--white);
+}
+
+.header-breadcrumb .breadcrumb-item.active {
+    color: var(--white);
+}
+
+.header-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.user-info-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(10px);
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.user-role {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    line-height: 1.2;
+}
+
+.user-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.user-actions .btn {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--white);
+}
+
+.user-actions .btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: var(--white);
+}
+
+@media (max-width: 768px) {
+    .header-actions {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+    
+    .header-breadcrumb {
+        order: 2;
+    }
+    
+    .user-info-header {
+        order: 1;
+        font-size: 0.8rem;
+    }
+    
+    .brand-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .page-title {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        padding-top: 0.25rem;
+        margin-top: 0.25rem;
+    }
+}
+</style>
+
+<script>
+// Layout Header Functionality
+class LayoutHeader {
+    constructor() {
+        this.init();
+    }
+    
+    init() {
+        this.loadUserInfo();
+        this.updatePageInfo();
+    }
+    
+    loadUserInfo() {
+        try {
+            if (typeof AuthService !== 'undefined') {
+                const auth = new AuthService();
+                if (auth.isAuthenticated()) {
+                    const userData = auth.getUserData();
+                    document.getElementById('layout-user-name').textContent = userData?.username || 'User';
+                    document.getElementById('layout-user-role').textContent = userData?.role || 'Authenticated User';
+                }
+            }
+        } catch (error) {
+            console.warn('Could not load user info in header:', error);
+        }
+    }
+    
+    updatePageInfo() {
+        // Auto-detect page title from document title
+        const pageTitle = document.title.split(' - ')[1] || document.title;
+        document.getElementById('layout-page-title').textContent = pageTitle;
+        
+        // Auto-update breadcrumb based on current path
+        this.updateBreadcrumb();
+    }
+    
+    updateBreadcrumb() {
+        const path = window.location.pathname;
+        const breadcrumb = document.getElementById('layout-breadcrumb');
+        const currentPage = document.getElementById('layout-current-page');
+        
+        // Clear existing breadcrumb items except first and last
+        const items = breadcrumb.querySelectorAll('.breadcrumb-item:not(:first-child):not(:last-child)');
+        items.forEach(item => item.remove());
+        
+        if (path.includes('/inventory/')) {
+            const inventoryItem = document.createElement('li');
+            inventoryItem.className = 'breadcrumb-item';
+            inventoryItem.innerHTML = '<a href="../index.html">Inventory</a>';
+            breadcrumb.insertBefore(inventoryItem, currentPage);
+            
+            if (path.includes('suppliers')) {
+                currentPage.textContent = 'Suppliers';
+            } else if (path.includes('ingredients')) {
+                currentPage.textContent = 'Ingredients';
+            } else {
+                currentPage.textContent = 'Inventory';
+            }
+        } else if (path.includes('/expense/')) {
+            const expenseItem = document.createElement('li');
+            expenseItem.className = 'breadcrumb-item';
+            expenseItem.innerHTML = '<a href="../index.html">Expenses</a>';
+            breadcrumb.insertBefore(expenseItem, currentPage);
+            
+            if (path.includes('receipts')) {
+                currentPage.textContent = 'Receipts';
+            } else {
+                currentPage.textContent = 'Expenses';
+            }
+        } else if (path.includes('orders')) {
+            currentPage.textContent = 'Orders';
+        } else if (path.includes('login')) {
+            currentPage.textContent = 'Login';
+        } else {
+            currentPage.textContent = 'Dashboard';
+        }
+    }
+}
+
+// Auto-initialize when loaded
+window.addEventListener('DOMContentLoaded', () => {
+    window.layoutHeader = new LayoutHeader();
+});
+</script> 

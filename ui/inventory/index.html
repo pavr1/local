@@ -21,205 +21,305 @@
     <link rel="stylesheet" href="../shared/css/style.css?v=1.2">
     
     <style>
-        body {
-            background: var(--gradient-primary);
-            min-height: 100vh;
-        }
-        
-        .main-container {
-            background: var(--white);
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-heavy);
-            margin: 2rem auto;
-            max-width: 1200px;
-            min-height: calc(100vh - 4rem);
-        }
-        
-        .page-header {
-            background: var(--gradient-primary);
+        /* Page-specific styles only - layout handled by framework */
+        .inventory-header {
+            background: var(--gradient-success);
             color: var(--white);
-            padding: 2rem;
-            border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-        }
-        
-        .page-content {
-            padding: 2rem;
-        }
-        
-        .coming-soon {
+            padding: 3rem 2rem;
             text-align: center;
-            padding: 4rem 2rem;
-        }
-        
-        .coming-soon i {
-            font-size: 4rem;
-            color: var(--primary-color);
+            border-radius: var(--border-radius-lg);
             margin-bottom: 2rem;
         }
-        
-        .back-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: var(--white);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
+
+        .overview-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .overview-card {
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-light);
+            border-left: 4px solid var(--success-color);
             transition: var(--transition);
         }
-        
-        .back-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: var(--white);
-            border-color: rgba(255, 255, 255, 0.5);
+
+        .overview-card:nth-child(2) {
+            border-left-color: var(--info-color);
         }
-        
-        .feature-btn {
-            min-height: 140px;
-            padding: 1.5rem;
-            text-align: center;
-            border-width: 2px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+
+        .overview-card:nth-child(3) {
+            border-left-color: var(--warning-color);
         }
-        
-        .feature-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+        .overview-card:nth-child(4) {
+            border-left-color: var(--primary-color);
         }
-        
-        .feature-icon {
-            margin-bottom: 1rem;
+
+        .overview-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-heavy);
         }
-        
-        .feature-icon i {
+
+        .overview-number {
             font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--success-color);
         }
-        
-        .feature-content h5 {
-            font-size: 1.1rem;
-            font-weight: 600;
+
+        .overview-card:nth-child(2) .overview-number {
+            color: var(--info-color);
+        }
+
+        .overview-card:nth-child(3) .overview-number {
+            color: var(--warning-color);
+        }
+
+        .overview-card:nth-child(4) .overview-number {
+            color: var(--primary-color);
+        }
+
+        .overview-label {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             margin-bottom: 0.5rem;
         }
-        
-        .feature-content p {
-            font-size: 0.9rem;
-            margin-bottom: 0;
-            opacity: 0.8;
+
+        .overview-sublabel {
+            font-size: 0.8rem;
+            color: var(--secondary-color);
         }
-        
-        .btn-outline-success:hover .feature-content p,
-        .btn-outline-info:hover .feature-content p,
-        .btn-outline-warning:hover .feature-content p,
-        .btn-outline-primary:hover .feature-content p,
-        .btn-outline-danger:hover .feature-content p,
-        .btn-outline-secondary:hover .feature-content p {
-            opacity: 1;
+
+        .navigation-section {
+            background: var(--light-color);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 2rem;
+        }
+
+        .navigation-section h4 {
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .nav-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .nav-card {
+            background: var(--white);
+            border: 2px solid transparent;
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .nav-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-heavy);
+        }
+
+        .nav-card.suppliers:hover {
+            border-color: var(--success-color);
+            background: var(--success-light);
+        }
+
+        .nav-card.ingredients:hover {
+            border-color: var(--info-color);
+            background: var(--info-light);
+        }
+
+        .nav-card-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--success-color);
+        }
+
+        .nav-card.ingredients .nav-card-icon {
+            color: var(--info-color);
+        }
+
+        .nav-card h5 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .nav-card p {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .nav-card .btn {
+            margin-top: auto;
+        }
+
+        .quick-stats {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-light);
+            margin-bottom: 2rem;
+        }
+
+        .quick-stats h5 {
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .inventory-header {
+                padding: 2rem 1rem;
+            }
+
+            .overview-cards {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .nav-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .nav-card {
+                padding: 1.5rem;
+                min-height: 150px;
+            }
+
+            .nav-card-icon {
+                font-size: 2.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="main-container">
-            <!-- Page Header -->
-            <div class="page-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h1><i class="fas fa-warehouse me-3"></i>Inventory Management</h1>
-                        <p class="mb-0">Manage suppliers, ingredients, and stock levels</p>
-                    </div>
-                    <button class="btn back-btn" onclick="goBack()">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
-                    </button>
+    <!-- Page Header -->
+    <div class="inventory-header">
+        <div>
+            <i class="fas fa-warehouse fa-4x mb-3"></i>
+            <h1>Inventory Management</h1>
+            <p class="mb-0 opacity-75">Manage suppliers, ingredients, and stock levels</p>
+        </div>
+    </div>
+
+    <!-- Overview Cards -->
+    <div class="overview-cards">
+        <div class="overview-card">
+            <div class="overview-number">12</div>
+            <div class="overview-label">Total Suppliers</div>
+            <div class="overview-sublabel">Active partnerships</div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-number">48</div>
+            <div class="overview-label">Ingredients</div>
+            <div class="overview-sublabel">In inventory</div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-number">85%</div>
+            <div class="overview-label">Stock Level</div>
+            <div class="overview-sublabel">Average availability</div>
+        </div>
+        <div class="overview-card">
+            <div class="overview-number">5</div>
+            <div class="overview-label">Low Stock</div>
+            <div class="overview-sublabel">Need reorder</div>
+        </div>
+    </div>
+
+    <!-- Navigation Section -->
+    <div class="navigation-section">
+        <h4><i class="fas fa-th-large me-2"></i>Inventory Modules</h4>
+        <div class="nav-cards">
+            <!-- Suppliers Card -->
+            <div class="nav-card suppliers" onclick="navigateToSuppliers()">
+                <div class="nav-card-icon">
+                    <i class="fas fa-truck"></i>
                 </div>
+                <h5>Suppliers Management</h5>
+                <p>Manage supplier relationships, contact information, and performance tracking</p>
+                <button class="btn btn-outline-success">
+                    <i class="fas fa-arrow-right me-2"></i>Manage Suppliers
+                </button>
             </div>
-            
-            <!-- Page Content -->
-            <div class="page-content">
-                <div class="coming-soon">
-                    <i class="fas fa-tools"></i>
-                    <h2>Inventory Module Under Development</h2>
-                    <p class="lead">This module is currently being developed and will include:</p>
-                    
-                    <div class="row mt-4">
-                        <div class="col-md-8 offset-md-2">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="window.location.href='suppliers.html'">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-truck"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Supplier Management</h5>
-                                            <p>Manage suppliers and vendor relationships</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="window.location.href='ingredients.html'">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-leaf"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Ingredient Management</h5>
-                                            <p>Manage ingredient types and recipe components</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Stock Levels')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-chart-bar"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Stock Levels</h5>
-                                            <p>Track current inventory and low stock alerts</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Purchase History')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-history"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Purchase History</h5>
-                                            <p>View past orders and supplier transactions</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-danger w-100 h-100" onclick="Alert.comingSoon('Alerts & Notifications')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-bell"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Alerts & Notifications</h5>
-                                            <p>Get notified of low stock and expiring items</p>
-                                        </div>
-                                    </button>
-                                </div>
-                                <div class="col-md-6">
-                                    <button class="btn feature-btn btn-outline-secondary w-100 h-100" onclick="Alert.comingSoon('Cost Analysis')">
-                                        <div class="feature-icon">
-                                            <i class="fas fa-calculator"></i>
-                                        </div>
-                                        <div class="feature-content">
-                                            <h5>Cost Analysis</h5>
-                                            <p>Track ingredient costs and optimize spending</p>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button class="btn btn-primary btn-lg" onclick="goBack()">
-                            <i class="fas fa-home me-2"></i>Return to Dashboard
-                        </button>
-                    </div>
+
+            <!-- Ingredients Card -->
+            <div class="nav-card ingredients" onclick="navigateToIngredients()">
+                <div class="nav-card-icon">
+                    <i class="fas fa-seedling"></i>
                 </div>
+                <h5>Ingredients Inventory</h5>
+                <p>Track ingredient stock levels, expiration dates, and reorder points</p>
+                <button class="btn btn-outline-info">
+                    <i class="fas fa-arrow-right me-2"></i>Manage Ingredients
+                </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <h5><i class="fas fa-chart-line me-2"></i>Quick Stats</h5>
+        <div class="stat-item">
+            <span class="stat-label">Active Suppliers</span>
+            <span class="stat-value">10/12</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Ingredients in Stock</span>
+            <span class="stat-value">43/48</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Items Expiring Soon</span>
+            <span class="stat-value">3</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Pending Orders</span>
+            <span class="stat-value">7</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">This Month's Purchases</span>
+            <span class="stat-value">$2,450</span>
         </div>
     </div>
 
@@ -229,36 +329,56 @@
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Custom Alert System -->
-    <script src="../shared/js/alerts.js?v=1.0"></script>
-    
     <!-- Configuration -->
     <script src="../config.js?v=1.2"></script>
     
-    <!-- Authentication Service -->
-    <script src="../shared/js/auth.js?v=1.2"></script>
-    
+    <!-- Shared JavaScript -->
+    <script src="../shared/js/auth.js"></script>
+    <script src="../shared/js/status.js"></script>
+    <script src="../shared/js/alerts.js"></script>
+    <script src="../shared/js/load-partials.js"></script>
+
     <script>
-        // Check authentication
-        document.addEventListener('DOMContentLoaded', () => {
-            // Wait for auth service to be available
-            const checkAuth = () => {
-                if (window.authService) {
-                    if (!authService.isAuthenticated()) {
-                        console.warn('⚠️ User not authenticated, redirecting to login');
-                        window.location.href = 'login.html';
-                        return;
-                    }
-                } else {
-                    setTimeout(checkAuth, 100);
+        class InventoryPage {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                console.log('📦 Initializing Inventory Management Page (Standardized Layout)...');
+                
+                // Setup standardized layout framework
+                await window.PartialLoader.setupStandardLayout({
+                    pageTitle: 'Inventory Management',
+                    includeSidebar: true,
+                    includeHeader: true
+                });
+                
+                // Initialize authentication
+                const auth = new AuthService();
+                if (!auth.isAuthenticated()) {
+                    console.log('❌ User not authenticated, redirecting to login');
+                    window.location.href = '../login.html';
+                    return;
                 }
-            };
-            checkAuth();
-        });
-        
-        function goBack() {
-            window.location.href = '../dashboard.html';
+                
+                console.log('✅ Inventory Management Page initialized successfully');
+            }
         }
+
+        // Navigation functions
+        function navigateToSuppliers() {
+            window.location.href = 'suppliers.html';
+        }
+
+        function navigateToIngredients() {
+            window.location.href = 'ingredients.html';
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.inventoryPage = new InventoryPage();
+        });
     </script>
 </body>
 </html> 
