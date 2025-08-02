@@ -18,8 +18,8 @@
    - [Recipe Ingredients Table](#recipe-ingredients-table)
 2. [Expenses Management Entities](#expenses-management-entities)
    - [Expense Categories Table](#expense-categories-table)
-   - [Receipts Table](#receipts-table)
-   - [Receipt Items Table](#receipt-items-table)
+   - [Invoice Table](#invoice-table)
+   - [Invoice Details Table](#invoice-details-table)
 3. [Customer Management Entities](#customer-management-entities)
    - [Customers Table](#customers-table)
 4. [Income Management (Orders) Entities](#income-management-orders-entities)
@@ -59,7 +59,7 @@ This database schema supports a **microservices architecture** with **9 speciali
 - **📋 Audit Service**: Activity logging (`audit_logs` table)
 - **⚙️ Administration Service**: User/role/permission management, equipment tracking (`users`, `roles`, `permissions`, `system_config`, `user_salary`, `mechanics`, `equipment` tables) - **Admin only**
 - **👥 Customer Service**: Customer management (`customers` table)
-- **💰 Expenses Service**: Financial management (`expense_categories`, `receipts`, `receipt_items` tables)
+- **💰 Expenses Service**: Financial management (`expense_categories`, `invoice`, `invoice_details` tables)
 - **📦 Inventory Service**: Core business logic (`suppliers`, `ingredients`, `existences`, `runout_ingredient_report`, `recipe_categories`, `recipes`, `recipe_ingredients` tables)
 - **🎉 Promotions Service**: Loyalty programs (`promotions`, `customer_points` tables)
 - **🛒 Orders Service**: Sales processing (`orders`, `ordered_receipes` tables)
@@ -125,20 +125,20 @@ CREATE TABLE existences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     existence_reference_code INTEGER UNIQUE NOT NULL,
     ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
-    receipt_item_id UUID NOT NULL REFERENCES receipt_items(id) ON DELETE CASCADE, -- Must reference ingredients with category "ingredient" only
+    invoice_detail_id UUID NOT NULL REFERENCES invoice_details(id) ON DELETE CASCADE, -- Must reference ingredients with category "ingredient" only
     --units
-    units_purchased DECIMAL(10,2) NOT NULL, -- get this from receipt item
-    units_available DECIMAL(10,2) NOT NULL, -- same as unit pruchased, update when running out
-    unit_Type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')), -- get from receipt item
+    units_purchased DECIMAL(10,2) NOT NULL, -- get this from invoice detail
+    units_available DECIMAL(10,2) NOT NULL, -- same as unit purchased, update when running out
+    unit_Type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')), -- get from invoice detail
     --items
     items_per_unit INTEGER NOT NULL, --ie. Galon has 31 ice-cream balls
     cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
-    cost_per_unit DECIMAL(10,2) NOT NULL, -- get from receipt item
+    cost_per_unit DECIMAL(10,2) NOT NULL, -- get from invoice detail
     --costs
     total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
     remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
     --expiry
-    expiration_date DATE, -- get from receipt item
+    expiration_date DATE, -- get from invoice detail
     --incomes & taxes
     income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
     income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost * income_margin_percentage / 100) STORED,
@@ -160,7 +160,7 @@ ALTER TABLE existences ALTER COLUMN existence_reference_code SET DEFAULT nextval
 -- Indexes
 CREATE INDEX idx_existences_ingredient ON existences(ingredient_id);
 CREATE INDEX idx_existences_reference_code ON existences(existence_reference_code);
-CREATE INDEX idx_existences_receipt_item ON existences(receipt_item_id);
+CREATE INDEX idx_existences_invoice_detail ON existences(invoice_detail_id);
 CREATE INDEX idx_existences_available ON existences(units_available);
 CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
 CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
@@ -170,16 +170,16 @@ CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 - `id`: Primary key, UUID (auto-generated)
 - `existence_reference_code`: Simple numeric consecutive code for easy identification
 - `ingredient_id`: Foreign key reference to ingredients table (UUID)
-- `receipt_item_id`: Foreign key reference to receipt_items table (UUID, must reference ingredients if category is ingredient only)
-- `units_purchased`: Original quantity purchased (get this from receipt item)
-- `units_available`: Current quantity available (get from receipt item, update when running out)
-- `unit_type`: Unit of measurement for this existence (get from receipt item - Liters, Gallons, Units, Bag)
+- `invoice_detail_id`: Foreign key reference to invoice_details table (UUID, must reference ingredients if category is ingredient only)
+- `units_purchased`: Original quantity purchased (get this from invoice detail)
+- `units_available`: Current quantity available (get from invoice detail, update when running out)
+- `unit_type`: Unit of measurement for this existence (get from invoice detail - Liters, Gallons, Units, Bag)
 - `items_per_unit`: Number of individual items produced from one unit (e.g., 1 Gallon = 31 ice cream balls)
 - `cost_per_item`: Calculated field (cost_per_unit ÷ items_per_unit) - cost per individual item
-- `cost_per_unit`: Cost per unit for this specific purchase (get from receipt item - e.g., Gallon costs ₡12,000)
+- `cost_per_unit`: Cost per unit for this specific purchase (get from invoice detail - e.g., Gallon costs ₡12,000)
 - `total_purchase_cost`: Calculated field (units_purchased × cost_per_unit)
 - `remaining_value`: Calculated field (units_available × cost_per_unit)
-- `expiration_date`: Expiration date for this specific ingredient batch (get from receipt item, nullable)
+- `expiration_date`: Expiration date for this specific ingredient batch (get from invoice detail, nullable)
 - `income_margin_percentage`: Configurable margin percentage (default 30%, from config)
 - `income_margin_amount`: Calculated margin amount (read-only)
 - `iva_percentage`: IVA tax percentage (default 13%, from config)
@@ -361,7 +361,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Track ingredient consumption by updating `units_available` in existences table
 - Process runout reports: when employees report ingredient usage, create runout_ingredient_report record and decrease `units_available` in existences table accordingly
 - Validate runout report quantities against available stock in existences table
-- Implement FIFO logic: use oldest receipts first (by purchase_date from receipts table)
+- Implement FIFO logic: use oldest invoices first (by purchase_date from invoice table)
 - Alert when existences are near expiry (based on expiration_date from existences table)
 - Calculate final pricing (margins, taxes) at existence level for inventory items
 - Maintain receipt totals when existences are added/modified
@@ -451,17 +451,18 @@ INSERT INTO expense_categories (category_name, description) VALUES
 - `created_at`: When the category was created
 - `updated_at`: When the category was last modified
 
-### Receipts Table
-**Purpose:** Store receipt/invoice documentation with images and amounts, linked directly to expense categories. Each receipt represents a purchase transaction with main information and can contain multiple line items.
+### Invoice Table
+**Purpose:** Store invoice documentation with images and amounts, linked directly to expense categories. Each invoice represents a financial transaction (income or outcome) with main information and can contain multiple line items.
 
 ```sql
-CREATE TABLE receipts (
+CREATE TABLE invoice (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    receipt_number VARCHAR(100) UNIQUE NOT NULL,
-    purchase_date DATE NOT NULL,
+    invoice_number VARCHAR(100) UNIQUE NOT NULL,
+    transaction_date DATE NOT NULL,
+    transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('income', 'outcome')),
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
     expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
-    total_amount DECIMAL(12,2), -- Calculated from sum of all receipt_items for this receipt
+    total_amount DECIMAL(12,2), -- Calculated from sum of all invoice_details for this invoice
     image_url VARCHAR(500) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -469,31 +470,33 @@ CREATE TABLE receipts (
 );
 
 -- Indexes
-CREATE INDEX idx_receipts_number ON receipts(receipt_number);
-CREATE INDEX idx_receipts_supplier ON receipts(supplier_id);
-CREATE INDEX idx_receipts_category ON receipts(expense_category_id);
-CREATE INDEX idx_receipts_purchase_date ON receipts(purchase_date);
+CREATE INDEX idx_invoice_number ON invoice(invoice_number);
+CREATE INDEX idx_invoice_supplier ON invoice(supplier_id);
+CREATE INDEX idx_invoice_category ON invoice(expense_category_id);
+CREATE INDEX idx_invoice_transaction_date ON invoice(transaction_date);
+CREATE INDEX idx_invoice_transaction_type ON invoice(transaction_type);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
-- `receipt_number`: Receipt/invoice number (unique)
-- `purchase_date`: When the purchase was made
-- `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for supermarket purchases)
+- `invoice_number`: Invoice/receipt number (unique)
+- `transaction_date`: When the transaction was made
+- `transaction_type`: Type of transaction - 'income' or 'outcome' (CHECK constraint)
+- `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for non-supplier transactions)
 - `expense_category_id`: Foreign key reference to expense_categories table (UUID)
-- `total_amount`: Total amount of the receipt/invoice (calculated from receipt items)
-- `image_url`: URL/path to uploaded receipt/invoice image (mandatory)
-- `notes`: Additional notes about the purchase
-- `created_at`: When the receipt record was created
-- `updated_at`: When the receipt record was last modified
+- `total_amount`: Total amount of the invoice (calculated from invoice details)
+- `image_url`: URL/path to uploaded invoice/receipt image (mandatory)
+- `notes`: Additional notes about the transaction
+- `created_at`: When the invoice record was created
+- `updated_at`: When the invoice record was last modified
 
-### Receipt Items Table
-**Purpose:** Store individual line items/details for each receipt, acting as expense line items that detail the expenses within a receipt.
+### Invoice Details Table
+**Purpose:** Store individual line items/details for each invoice, acting as transaction line items that detail the items within an invoice.
 
 ```sql
-CREATE TABLE receipt_items (
+CREATE TABLE invoice_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    receipt_id UUID NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+    invoice_id UUID NOT NULL REFERENCES invoice(id) ON DELETE CASCADE,
     ingredient_id UUID REFERENCES ingredients(id) ON DELETE SET NULL, -- Only populated if expense category is 'Ingredients'
     detail TEXT NOT NULL,
     count DECIMAL(10,2) NOT NULL,
@@ -506,25 +509,25 @@ CREATE TABLE receipt_items (
 );
 
 -- Indexes
-CREATE INDEX idx_receipt_items_receipt ON receipt_items(receipt_id);
-CREATE INDEX idx_receipt_items_ingredient ON receipt_items(ingredient_id);
-CREATE INDEX idx_receipt_items_total ON receipt_items(total);
-CREATE INDEX idx_receipt_items_unit_type ON receipt_items(unit_type);
-CREATE INDEX idx_receipt_items_expiration ON receipt_items(expiration_date);
+CREATE INDEX idx_invoice_details_invoice ON invoice_details(invoice_id);
+CREATE INDEX idx_invoice_details_ingredient ON invoice_details(ingredient_id);
+CREATE INDEX idx_invoice_details_total ON invoice_details(total);
+CREATE INDEX idx_invoice_details_unit_type ON invoice_details(unit_type);
+CREATE INDEX idx_invoice_details_expiration ON invoice_details(expiration_date);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
-- `receipt_id`: Foreign key reference to receipts table (UUID)
+- `invoice_id`: Foreign key reference to invoice table (UUID)
 - `ingredient_id`: Foreign key reference to ingredients table (UUID, only populated if expense category is 'Ingredients')
-- `detail`: Description of the item/expense line
+- `detail`: Description of the item/transaction line
 - `count`: Quantity or amount of the item
 - `unit_type`: Unit of measurement for this item (Liters, Gallons, Units, Bag)
 - `price`: Unit price of the item
 - `total`: Calculated total for this line item (count × price)
 - `expiration_date`: Expiration date for this specific item (nullable)
-- `created_at`: When the receipt item was created
-- `updated_at`: When the receipt item was last modified
+- `created_at`: When the invoice detail was created
+- `updated_at`: When the invoice detail was last modified
 
 ---
 
@@ -782,7 +785,7 @@ CREATE INDEX idx_system_config_editable ON system_config(is_editable);
 CREATE TABLE user_salary (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    receipt_id UUID NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+    invoice_id UUID NOT NULL REFERENCES invoice(id) ON DELETE CASCADE,
     salary DECIMAL(12,2) NOT NULL,
     additional_expenses DECIMAL(12,2) DEFAULT 0.00,
     total DECIMAL(12,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
@@ -792,14 +795,14 @@ CREATE TABLE user_salary (
 
 -- Indexes
 CREATE INDEX idx_user_salary_user ON user_salary(user_id);
-CREATE INDEX idx_user_salary_receipt ON user_salary(receipt_id);
+CREATE INDEX idx_user_salary_invoice ON user_salary(invoice_id);
 CREATE INDEX idx_user_salary_total ON user_salary(total);
 ```
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `user_id`: Foreign key reference to users table (employee)
-- `receipt_id`: Foreign key reference to receipts table (links salary to expense tracking)
+- `invoice_id`: Foreign key reference to invoice table (links salary to expense tracking)
 - `salary`: Base salary amount for the employee
 - `additional_expenses`: Extra expenses or bonuses (defaults to 0.00)
 - `total`: Calculated total compensation (salary + additional_expenses)

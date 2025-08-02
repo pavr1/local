@@ -15,7 +15,7 @@ This diagram represents the complete relational structure of the ice cream store
 - **🔐 Authentication & Authorization** (3 tables): Users, roles, and permissions
 - **👥 Customer Management** (1 table): Customer information and contact details  
 - **📦 Inventory Management** (7 tables): Suppliers, ingredients, stock, recipe categories, recipes, and waste tracking
-- **💰 Expenses Management** (3 tables): Expense categories, receipts, and receipt items
+- **💰 Expenses Management** (3 tables): Expense categories, invoice, and invoice details
 - **🛒 Orders Management** (2 tables): Customer transactions and order line items
 - **🎁 Promotions & Loyalty** (2 tables): Promotional campaigns and customer points
 - **🔧 Equipment Management** (2 tables): Equipment tracking and mechanic contacts
@@ -96,7 +96,7 @@ erDiagram
         uuid id PK
         integer existence_reference_code UK
         uuid ingredient_id FK
-        uuid receipt_item_id FK
+        uuid invoice_detail_id FK
         decimal units_purchased
         decimal units_available
         varchar unit_type
@@ -167,10 +167,11 @@ erDiagram
         timestamp updated_at
     }
     
-    RECEIPTS {
+    INVOICE {
         uuid id PK
-        varchar receipt_number UK
-        date purchase_date
+        varchar invoice_number UK
+        date transaction_date
+        varchar transaction_type
         uuid supplier_id FK
         uuid expense_category_id FK
         decimal total_amount
@@ -180,9 +181,9 @@ erDiagram
         timestamp updated_at
     }
     
-    RECEIPT_ITEMS {
+    INVOICE_DETAILS {
         uuid id PK
-        uuid receipt_id FK
+        uuid invoice_id FK
         uuid ingredient_id FK
         text detail
         decimal count
@@ -314,7 +315,7 @@ erDiagram
     USER_SALARY {
         uuid id PK
         uuid user_id FK
-        uuid receipt_id FK
+        uuid invoice_id FK
         decimal salary
         decimal additional_expenses
         decimal total
@@ -347,17 +348,17 @@ erDiagram
     CUSTOMERS ||--o{ CUSTOMER_POINTS : "customer_id"
     
     SUPPLIERS ||--o{ INGREDIENTS : "supplier_id"
-    SUPPLIERS ||--o{ RECEIPTS : "supplier_id"
+    SUPPLIERS ||--o{ INVOICE : "supplier_id"
     
     INGREDIENTS ||--o{ EXISTENCES : "ingredient_id"
     INGREDIENTS ||--o{ RECIPE_INGREDIENTS : "ingredient_id"
-    INGREDIENTS ||--o{ RECEIPT_ITEMS : "ingredient_id"
+    INGREDIENTS ||--o{ INVOICE_DETAILS : "ingredient_id"
     
     EXISTENCES ||--o{ RUNOUT_INGREDIENT_REPORT : "existence_id"
     EXISTENCES ||--o{ WASTE_LOSS : "existence_id"
     
-    RECEIPTS ||--o{ RECEIPT_ITEMS : "receipt_id"
-    RECEIPT_ITEMS ||--o{ EXISTENCES : "receipt_item_id"
+    INVOICE ||--o{ INVOICE_DETAILS : "invoice_id"
+    INVOICE_DETAILS ||--o{ EXISTENCES : "invoice_detail_id"
     
     RECIPE_CATEGORIES ||--o{ RECIPES : "recipe_category_id"
     
@@ -365,8 +366,8 @@ erDiagram
     RECIPES ||--o{ ORDERED_RECEIPES : "recipe_id"
     RECIPES ||--o{ PROMOTIONS : "recipe_id"
     
-    EXPENSE_CATEGORIES ||--o{ RECEIPTS : "expense_category_id"
-    RECEIPTS ||--o{ USER_SALARY : "receipt_id"
+    EXPENSE_CATEGORIES ||--o{ INVOICE : "expense_category_id"
+    INVOICE ||--o{ USER_SALARY : "invoice_id"
     
     USERS ||--o{ ORDERS : "sales_representative_id"
     USERS ||--o{ RUNOUT_INGREDIENT_REPORT : "employee_id"
@@ -401,7 +402,7 @@ Customer Points (Loyalty Program)
 
 ### **Complete Inventory Traceability**
 ```
-Suppliers → Receipts → Receipt Items → Existences → Recipe Usage
+Suppliers → Invoice → Invoice Details → Existences → Recipe Usage
                                          ↓
                                   Waste/Loss Reports
 ```
@@ -412,9 +413,9 @@ Suppliers → Receipts → Receipt Items → Existences → Recipe Usage
 - Promotion integration with recipe-specific discounts
 
 ### **Financial Integration**
-- Receipts link directly to expense categories for cost tracking
-- Receipt items provide detailed expense breakdown
-- Salary management through receipt system
+- Invoice links directly to expense categories for cost tracking
+- Invoice details provide detailed expense breakdown
+- Salary management through invoice system
 - Complete financial audit trail
 
 ### **Promotion & Loyalty Logic**
@@ -426,9 +427,9 @@ Suppliers → Receipts → Receipt Items → Existences → Recipe Usage
 
 ## 📋 Business Logic Summary
 
-1. **Inventory Flow**: Suppliers → Receipts → Receipt Items → Existences → Usage/Waste
+1. **Inventory Flow**: Suppliers → Invoice → Invoice Details → Existences → Usage/Waste
 2. **Order Processing**: Customers → Orders → Order Items + Points
-3. **Financial Tracking**: All monetary transactions tracked through receipts/orders
+3. **Financial Tracking**: All monetary transactions tracked through invoice/orders
 4. **User Management**: Role-based permissions with granular access control
 5. **Audit Trail**: Complete operation logging for compliance and security
 6. **Equipment Lifecycle**: Purchase → Maintenance → Status tracking

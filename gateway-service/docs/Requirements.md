@@ -97,7 +97,7 @@
 - **Attributes:**
   - **Existence Reference Code** (integer, auto-increment): Simple numeric consecutive code for easy identification
   - **Ingredient Reference** (foreign key): Link to ingredient
-  - **Receipt Item ID** (foreign key): Reference to receipt items table (must reference ingredients if category is ingredient only)
+  - **Invoice Detail ID** (foreign key): Reference to invoice details table (must reference ingredients if category is ingredient only)
   - **Units Purchased** (decimal): Original quantity purchased
   - **Units Available** (decimal): Current quantity available (at creation same as units_purchased, decreases as used)
   - **Unit Type** (enum): Unit of measurement for this existence (Liters, Gallons, Units, Bag)
@@ -140,7 +140,7 @@
     - Validates reported quantities against available stock
   - Support FIFO (First In, First Out) consumption by using oldest batches first
   - Prevent usage of expired materials by checking expiration dates at existence level
-  - Receipt item traceability for audit and accounting purposes (links to receipt items table)
+  - Invoice detail traceability for audit and accounting purposes (links to invoice details table)
   - Each purchase batch maintains its own cost, pricing, and expiration tracking
   - Pricing calculations (margins, taxes) happen at existence level for inventory items
   - Final pricing can be adjusted from calculated price (rounded up to next 100)
