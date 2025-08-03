@@ -2,74 +2,142 @@
 <style>
     /* Invoice-specific styles */
 
-    .invoice-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
+    .invoice-features {
         margin-bottom: 2rem;
     }
 
-    .invoice-card {
+    .feature-btn {
         background: var(--white);
+        border: 2px solid transparent;
         border-radius: var(--border-radius-lg);
-        box-shadow: var(--shadow-light);
-        padding: 2rem;
+        padding: 2rem 1.5rem;
         text-align: center;
         transition: var(--transition);
         cursor: pointer;
-        border: 2px solid transparent;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-family: 'Poppins', sans-serif;
     }
 
-    .invoice-card:hover {
+    .feature-btn:hover {
         transform: translateY(-5px);
         box-shadow: var(--shadow-heavy);
-        border-color: var(--primary-color);
     }
 
-    .invoice-icon {
-        font-size: 3rem;
+    .feature-btn.btn-outline-primary:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-light);
+    }
+
+    .feature-btn.btn-outline-success:hover {
+        border-color: var(--success-color);
+        background: var(--success-light);
+    }
+
+    .feature-btn.btn-outline-info:hover {
+        border-color: var(--info-color);
+        background: var(--info-light);
+    }
+
+    .feature-btn.btn-outline-warning:hover {
+        border-color: var(--warning-color);
+        background: var(--warning-light);
+    }
+
+    .feature-icon {
         margin-bottom: 1.5rem;
+    }
+
+    .feature-icon i {
+        font-size: 3rem;
         color: var(--primary-color);
     }
 
-    .invoice-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
+    .btn-outline-success .feature-icon i {
+        color: var(--success-color);
+    }
+
+    .btn-outline-info .feature-icon i {
+        color: var(--info-color);
+    }
+
+    .btn-outline-warning .feature-icon i {
+        color: var(--warning-color);
+    }
+
+    .feature-content p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .feature-content p:first-child {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
         color: var(--dark-color);
     }
 
-    .invoice-description {
+    .feature-content p:last-child {
+        font-size: 0.95rem;
         color: var(--secondary-color);
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
     }
 </style>
 
-<!-- Invoice Management Cards -->
-<div class="invoice-cards">
-    <!-- Invoice Details -->
-    <div class="invoice-card" onclick="navigateToRoute('invoice/invoices')">
+<!-- Invoice Management Features -->
+<div class="invoice-features">
+    <div class="row g-4">
+        <!-- Invoice Management -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToRoute('invoice/invoices')">
+                <div class="feature-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Invoice Management</strong></p>
+                    <p>Create and manage ice cream sales invoices and customer transactions</p>
+                </div>
+            </button>
+        </div>
+        
+        <!-- Financial Analytics -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Invoice Analytics')">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Financial Analytics</strong></p>
+                    <p>Track ice cream sales performance, revenue trends, and profit analysis</p>
+                </div>
+            </button>
+        </div>
 
+        <!-- Customer Billing -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Customer Billing')">
+                <div class="feature-icon">
+                    <i class="fas fa-credit-card"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Customer Billing</strong></p>
+                    <p>Process payments, manage customer accounts, and handle refunds</p>
+                </div>
+            </button>
+        </div>
 
-        <p class="invoice-description">
-            View, create, and manage detailed invoice records and transactions
-        </p>
-        <button class="btn btn-primary">
-            <i class="fas fa-arrow-right me-2"></i>Manage Invoices
-        </button>
-    </div>
-
-    <!-- Analytics -->
-    <div class="invoice-card" onclick="Alert.comingSoon('Invoice Analytics')">
-
-
-        <p class="invoice-description">
-            Track financial performance, analyze trends, and generate reports
-        </p>
-        <button class="btn btn-outline-primary">
-            <i class="fas fa-chart-bar me-2"></i>Coming Soon
-        </button>
+        <!-- Tax Reports -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Tax Reports')">
+                <div class="feature-icon">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Tax Reports</strong></p>
+                    <p>Generate tax reports, compliance documents, and financial statements</p>
+                </div>
+            </button>
+        </div>
     </div>
 </div>
 

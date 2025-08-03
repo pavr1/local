@@ -2,47 +2,85 @@
 <style>
     /* Inventory-specific styles */
 
-    .inventory-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2rem;
+    .inventory-features {
         margin-bottom: 2rem;
     }
 
-    .inventory-card {
+    .feature-btn {
         background: var(--white);
+        border: 2px solid transparent;
         border-radius: var(--border-radius-lg);
-        box-shadow: var(--shadow-light);
-        padding: 2rem;
+        padding: 2rem 1.5rem;
         text-align: center;
         transition: var(--transition);
         cursor: pointer;
-        border: 2px solid transparent;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        font-family: 'Poppins', sans-serif;
     }
 
-    .inventory-card:hover {
+    .feature-btn:hover {
         transform: translateY(-5px);
         box-shadow: var(--shadow-heavy);
-        border-color: var(--primary-color);
     }
 
-    .inventory-icon {
-        font-size: 3rem;
+    .feature-btn.btn-outline-primary:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-light);
+    }
+
+    .feature-btn.btn-outline-success:hover {
+        border-color: var(--success-color);
+        background: var(--success-light);
+    }
+
+    .feature-btn.btn-outline-info:hover {
+        border-color: var(--info-color);
+        background: var(--info-light);
+    }
+
+    .feature-btn.btn-outline-warning:hover {
+        border-color: var(--warning-color);
+        background: var(--warning-light);
+    }
+
+    .feature-icon {
         margin-bottom: 1.5rem;
+    }
+
+    .feature-icon i {
+        font-size: 3rem;
         color: var(--primary-color);
     }
 
-    .inventory-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1rem;
+    .btn-outline-success .feature-icon i {
+        color: var(--success-color);
+    }
+
+    .btn-outline-info .feature-icon i {
+        color: var(--info-color);
+    }
+
+    .btn-outline-warning .feature-icon i {
+        color: var(--warning-color);
+    }
+
+    .feature-content p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .feature-content p:first-child {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
         color: var(--dark-color);
     }
 
-    .inventory-description {
+    .feature-content p:last-child {
+        font-size: 0.95rem;
         color: var(--secondary-color);
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
     }
 
     .quick-stats {
@@ -130,54 +168,60 @@
     </div>
 </div>
 
-<!-- Inventory Management Cards -->
-<div class="inventory-cards">
-    <!-- Suppliers Management -->
-    <div class="inventory-card" onclick="navigateToRoute('inventory/suppliers')">
+<!-- Inventory Management Features -->
+<div class="inventory-features">
+    <div class="row g-4">
+        <!-- Suppliers Management -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToRoute('inventory/suppliers')">
+                <div class="feature-icon">
+                    <i class="fas fa-truck-field"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Suppliers Management</strong></p>
+                    <p>Manage dairy farms, flavor suppliers, and ingredient distributors</p>
+                </div>
+            </button>
+        </div>
+        
+        <!-- Ingredients Management -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="navigateToRoute('inventory/ingredients')">
+                <div class="feature-icon">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Ingredients Inventory</strong></p>
+                    <p>Track milk, cream, flavors, toppings, and cone stock levels</p>
+                </div>
+            </button>
+        </div>
+        
+        <!-- Stock Reports -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Stock Reports')">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Stock Analytics</strong></p>
+                    <p>Monitor ice cream sales trends and ingredient usage patterns</p>
+                </div>
+            </button>
+        </div>
 
-
-        <p class="inventory-description">
-            Manage supplier information, contacts, and purchase relationships
-        </p>
-        <button class="btn btn-primary">
-            <i class="fas fa-arrow-right me-2"></i>Manage Suppliers
-        </button>
-    </div>
-
-    <!-- Ingredients Management -->
-    <div class="inventory-card" onclick="navigateToRoute('inventory/ingredients')">
-
-
-        <p class="inventory-description">
-            Track ingredient quantities, monitor stock levels, and manage recipes
-        </p>
-        <button class="btn btn-primary">
-            <i class="fas fa-arrow-right me-2"></i>Manage Ingredients
-        </button>
-    </div>
-
-    <!-- Stock Reports -->
-    <div class="inventory-card" onclick="Alert.comingSoon('Stock Reports')">
-
-
-        <p class="inventory-description">
-            Generate reports on stock movements, usage patterns, and forecasting
-        </p>
-        <button class="btn btn-outline-primary">
-            <i class="fas fa-chart-bar me-2"></i>Coming Soon
-        </button>
-    </div>
-
-    <!-- Purchase Orders -->
-    <div class="inventory-card" onclick="Alert.comingSoon('Purchase Orders')">
-
-
-        <p class="inventory-description">
-            Create and manage purchase orders for restocking ingredients
-        </p>
-        <button class="btn btn-outline-primary">
-            <i class="fas fa-plus me-2"></i>Coming Soon
-        </button>
+        <!-- Purchase Orders -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Purchase Orders')">
+                <div class="feature-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Purchase Orders</strong></p>
+                    <p>Restock dairy products, flavors, and ice cream supplies</p>
+                </div>
+            </button>
+        </div>
     </div>
 </div>
 

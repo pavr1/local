@@ -68,11 +68,24 @@
     }
 
     .feature-icon {
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
     }
 
     .feature-icon i {
-        font-size: 2.5rem;
+        font-size: 3rem;
+        color: var(--primary-color);
+    }
+
+    .btn-outline-success .feature-icon i {
+        color: var(--success-color);
+    }
+
+    .btn-outline-info .feature-icon i {
+        color: var(--info-color);
+    }
+
+    .btn-outline-warning .feature-icon i {
+        color: var(--warning-color);
     }
 
     .feature-content h5 {
@@ -155,40 +168,48 @@
     <div class="row g-4">
         <div class="col-md-6">
             <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Create New Orders')">
-
+                <div class="feature-icon">
+                    <i class="fas fa-ice-cream"></i>
+                </div>
                 <div class="feature-content">
                     <p><strong>Create New Orders</strong></p>
-                    <p>Add customer orders with multiple items and customizations</p>
+                    <p>Add customer orders with multiple ice cream flavors and toppings</p>
                 </div>
             </button>
         </div>
         
         <div class="col-md-6">
             <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('View Orders')">
-
+                <div class="feature-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
                 <div class="feature-content">
                     <p><strong>View Orders</strong></p>
-                    <p>Browse and search through all customer orders</p>
+                    <p>Browse and search through all customer ice cream orders</p>
                 </div>
             </button>
         </div>
         
         <div class="col-md-6">
             <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Order Analytics')">
-
+                <div class="feature-icon">
+                    <i class="fas fa-chart-bar"></i>
+                </div>
                 <div class="feature-content">
                     <p><strong>Order Analytics</strong></p>
-                    <p>Track sales performance and order trends</p>
+                    <p>Track ice cream sales performance and flavor trends</p>
                 </div>
             </button>
         </div>
         
         <div class="col-md-6">
             <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Order History')">
-
+                <div class="feature-icon">
+                    <i class="fas fa-history"></i>
+                </div>
                 <div class="feature-content">
                     <p><strong>Order History</strong></p>
-                    <p>Complete order history and customer tracking</p>
+                    <p>Complete order history and customer loyalty tracking</p>
                 </div>
             </button>
         </div>
