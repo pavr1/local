@@ -131,8 +131,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// Add logging middleware
 	router.Use(loggingMiddleware(logger))
 
-	// Add CORS middleware
-	router.Use(corsMiddleware)
+	// CORS removed - gateway handles all CORS headers
 
 	// Health check endpoint
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -208,18 +207,4 @@ func (rw *responseWriter) WriteHeader(code int) {
 	rw.ResponseWriter.WriteHeader(code)
 }
 
-// corsMiddleware adds CORS headers
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
+// corsMiddleware removed - gateway handles all CORS headers
