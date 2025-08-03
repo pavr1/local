@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"expense-service/entities/invoices/models"
-	invoiceSQL "expense-service/entities/invoices/sql"
+	"invoice-service/entities/invoices/models"
+	invoiceSQL "invoice-service/entities/invoices/sql"
 
 	"github.com/sirupsen/logrus"
 )

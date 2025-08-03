@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"expense-service/config"
+	"invoice-service/config"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -23,7 +23,7 @@ func main() {
 
 	// Setup logger
 	logger := setupLogger(cfg.LogLevel)
-	logger.Info("Starting Ice Cream Store Expense Service")
+	logger.Info("Starting Ice Cream Store Invoice Service")
 
 	// Connect to database
 	db, err := connectToDatabase(cfg, logger)

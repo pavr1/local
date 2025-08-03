@@ -23,7 +23,7 @@ This project implements a **microservices architecture** with 9 specialized serv
 ### 🟧 **Level 1: Administrative Services**  
 - **⚙️ Administration Service** - User/role/permission management, system config, equipment tracking (Admin only)
 - **👥 Customer Service** - Customer management and profiles
-- **💰 Expenses Service** - Expense management and invoices
+- **💰 Invoice Service** - Invoice and transaction management
 
 ### 🟪 **Level 2: Business Logic Services**
 - **📦 Inventory Service** - Suppliers, ingredients, recipes, stock management
@@ -160,7 +160,7 @@ local/
 4. 🔄 **Audit Service** (LogAuditEntry & RetrieveAuditLogs APIs)
 5. 🔄 **Administration Service** (Next - Critical for other services, includes equipment management)
 6. 🔄 **Customer Service**
-7. 🔄 **Expenses Service**
+7. 🔄 **Invoice Service**
 8. 🔄 **Inventory Service**
 9. 🔄 **Promotions Service**
 10. 🔄 **Orders Service**

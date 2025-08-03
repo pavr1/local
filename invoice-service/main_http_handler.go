@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 
-	invoicesHandlers "expense-service/entities/invoices/handlers"
+	invoicesHandlers "invoice-service/entities/invoices/handlers"
 
 	"github.com/sirupsen/logrus"
 )
@@ -39,7 +39,7 @@ func (h *MainHttpHandler) GetInvoicesHandler() *invoicesHandlers.HttpHandler {
 // HealthCheck provides a health check endpoint for the entire service
 func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 	return map[string]interface{}{
-		"service": "expense-service",
+		"service": "invoice-service",
 		"status":  "healthy",
 		"entities": map[string]string{
 			"invoices": "ready",

@@ -50,7 +50,7 @@ type Config struct {
 	SessionServiceURL   string
 	OrdersServiceURL    string
 	InventoryServiceURL string
-	ExpenseServiceURL   string
+	InvoiceServiceURL   string
 }
 
 func main() {
@@ -59,13 +59,13 @@ func main() {
 		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
 		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
 		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
-		ExpenseServiceURL:   getEnv("EXPENSE_SERVICE_URL", "http://localhost:8085"),
+		InvoiceServiceURL:   getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
 	}
 
+	log.Printf("Gateway configured with Invoice Service: %s", config.InvoiceServiceURL)
 	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
-	log.Printf("Gateway configured with Expense Service: %s", config.ExpenseServiceURL)
 
 	// Gateway is pure routing - no session management logic
 
@@ -105,10 +105,10 @@ func main() {
 	inventoryRouter.HandleFunc("/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
 
-	// Expense service endpoints - pure proxy routing
+	// Expenses routes (proxied to invoice service)
 	expenseRouter := api.PathPrefix("/v1/expenses").Subrouter()
-	expenseRouter.HandleFunc("/p/health", createProxyHandler(config.ExpenseServiceURL, "/health")).Methods("GET")
-	expenseRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.ExpenseServiceURL, "/api/v1"))
+	expenseRouter.HandleFunc("/p/health", createProxyHandler(config.InvoiceServiceURL, "/health")).Methods("GET")
+	expenseRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1"))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
@@ -140,14 +140,14 @@ func main() {
 	fmt.Println("   📂 Public Health Checks:")
 	fmt.Printf("      GET  /api/v1/orders/p/health       → %s\n", config.OrdersServiceURL)
 	fmt.Printf("      GET  /api/v1/inventory/p/health    → %s\n", config.InventoryServiceURL)
-	fmt.Printf("      GET  /api/v1/expenses/p/health     → %s\n", config.ExpenseServiceURL)
+	fmt.Printf("      GET  /api/v1/expenses/p/health     → %s\n", config.InvoiceServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
 	fmt.Printf("      ALL  /api/v1/orders/*          → %s\n", config.OrdersServiceURL)
 	fmt.Printf("      ALL  /api/v1/inventory/*       → %s\n", config.InventoryServiceURL)
 	fmt.Printf("           ├─ /suppliers/*          → Suppliers management\n")
 	fmt.Printf("           ├─ /ingredients/*        → [Future] Ingredients management\n")
 	fmt.Printf("           └─ /existences/*         → [Future] Stock management\n")
-	fmt.Printf("      ALL  /api/v1/expenses/*        → %s\n", config.ExpenseServiceURL)
+	fmt.Printf("      ALL  /api/v1/expenses/*        → %s\n", config.InvoiceServiceURL)
 	fmt.Printf("           ├─ /invoices/*           → Invoice management\n")
 	fmt.Printf("           └─ /invoices/{id}/details  → Invoice details management\n")
 	fmt.Println("")

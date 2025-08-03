@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"expense-service/entities/invoices/models"
+	"invoice-service/entities/invoices/models"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"

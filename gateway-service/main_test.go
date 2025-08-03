@@ -69,14 +69,14 @@ func TestServiceConfigDefaults(t *testing.T) {
 		SessionServiceURL:   "http://localhost:8081",
 		OrdersServiceURL:    "http://localhost:8083",
 		InventoryServiceURL: "http://localhost:8084",
-		ExpenseServiceURL:   "http://localhost:8085",
+		InvoiceServiceURL:   "http://localhost:8085",
 	}
 
 	assert.Equal(t, "8082", config.Port)
 	assert.Equal(t, "http://localhost:8081", config.SessionServiceURL)
 	assert.Equal(t, "http://localhost:8083", config.OrdersServiceURL)
 	assert.Equal(t, "http://localhost:8084", config.InventoryServiceURL)
-	assert.Equal(t, "http://localhost:8085", config.ExpenseServiceURL)
+	assert.Equal(t, "http://localhost:8085", config.InvoiceServiceURL)
 }
 
 // TestServiceConfigWithEnvironmentVariables tests service configuration with environment variables
@@ -87,7 +87,7 @@ func TestServiceConfigWithEnvironmentVariables(t *testing.T) {
 		"SESSION_SERVICE_URL":   "http://session.example.com:8081",
 		"ORDERS_SERVICE_URL":    "http://orders.example.com:8083",
 		"INVENTORY_SERVICE_URL": "http://inventory.example.com:8084",
-		"EXPENSE_SERVICE_URL":   "http://expense.example.com:8085",
+		"INVOICE_SERVICE_URL":   "http://invoice.example.com:8085",
 	}
 
 	for key, value := range envVars {
@@ -102,7 +102,7 @@ func TestServiceConfigWithEnvironmentVariables(t *testing.T) {
 	assert.Equal(t, "http://session.example.com:8081", config.SessionServiceURL)
 	assert.Equal(t, "http://orders.example.com:8083", config.OrdersServiceURL)
 	assert.Equal(t, "http://inventory.example.com:8084", config.InventoryServiceURL)
-	assert.Equal(t, "http://expense.example.com:8085", config.ExpenseServiceURL)
+	assert.Equal(t, "http://invoice.example.com:8085", config.InvoiceServiceURL)
 }
 
 // Helper function to get service config (extracted for testing)
@@ -112,7 +112,7 @@ func getServiceConfig() Config {
 		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
 		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
 		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
-		ExpenseServiceURL:   getEnv("EXPENSE_SERVICE_URL", "http://localhost:8085"),
+		InvoiceServiceURL:   getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
 	}
 }
 
@@ -295,7 +295,7 @@ func TestGatewayServiceSpecifics(t *testing.T) {
 		assert.Contains(t, config.SessionServiceURL, "localhost:8081")
 		assert.Contains(t, config.OrdersServiceURL, "localhost:8083")
 		assert.Contains(t, config.InventoryServiceURL, "localhost:8084")
-		assert.Contains(t, config.ExpenseServiceURL, "localhost:8085")
+		assert.Contains(t, config.InvoiceServiceURL, "localhost:8085")
 	})
 
 	t.Run("gateway acts as single entry point", func(t *testing.T) {
