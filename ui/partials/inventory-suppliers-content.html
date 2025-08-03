@@ -37,10 +37,7 @@
 <!-- Suppliers Table -->
 <div class="suppliers-table">
     <div class="table-header">
-        <h4 class="mb-0">
-            <i class="fas fa-list me-2"></i>
-            Supplier Directory
-        </h4>
+
         <button class="btn btn-add-supplier" onclick="Alert.comingSoon('Add Supplier')">
             <i class="fas fa-plus me-2"></i>Add Supplier
         </button>
@@ -97,8 +94,8 @@
         if (!suppliers || suppliers.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
-                    <i class="fas fa-truck fa-4x text-muted mb-3"></i>
-                    <h5>No Suppliers Found</h5>
+        
+                    
                     <p class="text-muted">No suppliers have been added yet.</p>
                     <button class="btn btn-primary" onclick="Alert.comingSoon('Add First Supplier')">
                         <i class="fas fa-plus me-2"></i>Add First Supplier
@@ -160,8 +157,8 @@
         const container = document.getElementById('suppliersTableContainer');
         container.innerHTML = `
             <div class="text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
-                <h5>Error Loading Data</h5>
+    
+                
                 <p class="text-muted">${message}</p>
                 <button class="btn btn-primary" onclick="loadSuppliersData()">
                     <i class="fas fa-refresh me-2"></i>Retry

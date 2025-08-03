@@ -132,10 +132,7 @@
 <!-- Invoices Table -->
 <div class="invoices-table">
     <div class="table-header">
-        <h4 class="mb-0">
-            <i class="fas fa-list me-2"></i>
-            Invoice Records
-        </h4>
+
         <button class="btn btn-add-invoice" onclick="Alert.comingSoon('Create Invoice')">
             <i class="fas fa-plus me-2"></i>Create Invoice
         </button>
@@ -194,8 +191,8 @@
         if (!invoices || invoices.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
-                    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
-                    <h5>No Invoices Found</h5>
+        
+                    
                     <p class="text-muted">No invoices match your current filters.</p>
                 </div>
             `;
@@ -257,8 +254,8 @@
         const container = document.getElementById('invoicesTableContainer');
         container.innerHTML = `
             <div class="text-center py-5">
-                <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
-                <h5>Error Loading Data</h5>
+    
+                
                 <p class="text-muted">${message}</p>
                 <button class="btn btn-primary" onclick="loadInvoicesData()">
                     <i class="fas fa-refresh me-2"></i>Retry

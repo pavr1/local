@@ -97,19 +97,15 @@
             font-weight: 700;
             margin: 0;
             margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .page-subtitle {
-            font-size: 0.95rem;
+            font-size: 1rem;
             opacity: 0.8;
             margin: 0;
-            font-family: 'Courier New', monospace;
-            transition: opacity 0.3s ease;
-            border-left: 3px solid rgba(255, 255, 255, 0.3);
-            padding-left: 0.75rem;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            padding: 0.5rem 0.75rem;
         }
 
         .top-right {
@@ -568,86 +564,61 @@
             }
         }
 
-        // Update page title and subtitle with logs
+        // Update page title and subtitle with icons
         function updatePageInfo(page) {
             const pageInfo = {
                 'dashboard': { 
                     title: 'Dashboard', 
-                    subtitle: 'Welcome to your business management dashboard' 
+                    subtitle: 'Welcome to your business management dashboard',
+                    icon: 'fas fa-home'
                 },
                 'orders': { 
                     title: 'Orders Management', 
-                    subtitle: 'Manage customer orders, track status, and handle fulfillment' 
+                    subtitle: 'Manage customer orders, track status, and handle fulfillment',
+                    icon: 'fas fa-tools'
                 },
                 'inventory': { 
                     title: 'Inventory Overview', 
-                    subtitle: 'Track ingredients, manage suppliers, and monitor stock levels' 
+                    subtitle: 'Track ingredients, manage suppliers, and monitor stock levels',
+                    icon: 'fas fa-warehouse'
                 },
                 'inventory-suppliers': { 
                     title: 'Suppliers Management', 
-                    subtitle: 'Manage supplier relationships and vendor information' 
+                    subtitle: 'Manage supplier relationships and vendor information',
+                    icon: 'fas fa-truck'
                 },
                 'inventory-ingredients': { 
                     title: 'Ingredients Management', 
-                    subtitle: 'Track ingredient inventory and recipe components' 
+                    subtitle: 'Track ingredient inventory and recipe components',
+                    icon: 'fas fa-seedling'
                 },
                 'invoice': { 
                     title: 'Invoice Management', 
-                    subtitle: 'Manage invoices, track payments, and handle billing' 
+                    subtitle: 'Manage invoices, track payments, and handle billing',
+                    icon: 'fas fa-file-invoice-dollar'
                 },
                 'invoice-details': { 
                     title: 'Invoice Details', 
-                    subtitle: 'View and manage detailed invoice information' 
+                    subtitle: 'View and manage detailed invoice information',
+                    icon: 'fas fa-receipt'
                 }
             };
             
             const info = pageInfo[page] || pageInfo['dashboard'];
             
-            // Update page title in top panel
+            // Update page title and subtitle in top panel
             const pageTitleElement = document.getElementById('page-title');
             const pageSubtitleElement = document.getElementById('page-subtitle');
             
             if (pageTitleElement) {
-                pageTitleElement.textContent = info.title;
+                pageTitleElement.innerHTML = `<i class="${info.icon} me-2"></i>${info.title}`;
             }
-            
-            // Update subtitle with activity logs
             if (pageSubtitleElement) {
-                updatePageLogs(page, pageSubtitleElement);
+                pageSubtitleElement.textContent = info.subtitle;
             }
             
             // Update document title
             document.title = `Ice Cream Store - ${info.title}`;
-        }
-
-        // Update page logs in subtitle
-        function updatePageLogs(page, subtitleElement) {
-            const now = new Date();
-            const timeStamp = now.toLocaleTimeString();
-            
-            const pageLogs = {
-                'dashboard': `System initialized • ${timeStamp} • All services operational`,
-                'orders': `Orders module loaded • ${timeStamp} • Ready for order management`,
-                'inventory': `Inventory data synced • ${timeStamp} • Stock levels current`,
-                'inventory-suppliers': `Supplier database loaded • ${timeStamp} • ${getRandomNumber(15, 45)} suppliers active`,
-                'inventory-ingredients': `Ingredients catalog loaded • ${timeStamp} • ${getRandomNumber(50, 120)} items tracked`,
-                'invoice': `Invoice system ready • ${timeStamp} • Financial tracking active`,
-                'invoice-details': `Invoice records loaded • ${timeStamp} • ${getRandomNumber(5, 25)} invoices pending`
-            };
-            
-            const logMessage = pageLogs[page] || `Page loaded • ${timeStamp} • System ready`;
-            subtitleElement.textContent = logMessage;
-            
-            // Add a subtle animation to show the update
-            subtitleElement.style.opacity = '0.6';
-            setTimeout(() => {
-                subtitleElement.style.opacity = '0.8';
-            }, 200);
-        }
-
-        // Helper function to generate random numbers for dynamic data
-        function getRandomNumber(min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
         // Toggle submenu
