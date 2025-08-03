@@ -4,11 +4,12 @@ import (
 	"time"
 )
 
-// Receipt represents a receipt in the database
-type Receipt struct {
+// Invoice represents an invoice in the database
+type Invoice struct {
 	ID                string    `json:"id" db:"id"`
-	ReceiptNumber     string    `json:"receipt_number" db:"receipt_number"`
-	PurchaseDate      time.Time `json:"purchase_date" db:"purchase_date"`
+	InvoiceNumber     string    `json:"invoice_number" db:"invoice_number"`
+	TransactionDate   time.Time `json:"transaction_date" db:"transaction_date"`
+	TransactionType   string    `json:"transaction_type" db:"transaction_type"`
 	SupplierID        *string   `json:"supplier_id" db:"supplier_id"`
 	ExpenseCategoryID string    `json:"expense_category_id" db:"expense_category_id"`
 	TotalAmount       *float64  `json:"total_amount" db:"total_amount"`
@@ -18,10 +19,10 @@ type Receipt struct {
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
-// ReceiptItem represents a line item within a receipt
-type ReceiptItem struct {
+// InvoiceDetail represents a line item within an invoice
+type InvoiceDetail struct {
 	ID             string     `json:"id" db:"id"`
-	ReceiptID      string     `json:"receipt_id" db:"receipt_id"`
+	InvoiceID      string     `json:"invoice_id" db:"invoice_id"`
 	IngredientID   *string    `json:"ingredient_id" db:"ingredient_id"`
 	Detail         string     `json:"detail" db:"detail"`
 	Count          float64    `json:"count" db:"count"`
@@ -33,9 +34,9 @@ type ReceiptItem struct {
 	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
 }
 
-// CreateReceiptItemRequest represents the request to create a new receipt item
-type CreateReceiptItemRequest struct {
-	ReceiptID      string     `json:"receipt_id" validate:"required,uuid"`
+// CreateInvoiceDetailRequest represents the request to create a new invoice detail
+type CreateInvoiceDetailRequest struct {
+	InvoiceID      string     `json:"invoice_id" validate:"required,uuid"`
 	IngredientID   *string    `json:"ingredient_id,omitempty" validate:"omitempty,uuid"`
 	Detail         string     `json:"detail" validate:"required"`
 	Count          float64    `json:"count" validate:"required,gt=0"`
@@ -44,29 +45,31 @@ type CreateReceiptItemRequest struct {
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
 
-// CreateReceiptRequest represents the request to create a new receipt with items
-type CreateReceiptRequest struct {
-	ReceiptNumber     string                     `json:"receipt_number" validate:"required"`
-	PurchaseDate      time.Time                  `json:"purchase_date" validate:"required"`
-	SupplierID        *string                    `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
-	ExpenseCategoryID string                     `json:"expense_category_id" validate:"required,uuid"`
-	ImageURL          string                     `json:"image_url" validate:"required,url"`
-	Notes             *string                    `json:"notes,omitempty"`
-	Items             []CreateReceiptItemRequest `json:"items" validate:"required,dive"`
+// CreateInvoiceRequest represents the request to create a new invoice with details
+type CreateInvoiceRequest struct {
+	InvoiceNumber     string                       `json:"invoice_number" validate:"required"`
+	TransactionDate   time.Time                    `json:"transaction_date" validate:"required"`
+	TransactionType   string                       `json:"transaction_type" validate:"required,oneof=income outcome"`
+	SupplierID        *string                      `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
+	ExpenseCategoryID string                       `json:"expense_category_id" validate:"required,uuid"`
+	ImageURL          string                       `json:"image_url" validate:"required,url"`
+	Notes             *string                      `json:"notes,omitempty"`
+	Items             []CreateInvoiceDetailRequest `json:"items" validate:"required,dive"`
 }
 
-// UpdateReceiptRequest represents the request to update a receipt
-type UpdateReceiptRequest struct {
-	ReceiptNumber     *string    `json:"receipt_number,omitempty" validate:"omitempty,min=1"`
-	PurchaseDate      *time.Time `json:"purchase_date,omitempty"`
+// UpdateInvoiceRequest represents the request to update an invoice
+type UpdateInvoiceRequest struct {
+	InvoiceNumber     *string    `json:"invoice_number,omitempty" validate:"omitempty,min=1"`
+	TransactionDate   *time.Time `json:"transaction_date,omitempty"`
+	TransactionType   *string    `json:"transaction_type,omitempty" validate:"omitempty,oneof=income outcome"`
 	SupplierID        *string    `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 	ExpenseCategoryID *string    `json:"expense_category_id,omitempty" validate:"omitempty,uuid"`
 	ImageURL          *string    `json:"image_url,omitempty" validate:"omitempty,url"`
 	Notes             *string    `json:"notes,omitempty"`
 }
 
-// UpdateReceiptItemRequest represents the request to update a receipt item
-type UpdateReceiptItemRequest struct {
+// UpdateInvoiceDetailRequest represents the request to update an invoice detail
+type UpdateInvoiceDetailRequest struct {
 	IngredientID   *string    `json:"ingredient_id,omitempty" validate:"omitempty,uuid"`
 	Detail         *string    `json:"detail,omitempty" validate:"omitempty,min=1"`
 	Count          *float64   `json:"count,omitempty" validate:"omitempty,gt=0"`
@@ -75,81 +78,82 @@ type UpdateReceiptItemRequest struct {
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
 
-// GetReceiptRequest represents the request to get a receipt by ID
-type GetReceiptRequest struct {
+// GetInvoiceRequest represents the request to get an invoice by ID
+type GetInvoiceRequest struct {
 	ID string `json:"id" validate:"required,uuid"`
 }
 
-// GetReceiptItemRequest represents the request to get a receipt item by ID
-type GetReceiptItemRequest struct {
+// GetInvoiceDetailRequest represents the request to get an invoice detail by ID
+type GetInvoiceDetailRequest struct {
 	ID string `json:"id" validate:"required,uuid"`
 }
 
-// DeleteReceiptRequest represents the request to delete a receipt
-type DeleteReceiptRequest struct {
+// DeleteInvoiceRequest represents the request to delete an invoice
+type DeleteInvoiceRequest struct {
 	ID string `json:"id" validate:"required,uuid"`
 }
 
-// DeleteReceiptItemRequest represents the request to delete a receipt item
-type DeleteReceiptItemRequest struct {
+// DeleteInvoiceDetailRequest represents the request to delete an invoice detail
+type DeleteInvoiceDetailRequest struct {
 	ID string `json:"id" validate:"required,uuid"`
 }
 
-// ListReceiptsRequest represents the request to list receipts
-type ListReceiptsRequest struct {
+// ListInvoicesRequest represents the request to list invoices
+type ListInvoicesRequest struct {
 	Limit             *int    `json:"limit,omitempty" validate:"omitempty,min=1,max=100"`
 	Offset            *int    `json:"offset,omitempty" validate:"omitempty,min=0"`
+	TransactionType   *string `json:"transaction_type,omitempty" validate:"omitempty,oneof=income outcome"`
 	ExpenseCategoryID *string `json:"expense_category_id,omitempty" validate:"omitempty,uuid"`
 	SupplierID        *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
-// ListReceiptItemsRequest represents the request to list receipt items
-type ListReceiptItemsRequest struct {
+// ListInvoiceDetailsRequest represents the request to list invoice details
+type ListInvoiceDetailsRequest struct {
 	Limit        *int    `json:"limit,omitempty" validate:"omitempty,min=1,max=100"`
 	Offset       *int    `json:"offset,omitempty" validate:"omitempty,min=0"`
-	ReceiptID    *string `json:"receipt_id,omitempty" validate:"omitempty,uuid"`
+	InvoiceID    *string `json:"invoice_id,omitempty" validate:"omitempty,uuid"`
 	IngredientID *string `json:"ingredient_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // Response Structs
-// ReceiptResponse represents a single receipt response
-type ReceiptResponse struct {
+// InvoiceResponse represents a single invoice response
+type InvoiceResponse struct {
 	Success bool    `json:"success"`
-	Data    Receipt `json:"data"`
+	Data    Invoice `json:"data"`
 	Message string  `json:"message,omitempty"`
 }
 
-// ReceiptsListResponse represents a list of receipts response
-type ReceiptsListResponse struct {
+// InvoicesListResponse represents a list of invoices response
+type InvoicesListResponse struct {
 	Success bool      `json:"success"`
-	Data    []Receipt `json:"data"`
+	Data    []Invoice `json:"data"`
 	Count   int       `json:"count"`
 	Message string    `json:"message,omitempty"`
 }
 
-// ReceiptDeleteResponse represents a delete operation response
-type ReceiptDeleteResponse struct {
+// InvoiceDeleteResponse represents a delete operation response
+type InvoiceDeleteResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
 
-// ReceiptItemResponse represents a single receipt item response
-type ReceiptItemResponse struct {
-	Success bool        `json:"success"`
-	Data    ReceiptItem `json:"data"`
-	Message string      `json:"message,omitempty"`
-}
-
-// ReceiptItemsListResponse represents a list of receipt items response
-type ReceiptItemsListResponse struct {
+// InvoiceDetailResponse represents a single invoice detail response
+type InvoiceDetailResponse struct {
 	Success bool          `json:"success"`
-	Data    []ReceiptItem `json:"data"`
-	Count   int           `json:"count"`
+	Data    InvoiceDetail `json:"data"`
 	Message string        `json:"message,omitempty"`
 }
 
-// ReceiptItemDeleteResponse represents a delete operation response
-type ReceiptItemDeleteResponse struct {
+// InvoiceDetailsListResponse represents a list of invoice details response
+type InvoiceDetailsListResponse struct {
+	Success bool            `json:"success"`
+	Data    []InvoiceDetail `json:"data"`
+	Count   int             `json:"count"`
+	Message string          `json:"message,omitempty"`
+}
+
+// InvoiceDetailDeleteResponse represents a delete operation response
+type InvoiceDetailDeleteResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
