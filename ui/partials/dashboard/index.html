@@ -25,18 +25,74 @@
         transition: var(--transition);
         cursor: pointer;
         border: 2px solid transparent;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     .service-card:hover {
         transform: translateY(-5px);
         box-shadow: var(--shadow-heavy);
+    }
+    
+    .service-card.primary:hover {
         border-color: var(--primary-color);
+        background: var(--primary-light);
+    }
+    
+    .service-card.info:hover {
+        border-color: var(--info-color);
+        background: var(--info-light);
+    }
+    
+    .service-card.success:hover {
+        border-color: var(--success-color);
+        background: var(--success-light);
+    }
+    
+    .service-card.warning:hover {
+        border-color: var(--warning-color);
+        background: var(--warning-light);
+    }
+    
+    .service-card.danger:hover {
+        border-color: var(--danger-color);
+        background: var(--danger-light);
+    }
+    
+    .service-card.secondary:hover {
+        border-color: var(--secondary-color);
+        background: rgba(108, 117, 125, 0.1);
     }
 
     .service-icon {
         font-size: 3rem;
         margin-bottom: 1.5rem;
+    }
+    
+    .service-card.primary .service-icon {
         color: var(--primary-color);
+    }
+    
+    .service-card.info .service-icon {
+        color: var(--info-color);
+    }
+    
+    .service-card.success .service-icon {
+        color: var(--success-color);
+    }
+    
+    .service-card.warning .service-icon {
+        color: var(--warning-color);
+    }
+    
+    .service-card.danger .service-icon {
+        color: var(--danger-color);
+    }
+    
+    .service-card.secondary .service-icon {
+        color: var(--secondary-color);
     }
 
     .service-title {
@@ -50,6 +106,8 @@
         color: var(--secondary-color);
         margin-bottom: 1.5rem;
         line-height: 1.6;
+        font-size: 0.95rem;
+        min-height: 2.4rem;
     }
 
     .service-status {
@@ -98,10 +156,13 @@
 <!-- Service Cards Grid -->
 <div class="service-cards">
     <!-- Data Service -->
-    <div class="service-card" onclick="Alert.info('Data Service', 'PostgreSQL database providing data storage for all ice cream store operations.')">
+    <div class="service-card primary" onclick="Alert.info('Data Service', 'PostgreSQL database providing secure data storage for all ice cream store operations.')">
+        <div class="service-icon">
+            <i class="fas fa-database"></i>
+        </div>
         <h3 class="service-title">Data Service</h3>
         <p class="service-description">
-            PostgreSQL database storing customer data, orders, inventory, and business analytics
+            PostgreSQL database storing all ice cream business data
         </p>
         <div class="service-status status-loading" id="data-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -109,10 +170,13 @@
     </div>
 
     <!-- Gateway Service -->
-    <div class="service-card" onclick="Alert.info('Gateway Service', 'API gateway managing authentication, routing, and service coordination.')">
+    <div class="service-card info" onclick="Alert.info('Gateway Service', 'Central API gateway managing authentication, routing, and service coordination.')">
+        <div class="service-icon">
+            <i class="fas fa-network-wired"></i>
+        </div>
         <h3 class="service-title">Gateway Service</h3>
         <p class="service-description">
-            Central API gateway handling authentication, request routing, and service orchestration
+            Central API gateway routing and authentication hub
         </p>
         <div class="service-status status-loading" id="gateway-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -120,11 +184,13 @@
     </div>
 
     <!-- Orders Service -->
-    <div class="service-card" onclick="navigateToRoute('orders')">
-
+    <div class="service-card success" onclick="navigateToRoute('orders')">
+        <div class="service-icon">
+            <i class="fas fa-ice-cream"></i>
+        </div>
         <h3 class="service-title">Orders Management</h3>
         <p class="service-description">
-            Process ice cream orders, track customer preferences, and manage flavor selections
+            Process ice cream orders and track customer preferences
         </p>
         <div class="service-status status-loading" id="orders-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -132,11 +198,13 @@
     </div>
 
     <!-- Inventory Service -->
-    <div class="service-card" onclick="navigateToRoute('inventory')">
-
+    <div class="service-card warning" onclick="navigateToRoute('inventory')">
+        <div class="service-icon">
+            <i class="fas fa-boxes"></i>
+        </div>
         <h3 class="service-title">Inventory Management</h3>
         <p class="service-description">
-            Monitor ice cream ingredients, dairy supplies, and cone inventory levels
+            Monitor ice cream ingredients and supply levels
         </p>
         <div class="service-status status-loading" id="inventory-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -144,11 +212,13 @@
     </div>
 
     <!-- Invoice Service -->
-    <div class="service-card" onclick="navigateToRoute('invoice')">
-
+    <div class="service-card danger" onclick="navigateToRoute('invoice')">
+        <div class="service-icon">
+            <i class="fas fa-receipt"></i>
+        </div>
         <h3 class="service-title">Invoice Management</h3>
         <p class="service-description">
-            Handle ice cream sales transactions, customer billing, and financial reports
+            Handle ice cream sales and customer billing
         </p>
         <div class="service-status status-loading" id="invoice-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -156,10 +226,13 @@
     </div>
 
         <!-- Session Service -->
-    <div class="service-card" onclick="Alert.info('Session Management', 'Session management is handled automatically by the system.')">
+    <div class="service-card secondary" onclick="Alert.info('Session Management', 'Secure staff authentication and access control system.')">
+        <div class="service-icon">
+            <i class="fas fa-shield-alt"></i>
+        </div>
         <h3 class="service-title">Session Management</h3>
         <p class="service-description">
-            Secure staff authentication, user sessions, and access control
+            Secure staff authentication and access control
         </p>
         <div class="service-status status-loading" id="session-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
