@@ -611,17 +611,17 @@
 
         // Get content URL for each page
         function getContentUrl(page) {
-            const contentMap = {
-                'dashboard': 'partials/dashboard-content.html',
-                'orders': 'partials/orders-content.html',
-                'inventory': 'partials/inventory-content.html',
-                'inventory-suppliers': 'partials/inventory-suppliers-content.html',
-                'inventory-ingredients': 'partials/inventory-ingredients-content.html',
-                'invoice': 'partials/invoice-content.html',
-                'invoice-details': 'partials/invoice-invoices-content.html'
-            };
-            
-            return contentMap[page] || 'partials/dashboard-content.html';
+                    const contentMap = {
+            'dashboard': 'partials/dashboard/index.html',
+            'orders': 'partials/orders/index.html',
+            'inventory': 'partials/inventory/index.html',
+            'inventory-suppliers': 'partials/inventory/suppliers.html',
+            'inventory-ingredients': 'partials/inventory/ingredients.html',
+            'invoice': 'partials/invoice/index.html',
+            'invoice-details': 'partials/invoice/details.html'
+        };
+        
+        return contentMap[page] || 'partials/dashboard/index.html';
         }
 
         // Initialize page-specific content

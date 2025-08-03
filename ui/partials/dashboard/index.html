@@ -97,7 +97,7 @@
 
         <h3 class="service-title">Orders Management</h3>
         <p class="service-description">
-            Manage customer orders, track order status, and handle order fulfillment
+            Process ice cream orders, track customer preferences, and manage flavor selections
         </p>
         <div class="service-status status-loading" id="orders-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -109,7 +109,7 @@
 
         <h3 class="service-title">Inventory Management</h3>
         <p class="service-description">
-            Track ingredients, manage suppliers, and monitor stock levels
+            Monitor ice cream ingredients, dairy supplies, and cone inventory levels
         </p>
         <div class="service-status status-loading" id="inventory-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -121,7 +121,7 @@
 
         <h3 class="service-title">Invoice Management</h3>
         <p class="service-description">
-            Manage invoices, track financial transactions, and handle billing
+            Handle ice cream sales transactions, customer billing, and financial reports
         </p>
         <div class="service-status status-loading" id="invoice-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -132,7 +132,7 @@
     <div class="service-card" onclick="Alert.info('Session Management', 'Session management is handled automatically by the system.')">
         <h3 class="service-title">Session Management</h3>
         <p class="service-description">
-            User authentication, session handling, and security management
+            Secure staff authentication, user sessions, and access control
         </p>
         <div class="service-status status-loading" id="session-status">
             <i class="fas fa-spinner fa-spin me-2"></i>Checking...
@@ -170,39 +170,52 @@
     }
 
     async function loadDashboardServiceStatus() {
-        console.log('📊 Loading service status...');
+        console.log('📊 Loading service status from backend services...');
         
-        const services = ['orders', 'inventory', 'invoice', 'session'];
+        const services = [
+            { id: 'orders', name: 'Orders Service' },
+            { id: 'inventory', name: 'Inventory Service' },
+            { id: 'invoice', name: 'Invoice Service' },
+            { id: 'session', name: 'Session Service' }
+        ];
+        
         const serviceUrls = getServiceUrls();
         
         for (const service of services) {
-            const statusElement = document.getElementById(`${service}-status`);
+            const statusElement = document.getElementById(`${service.id}-status`);
             if (!statusElement) continue;
             
             try {
                 let healthUrl;
-                if (service === 'session') {
+                
+                // Use proper health check endpoints
+                if (service.id === 'session') {
                     healthUrl = `${serviceUrls.session}/api/v1/sessions/p/health`;
                 } else {
-                    healthUrl = `${serviceUrls[service]}/api/v1/${service}/health`;
+                    healthUrl = `${serviceUrls[service.id]}/api/v1/${service.id}/health`;
                 }
+                
+                console.log(`🔍 Checking ${service.name} at ${healthUrl}`);
                 
                 const response = await fetch(healthUrl, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    // Set a reasonable timeout
+                    signal: AbortSignal.timeout(5000)
                 });
                 
                 if (response.ok) {
                     statusElement.className = 'service-status status-online';
                     statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                    console.log(`✅ ${service.name}: Online`);
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
             } catch (error) {
-                console.error(`❌ ${service} service health check failed:`, error);
+                console.error(`❌ ${service.name} health check failed:`, error.message);
                 statusElement.className = 'service-status status-offline';
                 statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
             }

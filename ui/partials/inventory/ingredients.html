@@ -1,8 +1,8 @@
-<!-- Invoice Content - overview page -->
+<!-- Inventory Ingredients Content -->
 <style>
-    /* Invoice-specific styles */
+    /* Ingredients-specific styles */
 
-    .invoice-features {
+    .ingredients-features {
         margin-bottom: 2rem;
     }
 
@@ -84,57 +84,57 @@
     }
 </style>
 
-<!-- Invoice Management Features -->
-<div class="invoice-features">
+<!-- Ingredients Management Features -->
+<div class="ingredients-features">
     <div class="row g-4">
-        <!-- Invoice Management -->
+        <!-- Dairy Ingredients -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToRoute('invoice/invoices')">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Dairy Management')">
                 <div class="feature-icon">
-                    <i class="fas fa-receipt"></i>
+                    <i class="fas fa-cow"></i>
                 </div>
                 <div class="feature-content">
-                    <p><strong>Invoice Management</strong></p>
-                    <p>Create and manage ice cream sales invoices and customer transactions</p>
+                    <p><strong>Dairy Ingredients</strong></p>
+                    <p>Manage milk, cream, butter, and dairy stock levels for ice cream production</p>
                 </div>
             </button>
         </div>
         
-        <!-- Financial Analytics -->
+        <!-- Flavors & Syrups -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Invoice Analytics')">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Flavor Management')">
                 <div class="feature-icon">
-                    <i class="fas fa-chart-pie"></i>
+                    <i class="fas fa-tint"></i>
                 </div>
                 <div class="feature-content">
-                    <p><strong>Financial Analytics</strong></p>
-                    <p>Track ice cream sales performance, revenue trends, and profit analysis</p>
+                    <p><strong>Flavors & Syrups</strong></p>
+                    <p>Track vanilla, chocolate, strawberry, and specialty flavor inventory</p>
+                </div>
+            </button>
+        </div>
+        
+        <!-- Toppings & Mix-ins -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Toppings Management')">
+                <div class="feature-icon">
+                    <i class="fas fa-cookie-bite"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Toppings & Mix-ins</strong></p>
+                    <p>Monitor sprinkles, nuts, cookies, candies, and topping supplies</p>
                 </div>
             </button>
         </div>
 
-        <!-- Customer Billing -->
+        <!-- Cones & Containers -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Customer Billing')">
+            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Container Management')">
                 <div class="feature-icon">
-                    <i class="fas fa-credit-card"></i>
+                    <i class="fas fa-glass-whiskey"></i>
                 </div>
                 <div class="feature-content">
-                    <p><strong>Customer Billing</strong></p>
-                    <p>Process payments, manage customer accounts, and handle refunds</p>
-                </div>
-            </button>
-        </div>
-
-        <!-- Tax Reports -->
-        <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Tax Reports')">
-                <div class="feature-icon">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                </div>
-                <div class="feature-content">
-                    <p><strong>Tax Reports</strong></p>
-                    <p>Generate tax reports, compliance documents, and financial statements</p>
+                    <p><strong>Cones & Containers</strong></p>
+                    <p>Track waffle cones, sugar cones, cups, and packaging supplies</p>
                 </div>
             </button>
         </div>
@@ -142,14 +142,5 @@
 </div>
 
 <script>
-    // Invoice content initialization function
-    window.initInvoiceContent = async function() {
-        console.log('💰 Initializing Invoice Content...');
-        
-        try {
-            console.log('✅ Invoice Content initialized successfully');
-        } catch (error) {
-            console.error('❌ Error initializing invoice content:', error);
-        }
-    };
+    console.log('🥛 Ingredients management page loaded');
 </script> 
