@@ -59,7 +59,7 @@ This will:
 The database includes the following management areas:
 
 - **Inventory Management:** Suppliers, Ingredients, Existences, Recipes, Recipe Categories
-- **Expenses Management:** Expense Categories, Expenses, Expense Receipts
+- **Expenses Management:** Expense Categories, Expenses, Expense Invoices
 - **Customer Management:** Customers, Customer Points
 - **Income Management:** Orders, Ordered Recipes
 - **Promotions & Loyalty:** Promotions system with points and discounts

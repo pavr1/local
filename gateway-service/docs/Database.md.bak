@@ -118,7 +118,7 @@ CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for local store purchases)
 
 ### Existences Table
-**Purpose:** Track individual ingredient purchases/acquisitions from suppliers or supermarkets. Each record represents a specific purchase batch with invoice traceability.
+**Purpose:** Track individual ingredient purchases/acquisitions from suppliers or supermarkets. Each record represents a specific purchase batch with receipt traceability.
 
 ```sql
 CREATE TABLE existences (
@@ -309,9 +309,9 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 ## Overall System Relationships
 
 ### Inventory Management
-- **suppliers** ← **invoices** (One-to-Many: One supplier can have multiple invoices)
+- **suppliers** ← **receipts** (One-to-Many: One supplier can have multiple receipts)
 - **suppliers** ← **ingredients** (One-to-Many: One supplier can provide multiple ingredients)
-- **invoice_items** ← **existences** (One-to-Many: One invoice item can contain multiple existences/batches)
+- **receipt_items** ← **existences** (One-to-Many: One receipt item can contain multiple existences/batches)
 - **ingredients** ← **existences** (One-to-Many: One ingredient can have multiple purchase batches/existences)
 - **existences** ← **runout_ingredient_report** (One-to-Many: One existence can have multiple runout reports)
 - **users** ← **runout_ingredient_report** (One-to-Many: One employee can create multiple runout reports)
@@ -319,8 +319,8 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **recipes** ← **recipe_ingredients** → **ingredients** (Many-to-Many: Recipes contain multiple ingredients, ingredients can be in multiple recipes)
 
 ### Expenses Management
-- **expense_categories** ← **invoices** (One-to-Many: One category can have multiple invoices)
-- **invoices** ← **invoice_items** (One-to-Many: One invoice can have multiple line items)
+- **expense_categories** ← **receipts** (One-to-Many: One category can have multiple receipts)
+- **receipts** ← **receipt_items** (One-to-Many: One receipt can have multiple line items)
 
 ### Customer Management
 - **customers** ← **orders** (One-to-Many: One customer can have multiple orders)
@@ -350,7 +350,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **roles** ← **users** (One-to-Many: One role can be assigned to multiple users)
 - **users** ← **user_salary** (One-to-Many: One user can have multiple salary records)
 - **users** ← **audit_logs** (One-to-Many: One user can generate multiple audit log entries)
-- **invoices** ← **user_salary** (One-to-Many: One invoice can be linked to multiple salary records)
+- **receipts** ← **user_salary** (One-to-Many: One receipt can be linked to multiple salary records)
 - **roles** ← **permissions** (One-to-Many: One role can have multiple permissions)
 
 ## Overall Business Logic Triggers
@@ -364,15 +364,15 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Implement FIFO logic: use oldest invoices first (by purchase_date from invoice table)
 - Alert when existences are near expiry (based on expiration_date from existences table)
 - Calculate final pricing (margins, taxes) at existence level for inventory items
-- Maintain invoice totals when existences are added/modified
-- Link invoices to expense management system for accounting integration
+- Maintain receipt totals when existences are added/modified
+- Link receipts to expense management system for accounting integration
 
 ### Expenses Management
 - Organize invoice documents in monthly directories (MM-yyyy format)
-- Calculate monthly expense totals from invoices
-- Link invoices directly to their expense categories
-- Validate invoice image uploads for all invoices
-- Track employee salaries through user_salary table linked to invoice records
+- Calculate monthly expense totals from receipts
+- Link receipts directly to their expense categories
+- Validate receipt image uploads for all receipts
+- Track employee salaries through user_salary table linked to receipt records
 - Calculate total compensation automatically (salary + additional_expenses)
 - Maintain salary audit trail with creation and update timestamps
 
@@ -479,13 +479,13 @@ CREATE INDEX idx_invoice_transaction_type ON invoice(transaction_type);
 
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
-- `invoice_number`: Invoice/invoice number (unique)
+- `invoice_number`: Invoice/receipt number (unique)
 - `transaction_date`: When the transaction was made
 - `transaction_type`: Type of transaction - 'income' or 'outcome' (CHECK constraint)
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for non-supplier transactions)
 - `expense_category_id`: Foreign key reference to expense_categories table (UUID)
 - `total_amount`: Total amount of the invoice (calculated from invoice details)
-- `image_url`: URL/path to uploaded invoice/invoice image (mandatory)
+- `image_url`: URL/path to uploaded invoice/receipt image (mandatory)
 - `notes`: Additional notes about the transaction
 - `created_at`: When the invoice record was created
 - `updated_at`: When the invoice record was last modified
@@ -1049,10 +1049,10 @@ UNION ALL SELECT r.id, 'Recipes-Create', 'Create new recipes', 'Recipes', 'Creat
 UNION ALL SELECT r.id, 'Recipes-Read', 'View recipe information', 'Recipes', 'Read' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Recipes-Update', 'Update recipe information', 'Recipes', 'Update' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Recipes-Delete', 'Delete recipes', 'Recipes', 'Delete' FROM roles r WHERE r.role_name = 'admin'
-UNION ALL SELECT r.id, 'Invoices-Create', 'Create new invoices', 'Invoices', 'Create' FROM roles r WHERE r.role_name = 'admin'
-UNION ALL SELECT r.id, 'Invoices-Read', 'View invoice information', 'Invoices', 'Read' FROM roles r WHERE r.role_name = 'admin'
-UNION ALL SELECT r.id, 'Invoices-Update', 'Update invoice information', 'Invoices', 'Update' FROM roles r WHERE r.role_name = 'admin'
-UNION ALL SELECT r.id, 'Invoices-Delete', 'Delete invoices', 'Invoices', 'Delete' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Receipts-Create', 'Create new receipts', 'Receipts', 'Create' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Receipts-Read', 'View receipt information', 'Receipts', 'Read' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Receipts-Update', 'Update receipt information', 'Receipts', 'Update' FROM roles r WHERE r.role_name = 'admin'
+UNION ALL SELECT r.id, 'Receipts-Delete', 'Delete receipts', 'Receipts', 'Delete' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Orders-Create', 'Create new orders', 'Orders', 'Create' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Orders-Read', 'View order information', 'Orders', 'Read' FROM roles r WHERE r.role_name = 'admin'
 UNION ALL SELECT r.id, 'Orders-Update', 'Update order information', 'Orders', 'Update' FROM roles r WHERE r.role_name = 'admin'

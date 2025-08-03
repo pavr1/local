@@ -261,8 +261,8 @@ class LayoutHeader {
             expenseItem.innerHTML = '<a href="../index.html">Expenses</a>';
             breadcrumb.insertBefore(expenseItem, currentPage);
             
-            if (path.includes('receipts')) {
-                currentPage.textContent = 'Receipts';
+            if (path.includes('invoices')) {
+                currentPage.textContent = 'Invoices';
             } else {
                 currentPage.textContent = 'Expenses';
             }

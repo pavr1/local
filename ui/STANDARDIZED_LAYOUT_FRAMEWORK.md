@@ -244,7 +244,7 @@ ui/
 │   └── css/
 │       └── style.css                 # Shared styles
 ├── expense/
-│   ├── receipts-demo.html            # Standardized receipts page
+│   ├── invoices-demo.html            # Standardized invoices page
 │   └── index.html                    # Expense dashboard
 ├── inventory/
 │   ├── suppliers-standardized.html   # Standardized suppliers page
@@ -256,7 +256,7 @@ ui/
 ## ✅ Demo Pages
 
 ### Available Demo Pages
-1. **`ui/expense/receipts-demo.html`** - Expense receipts with full framework
+1. **`ui/expense/invoices-demo.html`** - Expense invoices with full framework
 2. **`ui/inventory/suppliers-standardized.html`** - Supplier management with framework
 3. **`ui/dashboard-standardized.html`** - Main dashboard with header-only framework
 

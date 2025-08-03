@@ -119,12 +119,34 @@ CREATE TABLE expenses (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Expense Receipts Table
-CREATE TABLE expense_receipts (
+-- Invoice Table (replaces expense_receipts)
+CREATE TABLE invoice (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    expense_id UUID NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
-    image_url VARCHAR(500),
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    invoice_number VARCHAR(50) NOT NULL UNIQUE,
+    transaction_date DATE NOT NULL,
+    transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('income', 'outcome')),
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
+    total_amount DECIMAL(10,2),
+    image_url VARCHAR(500) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Invoice Details Table (line items for invoices)
+CREATE TABLE invoice_details (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_id UUID NOT NULL REFERENCES invoice(id) ON DELETE CASCADE,
+    ingredient_id UUID REFERENCES ingredients(id) ON DELETE SET NULL,
+    detail VARCHAR(255) NOT NULL,
+    count DECIMAL(10,2) NOT NULL CHECK (count > 0),
+    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
+    price DECIMAL(10,2) NOT NULL CHECK (price > 0),
+    total DECIMAL(10,2) GENERATED ALWAYS AS (count * price) STORED,
+    expiration_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================================================
@@ -353,7 +375,6 @@ CREATE INDEX idx_ordered_receipes_recipe_id ON ordered_receipes(recipe_id);
 -- Expenses indexes
 CREATE INDEX idx_expenses_category_id ON expenses(expense_category_id);
 CREATE INDEX idx_expenses_expense_date ON expenses(expense_date);
-CREATE INDEX idx_expense_receipts_expense_id ON expense_receipts(expense_id);
 
 -- Promotions indexes
 CREATE INDEX idx_promotions_recipe_id ON promotions(recipe_id);
@@ -371,6 +392,14 @@ CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
 CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
 CREATE INDEX idx_sessions_is_active ON sessions(is_active);
 CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active);
+
+-- Indexes for Invoice Tables
+CREATE INDEX idx_invoice_transaction_type ON invoice(transaction_type);
+CREATE INDEX idx_invoice_supplier_id ON invoice(supplier_id);
+CREATE INDEX idx_invoice_expense_category_id ON invoice(expense_category_id);
+CREATE INDEX idx_invoice_transaction_date ON invoice(transaction_date);
+CREATE INDEX idx_invoice_details_invoice_id ON invoice_details(invoice_id);
+CREATE INDEX idx_invoice_details_ingredient_id ON invoice_details(ingredient_id);
 
 -- =============================================================================
 -- ADD FOREIGN KEY CONSTRAINTS THAT WERE DEFERRED

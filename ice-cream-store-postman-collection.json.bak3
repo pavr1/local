@@ -853,7 +853,7 @@
 							}
 						},
 						{
-							"name": "Get Invoice with Details",
+							"name": "Get Receipt with Items",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -1056,7 +1056,7 @@
 										],
 										"body": {
 											"mode": "raw",
-											"raw": "{\n  \"invoice_number\": \"INV-2024-001\",\n  \"transaction_date\": \"2024-01-15T10:30:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"supplier_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"expense_category_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"image_url\": \"https://example.com/invoices/invoice001.jpg\",\n  \"notes\": \"Monthly ingredient purchase\",\n  \"items\": [\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"detail\": \"Premium Vanilla Extract - 4oz\",\n      \"count\": 2.0,\n      \"unit_type\": \"Units\",\n      \"price\": 12.99,\n      \"expiration_date\": \"2026-01-15T00:00:00Z\"\n    },\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440004\",\n      \"detail\": \"Organic Sugar - 5lb\",\n      \"count\": 1.0,\n      \"unit_type\": \"Bag\",\n      \"price\": 8.50\n    }\n  ]\n}"
+											"raw": "{\n  \"invoice_number\": \"INV-2024-001\",\n  \"transaction_date\": \"2024-01-15T10:30:00Z\",\n  \"supplier_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"expense_category_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"image_url\": \"https://example.com/invoices/invoice001.jpg\",\n  \"notes\": \"Monthly ingredient purchase\",\n  \"items\": [\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"detail\": \"Premium Vanilla Extract - 4oz\",\n      \"count\": 2.0,\n      \"unit_type\": \"Units\",\n      \"price\": 12.99,\n      \"expiration_date\": \"2026-01-15T00:00:00Z\"\n    },\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440004\",\n      \"detail\": \"Organic Sugar - 5lb\",\n      \"count\": 1.0,\n      \"unit_type\": \"Bag\",\n      \"price\": 8.50\n    }\n  ]\n}"
 										},
 										"url": {
 											"raw": "{{expense_service_url}}/api/v1/invoices",
@@ -1130,7 +1130,7 @@
 									}
 								},
 								{
-									"name": "Get Invoice with Details",
+									"name": "Get Receipt with Items",
 									"request": {
 										"method": "GET",
 										"header": [],

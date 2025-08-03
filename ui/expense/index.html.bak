@@ -268,17 +268,17 @@
     <!-- Page Header -->
     <div class="expense-header">
         <div>
-            <i class="fas fa-invoice fa-4x mb-3"></i>
+            <i class="fas fa-receipt fa-4x mb-3"></i>
             <h1>Expense Management</h1>
-            <p class="mb-0 opacity-75">Track invoices, expenses, and business spending</p>
+            <p class="mb-0 opacity-75">Track receipts, expenses, and business spending</p>
         </div>
     </div>
 
     <!-- Stats Overview -->
     <div class="stats-overview">
         <div class="stats-card">
-            <div class="stats-number" id="total-invoices">0</div>
-            <div class="stats-label">Total Invoices</div>
+            <div class="stats-number" id="total-receipts">0</div>
+            <div class="stats-label">Total Receipts</div>
         </div>
         <div class="stats-card">
             <div class="stats-number" id="total-amount">$0.00</div>
@@ -289,7 +289,7 @@
             <div class="stats-label">This Month</div>
         </div>
         <div class="stats-card">
-            <div class="stats-number" id="pending-invoices">0</div>
+            <div class="stats-number" id="pending-receipts">0</div>
             <div class="stats-label">Pending</div>
         </div>
     </div>
@@ -298,22 +298,22 @@
     <div class="management-section">
         <h4><i class="fas fa-cogs me-2"></i>Expense Management</h4>
         <div class="management-cards">
-            <!-- Invoices Management -->
-            <a href="invoices.html" class="management-card">
+            <!-- Receipts Management -->
+            <a href="receipts.html" class="management-card">
                 <div class="card-icon">
                     <i class="fas fa-file-invoice"></i>
                 </div>
-                <div class="card-title">Invoices Management</div>
+                <div class="card-title">Receipts Management</div>
                 <div class="card-description">
-                    Create, view, and manage expense invoices with detailed line items and categorization.
+                    Create, view, and manage expense receipts with detailed line items and categorization.
                 </div>
                 <div class="card-stats">
                     <div class="stat-item">
-                        <span class="stat-number" id="invoices-count">0</span>
+                        <span class="stat-number" id="receipts-count">0</span>
                         <span class="stat-label">Total</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" id="invoices-this-week">0</span>
+                        <span class="stat-number" id="receipts-this-week">0</span>
                         <span class="stat-label">This Week</span>
                     </div>
                 </div>
@@ -352,7 +352,7 @@
                     <i class="fas fa-plus"></i>
                 </div>
                 <div class="activity-content">
-                    <div class="activity-title">New invoice added</div>
+                    <div class="activity-title">New receipt added</div>
                     <div class="activity-details">Premium ingredients from Fresh Dairy Co.</div>
                 </div>
                 <div class="activity-amount">$45.98</div>
@@ -362,8 +362,8 @@
                     <i class="fas fa-edit"></i>
                 </div>
                 <div class="activity-content">
-                    <div class="activity-title">Invoice updated</div>
-                    <div class="activity-details">Equipment maintenance invoice modified</div>
+                    <div class="activity-title">Receipt updated</div>
+                    <div class="activity-details">Equipment maintenance receipt modified</div>
                 </div>
                 <div class="activity-amount">$128.50</div>
             </div>
@@ -372,7 +372,7 @@
                     <i class="fas fa-trash"></i>
                 </div>
                 <div class="activity-content">
-                    <div class="activity-title">Invoice deleted</div>
+                    <div class="activity-title">Receipt deleted</div>
                     <div class="activity-details">Duplicate utility bill removed</div>
                 </div>
                 <div class="activity-amount">-$89.25</div>
@@ -383,8 +383,8 @@
     <!-- Quick Actions -->
     <div class="row g-3">
         <div class="col-md-6">
-            <button class="btn btn-primary btn-lg w-100" onclick="window.location.href='invoices.html'">
-                <i class="fas fa-plus me-2"></i>Add New Invoice
+            <button class="btn btn-primary btn-lg w-100" onclick="window.location.href='receipts.html'">
+                <i class="fas fa-plus me-2"></i>Add New Receipt
             </button>
         </div>
         <div class="col-md-6">
@@ -441,39 +441,39 @@
 
             async loadExpenseData() {
                 try {
-                    await this.loadInvoiceStats();
+                    await this.loadReceiptStats();
                 } catch (error) {
                     console.error('❌ Error loading expense data:', error);
                 }
             }
 
-            async loadInvoiceStats() {
+            async loadReceiptStats() {
                 try {
                     // In a real implementation, this would fetch from the API
-                    console.log('📊 Loading invoice statistics...');
+                    console.log('📊 Loading receipt statistics...');
                     
                     // Sample data for demo
                     const stats = {
-                        totalInvoices: 18,
+                        totalReceipts: 18,
                         totalAmount: 2635.73,
                         thisMonth: 1245.50,
-                        pendingInvoices: 3,
-                        invoicesCount: 18,
-                        invoicesThisWeek: 5
+                        pendingReceipts: 3,
+                        receiptsCount: 18,
+                        receiptsThisWeek: 5
                     };
 
                     // Update UI with stats
-                    document.getElementById('total-invoices').textContent = stats.totalInvoices;
+                    document.getElementById('total-receipts').textContent = stats.totalReceipts;
                     document.getElementById('total-amount').textContent = `$${stats.totalAmount.toFixed(2)}`;
                     document.getElementById('this-month').textContent = `$${stats.thisMonth.toFixed(2)}`;
-                    document.getElementById('pending-invoices').textContent = stats.pendingInvoices;
-                    document.getElementById('invoices-count').textContent = stats.invoicesCount;
-                    document.getElementById('invoices-this-week').textContent = stats.invoicesThisWeek;
+                    document.getElementById('pending-receipts').textContent = stats.pendingReceipts;
+                    document.getElementById('receipts-count').textContent = stats.receiptsCount;
+                    document.getElementById('receipts-this-week').textContent = stats.receiptsThisWeek;
 
-                    console.log('✅ Invoice statistics loaded successfully');
+                    console.log('✅ Receipt statistics loaded successfully');
                 } catch (error) {
-                    console.error('❌ Error loading invoice statistics:', error);
-                    Alert.error('Loading Error', 'Could not load invoice statistics');
+                    console.error('❌ Error loading receipt statistics:', error);
+                    Alert.error('Loading Error', 'Could not load receipt statistics');
                 }
             }
         }

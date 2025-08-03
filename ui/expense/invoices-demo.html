@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ice Cream Store - Invoices Management</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="../shared/css/style.css?v=1.2">
+    
+    <style>
+        /* Page-specific styles only - layout is handled by framework */
+        .invoices-header {
+            background: var(--gradient-primary);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin-bottom: 2rem;
+        }
+
+        .filter-controls {
+            background: var(--light-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            padding-left: 2.5rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--secondary-color);
+        }
+
+        .invoice-card {
+            background: var(--white);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .invoice-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .invoice-number {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .invoice-amount {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--success-color);
+        }
+
+        .invoice-date {
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+        }
+
+        .invoice-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-color);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+            color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Header -->
+    <div class="invoices-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-invoice me-3"></i>Invoices Management</h1>
+                <p class="mb-0 opacity-75">Create, view, and manage expense invoices with line items</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-light" onclick="refreshInvoices()" title="Refresh">
+                    <i class="fas fa-refresh"></i>
+                </button>
+                <button class="btn btn-light" onclick="createNewInvoice()">
+                    <i class="fas fa-plus me-2"></i>New Invoice
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter and Search Controls -->
+    <div class="filter-controls">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <div class="search-container">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search-input" class="form-control search-input" placeholder="Search invoices...">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <select id="category-filter" class="form-select">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="date-filter" class="form-select">
+                    <option value="">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="sort-order" class="form-select">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="amount-high">Highest Amount</option>
+                    <option value="amount-low">Lowest Amount</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="exportInvoices()" title="Export">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="btn btn-primary flex-grow-1" onclick="createNewInvoice()">
+                        <i class="fas fa-plus me-2"></i>New
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invoices List -->
+    <div id="invoices-container">
+        <!-- Sample invoice cards for demo -->
+        <div class="invoice-card" onclick="viewInvoice('demo-1')">
+            <div class="invoice-header">
+                <div>
+                    <div class="invoice-number">INV-2024-001</div>
+                    <div class="invoice-date">January 15, 2024 10:30 AM</div>
+                </div>
+                <div class="text-end">
+                    <div class="invoice-amount">$45.98</div>
+                    <span class="badge bg-primary">Ingredients</span>
+                </div>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted">Premium vanilla extract, organic sugar, chocolate chips</small>
+            </div>
+            <div class="invoice-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewInvoice('demo-1')">
+                    <i class="fas fa-eye me-1"></i>View
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editInvoice('demo-1')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteInvoice('demo-1')">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+
+        <div class="invoice-card" onclick="viewInvoice('demo-2')">
+            <div class="invoice-header">
+                <div>
+                    <div class="invoice-number">INV-2024-002</div>
+                    <div class="invoice-date">January 16, 2024 2:15 PM</div>
+                </div>
+                <div class="text-end">
+                    <div class="invoice-amount">$128.50</div>
+                    <span class="badge bg-info">Equipment</span>
+                </div>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted">Ice cream machine parts, cleaning supplies</small>
+            </div>
+            <div class="invoice-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewInvoice('demo-2')">
+                    <i class="fas fa-eye me-1"></i>View
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editInvoice('demo-2')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteInvoice('demo-2')">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+
+        <div class="invoice-card" onclick="viewInvoice('demo-3')">
+            <div class="invoice-header">
+                <div>
+                    <div class="invoice-number">INV-2024-003</div>
+                    <div class="invoice-date">January 17, 2024 9:45 AM</div>
+                </div>
+                <div class="text-end">
+                    <div class="invoice-amount">$89.25</div>
+                    <span class="badge bg-warning">Utilities</span>
+                </div>
+            </div>
+            <div class="mb-2">
+                <small class="text-muted">Electricity bill, water service</small>
+            </div>
+            <div class="invoice-actions">
+                <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewInvoice('demo-3')">
+                    <i class="fas fa-eye me-1"></i>View
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editInvoice('demo-3')">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteInvoice('demo-3')">
+                    <i class="fas fa-trash me-1"></i>Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Invoices pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item disabled">
+                <a class="page-link" href="#" tabindex="-1">Previous</a>
+            </li>
+            <li class="page-item active">
+                <a class="page-link" href="#">1</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">2</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">3</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="#">Next</a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Font Awesome JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Configuration -->
+    <script src="../config.js?v=1.1"></script>
+    
+    <!-- Shared JavaScript -->
+    <script src="../shared/js/auth.js"></script>
+    <script src="../shared/js/status.js"></script>
+    <script src="../shared/js/alerts.js"></script>
+    <script src="../shared/js/load-partials.js"></script>
+
+    <script>
+        class InvoicesPageDemo {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                console.log('🧾 Initializing Invoices Management Page (Standardized Layout Demo)...');
+                
+                // Setup standardized layout framework
+                await window.PartialLoader.setupStandardLayout({
+                    pageTitle: 'Invoices Management',
+                    includeSidebar: true,
+                    includeHeader: true
+                });
+                
+                // Initialize authentication
+                const auth = new AuthService();
+                if (!auth.isAuthenticated()) {
+                    console.log('❌ User not authenticated, redirecting to login');
+                    window.location.href = '../login.html';
+                    return;
+                }
+
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                console.log('✅ Invoices Management Page (Demo) initialized successfully');
+            }
+
+            setupEventListeners() {
+                // Search functionality
+                document.getElementById('search-input')?.addEventListener('input', () => this.applyFilters());
+                document.getElementById('category-filter')?.addEventListener('change', () => this.applyFilters());
+                document.getElementById('date-filter')?.addEventListener('change', () => this.applyFilters());
+                document.getElementById('sort-order')?.addEventListener('change', () => this.applyFilters());
+            }
+
+            applyFilters() {
+                console.log('🔍 Applying filters (demo functionality)');
+                // In real implementation, this would filter the invoices
+            }
+        }
+
+        // Demo functions
+        function createNewInvoice() {
+            Swal.fire({
+                title: 'Create New Invoice',
+                text: 'This would open the invoice creation form in the real implementation.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Continue',
+                cancelButtonText: 'Cancel'
+            });
+        }
+
+        function viewInvoice(invoiceId) {
+            Swal.fire({
+                title: 'View Invoice',
+                text: `This would show details for invoice ${invoiceId} in the real implementation.`,
+                icon: 'info'
+            });
+        }
+
+        function editInvoice(invoiceId) {
+            Swal.fire({
+                title: 'Edit Invoice',
+                text: `This would open the edit form for invoice ${invoiceId}.`,
+                icon: 'info'
+            });
+        }
+
+        function deleteInvoice(invoiceId) {
+            Swal.fire({
+                title: 'Delete Invoice?',
+                text: `This would delete invoice ${invoiceId}. Are you sure?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Deleted!', 'Invoice has been deleted.', 'success');
+                }
+            });
+        }
+
+        function refreshInvoices() {
+            Swal.fire({
+                title: 'Refreshing...',
+                text: 'This would reload the invoices data.',
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function exportInvoices() {
+            Swal.fire({
+                title: 'Export Invoices',
+                text: 'This would export invoices to Excel/PDF.',
+                icon: 'info'
+            });
+        }
+
+        // Initialize the page when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.invoicesPageDemo = new InvoicesPageDemo();
+        });
+    </script>
+</body>
+</html> 

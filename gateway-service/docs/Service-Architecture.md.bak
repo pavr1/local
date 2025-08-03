@@ -280,11 +280,11 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
   - Customer analytics and reporting
 
 #### 5. **Expenses Service** 💰
-- **Tables**: `expense_categories`, `expenses`, `expense_invoices`
+- **Tables**: `expense_categories`, `expenses`, `expense_receipts`
 - **Functions**:
   - **Expense Categories**: Budget classification
   - **Expenses**: Record management and categorization
-  - **Expense Invoices**: Invoice management with image uploads
+  - **Expense Receipts**: Invoice management with image uploads
 
 ### **🟪 Level 2: Business Logic Services**
 
