@@ -1,0 +1,108 @@
+<!-- Invoice Content - overview page -->
+<style>
+    /* Invoice-specific styles */
+    .invoice-header {
+        background: var(--gradient-primary);
+        color: var(--white);
+        padding: 3rem 2rem;
+        text-align: center;
+        border-radius: var(--border-radius-lg);
+        margin-bottom: 2rem;
+    }
+
+    .invoice-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .invoice-card {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .invoice-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+        border-color: var(--primary-color);
+    }
+
+    .invoice-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-color);
+    }
+
+    .invoice-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--dark-color);
+    }
+
+    .invoice-description {
+        color: var(--secondary-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="invoice-header">
+    <div>
+        <i class="fas fa-file-invoice fa-4x mb-3"></i>
+        <h1>Invoice Management</h1>
+        <p class="mb-0 opacity-75">Manage invoices, track financial transactions, and handle billing</p>
+    </div>
+</div>
+
+<!-- Invoice Management Cards -->
+<div class="invoice-cards">
+    <!-- Invoice Details -->
+    <div class="invoice-card" onclick="navigateToRoute('invoice/invoices')">
+        <div class="invoice-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+        </div>
+        <h3 class="invoice-title">Invoice Details</h3>
+        <p class="invoice-description">
+            View, create, and manage detailed invoice records and transactions
+        </p>
+        <button class="btn btn-primary">
+            <i class="fas fa-arrow-right me-2"></i>Manage Invoices
+        </button>
+    </div>
+
+    <!-- Analytics -->
+    <div class="invoice-card" onclick="Alert.comingSoon('Invoice Analytics')">
+        <div class="invoice-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3 class="invoice-title">Analytics</h3>
+        <p class="invoice-description">
+            Track financial performance, analyze trends, and generate reports
+        </p>
+        <button class="btn btn-outline-primary">
+            <i class="fas fa-chart-bar me-2"></i>Coming Soon
+        </button>
+    </div>
+</div>
+
+<script>
+    // Invoice content initialization function
+    window.initInvoiceContent = async function() {
+        console.log('💰 Initializing Invoice Content...');
+        
+        try {
+            console.log('✅ Invoice Content initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing invoice content:', error);
+        }
+    };
+</script> 

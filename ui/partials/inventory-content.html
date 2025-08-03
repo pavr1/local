@@ -1,0 +1,278 @@
+<!-- Inventory Content - overview page -->
+<style>
+    /* Inventory-specific styles */
+    .inventory-header {
+        background: var(--gradient-primary);
+        color: var(--white);
+        padding: 3rem 2rem;
+        text-align: center;
+        border-radius: var(--border-radius-lg);
+        margin-bottom: 2rem;
+    }
+
+    .inventory-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .inventory-card {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .inventory-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+        border-color: var(--primary-color);
+    }
+
+    .inventory-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-color);
+    }
+
+    .inventory-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--dark-color);
+    }
+
+    .inventory-description {
+        color: var(--secondary-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+
+    .quick-stats {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 1.5rem;
+        background: var(--background-light);
+        border-radius: var(--border-radius);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--secondary-color);
+        font-size: 0.9rem;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .inventory-header {
+            padding: 2rem 1rem;
+        }
+        
+        .inventory-cards {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .inventory-card {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
+<!-- Page Header -->
+<div class="inventory-header">
+    <div>
+        <i class="fas fa-warehouse fa-4x mb-3"></i>
+        <h1>Inventory Management</h1>
+        <p class="mb-0 opacity-75">Track ingredients, manage suppliers, and monitor stock levels</p>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="quick-stats">
+    <h3 class="mb-4">
+        <i class="fas fa-chart-bar me-2"></i>
+        Inventory Overview
+    </h3>
+    <div class="stats-grid">
+        <div class="stat-item">
+            <div class="stat-icon">
+                <i class="fas fa-seedling"></i>
+            </div>
+            <div class="stat-value" id="ingredients-count">-</div>
+            <div class="stat-label">Total Ingredients</div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-icon">
+                <i class="fas fa-truck"></i>
+            </div>
+            <div class="stat-value" id="suppliers-count">-</div>
+            <div class="stat-label">Active Suppliers</div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-value" id="low-stock-count">-</div>
+            <div class="stat-label">Low Stock Items</div>
+        </div>
+        
+        <div class="stat-item">
+            <div class="stat-icon">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <div class="stat-value" id="inventory-value">-</div>
+            <div class="stat-label">Total Value</div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Management Cards -->
+<div class="inventory-cards">
+    <!-- Suppliers Management -->
+    <div class="inventory-card" onclick="navigateToRoute('inventory/suppliers')">
+        <div class="inventory-icon">
+            <i class="fas fa-truck"></i>
+        </div>
+        <h3 class="inventory-title">Suppliers</h3>
+        <p class="inventory-description">
+            Manage supplier information, contacts, and purchase relationships
+        </p>
+        <button class="btn btn-primary">
+            <i class="fas fa-arrow-right me-2"></i>Manage Suppliers
+        </button>
+    </div>
+
+    <!-- Ingredients Management -->
+    <div class="inventory-card" onclick="navigateToRoute('inventory/ingredients')">
+        <div class="inventory-icon">
+            <i class="fas fa-seedling"></i>
+        </div>
+        <h3 class="inventory-title">Ingredients</h3>
+        <p class="inventory-description">
+            Track ingredient quantities, monitor stock levels, and manage recipes
+        </p>
+        <button class="btn btn-primary">
+            <i class="fas fa-arrow-right me-2"></i>Manage Ingredients
+        </button>
+    </div>
+
+    <!-- Stock Reports -->
+    <div class="inventory-card" onclick="Alert.comingSoon('Stock Reports')">
+        <div class="inventory-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3 class="inventory-title">Stock Reports</h3>
+        <p class="inventory-description">
+            Generate reports on stock movements, usage patterns, and forecasting
+        </p>
+        <button class="btn btn-outline-primary">
+            <i class="fas fa-chart-bar me-2"></i>Coming Soon
+        </button>
+    </div>
+
+    <!-- Purchase Orders -->
+    <div class="inventory-card" onclick="Alert.comingSoon('Purchase Orders')">
+        <div class="inventory-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
+        <h3 class="inventory-title">Purchase Orders</h3>
+        <p class="inventory-description">
+            Create and manage purchase orders for restocking ingredients
+        </p>
+        <button class="btn btn-outline-primary">
+            <i class="fas fa-plus me-2"></i>Coming Soon
+        </button>
+    </div>
+</div>
+
+<script>
+    // Inventory content initialization function
+    window.initInventoryContent = async function() {
+        console.log('📦 Initializing Inventory Content...');
+        
+        try {
+            // Load inventory statistics
+            await loadInventoryStats();
+            
+            console.log('✅ Inventory Content initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing inventory content:', error);
+        }
+    };
+
+    async function loadInventoryStats() {
+        console.log('📊 Loading inventory statistics...');
+        
+        try {
+            const serviceUrls = getServiceUrls();
+            
+            // Load suppliers count
+            try {
+                const suppliersResponse = await fetch(`${serviceUrls.inventory}/api/v1/inventory/suppliers?limit=1000`);
+                if (suppliersResponse.ok) {
+                    const suppliersData = await suppliersResponse.json();
+                    document.getElementById('suppliers-count').textContent = suppliersData.data?.length || 0;
+                }
+            } catch (error) {
+                console.error('Error loading suppliers count:', error);
+                document.getElementById('suppliers-count').textContent = '0';
+            }
+            
+            // Load ingredients count  
+            try {
+                const ingredientsResponse = await fetch(`${serviceUrls.inventory}/api/v1/inventory/ingredients?limit=1000`);
+                if (ingredientsResponse.ok) {
+                    const ingredientsData = await ingredientsResponse.json();
+                    document.getElementById('ingredients-count').textContent = ingredientsData.data?.length || 0;
+                }
+            } catch (error) {
+                console.error('Error loading ingredients count:', error);
+                document.getElementById('ingredients-count').textContent = '0';
+            }
+            
+            // Placeholder for other stats
+            document.getElementById('low-stock-count').textContent = '0';
+            document.getElementById('inventory-value').textContent = '$0';
+            
+        } catch (error) {
+            console.error('❌ Error loading inventory statistics:', error);
+            // Set default values on error
+            document.getElementById('suppliers-count').textContent = '0';
+            document.getElementById('ingredients-count').textContent = '0';
+            document.getElementById('low-stock-count').textContent = '0';
+            document.getElementById('inventory-value').textContent = '$0';
+        }
+    }
+</script> 

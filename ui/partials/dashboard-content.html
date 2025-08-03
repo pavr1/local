@@ -1,0 +1,240 @@
+<!-- Dashboard Content - extracted from dashboard.html -->
+<style>
+    /* Dashboard-specific styles */
+    .dashboard-welcome {
+        background: var(--gradient-primary);
+        color: var(--white);
+        padding: 3rem 2rem;
+        text-align: center;
+        border-radius: var(--border-radius-lg);
+        margin-bottom: 2rem;
+    }
+
+    .brand-logo {
+        margin-bottom: 2rem;
+    }
+
+    .brand-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .brand-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .service-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .service-card {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+        border-color: var(--primary-color);
+    }
+
+    .service-icon {
+        font-size: 3rem;
+        margin-bottom: 1.5rem;
+        color: var(--primary-color);
+    }
+
+    .service-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: var(--dark-color);
+    }
+
+    .service-description {
+        color: var(--secondary-color);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+
+    .service-status {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .status-online {
+        background: var(--success-light);
+        color: var(--success-color);
+    }
+
+    .status-offline {
+        background: var(--danger-light);
+        color: var(--danger-color);
+    }
+
+    .status-loading {
+        background: var(--warning-light);
+        color: var(--warning-color);
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .dashboard-welcome {
+            padding: 2rem 1rem;
+        }
+        
+        .brand-title {
+            font-size: 2rem;
+        }
+        
+        .service-cards {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .service-card {
+            padding: 1.5rem;
+        }
+    }
+</style>
+
+<!-- Dashboard Welcome Section -->
+<div class="dashboard-welcome">
+    <div class="brand-logo">
+        <i class="fas fa-ice-cream fa-4x"></i>
+    </div>
+    <h1 class="brand-title">Ice Cream Store Management</h1>
+    <p class="brand-subtitle">Welcome to your business management dashboard</p>
+</div>
+
+<!-- Service Cards Grid -->
+<div class="service-cards">
+    <!-- Orders Service -->
+    <div class="service-card" onclick="navigateToRoute('orders')">
+        <div class="service-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3 class="service-title">Orders Management</h3>
+        <p class="service-description">
+            Manage customer orders, track order status, and handle order fulfillment
+        </p>
+        <div class="service-status status-loading" id="orders-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+
+    <!-- Inventory Service -->
+    <div class="service-card" onclick="navigateToRoute('inventory')">
+        <div class="service-icon">
+            <i class="fas fa-warehouse"></i>
+        </div>
+        <h3 class="service-title">Inventory Management</h3>
+        <p class="service-description">
+            Track ingredients, manage suppliers, and monitor stock levels
+        </p>
+        <div class="service-status status-loading" id="inventory-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+
+    <!-- Invoice Service -->
+    <div class="service-card" onclick="navigateToRoute('invoice')">
+        <div class="service-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
+        <h3 class="service-title">Invoice Management</h3>
+        <p class="service-description">
+            Manage invoices, track financial transactions, and handle billing
+        </p>
+        <div class="service-status status-loading" id="invoice-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+
+    <!-- Session Service -->
+    <div class="service-card" onclick="Alert.info('Session Management', 'Session management is handled automatically by the system.')">
+        <div class="service-icon">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <h3 class="service-title">Session Management</h3>
+        <p class="service-description">
+            User authentication, session handling, and security management
+        </p>
+        <div class="service-status status-loading" id="session-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dashboard content initialization function
+    window.initDashboardContent = async function() {
+        console.log('🏠 Initializing Dashboard Content...');
+        
+        try {
+            // Load service status for all services
+            await loadDashboardServiceStatus();
+            
+            console.log('✅ Dashboard Content initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing dashboard content:', error);
+        }
+    };
+
+    async function loadDashboardServiceStatus() {
+        console.log('📊 Loading service status...');
+        
+        const services = ['orders', 'inventory', 'invoice', 'session'];
+        const serviceUrls = getServiceUrls();
+        
+        for (const service of services) {
+            const statusElement = document.getElementById(`${service}-status`);
+            if (!statusElement) continue;
+            
+            try {
+                let healthUrl;
+                if (service === 'session') {
+                    healthUrl = `${serviceUrls.session}/api/v1/sessions/p/health`;
+                } else {
+                    healthUrl = `${serviceUrls[service]}/api/v1/${service}/health`;
+                }
+                
+                const response = await fetch(healthUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    statusElement.className = 'service-status status-online';
+                    statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error(`❌ ${service} service health check failed:`, error);
+                statusElement.className = 'service-status status-offline';
+                statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+            }
+        }
+        
+        console.log('✅ Service status loading completed');
+    }
+</script> 
