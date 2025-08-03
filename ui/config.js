@@ -43,7 +43,7 @@ const CONFIG = {
         session: SERVICE_URLS.session + '/health',
         orders: SERVICE_URLS.gateway + '/api/v1/orders/p/health',
         inventory: SERVICE_URLS.gateway + '/api/v1/inventory/p/health',
-        invoices: SERVICE_URLS.gateway + '/api/v1/expenses/p/health'  // Note: still using /expenses path in gateway
+        invoices: SERVICE_URLS.gateway + '/api/v1/invoices/p/health'  // Updated to use /invoices path in gateway
     },
     AUTH: {
         login: SERVICE_URLS.gateway + '/api/v1/auth/login',

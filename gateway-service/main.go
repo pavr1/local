@@ -108,7 +108,7 @@ func main() {
 	// Invoice routes (proxied to invoice service)
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
 	invoiceRouter.HandleFunc("/p/health", createProxyHandler(config.InvoiceServiceURL, "/health")).Methods("GET")
-	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1"))
+	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
