@@ -38,6 +38,9 @@ const CONFIG = {
     API: {
         gateway: SERVICE_URLS.gateway + '/api/v1',
         session: SERVICE_URLS.session + '/api/v1/session',
+        LOGIN: '/api/v1/sessions/p/login',
+        LOGOUT: '/api/v1/sessions/p/logout',
+        VALIDATE: '/api/v1/sessions/p/validate'
     },
     SERVICES: {
         session: SERVICE_URLS.session + '/health',
@@ -46,11 +49,14 @@ const CONFIG = {
         invoices: SERVICE_URLS.gateway + '/api/v1/invoices/p/health'  // Updated to use /invoices path in gateway
     },
     AUTH: {
-        login: SERVICE_URLS.gateway + '/api/v1/auth/login',
-        logout: SERVICE_URLS.gateway + '/api/v1/auth/logout',
+        login: SERVICE_URLS.session + '/api/v1/sessions/p/login',
+        logout: SERVICE_URLS.session + '/api/v1/sessions/p/logout',
         tokenKey: 'icecream_auth_token',
         userKey: 'icecream_user_data',
-        rememberKey: 'icecream_remember_me'
+        rememberKey: 'icecream_remember_me',
+        TOKEN_KEY: 'icecream_auth_token',
+        USER_KEY: 'icecream_user_data',
+        REMEMBER_KEY: 'icecream_remember_me'
     }
 };
 

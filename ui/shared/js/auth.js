@@ -25,11 +25,11 @@ class AuthService {
             };
         }
         
-        // Use the environment-aware gateway URL
-        this.baseURL = CONFIG.GATEWAY_URL;
-        this.tokenKey = CONFIG.AUTH.TOKEN_KEY;
-        this.userKey = CONFIG.AUTH.USER_KEY;
-        this.rememberKey = CONFIG.AUTH.REMEMBER_KEY;
+        // Use the session service URL for authentication
+        this.baseURL = CONFIG.API.session.replace('/api/v1/session', '');  // Get base session service URL
+        this.tokenKey = CONFIG.AUTH.TOKEN_KEY || CONFIG.AUTH.tokenKey;
+        this.userKey = CONFIG.AUTH.USER_KEY || CONFIG.AUTH.userKey;
+        this.rememberKey = CONFIG.AUTH.REMEMBER_KEY || CONFIG.AUTH.rememberKey;
         
         console.log('🔧 AuthService initialized with:', {
             baseURL: this.baseURL,
