@@ -506,31 +506,9 @@
                     
                     <!-- System Status -->
                     <div class="system-section">
-                        <div class="services-status">
-                            <span class="service-dot" data-service="data" title="Data Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">D</span>
-                            </span>
-                            <span class="service-dot" data-service="gateway" title="Gateway Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">G</span>
-                            </span>
-                            <span class="service-dot" data-service="session" title="Session Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">S</span>
-                            </span>
-                            <span class="service-dot" data-service="orders" title="Orders Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">O</span>
-                            </span>
-                            <span class="service-dot" data-service="inventory" title="Inventory Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">I</span>
-                            </span>
-                            <span class="service-dot" data-service="invoice" title="Invoice Service">
-                                <i class="fas fa-circle status-indicator checking"></i>
-                                <span class="service-label">V</span>
-                            </span>
+                        <div class="header-status">
+                            <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
+                            System Online
                         </div>
                     </div>
                 </div>
@@ -873,9 +851,7 @@
             
             for (const service of services) {
                 const statusElement = document.getElementById(`${service.id}-status`);
-                const topPanelDot = document.querySelector(`.service-dot[data-service="${service.id}"] .status-indicator`);
-                
-                console.log(`🔍 Service: ${service.id}, statusElement: ${statusElement ? 'found' : 'not found'}, topPanelDot: ${topPanelDot ? 'found' : 'not found'}`);
+                if (!statusElement) continue;
                 
                 try {
                     const healthUrl = healthUrls[service.id];
@@ -889,25 +865,19 @@
                     if (service.id === 'data') {
                         // For data service, check if any of the other services can connect to DB
                         // If they're online, the database is likely healthy
-                        const onlineServices = document.querySelectorAll('.status-indicator.online');
                         const onlineCards = document.querySelectorAll('.service-status.status-online');
                         
-                        console.log(`🔍 Data Service check - Online indicators: ${onlineServices.length}, Online cards: ${onlineCards.length}`);
+                        console.log(`🔍 Data Service check - Online cards: ${onlineCards.length}`);
                         
-                        // Check if any other services are online (either in top panel or dashboard cards)
-                        if (onlineServices.length > 0 || onlineCards.length > 0) {
+                        // Check if any other services are online
+                        if (onlineCards.length > 0) {
                             // Update dashboard card if it exists
                             if (statusElement) {
                                 statusElement.className = 'service-status status-online';
                                 statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
                             }
                             
-                            // Update top panel dot
-                            if (topPanelDot) {
-                                topPanelDot.className = 'fas fa-circle status-indicator online';
-                            }
-                            
-                            console.log(`✅ ${service.name}: Online (inferred from ${onlineServices.length + onlineCards.length} dependent services)`);
+                            console.log(`✅ ${service.name}: Online (inferred from ${onlineCards.length} dependent services)`);
                             continue;
                         } else {
                             // If no other services are online, assume database is still starting up
@@ -917,11 +887,6 @@
                             if (statusElement) {
                                 statusElement.className = 'service-status status-loading';
                                 statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Checking...';
-                            }
-                            
-                            // Update top panel dot
-                            if (topPanelDot) {
-                                topPanelDot.className = 'fas fa-circle status-indicator checking';
                             }
                             continue;
                         }
