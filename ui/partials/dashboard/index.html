@@ -92,6 +92,28 @@
 
 <!-- Service Cards Grid -->
 <div class="service-cards">
+    <!-- Data Service -->
+    <div class="service-card" onclick="Alert.info('Data Service', 'PostgreSQL database providing data storage for all ice cream store operations.')">
+        <h3 class="service-title">Data Service</h3>
+        <p class="service-description">
+            PostgreSQL database storing customer data, orders, inventory, and business analytics
+        </p>
+        <div class="service-status status-loading" id="data-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+
+    <!-- Gateway Service -->
+    <div class="service-card" onclick="Alert.info('Gateway Service', 'API gateway managing authentication, routing, and service coordination.')">
+        <h3 class="service-title">Gateway Service</h3>
+        <p class="service-description">
+            Central API gateway handling authentication, request routing, and service orchestration
+        </p>
+        <div class="service-status status-loading" id="gateway-status">
+            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        </div>
+    </div>
+
     <!-- Orders Service -->
     <div class="service-card" onclick="navigateToRoute('orders')">
 
