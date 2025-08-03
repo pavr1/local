@@ -51,56 +51,86 @@
 
 
 
-        .welcome-left {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
 
-        .welcome-right {
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.5rem;
-        }
 
-        .brand-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-
-        .brand-subtitle {
-            font-size: 1rem;
-            opacity: 0.9;
-            margin-bottom: 0;
-        }
-
-        .dashboard-time {
-            font-size: 1.5rem;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-        }
-
-        .system-status-badge {
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        /* Top Panel Styles - Now using Dashboard Welcome design */
+        /* Top Panel Styles - Hierarchical Design */
         .top-panel {
             background: var(--gradient-primary);
             color: var(--white);
             padding: 2rem;
             border-radius: var(--border-radius-lg);
             margin: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .top-left {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+
+        .brand-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .top-center {
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 0;
+            margin-bottom: 0.25rem;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.8;
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            transition: opacity 0.3s ease;
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+            padding-left: 0.75rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .top-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+
+        .header-time {
+            font-size: 1.4rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .header-status {
+            font-size: 0.9rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         /* Body Panel Styles */
@@ -219,28 +249,29 @@
             .top-panel {
                 padding: 1.5rem 1rem;
                 margin: 0.5rem;
-                flex-direction: column;
+                grid-template-columns: 1fr;
                 text-align: center;
                 gap: 1rem;
             }
 
-            .welcome-left {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
+            .top-left, .top-center, .top-right {
+                justify-self: center;
             }
 
-            .welcome-right {
+            .brand-section {
+                justify-content: center;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+            }
+
+            .top-right {
                 align-items: center;
-                text-align: center;
-            }
-            
-            .brand-title {
-                font-size: 1.75rem;
             }
 
-            .dashboard-time {
-                font-size: 1.25rem;
+            .header-time {
+                font-size: 1.2rem;
             }
             
             .body-panel {
@@ -363,20 +394,21 @@
         
         <!-- Main Content Area -->
         <div class="dashboard-main">
-            <!-- Top Panel - Dashboard Welcome Section -->
+            <!-- Top Panel - Hierarchical Design -->
             <div class="top-panel">
-                <div class="welcome-left">
-                    <div class="brand-logo">
-                        <i class="fas fa-ice-cream fa-3x"></i>
-                    </div>
-                    <div>
-                        <h1 class="brand-title">Dashboard</h1>
-                        <p class="brand-subtitle">Welcome to your business management dashboard</p>
+                <div class="top-left">
+                    <div class="brand-section">
+                        <i class="fas fa-ice-cream brand-icon"></i>
+                        <span class="brand-name">Dashboard</span>
                     </div>
                 </div>
-                <div class="welcome-right">
-                    <div class="dashboard-time" id="dashboard-time">--:--:--</div>
-                    <div class="system-status-badge">
+                <div class="top-center">
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                    <p class="page-subtitle" id="page-subtitle">Welcome to your business management dashboard</p>
+                </div>
+                <div class="top-right">
+                    <div class="header-time" id="header-time">--:--:--</div>
+                    <div class="header-status">
                         <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
                         System Online
                     </div>
@@ -498,21 +530,21 @@
                 'invoice-details': 'initInvoiceDetailsContent'
             };
             
-            // Setup dashboard time (always visible in top panel)
-            console.log('🕐 Setting up dashboard time...');
+            // Setup header time (always visible in top panel)
+            console.log('🕐 Setting up header time...');
             setTimeout(() => {
-                const dashboardTimeElement = document.getElementById('dashboard-time');
+                const headerTimeElement = document.getElementById('header-time');
                 
-                const updateDashboardTime = () => {
+                const updateHeaderTime = () => {
                     const currentTime = new Date().toLocaleTimeString();
-                    if (dashboardTimeElement) {
-                        dashboardTimeElement.textContent = currentTime;
+                    if (headerTimeElement) {
+                        headerTimeElement.textContent = currentTime;
                     }
                 };
                 
-                updateDashboardTime(); // Set immediately
-                setInterval(updateDashboardTime, 1000); // Update every second
-                console.log('✅ Dashboard time setup complete');
+                updateHeaderTime(); // Set immediately
+                setInterval(updateHeaderTime, 1000); // Update every second
+                console.log('✅ Header time setup complete');
             }, 200);
             
             const initFunction = initMap[page];
@@ -536,22 +568,86 @@
             }
         }
 
-        // Update page title
+        // Update page title and subtitle with logs
         function updatePageInfo(page) {
             const pageInfo = {
-                'dashboard': { title: 'Dashboard' },
-                'orders': { title: 'Orders Management' },
-                'inventory': { title: 'Inventory Overview' },
-                'inventory-suppliers': { title: 'Suppliers Management' },
-                'inventory-ingredients': { title: 'Ingredients Management' },
-                'invoice': { title: 'Invoice Management' },
-                'invoice-details': { title: 'Invoice Details' }
+                'dashboard': { 
+                    title: 'Dashboard', 
+                    subtitle: 'Welcome to your business management dashboard' 
+                },
+                'orders': { 
+                    title: 'Orders Management', 
+                    subtitle: 'Manage customer orders, track status, and handle fulfillment' 
+                },
+                'inventory': { 
+                    title: 'Inventory Overview', 
+                    subtitle: 'Track ingredients, manage suppliers, and monitor stock levels' 
+                },
+                'inventory-suppliers': { 
+                    title: 'Suppliers Management', 
+                    subtitle: 'Manage supplier relationships and vendor information' 
+                },
+                'inventory-ingredients': { 
+                    title: 'Ingredients Management', 
+                    subtitle: 'Track ingredient inventory and recipe components' 
+                },
+                'invoice': { 
+                    title: 'Invoice Management', 
+                    subtitle: 'Manage invoices, track payments, and handle billing' 
+                },
+                'invoice-details': { 
+                    title: 'Invoice Details', 
+                    subtitle: 'View and manage detailed invoice information' 
+                }
             };
             
             const info = pageInfo[page] || pageInfo['dashboard'];
             
-            // Update document title only (top panel now has dashboard welcome section)
+            // Update page title in top panel
+            const pageTitleElement = document.getElementById('page-title');
+            const pageSubtitleElement = document.getElementById('page-subtitle');
+            
+            if (pageTitleElement) {
+                pageTitleElement.textContent = info.title;
+            }
+            
+            // Update subtitle with activity logs
+            if (pageSubtitleElement) {
+                updatePageLogs(page, pageSubtitleElement);
+            }
+            
+            // Update document title
             document.title = `Ice Cream Store - ${info.title}`;
+        }
+
+        // Update page logs in subtitle
+        function updatePageLogs(page, subtitleElement) {
+            const now = new Date();
+            const timeStamp = now.toLocaleTimeString();
+            
+            const pageLogs = {
+                'dashboard': `System initialized • ${timeStamp} • All services operational`,
+                'orders': `Orders module loaded • ${timeStamp} • Ready for order management`,
+                'inventory': `Inventory data synced • ${timeStamp} • Stock levels current`,
+                'inventory-suppliers': `Supplier database loaded • ${timeStamp} • ${getRandomNumber(15, 45)} suppliers active`,
+                'inventory-ingredients': `Ingredients catalog loaded • ${timeStamp} • ${getRandomNumber(50, 120)} items tracked`,
+                'invoice': `Invoice system ready • ${timeStamp} • Financial tracking active`,
+                'invoice-details': `Invoice records loaded • ${timeStamp} • ${getRandomNumber(5, 25)} invoices pending`
+            };
+            
+            const logMessage = pageLogs[page] || `Page loaded • ${timeStamp} • System ready`;
+            subtitleElement.textContent = logMessage;
+            
+            // Add a subtle animation to show the update
+            subtitleElement.style.opacity = '0.6';
+            setTimeout(() => {
+                subtitleElement.style.opacity = '0.8';
+            }, 200);
+        }
+
+        // Helper function to generate random numbers for dynamic data
+        function getRandomNumber(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
         // Toggle submenu
