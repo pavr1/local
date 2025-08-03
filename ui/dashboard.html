@@ -49,17 +49,7 @@
             overflow: hidden;
                 }
 
-        /* Dashboard Welcome Section Styles */
-        .dashboard-welcome {
-            background: var(--gradient-primary);
-            color: var(--white);
-            padding: 2rem;
-            border-radius: var(--border-radius-lg);
-            margin: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+
 
         .welcome-left {
             display: flex;
@@ -101,7 +91,20 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        .dashboard-content {
+        /* Top Panel Styles - Now using Dashboard Welcome design */
+        .top-panel {
+            background: var(--gradient-primary);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Body Panel Styles */
+        .body-panel {
             flex: 1;
             overflow-y: auto;
             padding: 2rem;
@@ -212,12 +215,8 @@
             .sidebar-overlay.show {
                 display: block;
             }
-            
-            .dashboard-content {
-                padding: 1rem;
-            }
 
-            .dashboard-welcome {
+            .top-panel {
                 padding: 1.5rem 1rem;
                 margin: 0.5rem;
                 flex-direction: column;
@@ -243,6 +242,12 @@
             .dashboard-time {
                 font-size: 1.25rem;
             }
+            
+            .body-panel {
+                padding: 1rem;
+            }
+
+
         }
         
         .breadcrumb-container {
@@ -358,8 +363,8 @@
         
         <!-- Main Content Area -->
         <div class="dashboard-main">
-            <!-- Dashboard Welcome Section (only shown on dashboard) -->
-            <div class="dashboard-welcome" id="dashboard-welcome" style="display: none;">
+            <!-- Top Panel - Dashboard Welcome Section -->
+            <div class="top-panel">
                 <div class="welcome-left">
                     <div class="brand-logo">
                         <i class="fas fa-ice-cream fa-3x"></i>
@@ -378,8 +383,8 @@
                 </div>
             </div>
             
-            <!-- Content Area -->
-            <div class="dashboard-content" id="main-content">
+            <!-- Body Panel - Where partial content loads -->
+            <div class="body-panel" id="main-content">
                 <!-- Initial loading state -->
                 <div class="content-loader">
                     <div class="loading-spinner"></div>
@@ -432,30 +437,27 @@
             console.log('📄 Loading content:', page);
             
             try {
-                // Show/hide dashboard welcome section
-                const welcomeSection = document.getElementById('dashboard-welcome');
-                if (welcomeSection) {
-                    welcomeSection.style.display = page === 'dashboard' ? 'flex' : 'none';
-                }
-                
                 // Show loading state
                 showLoading();
                 
                 // Update navigation state
                 updateActiveNavigation(page);
                 
-                // Update page title and breadcrumb
+                // Update page title and breadcrumb in top panel
                 updatePageInfo(page);
                 
-                // Load content based on page
-                const contentUrl = getContentUrl(page);
-                const response = await fetch(contentUrl);
+                // Load content based on page - this loads into body panel only
+                let contentUrl, html;
                 
+                // Load content based on page - all pages load their partial content
+                contentUrl = getContentUrl(page);
+                const response = await fetch(contentUrl);
                 if (!response.ok) {
                     throw new Error(`Failed to load content: ${response.status}`);
                 }
+                html = await response.text();
                 
-                const html = await response.text();
+                // Load content into body panel
                 document.getElementById('main-content').innerHTML = html;
                 
                 // Initialize page-specific functionality
@@ -496,23 +498,22 @@
                 'invoice-details': 'initInvoiceDetailsContent'
             };
             
-            // If it's dashboard, handle time updates directly here
-            if (page === 'dashboard') {
-                console.log('🕐 Setting up dashboard time from main script...');
-                setTimeout(() => {
-                    const timeElement = document.getElementById('dashboard-time');
-                    if (timeElement) {
-                        const updateTime = () => {
-                            timeElement.textContent = new Date().toLocaleTimeString();
-                        };
-                        updateTime(); // Set immediately
-                        setInterval(updateTime, 1000); // Update every second
-                        console.log('✅ Dashboard time setup complete');
-                    } else {
-                        console.error('❌ Dashboard time element not found');
+            // Setup dashboard time (always visible in top panel)
+            console.log('🕐 Setting up dashboard time...');
+            setTimeout(() => {
+                const dashboardTimeElement = document.getElementById('dashboard-time');
+                
+                const updateDashboardTime = () => {
+                    const currentTime = new Date().toLocaleTimeString();
+                    if (dashboardTimeElement) {
+                        dashboardTimeElement.textContent = currentTime;
                     }
-                }, 200);
-            }
+                };
+                
+                updateDashboardTime(); // Set immediately
+                setInterval(updateDashboardTime, 1000); // Update every second
+                console.log('✅ Dashboard time setup complete');
+            }, 200);
             
             const initFunction = initMap[page];
             if (initFunction && typeof window[initFunction] === 'function') {
@@ -549,7 +550,7 @@
             
             const info = pageInfo[page] || pageInfo['dashboard'];
             
-            // Update document title only
+            // Update document title only (top panel now has dashboard welcome section)
             document.title = `Ice Cream Store - ${info.title}`;
         }
 
