@@ -256,7 +256,7 @@ ui/
 ## ✅ Demo Pages
 
 ### Available Demo Pages
-1. **`ui/expense/invoices-demo.html`** - Expense invoices with full framework
+1. **`ui/invoice/invoices-demo.html`** - Expense invoices with full framework
 2. **`ui/inventory/suppliers-standardized.html`** - Supplier management with framework
 3. **`ui/dashboard-standardized.html`** - Main dashboard with header-only framework
 

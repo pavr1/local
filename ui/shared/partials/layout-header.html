@@ -255,7 +255,7 @@ class LayoutHeader {
             } else {
                 currentPage.textContent = 'Inventory';
             }
-        } else if (path.includes('/expense/')) {
+        } else if (path.includes('/invoice/')) {
             const expenseItem = document.createElement('li');
             expenseItem.className = 'breadcrumb-item';
             expenseItem.innerHTML = '<a href="../index.html">Expenses</a>';
