@@ -119,7 +119,7 @@ CREATE TABLE expenses (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Invoice Table (replaces expense_receipts)
+-- Invoice Table (modernized expense tracking)
 CREATE TABLE invoice (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(50) NOT NULL UNIQUE,
