@@ -837,20 +837,22 @@
                 { id: 'session', name: 'Session Service' }
             ];
             
-            const serviceUrls = getServiceUrls();
+            // Use gateway URLs from CONFIG to avoid CORS issues
+            const healthUrls = {
+                orders: CONFIG.SERVICES.orders,
+                inventory: CONFIG.SERVICES.inventory,
+                invoice: CONFIG.SERVICES.invoices, // Note: CONFIG uses 'invoices' key
+                session: CONFIG.GATEWAY_URL + '/api/v1/sessions/p/health'
+            };
             
             for (const service of services) {
                 const statusElement = document.getElementById(`${service.id}-status`);
                 if (!statusElement) continue;
                 
                 try {
-                    let healthUrl;
-                    
-                    // Use proper health check endpoints
-                    if (service.id === 'session') {
-                        healthUrl = `${serviceUrls.session}/api/v1/sessions/p/health`;
-                    } else {
-                        healthUrl = `${serviceUrls[service.id]}/api/v1/${service.id}/health`;
+                    const healthUrl = healthUrls[service.id];
+                    if (!healthUrl) {
+                        throw new Error(`No health URL configured for ${service.name}`);
                     }
                     
                     console.log(`🔍 Checking ${service.name} at ${healthUrl}`);

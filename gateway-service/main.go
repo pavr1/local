@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -106,8 +107,8 @@ func main() {
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
 
 	// Invoice routes (proxied to invoice service)
-	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
-	invoiceRouter.HandleFunc("/p/health", createProxyHandler(config.InvoiceServiceURL, "/health")).Methods("GET")
+	invoiceRouter := api.PathPrefix("/v1/invoice").Subrouter()
+	invoiceRouter.HandleFunc("/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
@@ -162,6 +163,50 @@ func main() {
 	fmt.Println("   ✅ User context injection")
 
 	log.Fatal(http.ListenAndServe(":8082", r))
+}
+
+// createInvoiceHealthHandler creates a custom health handler for invoice service
+func createInvoiceHealthHandler(invoiceServiceURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Create a direct request to invoice service health endpoint
+		healthURL := invoiceServiceURL + "/health"
+
+		log.Printf("Proxying invoice health check to %s", healthURL)
+
+		client := &http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		req, err := http.NewRequest("GET", healthURL, nil)
+		if err != nil {
+			http.Error(w, "Failed to create health request", http.StatusInternalServerError)
+			return
+		}
+
+		// Add gateway headers
+		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+		req.Header.Set("X-Gateway-Session-Managed", "true")
+		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("Invoice health check failed: %v", err)
+			http.Error(w, "Invoice service unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		defer resp.Body.Close()
+
+		// Copy response headers
+		for key, values := range resp.Header {
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+
+		// Copy status code and body
+		w.WriteHeader(resp.StatusCode)
+		io.Copy(w, resp.Body)
+	}
 }
 
 // createProxyHandler creates a reverse proxy handler for a specific service
