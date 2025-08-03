@@ -148,21 +148,24 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// API routes
 	api := router.PathPrefix("/api/v1").Subrouter()
 
-	// Receipts routes (includes receipt items management)
-	receiptsRouter := api.PathPrefix("/receipts").Subrouter()
-	receiptsHandler := mainHandler.GetReceiptsHandler()
+	// Invoices routes (includes invoice details management)
+	invoicesRouter := api.PathPrefix("/invoices").Subrouter()
+	invoicesHandler := mainHandler.GetInvoicesHandler()
 
-	// Main receipt operations
-	receiptsRouter.HandleFunc("", receiptsHandler.CreateReceiptWithItems).Methods("POST")
-	receiptsRouter.HandleFunc("", receiptsHandler.ListReceipts).Methods("GET")
-	receiptsRouter.HandleFunc("/{id}", receiptsHandler.GetReceiptByID).Methods("GET")
-	receiptsRouter.HandleFunc("/{id}", receiptsHandler.UpdateReceipt).Methods("PUT")
-	receiptsRouter.HandleFunc("/{id}", receiptsHandler.DeleteReceipt).Methods("DELETE")
-	receiptsRouter.HandleFunc("/number/{receipt_number}", receiptsHandler.GetReceiptByNumber).Methods("GET")
+	// Main invoice operations
+	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoiceWithDetails).Methods("POST")
+	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
+	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
 
-	// Receipt with items operations
-	receiptsRouter.HandleFunc("/{id}/items", receiptsHandler.GetReceiptWithItems).Methods("GET")
-	receiptsRouter.HandleFunc("/{id}/items", receiptsHandler.AddReceiptItem).Methods("POST")
+	// Invoice with details operations
+	invoicesRouter.HandleFunc("/{id}/details", invoicesHandler.GetInvoiceDetailsByInvoiceID).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}/details", invoicesHandler.CreateInvoiceDetail).Methods("POST")
+
+	// Invoice details standalone routes
+	api.HandleFunc("/invoice-details", invoicesHandler.ListInvoiceDetails).Methods("GET")
 
 	logger.Info("HTTP router configured successfully")
 	return router

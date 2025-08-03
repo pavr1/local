@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 
-	receiptsHandlers "expense-service/entities/receipts/handlers"
+	invoicesHandlers "expense-service/entities/invoices/handlers"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,25 +15,25 @@ type MainHttpHandler struct {
 	logger *logrus.Logger
 
 	// Entity handlers
-	ReceiptsHandler *receiptsHandlers.HttpHandler
+	InvoicesHandler *invoicesHandlers.HttpHandler
 }
 
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
 func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
-	// Initialize receipts handlers (now includes receipt items functionality)
-	receiptsDBHandler := receiptsHandlers.NewDBHandler(db, logger)
-	receiptsHttpHandler := receiptsHandlers.NewHttpHandler(receiptsDBHandler, logger)
+	// Initialize invoices handlers (now includes invoice details functionality)
+	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, logger)
+	invoicesHttpHandler := invoicesHandlers.NewHttpHandler(invoicesDBHandler, logger)
 
 	return &MainHttpHandler{
 		db:              db,
 		logger:          logger,
-		ReceiptsHandler: receiptsHttpHandler,
+		InvoicesHandler: invoicesHttpHandler,
 	}
 }
 
-// GetReceiptsHandler returns the receipts HTTP handler
-func (h *MainHttpHandler) GetReceiptsHandler() *receiptsHandlers.HttpHandler {
-	return h.ReceiptsHandler
+// GetInvoicesHandler returns the invoices HTTP handler
+func (h *MainHttpHandler) GetInvoicesHandler() *invoicesHandlers.HttpHandler {
+	return h.InvoicesHandler
 }
 
 // HealthCheck provides a health check endpoint for the entire service
@@ -42,7 +42,7 @@ func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 		"service": "expense-service",
 		"status":  "healthy",
 		"entities": map[string]string{
-			"receipts": "ready",
+			"invoices": "ready",
 		},
 	}
 }
