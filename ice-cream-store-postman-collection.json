@@ -915,7 +915,7 @@
 							}
 						}
 					],
-					"description": "Manage invoices and their line items for expense tracking via gateway"
+					"description": "Manage invoices and their line items for invoice tracking via gateway"
 				},
 				{
 					"name": "📝 Invoice Details Management",
@@ -950,7 +950,7 @@
 					"description": "Manage individual line items within invoices via gateway"
 				}
 			],
-			"description": "Expense management endpoints for invoices and invoice details via gateway (requires authentication)"
+			"description": "Invoice management endpoints for invoices and invoice details via gateway (requires authentication)"
 		},
 		{
 			"name": "🔧 Direct Service Access (Dev/Debug)",
@@ -1178,7 +1178,7 @@
 									}
 								}
 							],
-							"description": "Manage invoices and their line items for expense tracking"
+							"description": "Manage invoices and their line items for invoice tracking"
 						},
 						{
 							"name": "📝 Invoice Details Management",
@@ -1209,7 +1209,7 @@
 							"description": "Manage individual line items within invoices"
 						}
 					],
-					"description": "Expense management endpoints for invoices and invoice details (port 8085)"
+					"description": "Invoice management endpoints for invoices and invoice details (port 8085)"
 				}
 			],
 			"description": "Direct service access endpoints for development and debugging (bypasses gateway)"

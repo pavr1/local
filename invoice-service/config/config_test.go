@@ -37,9 +37,9 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	os.Setenv("INVOICE_SERVER_HOST", "127.0.0.1")
 	os.Setenv("DB_HOST", "db.example.com")
 	os.Setenv("DB_PORT", "5433")
-	os.Setenv("DB_USER", "expense_user")
+	os.Setenv("DB_USER", "invoice_user")
 	os.Setenv("DB_PASSWORD", "secure_password")
-	os.Setenv("DB_NAME", "expense_db")
+	os.Setenv("DB_NAME", "invoice_db")
 	os.Setenv("DB_SSLMODE", "require")
 	os.Setenv("LOG_LEVEL", "debug")
 
@@ -50,9 +50,9 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	assert.Equal(t, "127.0.0.1", cfg.ServerHost)
 	assert.Equal(t, "db.example.com", cfg.DBHost)
 	assert.Equal(t, "5433", cfg.DBPort)
-	assert.Equal(t, "expense_user", cfg.DBUser)
+	assert.Equal(t, "invoice_user", cfg.DBUser)
 	assert.Equal(t, "secure_password", cfg.DBPassword)
-	assert.Equal(t, "expense_db", cfg.DBName)
+	assert.Equal(t, "invoice_db", cfg.DBName)
 	assert.Equal(t, "require", cfg.DBSSLMode)
 	assert.Equal(t, "debug", cfg.LogLevel)
 }
@@ -64,7 +64,7 @@ func TestLoadConfigPartialEnvironment(t *testing.T) {
 
 	// Set only some environment variables
 	os.Setenv("INVOICE_SERVER_PORT", "8086")
-	os.Setenv("DB_NAME", "custom_expense_db")
+	os.Setenv("DB_NAME", "custom_invoice_db")
 	os.Setenv("LOG_LEVEL", "warn")
 
 	cfg := LoadConfig()
@@ -72,7 +72,7 @@ func TestLoadConfigPartialEnvironment(t *testing.T) {
 	assert.NotNil(t, cfg)
 	// Custom values from environment
 	assert.Equal(t, "8086", cfg.ServerPort)
-	assert.Equal(t, "custom_expense_db", cfg.DBName)
+	assert.Equal(t, "custom_invoice_db", cfg.DBName)
 	assert.Equal(t, "warn", cfg.LogLevel)
 
 	// Default values for unset variables

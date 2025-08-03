@@ -96,7 +96,7 @@ CREATE TABLE recipe_ingredients (
 );
 
 -- =============================================================================
--- EXPENSES MANAGEMENT ENTITIES
+-- INVOICES MANAGEMENT ENTITIES
 -- =============================================================================
 
 -- Expense Categories Table

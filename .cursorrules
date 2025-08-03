@@ -6,6 +6,7 @@ This is the identity-api service working on robust database migration and SQL qu
 ## General rules
 - If I write "Start" ask for the ticket id.
 - Whenever there is a command to run, do not ask the user if they want to either run it or not, instead prepare the command and set the "run" button.
+- If you execute a command, always provide a brief about what you need to achieve to understand what the command does.
 - If any document is updated, be sure to update their corresponding index.
 - Explain when running commands, what they do.
 
