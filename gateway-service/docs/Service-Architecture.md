@@ -31,7 +31,7 @@ graph TD
     %% Level 1 - Administrative
     B1 --> B2[⚙️ Administration Service<br/>👑 Admin Only<br/>User/Role/Permission CRUD<br/>Equipment Management]
     B1 --> B3[👥 Customer Service<br/>Customer Management]
-    B1 --> B4[💰 Expenses Service<br/>Financial Management]
+    B1 --> B4[💰 Invoice Service<br/>Financial Management]
 
     %% Level 2 - Business Logic
     B2 --> C1[📦 Inventory Service<br/>Core Business Logic]
@@ -279,7 +279,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
   - Customer search and filtering
   - Customer analytics and reporting
 
-#### 5. **Expenses Service** 💰
+#### 5. **Invoice Service** 💰
 - **Tables**: `expense_categories`, `expenses`, `expense_invoices`
 - **Functions**:
   - **Expense Categories**: Budget classification
@@ -392,7 +392,7 @@ userLogs, _, err := auditService.RetrieveAuditLogs(AuditFilter{
 3. ✅ **Gateway Service** (Completed)
 4. 🔄 **Administration Service** (Next - Critical for other services, includes equipment management)
 5. 🔄 **Audit Service** (Independent implementation)
-6. 🔄 **Customer & Expenses Services** (Basic CRUD)
+6. 🔄 **Customer & Invoice Services** (Basic CRUD)
 7. 🔄 **Inventory Service** (Core business logic)
 8. 🔄 **Promotions Service** (Advanced features)
 9. 🔄 **Orders Service** (Complex integrations)

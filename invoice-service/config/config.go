@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// Config holds the configuration for the expense service
+// Config holds the configuration for the invoice service
 type Config struct {
 	ServerPort string
 	ServerHost string
@@ -22,8 +22,8 @@ type Config struct {
 // LoadConfig loads configuration from environment variables with defaults
 func LoadConfig() *Config {
 	return &Config{
-		ServerPort: getEnvString("EXPENSE_SERVER_PORT", "8085"),
-		ServerHost: getEnvString("EXPENSE_SERVER_HOST", "0.0.0.0"),
+		ServerPort: getEnvString("INVOICE_SERVER_PORT", "8085"),
+		ServerHost: getEnvString("INVOICE_SERVER_HOST", "0.0.0.0"),
 		DBHost:     getEnvString("DB_HOST", "localhost"),
 		DBPort:     getEnvString("DB_PORT", "5432"),
 		DBUser:     getEnvString("DB_USER", "postgres"),

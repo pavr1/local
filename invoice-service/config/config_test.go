@@ -33,8 +33,8 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	defer clearEnvVars()
 
 	// Set custom environment variables
-	os.Setenv("EXPENSE_SERVER_PORT", "9090")
-	os.Setenv("EXPENSE_SERVER_HOST", "127.0.0.1")
+	os.Setenv("INVOICE_SERVER_PORT", "9090")
+	os.Setenv("INVOICE_SERVER_HOST", "127.0.0.1")
 	os.Setenv("DB_HOST", "db.example.com")
 	os.Setenv("DB_PORT", "5433")
 	os.Setenv("DB_USER", "expense_user")
@@ -63,7 +63,7 @@ func TestLoadConfigPartialEnvironment(t *testing.T) {
 	defer clearEnvVars()
 
 	// Set only some environment variables
-	os.Setenv("EXPENSE_SERVER_PORT", "8086")
+	os.Setenv("INVOICE_SERVER_PORT", "8086")
 	os.Setenv("DB_NAME", "custom_expense_db")
 	os.Setenv("LOG_LEVEL", "warn")
 
@@ -183,14 +183,14 @@ func TestConfigStructFields(t *testing.T) {
 	assert.NotEmpty(t, cfg.LogLevel)
 }
 
-func TestExpenseServiceSpecificPort(t *testing.T) {
+func TestInvoiceServiceSpecificPort(t *testing.T) {
 	// Clear environment variables to test defaults
 	clearEnvVars()
 	defer clearEnvVars()
 
 	cfg := LoadConfig()
 
-	// Expense service should default to port 8085 (different from inventory service 8084)
+	// Invoice service should default to port 8085 (different from inventory service 8084)
 	assert.Equal(t, "8085", cfg.ServerPort)
 }
 
@@ -213,8 +213,8 @@ func TestConfigConsistencyAcrossServices(t *testing.T) {
 // Helper function to clear all relevant environment variables
 func clearEnvVars() {
 	vars := []string{
-		"EXPENSE_SERVER_PORT",
-		"EXPENSE_SERVER_HOST",
+		"INVOICE_SERVER_PORT",
+		"INVOICE_SERVER_HOST",
 		"DB_HOST",
 		"DB_PORT",
 		"DB_USER",

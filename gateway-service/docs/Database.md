@@ -59,7 +59,7 @@ This database schema supports a **microservices architecture** with **9 speciali
 - **📋 Audit Service**: Activity logging (`audit_logs` table)
 - **⚙️ Administration Service**: User/role/permission management, equipment tracking (`users`, `roles`, `permissions`, `system_config`, `user_salary`, `mechanics`, `equipment` tables) - **Admin only**
 - **👥 Customer Service**: Customer management (`customers` table)
-- **💰 Expenses Service**: Financial management (`expense_categories`, `invoice`, `invoice_details` tables)
+- **💰 Invoice Service**: Financial management (`expense_categories`, `invoice`, `invoice_details` tables)
 - **📦 Inventory Service**: Core business logic (`suppliers`, `ingredients`, `existences`, `runout_ingredient_report`, `recipe_categories`, `recipes`, `recipe_ingredients` tables)
 - **🎉 Promotions Service**: Loyalty programs (`promotions`, `customer_points` tables)
 - **🛒 Orders Service**: Sales processing (`orders`, `ordered_receipes` tables)

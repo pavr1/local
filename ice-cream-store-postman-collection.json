@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "ice-cream-store-api",
 		"name": "🍦 Ice Cream Store API Collection",
-		"description": "Complete API collection for the Ice Cream Store microservices system. This collection includes all endpoints across Gateway, Session, Orders, Inventory, and Expense services. The session service uses database-backed session storage for improved persistence and performance.",
+		"description": "Complete API collection for the Ice Cream Store microservices system. This collection includes all endpoints across Gateway, Session, Orders, Inventory, and Invoice services. The session service uses database-backed session storage for improved persistence and performance.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "ice-cream-store"
 	},
@@ -730,7 +730,7 @@
 			"description": "Inventory management endpoints for suppliers and stock"
 		},
 		{
-			"name": "🧾 Expense Management (via Gateway)",
+								"name": "🧾 Invoice Management (via Gateway)",
 			"item": [
 				{
 					"name": "Invoice Service Health Check",
@@ -742,7 +742,7 @@
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "expenses", "p", "health"]
 						},
-						"description": "Check expense service health via gateway"
+						"description": "Check invoice service health via gateway"
 					}
 				},
 				{
@@ -1038,7 +1038,7 @@
 									"host": ["{{invoice_service_url}}"],
 									"path": ["health"]
 								},
-								"description": "Check expense service health status"
+								"description": "Check invoice service health status"
 							}
 						},
 						{
