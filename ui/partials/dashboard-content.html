@@ -1,29 +1,13 @@
 <!-- Dashboard Content - extracted from dashboard.html -->
 <style>
     /* Dashboard-specific styles */
-    .dashboard-welcome {
-        background: var(--gradient-primary);
-        color: var(--white);
-        padding: 3rem 2rem;
-        text-align: center;
-        border-radius: var(--border-radius-lg);
-        margin-bottom: 2rem;
-    }
+
 
     .brand-logo {
         margin-bottom: 2rem;
     }
 
-    .brand-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
 
-    .brand-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
 
     .service-cards {
         display: grid;
@@ -92,35 +76,19 @@
         color: var(--warning-color);
     }
 
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
-        .dashboard-welcome {
-            padding: 2rem 1rem;
+            /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .service-cards {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .service-card {
+                padding: 1.5rem;
+            }
         }
-        
-        .brand-title {
-            font-size: 2rem;
-        }
-        
-        .service-cards {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-        
-        .service-card {
-            padding: 1.5rem;
-        }
-    }
 </style>
 
-<!-- Dashboard Welcome Section -->
-<div class="dashboard-welcome">
-    <div class="brand-logo">
-        <i class="fas fa-ice-cream fa-4x"></i>
-    </div>
-    <h1 class="brand-title">Ice Cream Store Management</h1>
-    <p class="brand-subtitle">Welcome to your business management dashboard</p>
-</div>
 
 <!-- Service Cards Grid -->
 <div class="service-cards">
@@ -182,11 +150,16 @@
 </div>
 
 <script>
+    console.log('🔥 DASHBOARD SCRIPT IS LOADING!');
+    
     // Dashboard content initialization function
     window.initDashboardContent = async function() {
         console.log('🏠 Initializing Dashboard Content...');
         
         try {
+            // Time is now handled by main dashboard.html
+            console.log('🏠 Loading dashboard service status...');
+            
             // Load service status for all services
             await loadDashboardServiceStatus();
             
@@ -195,6 +168,15 @@
             console.error('❌ Error initializing dashboard content:', error);
         }
     };
+
+    // Simple time update function (kept for compatibility)
+    function updateDashboardTime() {
+        const timeElement = document.getElementById('dashboard-time');
+        if (timeElement) {
+            const now = new Date();
+            timeElement.textContent = now.toLocaleTimeString();
+        }
+    }
 
     async function loadDashboardServiceStatus() {
         console.log('📊 Loading service status...');
@@ -237,4 +219,5 @@
         
         console.log('✅ Service status loading completed');
     }
+
 </script> 

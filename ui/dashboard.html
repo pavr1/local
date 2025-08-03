@@ -47,18 +47,60 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-        }
-        
-        .dashboard-header {
-            background: var(--white);
-            border-bottom: 1px solid var(--border-color);
-            padding: 1rem 2rem;
-            z-index: 999;
+                }
+
+        /* Dashboard Welcome Section Styles */
+        .dashboard-welcome {
+            background: var(--gradient-primary);
+            color: var(--white);
+            padding: 2rem;
+            border-radius: var(--border-radius-lg);
+            margin: 1rem;
             display: flex;
-            justify-content: between;
             align-items: center;
+            justify-content: space-between;
         }
-        
+
+        .welcome-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .welcome-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+
+        .brand-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .brand-subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0;
+        }
+
+        .dashboard-time {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .system-status-badge {
+            font-size: 0.9rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
         .dashboard-content {
             flex: 1;
             overflow-y: auto;
@@ -173,6 +215,33 @@
             
             .dashboard-content {
                 padding: 1rem;
+            }
+
+            .dashboard-welcome {
+                padding: 1.5rem 1rem;
+                margin: 0.5rem;
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .welcome-left {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .welcome-right {
+                align-items: center;
+                text-align: center;
+            }
+            
+            .brand-title {
+                font-size: 1.75rem;
+            }
+
+            .dashboard-time {
+                font-size: 1.25rem;
             }
         }
         
@@ -289,27 +358,24 @@
         
         <!-- Main Content Area -->
         <div class="dashboard-main">
-            <!-- Header -->
-            <div class="dashboard-header">
-                <div class="d-flex align-items-center">
-                    <button class="btn btn-outline-primary d-md-none me-3" onclick="toggleSidebar()">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h4 class="mb-0" id="page-title">Dashboard</h4>
+            <!-- Dashboard Welcome Section (only shown on dashboard) -->
+            <div class="dashboard-welcome" id="dashboard-welcome" style="display: none;">
+                <div class="welcome-left">
+                    <div class="brand-logo">
+                        <i class="fas fa-ice-cream fa-3x"></i>
+                    </div>
+                    <div>
+                        <h1 class="brand-title">Dashboard</h1>
+                        <p class="brand-subtitle">Welcome to your business management dashboard</p>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-success me-2" id="system-status">System Online</span>
-                    <small class="text-muted" id="current-time"></small>
+                <div class="welcome-right">
+                    <div class="dashboard-time" id="dashboard-time">--:--:--</div>
+                    <div class="system-status-badge">
+                        <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
+                        System Online
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Breadcrumb -->
-            <div class="breadcrumb-container">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb" id="breadcrumb">
-                        <li class="breadcrumb-item active">Dashboard</li>
-                    </ol>
-                </nav>
             </div>
             
             <!-- Content Area -->
@@ -355,10 +421,6 @@
             // Load user info
             loadUserInfo();
             
-            // Start time display
-            updateTime();
-            setInterval(updateTime, 1000);
-            
             // Load initial dashboard content
             await loadContent('dashboard');
             
@@ -370,6 +432,12 @@
             console.log('📄 Loading content:', page);
             
             try {
+                // Show/hide dashboard welcome section
+                const welcomeSection = document.getElementById('dashboard-welcome');
+                if (welcomeSection) {
+                    welcomeSection.style.display = page === 'dashboard' ? 'flex' : 'none';
+                }
+                
                 // Show loading state
                 showLoading();
                 
@@ -428,6 +496,24 @@
                 'invoice-details': 'initInvoiceDetailsContent'
             };
             
+            // If it's dashboard, handle time updates directly here
+            if (page === 'dashboard') {
+                console.log('🕐 Setting up dashboard time from main script...');
+                setTimeout(() => {
+                    const timeElement = document.getElementById('dashboard-time');
+                    if (timeElement) {
+                        const updateTime = () => {
+                            timeElement.textContent = new Date().toLocaleTimeString();
+                        };
+                        updateTime(); // Set immediately
+                        setInterval(updateTime, 1000); // Update every second
+                        console.log('✅ Dashboard time setup complete');
+                    } else {
+                        console.error('❌ Dashboard time element not found');
+                    }
+                }, 200);
+            }
+            
             const initFunction = initMap[page];
             if (initFunction && typeof window[initFunction] === 'function') {
                 console.log('🔧 Initializing page:', initFunction);
@@ -449,32 +535,22 @@
             }
         }
 
-        // Update page title and breadcrumb
+        // Update page title
         function updatePageInfo(page) {
             const pageInfo = {
-                'dashboard': { title: 'Dashboard', breadcrumb: ['Dashboard'] },
-                'orders': { title: 'Orders Management', breadcrumb: ['Dashboard', 'Orders'] },
-                'inventory': { title: 'Inventory Overview', breadcrumb: ['Dashboard', 'Inventory'] },
-                'inventory-suppliers': { title: 'Suppliers Management', breadcrumb: ['Dashboard', 'Inventory', 'Suppliers'] },
-                'inventory-ingredients': { title: 'Ingredients Management', breadcrumb: ['Dashboard', 'Inventory', 'Ingredients'] },
-                'invoice': { title: 'Invoice Management', breadcrumb: ['Dashboard', 'Invoice'] },
-                'invoice-details': { title: 'Invoice Details', breadcrumb: ['Dashboard', 'Invoice', 'Details'] }
+                'dashboard': { title: 'Dashboard' },
+                'orders': { title: 'Orders Management' },
+                'inventory': { title: 'Inventory Overview' },
+                'inventory-suppliers': { title: 'Suppliers Management' },
+                'inventory-ingredients': { title: 'Ingredients Management' },
+                'invoice': { title: 'Invoice Management' },
+                'invoice-details': { title: 'Invoice Details' }
             };
             
             const info = pageInfo[page] || pageInfo['dashboard'];
             
-            // Update title
-            document.getElementById('page-title').textContent = info.title;
+            // Update document title only
             document.title = `Ice Cream Store - ${info.title}`;
-            
-            // Update breadcrumb
-            const breadcrumb = document.getElementById('breadcrumb');
-            breadcrumb.innerHTML = info.breadcrumb.map((item, index) => {
-                const isLast = index === info.breadcrumb.length - 1;
-                return isLast 
-                    ? `<li class="breadcrumb-item active">${item}</li>`
-                    : `<li class="breadcrumb-item"><a href="#" class="text-decoration-none">${item}</a></li>`;
-            }).join('');
         }
 
         // Toggle submenu
@@ -521,11 +597,7 @@
             }
         }
 
-        // Update time display
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('current-time').textContent = now.toLocaleTimeString();
-        }
+        // Time display is now handled by dashboard content partial
 
         // Toggle mobile sidebar
         function toggleSidebar() {
