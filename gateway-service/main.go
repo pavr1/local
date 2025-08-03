@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -254,16 +255,16 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if services are healthy
+	// Check all services that appear on the dashboard
+	dataHealthy := checkDatabaseHealth("localhost:5432") // PostgreSQL database
+	gatewayHealthy := true                               // Gateway is healthy if it's responding to this request
 	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/p/health")
 	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/p/health")
-
-	// Check session management health
-	sessionMgmtHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
+	invoiceHealthy := checkServiceHealth("http://localhost:8085/health")
 
 	status := "healthy"
-	if !sessionHealthy || !ordersHealthy || !inventoryHealthy || !sessionMgmtHealthy {
+	if !dataHealthy || !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy {
 		status = "degraded"
 	}
 
@@ -274,8 +275,20 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		"gateway":            "operational",
 		"session_management": "enabled",
 		"services": map[string]string{
+			"data-service": func() string {
+				if dataHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
+			"gateway-service": func() string {
+				if gatewayHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
 			"session-service": func() string {
-				if sessionHealthy && sessionMgmtHealthy {
+				if sessionHealthy {
 					return "healthy"
 				}
 				return "unhealthy"
@@ -292,13 +305,18 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				return "unhealthy"
 			}(),
+			"invoice-service": func() string {
+				if invoiceHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
 		},
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if !sessionHealthy || !ordersHealthy || !inventoryHealthy || !sessionMgmtHealthy {
-		w.WriteHeader(http.StatusServiceUnavailable)
-	}
+	// Always return HTTP 200 - let the client decide how to handle degraded status
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -325,6 +343,16 @@ func checkServiceHealth(healthURL string) bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
+}
+
+// checkDatabaseHealth checks if PostgreSQL database is responding via TCP connection
+func checkDatabaseHealth(address string) bool {
+	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+	if err != nil {
+		return false
+	}
+	defer conn.Close()
+	return true
 }
 
 func getEnv(key, defaultValue string) string {

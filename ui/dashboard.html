@@ -174,6 +174,17 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.15);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .header-status-warning {
+            background: rgba(255, 193, 7, 0.15);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .header-status-error {
+            background: rgba(220, 53, 69, 0.15);
+            border-color: rgba(220, 53, 69, 0.3);
         }
 
         .header-time {
@@ -506,9 +517,9 @@
                     
                     <!-- System Status -->
                     <div class="system-section">
-                        <div class="header-status">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
-                            System Online
+                        <div class="header-status" id="system-status">
+                            <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;" id="system-status-icon"></i>
+                            <span id="system-status-text">System Online</span>
                         </div>
                     </div>
                 </div>
@@ -561,6 +572,9 @@
             
             // Load initial dashboard content
             await loadContent('dashboard');
+            
+            // Start automatic health monitoring
+            startHealthMonitoring();
             
             // Test SweetAlert2 system
             setTimeout(() => {
@@ -658,6 +672,9 @@
                 console.log('🔧 Initializing page:', initFunction);
                 await window[initFunction]();
             }
+            
+            // Always update system status in top panel (on all pages)
+            await updateSystemStatus();
         }
 
         // Update active navigation
@@ -803,6 +820,31 @@
             loadContent(route);
         };
 
+        // Auto-refresh system health status every 30 seconds
+        let healthCheckInterval = null;
+        
+        function startHealthMonitoring() {
+            // Clear any existing interval
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+            }
+            
+                         // Set up automatic health checking every 30 seconds
+             healthCheckInterval = setInterval(async () => {
+                 await updateSystemStatus(true); // true = isAutoRefresh
+             }, 30000); // 30 seconds
+            
+            console.log('✅ Health monitoring started (30-second intervals)');
+        }
+        
+        function stopHealthMonitoring() {
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+                healthCheckInterval = null;
+                console.log('🛑 Health monitoring stopped');
+            }
+        }
+
         // Alert system is loaded via shared/js/alerts.js (SweetAlert2)
         // Available methods:
         // Alert.success(title, text)
@@ -818,105 +860,156 @@
             console.log('🏠 Initializing Dashboard Content...');
             
             try {
-                // Load service status for all services
-                await loadDashboardServiceStatus();
-                
-                console.log('✅ Dashboard Content initialized successfully');
+                // Service status will be loaded by the centralized updateSystemStatus() 
+                // which is called automatically on page load and every 30 seconds
+                console.log('✅ Dashboard Content initialized successfully - service status handled centrally');
             } catch (error) {
                 console.error('❌ Error initializing dashboard content:', error);
             }
         };
 
-        async function loadDashboardServiceStatus() {
-            console.log('📊 Loading service status from backend services...');
+        // Old loadDashboardServiceStatus function removed - now handled by centralized updateSystemStatus()
+        
+        // Centralized system health checker - updates both top panel AND dashboard cards if present
+        async function updateSystemStatus(isAutoRefresh = false) {
+            const systemStatusElement = document.getElementById('system-status');
+            const systemStatusIcon = document.getElementById('system-status-icon');
+            const systemStatusText = document.getElementById('system-status-text');
             
-            const services = [
-                { id: 'gateway', name: 'Gateway Service' },
-                { id: 'session', name: 'Session Service' },
-                { id: 'orders', name: 'Orders Service' },
-                { id: 'inventory', name: 'Inventory Service' },
-                { id: 'invoice', name: 'Invoice Service' },
-                { id: 'data', name: 'Data Service' } // Check last so other services can be marked online first
-            ];
-            
-            // Use gateway URLs from CONFIG to avoid CORS issues
-            const healthUrls = {
-                data: 'http://localhost:5432', // PostgreSQL database - we'll check differently
-                gateway: CONFIG.GATEWAY_URL + '/api/health',
-                session: CONFIG.GATEWAY_URL + '/api/v1/sessions/p/health',
-                orders: CONFIG.SERVICES.orders,
-                inventory: CONFIG.SERVICES.inventory,
-                invoice: CONFIG.SERVICES.invoices // Note: CONFIG uses 'invoices' key
-            };
-            
-            for (const service of services) {
-                const statusElement = document.getElementById(`${service.id}-status`);
-                if (!statusElement) continue;
-                
-                try {
-                    const healthUrl = healthUrls[service.id];
-                    if (!healthUrl) {
-                        throw new Error(`No health URL configured for ${service.name}`);
-                    }
-                    
-                    console.log(`🔍 Checking ${service.name} at ${healthUrl}`);
-                    
-                    // Special handling for data service (PostgreSQL database)
-                    if (service.id === 'data') {
-                        // For data service, check if any of the other services can connect to DB
-                        // If they're online, the database is likely healthy
-                        const onlineCards = document.querySelectorAll('.service-status.status-online');
-                        
-                        console.log(`🔍 Data Service check - Online cards: ${onlineCards.length}`);
-                        
-                        // Check if any other services are online
-                        if (onlineCards.length > 0) {
-                            // Update dashboard card if it exists
-                            if (statusElement) {
-                                statusElement.className = 'service-status status-online';
-                                statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
-                            }
-                            
-                            console.log(`✅ ${service.name}: Online (inferred from ${onlineCards.length} dependent services)`);
-                            continue;
-                        } else {
-                            // If no other services are online, assume database is still starting up
-                            console.log(`⚠️  No dependent services online yet, marking Data Service as checking...`);
-                            
-                            // Update dashboard card if it exists  
-                            if (statusElement) {
-                                statusElement.className = 'service-status status-loading';
-                                statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Checking...';
-                            }
-                            continue;
-                        }
-                    }
-                    
-                    const response = await fetch(healthUrl, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        // Set a reasonable timeout
-                        signal: AbortSignal.timeout(5000)
-                    });
-                    
-                    if (response.ok) {
-                        statusElement.className = 'service-status status-online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
-                        console.log(`✅ ${service.name}: Online`);
-                    } else {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    
-                } catch (error) {
-                    console.error(`❌ ${service.name} health check failed:`, error.message);
-                    statusElement.className = 'service-status status-offline';
-                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
-                }
+            if (!systemStatusElement || !systemStatusIcon || !systemStatusText) {
+                return; // Elements not found, skip update
             }
             
-            console.log('✅ Service status loading completed');
+            // Add visual indication during auto-refresh
+            if (isAutoRefresh) {
+                systemStatusIcon.style.opacity = '0.5';
+            }
+            
+            try {
+                const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '🔍';
+                console.log(`${logPrefix} Checking overall system status via gateway...`);
+                
+                const response = await fetch(CONFIG.GATEWAY_URL + '/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    signal: AbortSignal.timeout(5000)
+                });
+                
+                if (response.ok) {
+                    const healthData = await response.json();
+                    
+                    // Update top panel based on overall status
+                    if (healthData.status === 'healthy') {
+                        systemStatusIcon.className = 'fas fa-circle text-success me-2';
+                        systemStatusText.textContent = 'System Online';
+                        systemStatusElement.className = 'header-status';
+                        console.log('✅ System Status: All services healthy');
+                    } else if (healthData.status === 'degraded') {
+                        systemStatusIcon.className = 'fas fa-circle text-warning me-2';
+                        systemStatusText.textContent = 'System Degraded';
+                        systemStatusElement.className = 'header-status header-status-warning';
+                        console.log('⚠️  System Status: Some services degraded');
+                    } else {
+                        systemStatusIcon.className = 'fas fa-circle text-warning me-2';
+                        systemStatusText.textContent = 'System Issues';
+                        systemStatusElement.className = 'header-status header-status-warning';
+                        console.log('⚠️  System Status: Unknown status received');
+                    }
+                    
+                    // Update individual service cards if they exist (dashboard page)
+                    if (healthData.services) {
+                        console.log(`${logPrefix} Updating individual service cards...`);
+                        updateServiceCards(healthData.services, healthData.status);
+                    }
+                    
+                } else {
+                    throw new Error(`Gateway health check failed: ${response.status}`);
+                }
+                
+            } catch (error) {
+                const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '❌';
+                console.error(`${logPrefix} System status check failed:`, error.message);
+                // Gateway unreachable = system offline
+                systemStatusIcon.className = 'fas fa-circle text-danger me-2';
+                systemStatusText.textContent = 'System Offline';
+                systemStatusElement.className = 'header-status header-status-error';
+                
+                // Mark all service cards as offline if they exist
+                markAllServiceCardsOffline();
+                
+            } finally {
+                // Restore opacity after check
+                if (isAutoRefresh) {
+                    systemStatusIcon.style.opacity = '1';
+                }
+            }
+        }
+        
+        // Update individual service cards based on gateway health response
+        function updateServiceCards(servicesStatus, overallStatus = 'healthy') {
+            const serviceMapping = {
+                'data-service': 'data',
+                'gateway-service': 'gateway', 
+                'session-service': 'session',
+                'orders-service': 'orders',
+                'inventory-service': 'inventory',
+                'invoice-service': 'invoice'
+            };
+            
+            for (const [gatewayServiceName, cardId] of Object.entries(serviceMapping)) {
+                const statusElement = document.getElementById(`${cardId}-status`);
+                if (!statusElement) continue; // Card not present on current page
+                
+                const serviceStatus = servicesStatus[gatewayServiceName];
+                
+                // Special handling for gateway service - should reflect overall system status
+                if (cardId === 'gateway') {
+                    if (overallStatus === 'healthy') {
+                        statusElement.className = 'service-status status-online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                        console.log(`✅ ${cardId} card: Online (system healthy)`);
+                    } else if (overallStatus === 'degraded') {
+                        statusElement.className = 'service-status status-warning';
+                        statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Degraded';
+                        console.log(`⚠️  ${cardId} card: Degraded (system degraded)`);
+                    } else {
+                        statusElement.className = 'service-status status-offline';
+                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                        console.log(`❌ ${cardId} card: Offline`);
+                    }
+                } else {
+                    // For all other services, use individual service status
+                    if (serviceStatus === 'healthy') {
+                        statusElement.className = 'service-status status-online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                        console.log(`✅ ${cardId} card: Online`);
+                    } else if (serviceStatus === 'unhealthy') {
+                        statusElement.className = 'service-status status-offline';
+                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                        console.log(`❌ ${cardId} card: Offline`);
+                    } else {
+                        statusElement.className = 'service-status status-warning';
+                        statusElement.innerHTML = '<i class="fas fa-question-circle me-2"></i>Unknown';
+                        console.log(`⚠️  ${cardId} card: Unknown status`);
+                    }
+                }
+            }
+        }
+        
+        // Mark all service cards as offline (when gateway is unreachable)
+        function markAllServiceCardsOffline() {
+            const serviceIds = ['data', 'gateway', 'session', 'orders', 'inventory', 'invoice'];
+            
+            serviceIds.forEach(serviceId => {
+                const statusElement = document.getElementById(`${serviceId}-status`);
+                if (statusElement) {
+                    statusElement.className = 'service-status status-offline';
+                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                    console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
+                }
+            });
         }
     </script>
 </body>
