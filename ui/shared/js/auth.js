@@ -25,8 +25,8 @@ class AuthService {
             };
         }
         
-        // Use the session service URL for authentication
-        this.baseURL = CONFIG.API.session.replace('/api/v1/session', '');  // Get base session service URL
+        // Use the gateway URL for authentication (gateway handles CORS and routing)
+        this.baseURL = CONFIG.GATEWAY_URL;
         this.tokenKey = CONFIG.AUTH.TOKEN_KEY || CONFIG.AUTH.tokenKey;
         this.userKey = CONFIG.AUTH.USER_KEY || CONFIG.AUTH.userKey;
         this.rememberKey = CONFIG.AUTH.REMEMBER_KEY || CONFIG.AUTH.rememberKey;

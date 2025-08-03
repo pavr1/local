@@ -39,7 +39,7 @@ const CONFIG = {
         gateway: SERVICE_URLS.gateway + '/api/v1',
         session: SERVICE_URLS.session + '/api/v1/session',
         LOGIN: '/api/v1/sessions/p/login',
-        LOGOUT: '/api/v1/sessions/p/logout',
+        LOGOUT: '/api/v1/sessions/logout',
         VALIDATE: '/api/v1/sessions/p/validate'
     },
     SERVICES: {
@@ -49,8 +49,9 @@ const CONFIG = {
         invoices: SERVICE_URLS.gateway + '/api/v1/invoices/p/health'  // Updated to use /invoices path in gateway
     },
     AUTH: {
-        login: SERVICE_URLS.session + '/api/v1/sessions/p/login',
-        logout: SERVICE_URLS.session + '/api/v1/sessions/p/logout',
+        login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
+        logout: SERVICE_URLS.gateway + '/api/v1/sessions/logout',
+        validate: SERVICE_URLS.gateway + '/api/v1/sessions/p/validate',
         tokenKey: 'icecream_auth_token',
         userKey: 'icecream_user_data',
         rememberKey: 'icecream_remember_me',
