@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ice Cream Store - Dashboard</title>
+    <title>Ice Cream Store - Management Dashboard</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -18,446 +18,536 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     
     <!-- Shared CSS -->
-    <link rel="stylesheet" href="shared/css/style.css?v=1.2">
+    <link rel="stylesheet" href="shared/css/style.css?v=1.3">
     
     <style>
-        /* Dashboard-specific styles - layout handled by framework */
-        .dashboard-welcome {
-            background: var(--gradient-primary);
-            color: var(--white);
-            padding: 3rem 2rem;
-            text-align: center;
-            border-radius: var(--border-radius-lg);
-            margin-bottom: 2rem;
+        /* SPA Dashboard Layout */
+        body {
+            background: var(--background-light);
+            font-family: 'Poppins', sans-serif;
         }
-
-        .brand-logo {
-            margin-bottom: 2rem;
+        
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
-
-        .brand-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .brand-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .service-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .service-btn {
+        
+        .dashboard-sidebar {
+            width: 280px;
+            flex-shrink: 0;
             background: var(--white);
-            border: 2px solid transparent;
-            border-radius: var(--border-radius-lg);
-            padding: 2rem;
-            text-align: center;
-            transition: var(--transition);
-            cursor: pointer;
-            box-shadow: var(--shadow-light);
-            height: 100%;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .dashboard-main {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            position: relative;
             overflow: hidden;
-            text-decoration: none;
-            color: var(--dark-color);
         }
-
-        .service-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-heavy);
-            border-color: var(--primary-color);
-            text-decoration: none;
-            color: var(--dark-color);
-        }
-
-        .service-btn.primary:hover {
-            border-color: var(--primary-color);
-            background: var(--primary-light);
-        }
-
-        .service-btn.success:hover {
-            border-color: var(--success-color);
-            background: var(--success-light);
-        }
-
-        .service-btn.info:hover {
-            border-color: var(--info-color);
-            background: var(--info-light);
-        }
-
-        .service-btn.warning:hover {
-            border-color: var(--warning-color);
-            background: var(--warning-light);
-        }
-
-        .service-btn.disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .service-btn.disabled:hover {
-            transform: none;
-            box-shadow: var(--shadow-light);
-            border-color: transparent;
+        
+        .dashboard-header {
             background: var(--white);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            z-index: 999;
+            display: flex;
+            justify-content: between;
+            align-items: center;
         }
-
-        .service-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--primary-color);
+        
+        .dashboard-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
         }
-
-        .service-btn.success .service-icon {
-            color: var(--success-color);
+        
+        /* Sidebar Styles */
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
         }
-
-        .service-btn.info .service-icon {
-            color: var(--info-color);
+        
+        .sidebar-nav {
+            padding: 1.5rem 1rem;
         }
-
-        .service-btn.warning .service-icon {
-            color: var(--warning-color);
-        }
-
-        .service-content h5 {
-            font-size: 1.3rem;
+        
+        .nav-section-title {
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--dark-color);
-        }
-
-        .service-content p {
+            text-transform: uppercase;
             color: var(--secondary-color);
             margin-bottom: 1rem;
-            line-height: 1.5;
+            padding: 0 0.75rem;
+            letter-spacing: 0.5px;
         }
-
-        .service-status {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--secondary-color);
-            transition: var(--transition);
-        }
-
-        .service-status.online {
-            background: var(--success-color);
-            box-shadow: 0 0 8px var(--success-color);
-        }
-
-        .service-status.warning {
-            background: var(--warning-color);
-            box-shadow: 0 0 8px var(--warning-color);
-        }
-
-        .service-status.offline {
-            background: var(--danger-color);
-            box-shadow: 0 0 8px var(--danger-color);
-        }
-
-        .quick-actions {
-            background: var(--light-color);
-            padding: 2rem;
-            border-radius: var(--border-radius-lg);
-            margin-bottom: 2rem;
-        }
-
-        .quick-actions h5 {
-            margin-bottom: 1.5rem;
-            color: var(--dark-color);
-        }
-
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-        }
-
-        .action-btn {
-            padding: 1rem;
+        
+        .nav-pills .nav-link {
             border-radius: var(--border-radius);
-            transition: var(--transition);
-            text-decoration: none;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            text-decoration: none;
-        }
-
-        .system-overview {
-            background: var(--white);
-            padding: 2rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-light);
-            margin-bottom: 2rem;
-        }
-
-        .system-overview h5 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 0.25rem;
+            padding: 0.75rem;
             color: var(--dark-color);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            text-align: left;
+            width: 100%;
         }
-
+        
+        .nav-pills .nav-link:hover {
+            background: var(--primary-light);
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+        
+        .nav-pills .nav-link.active {
+            background: var(--primary-color);
+            color: var(--white);
+            box-shadow: var(--shadow-light);
+        }
+        
+        .nav-sub {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+            margin-left: 1rem;
+        }
+        
+        /* Content Loading */
+        .content-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            color: var(--secondary-color);
+        }
+        
+        .loading-spinner {
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* Mobile responsiveness */
         @media (max-width: 768px) {
-            .dashboard-welcome {
-                padding: 2rem 1rem;
+            .dashboard-sidebar {
+                position: fixed;
+                left: -280px;
+                height: 100vh;
+                transition: left 0.3s ease;
+                z-index: 1050;
             }
-
-            .brand-title {
-                font-size: 2rem;
+            
+            .dashboard-sidebar.show {
+                left: 0;
             }
-
-            .service-cards {
-                grid-template-columns: 1fr;
-                gap: 1rem;
+            
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+                display: none;
             }
-
-            .service-btn {
-                padding: 1.5rem;
+            
+            .sidebar-overlay.show {
+                display: block;
             }
-
-            .service-icon {
-                font-size: 2.5rem;
+            
+            .dashboard-content {
+                padding: 1rem;
             }
+        }
+        
+        .breadcrumb-container {
+            background: var(--white);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            margin: 0;
+        }
+        
+        .breadcrumb {
+            margin: 0;
+            background: transparent;
+            padding: 0;
         }
     </style>
 </head>
 <body>
-    <!-- Dashboard Welcome Section -->
-    <div class="dashboard-welcome">
-        <div class="brand-logo">
-            <i class="fas fa-ice-cream fa-4x mb-3"></i>
-            <h1 class="brand-title">Ice Cream Store</h1>
-            <p class="brand-subtitle">Management Dashboard</p>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="dashboard-sidebar" id="dashboardSidebar">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <i class="fas fa-ice-cream text-primary fa-2x"></i>
+                <h5 class="mt-2 mb-0">Ice Cream Store</h5>
+                <small class="text-muted">Management Dashboard</small>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="sidebar-nav">
+                <h6 class="nav-section-title">
+                    <i class="fas fa-layer-group me-2"></i>Services
+                </h6>
+                
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <button class="nav-link active" onclick="loadContent('dashboard')" data-page="dashboard">
+                            <i class="fas fa-home me-2"></i>
+                            Dashboard
+                        </button>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <button class="nav-link" onclick="loadContent('orders')" data-page="orders">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Orders
+                        </button>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <button class="nav-link" onclick="toggleSubmenu('inventory')" data-page="inventory">
+                            <i class="fas fa-warehouse me-2"></i>
+                            Inventory
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <ul class="nav flex-column ms-3" id="inventory-submenu" style="display: none;">
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('inventory')" data-page="inventory">
+                                    <i class="fas fa-chart-bar me-2"></i>Overview
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('inventory-suppliers')" data-page="inventory-suppliers">
+                                    <i class="fas fa-truck me-2"></i>Suppliers
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('inventory-ingredients')" data-page="inventory-ingredients">
+                                    <i class="fas fa-seedling me-2"></i>Ingredients
+                                </button>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <button class="nav-link" onclick="toggleSubmenu('invoice')" data-page="invoice">
+                            <i class="fas fa-file-invoice me-2"></i>
+                            Invoice
+                            <i class="fas fa-chevron-down ms-auto"></i>
+                        </button>
+                        <ul class="nav flex-column ms-3" id="invoice-submenu" style="display: none;">
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('invoice')" data-page="invoice">
+                                    <i class="fas fa-chart-pie me-2"></i>Overview
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('invoice-details')" data-page="invoice-details">
+                                    <i class="fas fa-file-invoice me-2"></i>Details
+                                </button>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- User Section -->
+            <div class="sidebar-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto;">
+                <div class="user-info d-flex align-items-center mb-3">
+                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
+                    <div>
+                        <div class="fw-bold" id="user-name">Loading...</div>
+                        <small class="text-muted">Administrator</small>
+                    </div>
+                </div>
+                <button class="btn btn-outline-danger btn-sm w-100" onclick="logout()">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </button>
+            </div>
         </div>
         
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <button class="btn btn-light" onclick="checkSystemHealth()">
-                <i class="fas fa-heartbeat me-2"></i>System Health
-            </button>
-            <button class="btn btn-outline-light" onclick="refreshDashboard()">
-                <i class="fas fa-sync-alt me-2"></i>Refresh
-            </button>
-            <button class="btn btn-outline-light" onclick="window.open('http://localhost:8080', '_blank')">
-                <i class="fas fa-external-link-alt me-2"></i>PgAdmin
-            </button>
-        </div>
-    </div>
-
-    <!-- Service Cards -->
-    <div class="service-cards">
-        <!-- Orders Service -->
-        <a href="orders.html" class="service-btn primary">
-            <span class="service-status" id="orders-status"></span>
-            <div class="service-icon">
-                <i class="fas fa-shopping-cart"></i>
+        <!-- Mobile sidebar overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+        
+        <!-- Main Content Area -->
+        <div class="dashboard-main">
+            <!-- Header -->
+            <div class="dashboard-header">
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-outline-primary d-md-none me-3" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h4 class="mb-0" id="page-title">Dashboard</h4>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-success me-2" id="system-status">System Online</span>
+                    <small class="text-muted" id="current-time"></small>
+                </div>
             </div>
-            <div class="service-content">
-                <h5>Orders Management</h5>
-                <p>Create, view, and manage customer orders</p>
-                <small class="text-muted">Port 8083</small>
+            
+            <!-- Breadcrumb -->
+            <div class="breadcrumb-container">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb" id="breadcrumb">
+                        <li class="breadcrumb-item active">Dashboard</li>
+                    </ol>
+                </nav>
             </div>
-        </a>
-
-        <!-- Inventory Service -->
-        <a href="inventory/" class="service-btn success">
-            <span class="service-status" id="inventory-status"></span>
-            <div class="service-icon">
-                <i class="fas fa-warehouse"></i>
-            </div>
-            <div class="service-content">
-                <h5>Inventory</h5>
-                <p>Manage suppliers, ingredients & stock</p>
-                <small class="text-muted">Port 8084</small>
-            </div>
-        </a>
-
-        <!-- Invoice Service -->
-        <a href="invoice/" class="service-btn info">
-            <span class="service-status" id="expenses-status"></span>
-            <div class="service-icon">
-                <i class="fas fa-file-invoice"></i>
-            </div>
-            <div class="service-content">
-                <h5>Invoice Management</h5>
-                <p>Track invoices, expenses & spending</p>
-                <small class="text-muted">Port 8085</small>
-            </div>
-        </a>
-
-        <!-- Reports Service -->
-        <div class="service-btn warning disabled" onclick="navigateToService('reports')">
-            <span class="service-status offline"></span>
-            <div class="service-icon">
-                <i class="fas fa-chart-bar"></i>
-            </div>
-            <div class="service-content">
-                <h5>Reports & Analytics</h5>
-                <p>Business insights and analytics</p>
-                <small class="badge bg-warning">Coming Soon</small>
+            
+            <!-- Content Area -->
+            <div class="dashboard-content" id="main-content">
+                <!-- Initial loading state -->
+                <div class="content-loader">
+                    <div class="loading-spinner"></div>
+                    <span>Loading dashboard...</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-        <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
-        <div class="action-grid">
-            <a href="orders.html" class="btn action-btn btn-outline-primary">
-                <i class="fas fa-plus me-2"></i>New Order
-            </a>
-            <a href="invoice/" class="btn action-btn btn-outline-success">
-                <i class="fas fa-file-invoice me-2"></i>Add Invoice
-            </a>
-            <a href="inventory/" class="btn action-btn btn-outline-info">
-                <i class="fas fa-truck me-2"></i>Manage Suppliers
-            </a>
-            <button class="btn action-btn btn-outline-secondary" onclick="checkSystemHealth()">
-                <i class="fas fa-heartbeat me-2"></i>Health Check
-            </button>
-        </div>
-    </div>
-
-    <!-- System Overview -->
-    <div class="system-overview">
-        <h5><i class="fas fa-server me-2"></i>System Status</h5>
-        <div id="system-status-container">
-            <!-- System status will load here -->
-        </div>
-    </div>
-
-    <!-- Bootstrap 5 JS Bundle -->
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Font Awesome JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Configuration -->
-    <script src="config.js?v=1.1"></script>
+    <script src="config.js?v=1.3"></script>
     
     <!-- Shared JavaScript -->
-    <script src="shared/js/auth.js"></script>
-    <script src="shared/js/status.js"></script>
-    <script src="shared/js/alerts.js"></script>
-    <script src="shared/js/load-partials.js"></script>
-
+    <script src="shared/js/auth.js?v=1.3"></script>
+    <script src="shared/js/alerts.js?v=1.3"></script>
+    
     <script>
-        class DashboardStandardized {
-            constructor() {
-                this.init();
+        let currentPage = 'dashboard';
+        let auth = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Initializing SPA Dashboard...');
+            
+            // Initialize authentication
+            auth = new AuthService();
+            if (!auth.isAuthenticated()) {
+                console.log('❌ User not authenticated, redirecting to login');
+                window.location.href = 'login.html';
+                return;
             }
-
-            async init() {
-                console.log('🏠 Initializing Dashboard (Standardized Layout)...');
-                
-                // Special setup for dashboard - header only, no sidebar
-                await window.PartialLoader.setupStandardLayout({
-                    pageTitle: 'Dashboard',
-                    includeSidebar: false,  // Dashboard has its own layout
-                    includeHeader: true
-                });
-                
-                // Initialize authentication
-                const auth = new AuthService();
-                if (!auth.isAuthenticated()) {
-                    console.log('❌ User not authenticated, redirecting to login');
-                    window.location.href = 'login.html';
-                    return;
-                }
-
-                // Load system status
-                await this.loadSystemStatus();
-
-                // Update service status indicators
-                this.updateServiceStatus();
-                
-                console.log('✅ Dashboard (Standardized) initialized successfully');
-            }
-
-            async loadSystemStatus() {
-                try {
-                    await window.PartialLoader.loadSystemStatus('system-status-container');
-                } catch (error) {
-                    console.warn('Could not load system status:', error);
-                }
-            }
-
-            updateServiceStatus() {
-                // Update service status indicators
-                if (window.statusService && window.statusService.lastHealthCheck) {
-                    const results = window.statusService.lastHealthCheck.results;
-                    
-                    Object.keys(results).forEach(service => {
-                        const status = results[service];
-                        const indicator = document.getElementById(`${service}-status`);
-                        
-                        if (indicator) {
-                            indicator.className = indicator.className.replace(/\b(online|warning|offline)\b/g, '');
-                            
-                            if (status === 'healthy') {
-                                indicator.classList.add('online');
-                            } else if (status === 'degraded') {
-                                indicator.classList.add('warning');
-                            } else {
-                                indicator.classList.add('offline');
-                            }
-                        }
-                    });
-                }
-                
-                // Schedule next update
-                setTimeout(() => this.updateServiceStatus(), 10000);
-            }
-        }
-
-        // Navigation function
-        function navigateToService(service) {
-            switch(service) {
-                case 'orders':
-                    window.location.href = 'orders.html';
-                    break;
-                case 'inventory':
-                    window.location.href = 'inventory/';
-                    break;
-                case 'expenses':
-                    window.location.href = 'invoice/';
-                    break;
-                case 'reports':
-                    Alert.comingSoon('Reports & Analytics');
-                    break;
-                default:
-                    Alert.info('Service not yet available', 'This service is still under development');
-            }
-        }
-
-        // Dashboard refresh function
-        function refreshDashboard() {
-            console.log('🔄 Refreshing dashboard...');
-            window.location.reload();
-        }
-
-        // Initialize the page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            window.dashboardStandardized = new DashboardStandardized();
+            
+            // Load user info
+            loadUserInfo();
+            
+            // Start time display
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // Load initial dashboard content
+            await loadContent('dashboard');
+            
+            console.log('✅ SPA Dashboard initialized successfully');
         });
+
+        // Content loading function
+        async function loadContent(page) {
+            console.log('📄 Loading content:', page);
+            
+            try {
+                // Show loading state
+                showLoading();
+                
+                // Update navigation state
+                updateActiveNavigation(page);
+                
+                // Update page title and breadcrumb
+                updatePageInfo(page);
+                
+                // Load content based on page
+                const contentUrl = getContentUrl(page);
+                const response = await fetch(contentUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load content: ${response.status}`);
+                }
+                
+                const html = await response.text();
+                document.getElementById('main-content').innerHTML = html;
+                
+                // Initialize page-specific functionality
+                await initializePageContent(page);
+                
+                currentPage = page;
+                
+            } catch (error) {
+                console.error('❌ Error loading content:', error);
+                showError('Failed to load page content. Please try again.');
+            }
+        }
+
+        // Get content URL for each page
+        function getContentUrl(page) {
+            const contentMap = {
+                'dashboard': 'partials/dashboard-content.html',
+                'orders': 'partials/orders-content.html',
+                'inventory': 'partials/inventory-content.html',
+                'inventory-suppliers': 'partials/inventory-suppliers-content.html',
+                'inventory-ingredients': 'partials/inventory-ingredients-content.html',
+                'invoice': 'partials/invoice-content.html',
+                'invoice-details': 'partials/invoice-invoices-content.html'
+            };
+            
+            return contentMap[page] || 'partials/dashboard-content.html';
+        }
+
+        // Initialize page-specific content
+        async function initializePageContent(page) {
+            const initMap = {
+                'dashboard': 'initDashboardContent',
+                'orders': 'initOrdersContent',
+                'inventory': 'initInventoryContent',
+                'inventory-suppliers': 'initSuppliersContent',
+                'inventory-ingredients': 'initIngredientsContent',
+                'invoice': 'initInvoiceContent',
+                'invoice-details': 'initInvoiceDetailsContent'
+            };
+            
+            const initFunction = initMap[page];
+            if (initFunction && typeof window[initFunction] === 'function') {
+                console.log('🔧 Initializing page:', initFunction);
+                await window[initFunction]();
+            }
+        }
+
+        // Update active navigation
+        function updateActiveNavigation(page) {
+            // Remove all active classes
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to current page
+            const activeLink = document.querySelector(`[data-page="${page}"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+        }
+
+        // Update page title and breadcrumb
+        function updatePageInfo(page) {
+            const pageInfo = {
+                'dashboard': { title: 'Dashboard', breadcrumb: ['Dashboard'] },
+                'orders': { title: 'Orders Management', breadcrumb: ['Dashboard', 'Orders'] },
+                'inventory': { title: 'Inventory Overview', breadcrumb: ['Dashboard', 'Inventory'] },
+                'inventory-suppliers': { title: 'Suppliers Management', breadcrumb: ['Dashboard', 'Inventory', 'Suppliers'] },
+                'inventory-ingredients': { title: 'Ingredients Management', breadcrumb: ['Dashboard', 'Inventory', 'Ingredients'] },
+                'invoice': { title: 'Invoice Management', breadcrumb: ['Dashboard', 'Invoice'] },
+                'invoice-details': { title: 'Invoice Details', breadcrumb: ['Dashboard', 'Invoice', 'Details'] }
+            };
+            
+            const info = pageInfo[page] || pageInfo['dashboard'];
+            
+            // Update title
+            document.getElementById('page-title').textContent = info.title;
+            document.title = `Ice Cream Store - ${info.title}`;
+            
+            // Update breadcrumb
+            const breadcrumb = document.getElementById('breadcrumb');
+            breadcrumb.innerHTML = info.breadcrumb.map((item, index) => {
+                const isLast = index === info.breadcrumb.length - 1;
+                return isLast 
+                    ? `<li class="breadcrumb-item active">${item}</li>`
+                    : `<li class="breadcrumb-item"><a href="#" class="text-decoration-none">${item}</a></li>`;
+            }).join('');
+        }
+
+        // Toggle submenu
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId + '-submenu');
+            if (submenu) {
+                submenu.style.display = submenu.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        // Show loading state
+        function showLoading() {
+            document.getElementById('main-content').innerHTML = `
+                <div class="content-loader">
+                    <div class="loading-spinner"></div>
+                    <span>Loading content...</span>
+                </div>
+            `;
+        }
+
+        // Show error state
+        function showError(message) {
+            document.getElementById('main-content').innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                    <h3>Error Loading Content</h3>
+                    <p class="text-muted mb-4">${message}</p>
+                    <button class="btn btn-primary" onclick="loadContent('${currentPage}')">
+                        <i class="fas fa-refresh me-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        // Load user info
+        function loadUserInfo() {
+            try {
+                const userInfo = auth.getCurrentUser();
+                if (userInfo) {
+                    document.getElementById('user-name').textContent = userInfo.username || 'User';
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
+
+        // Update time display
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').textContent = now.toLocaleTimeString();
+        }
+
+        // Toggle mobile sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('dashboardSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                auth.logout();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Global navigation function for content partials
+        window.navigateToRoute = function(route) {
+            loadContent(route);
+        };
     </script>
 </body>
 </html> 

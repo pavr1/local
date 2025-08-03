@@ -42,7 +42,7 @@ deps:
 
 run: build
 	@echo "Running $(SERVICE_NAME)..."
-	./$(BUILD_DIR)/$(BINARY_NAME)
+	 ./$(BUILD_DIR)/$(BINARY_NAME)
 
 # Docker commands
 docker-build:
