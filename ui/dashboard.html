@@ -812,6 +812,75 @@
         // Alert.comingSoon(feature)
         // Alert.toast(message, type)
         // Alert.confirm(title, text, confirmText)
+
+        // Dashboard content initialization function
+        window.initDashboardContent = async function() {
+            console.log('🏠 Initializing Dashboard Content...');
+            
+            try {
+                // Load service status for all services
+                await loadDashboardServiceStatus();
+                
+                console.log('✅ Dashboard Content initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing dashboard content:', error);
+            }
+        };
+
+        async function loadDashboardServiceStatus() {
+            console.log('📊 Loading service status from backend services...');
+            
+            const services = [
+                { id: 'orders', name: 'Orders Service' },
+                { id: 'inventory', name: 'Inventory Service' },
+                { id: 'invoice', name: 'Invoice Service' },
+                { id: 'session', name: 'Session Service' }
+            ];
+            
+            const serviceUrls = getServiceUrls();
+            
+            for (const service of services) {
+                const statusElement = document.getElementById(`${service.id}-status`);
+                if (!statusElement) continue;
+                
+                try {
+                    let healthUrl;
+                    
+                    // Use proper health check endpoints
+                    if (service.id === 'session') {
+                        healthUrl = `${serviceUrls.session}/api/v1/sessions/p/health`;
+                    } else {
+                        healthUrl = `${serviceUrls[service.id]}/api/v1/${service.id}/health`;
+                    }
+                    
+                    console.log(`🔍 Checking ${service.name} at ${healthUrl}`);
+                    
+                    const response = await fetch(healthUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        // Set a reasonable timeout
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    
+                    if (response.ok) {
+                        statusElement.className = 'service-status status-online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                        console.log(`✅ ${service.name}: Online`);
+                    } else {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ ${service.name} health check failed:`, error.message);
+                    statusElement.className = 'service-status status-offline';
+                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                }
+            }
+            
+            console.log('✅ Service status loading completed');
+        }
     </script>
 </body>
 </html> 

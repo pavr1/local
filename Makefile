@@ -18,6 +18,7 @@ DATA_SERVICE := data-service
 SESSION_SERVICE := session-service
 ORDERS_SERVICE := orders-service
 INVENTORY_SERVICE := inventory-service
+INVOICE_SERVICE := invoice-service
 GATEWAY_SERVICE := gateway-service
 UI_SERVICE := ui
 
@@ -84,23 +85,23 @@ fresh: banner fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start
 	@echo "  🌐 Gateway Service API: $(GREEN)http://localhost:8082$(RESET)"
 	@echo ""
 
-start-locally: start-data start-session start-orders start-inventory start-gateway ## Start all services locally in correct order
+start-locally: start-data start-session start-orders start-inventory start-invoice start-gateway start-ui ## Start all services locally in correct order
 	@echo "$(GREEN)🚀 All services are starting locally!$(RESET)"
 	@echo "$(YELLOW)⏳ Waiting for services to initialize...$(RESET)"
 	@sleep 3
 	@echo "$(GREEN)✅ All services should now be running in background$(RESET)"
 	@echo "$(CYAN)💡 Use 'make status' to check service health$(RESET)"
 
-stop-locally: stop-gateway stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
+stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
 	@echo "$(YELLOW)🛑 All local services stopped$(RESET)"
 
 restart-locally: stop-locally start-locally ## Restart all local services
 	@echo "$(GREEN)🔄 All local services restarted!$(RESET)"
 
-start-docker: start-data-container start-session-container start-orders-container start-inventory-container start-gateway-container ## Start all services in Docker containers
+start-docker: start-data-container start-session-container start-orders-container start-inventory-container start-invoice-container start-gateway-container ## Start all services in Docker containers
 	@echo "$(GREEN)🚀 All services are starting in Docker containers!$(RESET)"
 
-stop-docker: stop-gateway-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
+stop-docker: stop-gateway-container stop-invoice-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
 	@echo "$(YELLOW)🛑 All Docker containers stopped$(RESET)"
 
 restart-docker: stop-docker start-docker ## Restart all Docker containers
@@ -231,9 +232,19 @@ start-inventory: ## Start inventory service locally
 	@cd $(INVENTORY_SERVICE) && $(MAKE) start-locally &
 	@sleep 1
 
+start-invoice: ## Start invoice service locally
+	@echo "$(CYAN)💰 Starting Invoice Service locally...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
+
 start-gateway: ## Start gateway service locally
 	@echo "$(CYAN)🌐 Starting Gateway Service locally...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) start-locally &
+	@sleep 1
+
+start-ui: ## Start UI service locally
+	@echo "$(CYAN)🎨 Starting UI Service locally...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) start-locally &
 	@sleep 1
 
 stop-data: ## Stop data service
@@ -252,9 +263,17 @@ stop-inventory: ## Stop inventory service locally
 	@echo "$(YELLOW)📋 Stopping Inventory Service...$(RESET)"
 	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-locally
 
+stop-invoice: ## Stop invoice service locally
+	@echo "$(YELLOW)💰 Stopping Invoice Service...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) stop-locally
+
 stop-gateway: ## Stop gateway service locally
 	@echo "$(YELLOW)🌐 Stopping Gateway Service...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-locally
+
+stop-ui: ## Stop UI service locally
+	@echo "$(YELLOW)🎨 Stopping UI Service...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) stop-locally
 
 ## 🐳 Container Service Commands
 
@@ -273,6 +292,10 @@ start-orders-container: ## Start orders service in container
 start-inventory-container: ## Start inventory service in container
 	@echo "$(CYAN)📋 Starting Inventory Service container...$(RESET)"
 	@cd $(INVENTORY_SERVICE) && $(MAKE) start-container
+
+start-invoice-container: ## Start invoice service in container
+	@echo "$(CYAN)💰 Starting Invoice Service container...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) start-container
 
 start-gateway-container: ## Start gateway service in container
 	@echo "$(CYAN)🌐 Starting Gateway Service container...$(RESET)"
@@ -293,6 +316,10 @@ stop-orders-container: ## Stop orders service container
 stop-inventory-container: ## Stop inventory service container
 	@echo "$(YELLOW)📋 Stopping Inventory Service container...$(RESET)"
 	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-container
+
+stop-invoice-container: ## Stop invoice service container
+	@echo "$(YELLOW)💰 Stopping Invoice Service container...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) stop-container
 
 stop-gateway-container: ## Stop gateway service container
 	@echo "$(YELLOW)🌐 Stopping Gateway Service container...$(RESET)"
