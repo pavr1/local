@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ice Cream Store - Expense Management</title>
+    <title>Ice Cream Store - Invoice Management</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -269,7 +269,7 @@
     <div class="expense-header">
         <div>
             <i class="fas fa-invoice fa-4x mb-3"></i>
-            <h1>Expense Management</h1>
+            <h1>Invoice Management</h1>
             <p class="mb-0 opacity-75">Track invoices, expenses, and business spending</p>
         </div>
     </div>
@@ -296,7 +296,7 @@
 
     <!-- Management Section -->
     <div class="management-section">
-        <h4><i class="fas fa-cogs me-2"></i>Expense Management</h4>
+        <h4><i class="fas fa-cogs me-2"></i>Invoice Management</h4>
         <div class="management-cards">
             <!-- Invoices Management -->
             <a href="invoices.html" class="management-card">
@@ -319,12 +319,12 @@
                 </div>
             </a>
 
-            <!-- Expense Analytics (Coming Soon) -->
-            <div class="management-card" onclick="Alert.comingSoon('Expense Analytics')">
+            <!-- Invoice Analytics (Coming Soon) -->
+            <div class="management-card" onclick="Alert.comingSoon('Invoice Analytics')">
                 <div class="card-icon">
                     <i class="fas fa-chart-pie"></i>
                 </div>
-                <div class="card-title">Expense Analytics</div>
+                <div class="card-title">Invoice Analytics</div>
                 <div class="card-description">
                     Analyze spending patterns, categorize expenses, and generate comprehensive reports.
                 </div>
@@ -416,11 +416,11 @@
             }
 
             async init() {
-                console.log('💰 Initializing Expense Management Page (Standardized Layout)...');
+                console.log('💰 Initializing Invoice Management Page (Standardized Layout)...');
                 
                 // Setup standardized layout framework
                 await window.PartialLoader.setupStandardLayout({
-                    pageTitle: 'Expense Management',
+                    pageTitle: 'Invoice Management',
                     includeSidebar: true,
                     includeHeader: true
                 });
@@ -436,7 +436,7 @@
                 // Load expense data
                 await this.loadExpenseData();
                 
-                console.log('✅ Expense Management Page initialized successfully');
+                console.log('✅ Invoice Management Page initialized successfully');
             }
 
             async loadExpenseData() {

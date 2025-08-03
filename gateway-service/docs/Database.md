@@ -365,11 +365,11 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Alert when existences are near expiry (based on expiration_date from existences table)
 - Calculate final pricing (margins, taxes) at existence level for inventory items
 - Maintain invoice totals when existences are added/modified
-- Link invoices to expense management system for accounting integration
+- Link invoices to invoice management system for accounting integration
 
 ### Expenses Management
 - Organize invoice documents in monthly directories (MM-yyyy format)
-- Calculate monthly expense totals from invoices
+- Calculate monthly invoice totals from invoices
 - Link invoices directly to their expense categories
 - Validate invoice image uploads for all invoices
 - Track employee salaries through user_salary table linked to invoice records
@@ -779,7 +779,7 @@ CREATE INDEX idx_system_config_editable ON system_config(is_editable);
 - `is_editable`: Whether this config can be modified through the administration UI
 
 ### User Salary Table
-**Purpose:** Track employee salaries and link them to expense management for payroll processing.
+**Purpose:** Track employee salaries and link them to invoice management for payroll processing.
 
 ```sql
 CREATE TABLE user_salary (

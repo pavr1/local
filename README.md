@@ -142,7 +142,7 @@ local/
 ├── audit-service/          # 📋 Audit logging (LogAuditEntry & RetrieveAuditLogs) (Future)
 ├── administration-service/ # ⚙️ User/role/config/equipment management (Future)
 ├── customer-service/       # 👥 Customer management (Future)
-├── expenses-service/       # 💰 Expense management (Future)
+├── expenses-service/       # 💰 Invoice management (Future)
 ├── inventory-service/      # 📦 Core inventory logic (Future)
 ├── promotions-service/     # 🎉 Promotions & loyalty (Future)
 ├── orders-service/         # 🛒 Sales & orders (Future)

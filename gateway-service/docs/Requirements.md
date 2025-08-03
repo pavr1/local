@@ -242,8 +242,8 @@
     └── 03-2024/
     ```
 
-- **Monthly Expense Management:**
-  - **Create Monthly Expense Lists**: Predefined monthly expenses that need to be paid
+- **Monthly Invoice Management:**
+  - **Create Monthly Invoice Lists**: Predefined monthly expenses that need to be paid
   - **Track Recurring Expenses**: Identify and manage regular monthly payments
   - **Expense Scheduling**: Set reminders for upcoming payments
   
@@ -487,7 +487,7 @@
   - Secure password hashing and validation
 - Employee salary management
   - Track individual employee salaries and compensation
-  - Link salary records to expense management system
+  - Link salary records to invoice management system
   - Support for additional expenses and bonuses
   - Automatic total compensation calculation
   - Admin-only access to salary information
@@ -740,7 +740,7 @@ The authentication and authorization system is implemented across **two speciali
 - Waste and loss monitoring
 - Authentication & authorization entities (users, roles, permissions)
 - Simplified role-permission management with direct foreign key relationships
-- Employee salary tracking linked to expense management
+- Employee salary tracking linked to invoice management
 - Comprehensive audit trails for critical operations
 
 ### Future Enhancements
