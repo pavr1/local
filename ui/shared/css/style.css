@@ -13,6 +13,13 @@
     --light-color: #f8f9fa;
     --dark-color: #343a40;
     --white: #ffffff;
+    --background-light: #f8f9fa;
+    --border-color: #dee2e6;
+    --primary-light: #e8ecff;
+    --success-light: #e6f7e6;
+    --warning-light: #fff7e6;
+    --danger-light: #ffe6e6;
+    --info-light: #e6f7ff;
     --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     --gradient-accent: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-secondary) 100%);
     --shadow-light: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -364,6 +371,110 @@ body {
         gap: 0.75rem;
     }
 } 
+
+/* === ENHANCED BUTTON STYLES === */
+
+/* Primary Buttons */
+.btn-primary {
+    background: var(--gradient-primary) !important;
+    border: none !important;
+    border-radius: var(--border-radius) !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+    color: var(--white) !important;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-medium) !important;
+    background: var(--gradient-primary) !important;
+    border: none !important;
+}
+
+/* Outline Buttons */
+.btn-outline-primary {
+    background: transparent !important;
+    border: 2px solid var(--primary-color) !important;
+    color: var(--primary-color) !important;
+    border-radius: var(--border-radius) !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: var(--shadow-light) !important;
+}
+
+.btn-outline-success {
+    background: transparent !important;
+    border: 2px solid var(--success-color) !important;
+    color: var(--success-color) !important;
+    border-radius: var(--border-radius) !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-success:hover {
+    background: var(--success-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-outline-info {
+    background: transparent !important;
+    border: 2px solid var(--info-color) !important;
+    color: var(--info-color) !important;
+    border-radius: var(--border-radius) !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-info:hover {
+    background: var(--info-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-outline-warning {
+    background: transparent !important;
+    border: 2px solid var(--warning-color) !important;
+    color: var(--warning-color) !important;
+    border-radius: var(--border-radius) !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-warning:hover {
+    background: var(--warning-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-outline-secondary {
+    background: transparent !important;
+    border: 2px solid var(--secondary-color) !important;
+    color: var(--secondary-color) !important;
+    border-radius: var(--border-radius) !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--secondary-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Small buttons */
+.btn-sm {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+}
 
 /* === LOGOUT BUTTON STYLES === */
 

@@ -68,7 +68,9 @@
 
         .top-left {
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
         }
 
         .brand-section {
@@ -112,21 +114,74 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            gap: 1rem;
+        }
+
+        /* User Section Styles */
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
             gap: 0.5rem;
         }
 
-        .header-time {
-            font-size: 1.4rem;
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
+        .user-avatar {
+            font-size: 1.8rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .user-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .logout-btn {
+            border-color: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* System Section Styles */
+        .system-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.3rem;
         }
 
         .header-status {
+            display: flex;
+            align-items: center;
             font-size: 0.9rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-time {
+            font-size: 0.9rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Courier New', monospace;
+            margin-left: 2.5rem; /* Align with brand text */
         }
 
         /* Body Panel Styles */
@@ -135,6 +190,8 @@
             overflow-y: auto;
             padding: 2rem;
         }
+
+
         
         /* Sidebar Styles */
         .sidebar-header {
@@ -254,8 +311,18 @@
                 justify-self: center;
             }
 
+            .top-left {
+                align-items: center;
+                text-align: center;
+            }
+
             .brand-section {
                 justify-content: center;
+            }
+
+            .header-time {
+                margin-left: 0;
+                font-size: 0.85rem;
             }
 
             .page-title {
@@ -264,10 +331,39 @@
 
             .top-right {
                 align-items: center;
+                gap: 0.75rem;
+            }
+
+            .user-section {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .user-info {
+                flex-direction: column;
+                gap: 0.25rem;
+                text-align: center;
+            }
+
+            .user-avatar {
+                font-size: 1.5rem;
+            }
+
+            .user-name {
+                font-size: 0.85rem;
+            }
+
+            .logout-btn {
+                font-size: 0.8rem;
+                padding: 0.3rem 0.5rem;
+            }
+
+            .system-section {
+                gap: 0.25rem;
             }
 
             .header-time {
-                font-size: 1.2rem;
+                font-size: 0.8rem;
             }
             
             .body-panel {
@@ -370,18 +466,11 @@
                 </ul>
             </nav>
             
-            <!-- User Section -->
+            <!-- Sidebar Footer -->
             <div class="sidebar-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-color); margin-top: auto;">
-                <div class="user-info d-flex align-items-center mb-3">
-                    <i class="fas fa-user-circle fa-2x text-primary me-2"></i>
-                    <div>
-                        <div class="fw-bold" id="user-name">Loading...</div>
-                        <small class="text-muted">Administrator</small>
-                    </div>
+                <div class="text-center text-muted">
+                    <small>© 2024 Ice Cream Store</small>
                 </div>
-                <button class="btn btn-outline-danger btn-sm w-100" onclick="logout()">
-                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </button>
             </div>
         </div>
         
@@ -397,16 +486,30 @@
                         <i class="fas fa-ice-cream brand-icon"></i>
                         <span class="brand-name">Dashboard</span>
                     </div>
+                    <div class="header-time" id="header-time">--:--:--</div>
                 </div>
                 <div class="top-center">
                     <h1 class="page-title" id="page-title">Dashboard</h1>
                     <p class="page-subtitle" id="page-subtitle">Welcome to your business management dashboard</p>
                 </div>
                 <div class="top-right">
-                    <div class="header-time" id="header-time">--:--:--</div>
-                    <div class="header-status">
-                        <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
-                        System Online
+                    <!-- User Profile & Logout -->
+                    <div class="user-section">
+                        <div class="user-info">
+                            <i class="fas fa-user-circle user-avatar"></i>
+                            <span class="user-name" id="user-name">Loading...</span>
+                        </div>
+                        <button class="btn btn-outline-light btn-sm logout-btn" onclick="logout()" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- System Status -->
+                    <div class="system-section">
+                        <div class="header-status">
+                            <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;"></i>
+                            System Online
+                        </div>
                     </div>
                 </div>
             </div>
@@ -421,6 +524,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -456,6 +561,11 @@
             
             // Load initial dashboard content
             await loadContent('dashboard');
+            
+            // Test SweetAlert2 system
+            setTimeout(() => {
+                Alert.success('Dashboard Ready', 'Welcome to your Ice Cream Store management system!');
+            }, 1000);
             
             console.log('✅ SPA Dashboard initialized successfully');
         });
@@ -677,10 +787,14 @@
         }
 
         // Logout function
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                auth.logout();
-                window.location.href = 'login.html';
+        async function logout() {
+            const result = await Alert.confirm('Confirm Logout', 'Are you sure you want to logout?', 'Yes, logout');
+            if (result.isConfirmed) {
+                Alert.toast('See you soon!', 'info');
+                setTimeout(() => {
+                    auth.logout();
+                    window.location.href = 'login.html';
+                }, 1000);
             }
         }
 
@@ -688,6 +802,16 @@
         window.navigateToRoute = function(route) {
             loadContent(route);
         };
+
+        // Alert system is loaded via shared/js/alerts.js (SweetAlert2)
+        // Available methods:
+        // Alert.success(title, text)
+        // Alert.error(title, text) 
+        // Alert.warning(title, text)
+        // Alert.info(title, text)
+        // Alert.comingSoon(feature)
+        // Alert.toast(message, type)
+        // Alert.confirm(title, text, confirmText)
     </script>
 </body>
 </html> 
