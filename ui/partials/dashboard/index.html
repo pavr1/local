@@ -291,6 +291,128 @@
         color: #6c757d !important;
     }
 
+    /* Loading Button States */
+    .action-btn.loading {
+        position: relative;
+        opacity: 0.8;
+        cursor: wait;
+        pointer-events: none;
+        background: rgba(255, 255, 255, 0.95) !important;
+        color: #6c757d !important;
+        border-color: rgba(52, 152, 219, 0.5) !important;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2) !important;
+        animation: pulse-border 1.5s infinite;
+    }
+
+    .action-btn.loading:hover {
+        transform: none !important;
+    }
+
+    /* Loading spinner overlay */
+    .action-btn.loading::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 12px;
+        height: 12px;
+        margin: -6px 0 0 -6px;
+        border: 2px solid transparent;
+        border-top: 2px solid #3498db;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        z-index: 2;
+    }
+
+    /* Hide original icon when loading */
+    .action-btn.loading .fas,
+    .action-btn.loading i {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    /* Success animation */
+    .action-btn.success {
+        background: #28a745 !important;
+        color: white !important;
+        border-color: #28a745 !important;
+        animation: success-flash 0.6s ease;
+    }
+
+    .action-btn.success .fas,
+    .action-btn.success i {
+        color: white !important;
+    }
+
+    /* Error animation */
+    .action-btn.error {
+        background: #dc3545 !important;
+        color: white !important;
+        border-color: #dc3545 !important;
+        animation: error-shake 0.6s ease;
+    }
+
+    .action-btn.error .fas,
+    .action-btn.error i {
+        color: white !important;
+    }
+
+    /* Keyframe animations */
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-border {
+        0% {
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        50% {
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+        }
+        100% {
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+    }
+
+    @keyframes success-flash {
+        0% {
+            transform: scale(1);
+            background: #28a745;
+        }
+        50% {
+            transform: scale(1.1);
+            background: #20c997;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        }
+        100% {
+            transform: scale(1);
+            background: #28a745;
+        }
+    }
+
+    @keyframes error-shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-2px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(2px);
+        }
+    }
+
+    /* Enhanced button responsiveness */
+    .action-btn {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .action-btn:not(.loading):not(:disabled):active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+
     /* Connection Lines */
     .service-connection {
         display: flex;
@@ -461,13 +583,13 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('session-service', 'start')" title="Start Session" disabled>
+                    <button class="action-btn start-btn" onclick="manageService('session-service', 'start', this)" title="Start Session" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop')" title="Stop Session" disabled>
+                    <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop', this)" title="Stop Session" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart')" title="Restart Session" disabled>
+                    <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart', this)" title="Restart Session" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -489,13 +611,13 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('orders-service', 'start')" title="Start Orders" disabled>
+                    <button class="action-btn start-btn" onclick="manageService('orders-service', 'start', this)" title="Start Orders" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop')" title="Stop Orders" disabled>
+                    <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop', this)" title="Stop Orders" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart')" title="Restart Orders" disabled>
+                    <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart', this)" title="Restart Orders" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -517,13 +639,13 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start')" title="Start Inventory" disabled>
+                    <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start', this)" title="Start Inventory" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop')" title="Stop Inventory" disabled>
+                    <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop', this)" title="Stop Inventory" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart')" title="Restart Inventory" disabled>
+                    <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart', this)" title="Restart Inventory" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -545,13 +667,13 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start')" title="Start Invoice" disabled>
+                    <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start', this)" title="Start Invoice" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop')" title="Stop Invoice" disabled>
+                    <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop', this)" title="Stop Invoice" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart')" title="Restart Invoice" disabled>
+                    <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart', this)" title="Restart Invoice" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -581,13 +703,13 @@
                 </div>
             </div>
             <div class="service-actions">
-                <button class="action-btn start-btn" onclick="manageService('data-service', 'start')" title="Start Database" disabled>
+                <button class="action-btn start-btn" onclick="manageService('data-service', 'start', this)" title="Start Database" disabled>
                     <i class="fas fa-play"></i>
                 </button>
-                <button class="action-btn stop-btn" onclick="manageService('data-service', 'stop')" title="Stop Database" disabled>
+                <button class="action-btn stop-btn" onclick="manageService('data-service', 'stop', this)" title="Stop Database" disabled>
                     <i class="fas fa-stop"></i>
                 </button>
-                <button class="action-btn restart-btn" onclick="manageService('data-service', 'restart')" title="Restart Database" disabled>
+                <button class="action-btn restart-btn" onclick="manageService('data-service', 'restart', this)" title="Restart Database" disabled>
                     <i class="fas fa-sync"></i>
                 </button>
             </div>
@@ -739,12 +861,14 @@
          currentContextService = null;
      }
 
-     function contextMenuAction(action) {
-         if (currentContextService && typeof window.manageService === 'function') {
-             window.manageService(currentContextService, action);
-         }
-         hideContextMenu();
-     }
+         function contextMenuAction(action) {
+        if (currentContextService && typeof window.manageService === 'function') {
+            // Find the context menu button that was clicked for visual feedback
+            const contextButton = event ? event.target.closest('.context-menu-item') : null;
+            window.manageService(currentContextService, action, contextButton);
+        }
+        hideContextMenu();
+    }
 
      function updateContextMenuButtons(serviceName) {
          const startBtn = document.getElementById('contextMenuStart');
@@ -823,29 +947,7 @@
                          const serviceStatus = servicesStatus[serviceName];
             
             // Special handling for gateway service - use overall status
-            // Special handling for data-service - check directly since it's not in gateway response
-            let status;
-            if (serviceName === 'gateway-service') {
-                status = overallStatus;
-            } else if (serviceName === 'data-service') {
-                // Data service status will be checked directly by the main dashboard
-                // For architecture diagram, we'll check it here too
-                checkDataServiceHealthForArchitecture().then(dataStatus => {
-                    if (dataStatus === 'healthy') {
-                        statusElement.className = 'service-status online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>';
-                    } else if (dataStatus === 'unhealthy') {
-                        statusElement.className = 'service-status offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>';
-                    } else {
-                        statusElement.className = 'service-status checking';
-                        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>';
-                    }
-                });
-                continue; // Skip the normal status handling below
-            } else {
-                status = serviceStatus;
-            }
+            const status = (serviceName === 'gateway-service') ? overallStatus : serviceStatus;
              
              if (status === 'healthy') {
                  statusElement.className = 'service-status online';
@@ -863,28 +965,6 @@
          }
          
                  console.log('✅ Services dashboard updated');
-    }
-
-    // Check data-service health directly for architecture diagram
-    async function checkDataServiceHealthForArchitecture() {
-        try {
-            const response = await fetch('http://localhost:8086/health', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                },
-                signal: AbortSignal.timeout(3000)
-            });
-            
-            if (response.ok) {
-                const healthData = await response.json();
-                return healthData.status; // 'healthy' or 'unhealthy'
-            } else {
-                return 'unhealthy';
-            }
-        } catch (error) {
-            return 'offline';
-        }
     }
 
          // Update connection line colors based on service health

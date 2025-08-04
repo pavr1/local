@@ -1073,27 +1073,6 @@
                         statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
                         console.log(`❌ ${cardId} card: Offline`);
                     }
-                } else if (cardId === 'data') {
-                    // Special handling for data-service - check directly since it's not in gateway response
-                    checkDataServiceHealth().then(dataStatus => {
-                        if (dataStatus === 'healthy') {
-                            statusElement.className = 'service-status online';
-                            statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>';
-                            console.log(`✅ ${cardId} card: Online (direct check)`);
-                        } else if (dataStatus === 'unhealthy') {
-                            statusElement.className = 'service-status offline';
-                            statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
-                            console.log(`❌ ${cardId} card: Offline (direct check)`);
-                        } else {
-                            statusElement.className = 'service-status degraded';
-                            statusElement.innerHTML = '<i class="fas fa-question-circle me-2"></i>';
-                            console.log(`⚠️  ${cardId} card: Unknown status (direct check)`);
-                        }
-                    }).catch(error => {
-                        statusElement.className = 'service-status offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
-                        console.log(`❌ ${cardId} card: Connection failed (${error.message})`);
-                    });
                 } else {
                     // For all other services, use individual service status
                     if (serviceStatus === 'healthy') {
@@ -1124,29 +1103,6 @@
             
             // Update service management buttons based on current status
             updateAllServiceButtons(servicesStatus);
-        }
-        
-        // Check data-service health directly (since it's not exposed via gateway)
-        async function checkDataServiceHealth() {
-            try {
-                const response = await fetch('http://localhost:8086/health', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    signal: AbortSignal.timeout(5000)
-                });
-                
-                if (response.ok) {
-                    const healthData = await response.json();
-                    return healthData.status; // 'healthy' or 'unhealthy'
-                } else {
-                    return 'unhealthy';
-                }
-            } catch (error) {
-                console.log('⚠️  Data service health check failed:', error.message);
-                return 'offline';
-            }
         }
         
         // Mark all service cards as offline (when gateway is unreachable)
@@ -1184,15 +1140,25 @@
         };
 
         // Service management function
-        async function manageService(serviceName, action) {
+        async function manageService(serviceName, action, clickedButton = null) {
             const env = ENVIRONMENT_CONFIG.current;
             console.log(`🔧 Managing ${serviceName}: ${action} (${env})`);
+            
+            // Find the clicked button if not provided
+            if (!clickedButton) {
+                clickedButton = event ? event.target.closest('.action-btn') : null;
+            }
+            
+            // Set loading state on the specific clicked button
+            if (clickedButton) {
+                setButtonLoadingState(clickedButton, true);
+            }
             
             // Immediately update header status to show operation in progress
             updateHeaderStatusDuringOperation(action);
             
-            // Disable buttons during operation
-            updateServiceButtons(serviceName.split('-')[0], false);
+            // Disable all buttons for this service during operation
+            disableServiceButtons(serviceName, true);
             
             try {
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/management/services/${serviceName}/${action}`, {
@@ -1208,6 +1174,12 @@
                 if (response.ok) {
                     const result = await response.json();
                     console.log(`✅ ${serviceName} ${action} successful:`, result.message);
+                    
+                    // Show success state on clicked button
+                    if (clickedButton) {
+                        setButtonSuccessState(clickedButton);
+                    }
+                    
                     Alert.success(`Service ${action.charAt(0).toUpperCase() + action.slice(1)}`, 
                         `${serviceName} ${action} completed successfully!`);
                     
@@ -1226,6 +1198,12 @@
                 } else {
                     const error = await response.json();
                     console.error(`❌ ${serviceName} ${action} failed:`, error.message);
+                    
+                    // Show error state on clicked button
+                    if (clickedButton) {
+                        setButtonErrorState(clickedButton);
+                    }
+                    
                     Alert.error(`Service ${action} Failed`, 
                         `Failed to ${action} ${serviceName}: ${error.message}`);
                     
@@ -1240,6 +1218,12 @@
                 
             } catch (error) {
                 console.error(`❌ ${serviceName} ${action} error:`, error);
+                
+                // Show error state on clicked button
+                if (clickedButton) {
+                    setButtonErrorState(clickedButton);
+                }
+                
                 Alert.error(`Service ${action} Error`, 
                     `Network error while trying to ${action} ${serviceName}`);
                 
@@ -1250,7 +1234,116 @@
                 setTimeout(() => {
                     updateSystemStatus(false);
                 }, 3000);
+            } finally {
+                // Remove loading state and re-enable buttons based on current service status after a short delay
+                setTimeout(() => {
+                    if (clickedButton) {
+                        clearButtonState(clickedButton);
+                    }
+                    disableServiceButtons(serviceName, false);
+                    updateSystemStatus(false);
+                }, 1500); // Give time for success/error animation to show
             }
+        }
+
+        // Button state management functions
+        function setButtonLoadingState(button, isLoading) {
+            if (!button) return;
+            
+            if (isLoading) {
+                button.classList.add('loading');
+                button.classList.remove('success', 'error');
+                button.disabled = true;
+                
+                // Store original content
+                button.dataset.originalHTML = button.innerHTML;
+                
+                console.log(`🔄 Button loading state: ${button.title || 'Unknown'}`);
+            } else {
+                button.classList.remove('loading');
+                button.disabled = false;
+                
+                // Restore original content if stored
+                if (button.dataset.originalHTML) {
+                    button.innerHTML = button.dataset.originalHTML;
+                    delete button.dataset.originalHTML;
+                }
+            }
+        }
+
+        function setButtonSuccessState(button) {
+            if (!button) return;
+            
+            button.classList.remove('loading');
+            button.classList.add('success');
+            button.classList.remove('error');
+            
+            console.log(`✅ Button success state: ${button.title || 'Unknown'}`);
+            
+            // Clear success state after animation
+            setTimeout(() => {
+                if (button.classList.contains('success')) {
+                    button.classList.remove('success');
+                }
+            }, 600);
+        }
+
+        function setButtonErrorState(button) {
+            if (!button) return;
+            
+            button.classList.remove('loading');
+            button.classList.remove('success');
+            button.classList.add('error');
+            
+            console.log(`❌ Button error state: ${button.title || 'Unknown'}`);
+            
+            // Clear error state after animation
+            setTimeout(() => {
+                if (button.classList.contains('error')) {
+                    button.classList.remove('error');
+                }
+            }, 600);
+        }
+
+        function clearButtonState(button) {
+            if (!button) return;
+            
+            button.classList.remove('loading', 'success', 'error');
+            button.disabled = false;
+            
+            // Restore original content if stored
+            if (button.dataset.originalHTML) {
+                button.innerHTML = button.dataset.originalHTML;
+                delete button.dataset.originalHTML;
+            }
+            
+            console.log(`🔄 Button state cleared: ${button.title || 'Unknown'}`);
+        }
+
+        function disableServiceButtons(serviceName, disable) {
+            const servicePrefix = serviceName.split('-')[0];
+            const buttons = document.querySelectorAll(`button[onclick*="'${serviceName}'"]`);
+            
+            buttons.forEach(button => {
+                // Don't change state of buttons that are currently showing loading/success/error animations
+                if (!button.classList.contains('loading') && !button.classList.contains('success') && !button.classList.contains('error')) {
+                    button.disabled = disable;
+                }
+            });
+            
+            console.log(`🔧 Service buttons ${disable ? 'disabled' : 'enabled'}: ${serviceName} (${buttons.length} buttons)`);
+        }
+
+        // Enhanced context menu action with button reference
+        function contextMenuActionWithButton(action) {
+            if (currentContextService && typeof window.manageService === 'function') {
+                // Find the button in the context menu that was clicked
+                const contextButton = event ? event.target.closest('.context-menu-item') : null;
+                
+                // Execute the service management action
+                window.manageService(currentContextService, action, contextButton);
+            }
+            hideContextMenu();
         }
 
         // Function to update header status during service operations

@@ -263,15 +263,16 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// Check all business services that appear on the dashboard
+	// Check all business services that appear on the dashboard + data service for UI monitoring
 	gatewayHealthy := true // Gateway is healthy if it's responding to this request
 	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
 	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/p/health")
 	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/p/health")
-	invoiceHealthy := checkServiceHealth("http://localhost:8085/health")
+	invoiceHealthy := checkServiceHealth("http://localhost:8085/api/v1/invoices/p/health")
+	dataHealthy := checkServiceHealth("http://localhost:8086/health") // For UI monitoring
 
 	status := "healthy"
-	if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy {
+	if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
 		status = "degraded"
 	}
 
@@ -308,6 +309,12 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 			}(),
 			"invoice-service": func() string {
 				if invoiceHealthy {
+					return "healthy"
+				}
+				return "unhealthy"
+			}(),
+			"data-service": func() string {
+				if dataHealthy {
 					return "healthy"
 				}
 				return "unhealthy"
@@ -355,6 +362,7 @@ func isServiceRunning(serviceName string) bool {
 		"orders-service":    "8083",
 		"inventory-service": "8084",
 		"invoice-service":   "8085",
+		"data-service":      "8086",
 	}
 
 	port, exists := servicePorts[serviceName]
