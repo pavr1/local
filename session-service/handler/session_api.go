@@ -3,8 +3,10 @@ package handler
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"session-service/models"
 	"session-service/utils"
@@ -297,6 +299,43 @@ func (api *SessionAPI) GetSessionStats(w http.ResponseWriter, r *http.Request) {
 
 // HealthCheck returns the health status of the session service
 func (api *SessionAPI) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	// Check data-service health (which checks database connectivity)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get("http://localhost:8086/health")
+	if err != nil {
+		api.logger.WithError(err).Error("Failed to connect to data-service during health check")
+		response := map[string]interface{}{
+			"success": false,
+			"service": "session-service",
+			"status":  "unhealthy",
+			"message": "Data service connection failed",
+			"error":   err.Error(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		api.logger.WithField("status_code", resp.StatusCode).Error("Data service health check failed")
+		response := map[string]interface{}{
+			"success": false,
+			"service": "session-service",
+			"status":  "unhealthy",
+			"message": "Data service is unhealthy",
+			"error":   fmt.Sprintf("Data service returned status %d", resp.StatusCode),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
 	response := map[string]interface{}{
 		"success": true,
 		"service": "session-service",

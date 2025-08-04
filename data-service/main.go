@@ -2,12 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"data-service/pkg/database"
 
+	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
@@ -54,184 +60,122 @@ func main() {
 	}
 	defer db.Close()
 
-	// Perform health check
+	// Perform initial health check
 	if err := db.HealthCheck(); err != nil {
-		log.Fatalf("Database health check failed: %v", err)
+		log.Fatalf("Initial database health check failed: %v", err)
 	}
 
 	fmt.Println("✅ Database connection established successfully")
 
-	// Example: Query system configuration
-	if err := querySystemConfig(db); err != nil {
-		logger.WithError(err).Error("Failed to query system configuration")
+	// Setup HTTP server
+	router := setupRouter(db, logger)
+
+	server := &http.Server{
+		Addr:         ":8086", // Data service port
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
 	}
 
-	// Example: Query available roles
-	if err := queryRoles(db); err != nil {
-		logger.WithError(err).Error("Failed to query roles")
+	// Start server in a goroutine
+	go func() {
+		logger.WithField("port", "8086").Info("Starting Data Service HTTP server")
+		fmt.Println("🚀 Data Service HTTP server starting on :8086")
+		fmt.Println("📡 Health endpoint available at: http://localhost:8086/health")
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.WithError(err).Fatal("Failed to start HTTP server")
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down Data Service...")
+
+	// Gracefully shutdown with a timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		logger.WithError(err).Error("Server forced to shutdown")
 	}
 
-	// Example: Query expense categories
-	if err := queryExpenseCategories(db); err != nil {
-		logger.WithError(err).Error("Failed to query expense categories")
+	logger.Info("Data Service exited gracefully")
+}
+
+// setupRouter configures the HTTP routes
+func setupRouter(db database.DatabaseHandler, logger *logrus.Logger) *mux.Router {
+	router := mux.NewRouter()
+
+	// Health check endpoint
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		healthCheck(w, r, db, logger)
+	}).Methods("GET")
+
+	// Stats endpoint (optional, for monitoring)
+	router.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		statsEndpoint(w, r, db, logger)
+	}).Methods("GET")
+
+	return router
+}
+
+// healthCheck handles the health check endpoint
+func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHandler, logger *logrus.Logger) {
+	response := map[string]interface{}{
+		"service":   "data-service",
+		"timestamp": time.Now(),
 	}
 
-	// Example: Query recipe categories
-	if err := queryRecipeCategories(db); err != nil {
-		logger.WithError(err).Error("Failed to query recipe categories")
+	// Perform database health check
+	if err := db.HealthCheck(); err != nil {
+		logger.WithError(err).Error("Database health check failed")
+		response["status"] = "unhealthy"
+		response["message"] = "Database connection failed"
+		response["error"] = err.Error()
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(response)
+		return
 	}
 
-	// Print connection statistics
+	// Health check passed
+	response["status"] = "healthy"
+	response["message"] = "Database is operational"
+	response["database"] = map[string]interface{}{
+		"host":   "localhost",
+		"port":   5432,
+		"dbname": "icecream_store",
+		"stats":  db.GetStats(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// statsEndpoint provides database connection statistics
+func statsEndpoint(w http.ResponseWriter, r *http.Request, db database.DatabaseHandler, logger *logrus.Logger) {
 	stats := db.GetStats()
-	fmt.Printf("\n📊 Database Connection Statistics:\n")
-	fmt.Printf("   Open connections: %d\n", stats.OpenConnections)
-	fmt.Printf("   In use: %d\n", stats.InUse)
-	fmt.Printf("   Idle: %d\n", stats.Idle)
-	fmt.Printf("   Wait count: %d\n", stats.WaitCount)
-	fmt.Printf("   Wait duration: %v\n", stats.WaitDuration)
 
-	fmt.Println("\n🎉 Data service is working correctly!")
-}
-
-// querySystemConfig demonstrates querying system configuration
-func querySystemConfig(db database.DatabaseHandler) error {
-	query := `
-		SELECT config_key, config_value, description
-		FROM system_configuration
-		ORDER BY config_key
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to query system configuration: %w", err)
-	}
-	defer rows.Close()
-
-	fmt.Println("\n⚙️  System Configuration:")
-	fmt.Println("==========================================")
-
-	for rows.Next() {
-		var key, value, description string
-
-		err := rows.Scan(&key, &value, &description)
-		if err != nil {
-			return fmt.Errorf("failed to scan system config row: %w", err)
-		}
-
-		fmt.Printf("%-20s: %s\n", key, value)
-		if description != "" {
-			fmt.Printf("%-20s  (%s)\n", "", description)
-		}
+	response := map[string]interface{}{
+		"service":   "data-service",
+		"timestamp": time.Now(),
+		"database_stats": map[string]interface{}{
+			"open_connections": stats.OpenConnections,
+			"in_use":           stats.InUse,
+			"idle":             stats.Idle,
+			"wait_count":       stats.WaitCount,
+			"wait_duration":    stats.WaitDuration.String(),
+		},
 	}
 
-	return rows.Err()
-}
-
-// queryRoles demonstrates querying roles
-func queryRoles(db database.DatabaseHandler) error {
-	query := `
-		SELECT role_name, description, created_at
-		FROM roles
-		ORDER BY role_name
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to query roles: %w", err)
-	}
-	defer rows.Close()
-
-	fmt.Println("\n👥 Available Roles:")
-	fmt.Println("==========================================")
-
-	for rows.Next() {
-		var roleName, description string
-		var createdAt time.Time
-
-		err := rows.Scan(&roleName, &description, &createdAt)
-		if err != nil {
-			return fmt.Errorf("failed to scan role row: %w", err)
-		}
-
-		fmt.Printf("Role: %s\n", roleName)
-		fmt.Printf("Description: %s\n", description)
-		fmt.Printf("Created: %s\n", createdAt.Format("2006-01-02 15:04:05"))
-		fmt.Println("------------------------------------------")
-	}
-
-	return rows.Err()
-}
-
-// queryExpenseCategories demonstrates querying expense categories
-func queryExpenseCategories(db database.DatabaseHandler) error {
-	query := `
-		SELECT category_name, description
-		FROM expense_categories
-		ORDER BY category_name
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to query expense categories: %w", err)
-	}
-	defer rows.Close()
-
-	fmt.Println("\n💰 Expense Categories:")
-	fmt.Println("==========================================")
-
-	for rows.Next() {
-		var categoryName, description string
-
-		err := rows.Scan(&categoryName, &description)
-		if err != nil {
-			return fmt.Errorf("failed to scan expense category row: %w", err)
-		}
-
-		fmt.Printf("%-15s: %s\n", categoryName, description)
-	}
-
-	return rows.Err()
-}
-
-// queryRecipeCategories demonstrates querying recipe categories
-func queryRecipeCategories(db database.DatabaseHandler) error {
-	query := `
-		SELECT name, description
-		FROM recipe_categories
-		ORDER BY name
-	`
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	rows, err := db.QueryContext(ctx, query)
-	if err != nil {
-		return fmt.Errorf("failed to query recipe categories: %w", err)
-	}
-	defer rows.Close()
-
-	fmt.Println("\n🍨 Recipe Categories:")
-	fmt.Println("==========================================")
-
-	for rows.Next() {
-		var name, description string
-
-		err := rows.Scan(&name, &description)
-		if err != nil {
-			return fmt.Errorf("failed to scan recipe category row: %w", err)
-		}
-
-		fmt.Printf("%-12s: %s\n", name, description)
-	}
-
-	return rows.Err()
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

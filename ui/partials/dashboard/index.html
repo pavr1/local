@@ -820,10 +820,32 @@
              const statusElement = document.getElementById(statusId);
             if (!statusElement) continue;
             
-             const serviceStatus = servicesStatus[serviceName];
-             
-             // Special handling for gateway service - use overall status
-             const status = (serviceName === 'gateway-service') ? overallStatus : serviceStatus;
+                         const serviceStatus = servicesStatus[serviceName];
+            
+            // Special handling for gateway service - use overall status
+            // Special handling for data-service - check directly since it's not in gateway response
+            let status;
+            if (serviceName === 'gateway-service') {
+                status = overallStatus;
+            } else if (serviceName === 'data-service') {
+                // Data service status will be checked directly by the main dashboard
+                // For architecture diagram, we'll check it here too
+                checkDataServiceHealthForArchitecture().then(dataStatus => {
+                    if (dataStatus === 'healthy') {
+                        statusElement.className = 'service-status online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>';
+                    } else if (dataStatus === 'unhealthy') {
+                        statusElement.className = 'service-status offline';
+                        statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>';
+                    } else {
+                        statusElement.className = 'service-status checking';
+                        statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>';
+                    }
+                });
+                continue; // Skip the normal status handling below
+            } else {
+                status = serviceStatus;
+            }
              
              if (status === 'healthy') {
                  statusElement.className = 'service-status online';
@@ -840,8 +862,30 @@
              }
          }
          
-         console.log('✅ Services dashboard updated');
-     }
+                 console.log('✅ Services dashboard updated');
+    }
+
+    // Check data-service health directly for architecture diagram
+    async function checkDataServiceHealthForArchitecture() {
+        try {
+            const response = await fetch('http://localhost:8086/health', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+                signal: AbortSignal.timeout(3000)
+            });
+            
+            if (response.ok) {
+                const healthData = await response.json();
+                return healthData.status; // 'healthy' or 'unhealthy'
+            } else {
+                return 'unhealthy';
+            }
+        } catch (error) {
+            return 'offline';
+        }
+    }
 
          // Update connection line colors based on service health
     function updateConnectionLines(servicesStatus, overallStatus) {

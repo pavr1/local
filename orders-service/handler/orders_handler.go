@@ -442,9 +442,21 @@ func (h *ordersHandler) GetPaymentMethodStats(w http.ResponseWriter, r *http.Req
 
 // HealthCheck checks the health of the orders service
 func (h *ordersHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Check database connectivity
-	if err := h.repo.HealthCheck(); err != nil {
-		h.respondWithError(w, http.StatusServiceUnavailable, "Database connection failed", err)
+	// Check data-service health (which checks database connectivity)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get("http://localhost:8086/health")
+	if err != nil {
+		h.respondWithError(w, http.StatusServiceUnavailable, "Data service connection failed", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		err := fmt.Errorf("data service returned status %d", resp.StatusCode)
+		h.respondWithError(w, http.StatusServiceUnavailable, "Data service is unhealthy", err)
 		return
 	}
 

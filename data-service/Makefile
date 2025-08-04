@@ -58,9 +58,43 @@ stop: ## Stop all database containers
 restart: stop start ## Restart all database containers
 	@echo "$(GREEN)🔄 Data Service restarted successfully!$(RESET)"
 
-# Aliases for consistency with other services (data service always uses containers)
-start-locally: start ## [ALIAS] Start data service (always uses containers)
-stop-locally: stop ## [ALIAS] Stop data service containers
+## 🚀 Local Development Commands
+
+start-locally: start deps ## Start data service containers and HTTP server locally
+	@echo "$(CYAN)🚀 Starting Data Service HTTP server...$(RESET)"
+	@echo "🛠️  Starting Data Service HTTP server locally..."
+	@echo "🔍 Checking for existing processes on port 8086..."
+	@if lsof -ti:8086 > /dev/null 2>&1; then \
+		echo "⚠️  Found process using port 8086, killing it..."; \
+		kill -9 $$(lsof -ti:8086) 2>/dev/null || true; \
+		sleep 1; \
+	fi
+	@echo "⚠️  Make sure database containers are running first!"
+	@echo "📝 Service will be available at: http://localhost:8086"
+	@echo "🚀 Starting HTTP server in background..."
+	@nohup go run main.go > service.log 2>&1 & echo $$! > service.pid
+	@sleep 2
+	@echo "$(GREEN)✅ Data Service HTTP server started successfully$(RESET)"
+
+stop-locally: stop ## Stop data service containers and HTTP server
+	@echo "$(YELLOW)🛑 Stopping Data Service HTTP server...$(RESET)"
+	@if [ -f service.pid ]; then \
+		echo "Found service PID file, stopping..."; \
+		kill -9 $$(cat service.pid) 2>/dev/null || true; \
+		rm -f service.pid; \
+		echo "✅ HTTP server stopped"; \
+	else \
+		echo "No PID file found, checking port 8086..."; \
+		if lsof -ti:8086 > /dev/null 2>&1; then \
+			echo "Found service on port 8086, stopping..."; \
+			kill -9 $$(lsof -ti:8086) 2>/dev/null || true; \
+			echo "✅ Service on port 8086 stopped"; \
+		else \
+			echo "✅ No HTTP server running"; \
+		fi; \
+	fi
+	@pkill -f "go run main.go" 2>/dev/null || true
+	@echo "$(GREEN)✅ Local service stopped$(RESET)"
 
 start-docker: start ## [ALIAS] Start data service containers
 stop-docker: stop ## [ALIAS] Stop data service containers
@@ -129,11 +163,11 @@ install: deps start ## Complete setup: install dependencies and start services
 	@echo "   Database: postgresql://postgres:postgres123@localhost:5432/icecream_store"
 	@echo "   PgAdmin:  http://localhost:8080 (admin@icecreamstore.com / admin123)"
 
-deps: ## Install Go dependencies
-	@echo "$(CYAN)📦 Installing Go dependencies...$(RESET)"
+deps: ## Download and tidy dependencies
+	@echo "$(CYAN)📦 Managing dependencies...$(RESET)"
 	@go mod download
 	@go mod tidy
-	@echo "$(GREEN)✅ Dependencies installed$(RESET)"
+	@echo "$(GREEN)✅ Dependencies updated!$(RESET)"
 
 init: ## Initialize database with fresh schema (requires containers to be running)
 	@echo "$(CYAN)🔄 Reinitializing database schema...$(RESET)"

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -137,11 +138,17 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 
-		// Simple JSON response for health check
-		fmt.Fprintf(w, `{"service":"%s","status":"%s","timestamp":"%s"}`,
-			healthData["service"], healthData["status"], time.Now().Format(time.RFC3339))
+		// Check if service is unhealthy and set appropriate HTTP status
+		status := http.StatusOK
+		if healthData["status"] == "unhealthy" {
+			status = http.StatusServiceUnavailable
+		}
+		w.WriteHeader(status)
+
+		// Use json.Marshal for proper JSON encoding
+		jsonData, _ := json.Marshal(healthData)
+		w.Write(jsonData)
 	}).Methods("GET")
 
 	// API routes

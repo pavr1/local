@@ -2,6 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"net/http"
+	"time"
 
 	invoicesHandlers "invoice-service/entities/invoices/handlers"
 
@@ -38,6 +41,33 @@ func (h *MainHttpHandler) GetInvoicesHandler() *invoicesHandlers.HttpHandler {
 
 // HealthCheck provides a health check endpoint for the entire service
 func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
+	// Check data-service health (which checks database connectivity)
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Get("http://localhost:8086/health")
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to connect to data-service during health check")
+		return map[string]interface{}{
+			"service": "invoice-service",
+			"status":  "unhealthy",
+			"message": "Data service connection failed",
+			"error":   err.Error(),
+		}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		h.logger.WithField("status_code", resp.StatusCode).Error("Data service health check failed")
+		return map[string]interface{}{
+			"service": "invoice-service",
+			"status":  "unhealthy",
+			"message": "Data service is unhealthy",
+			"error":   fmt.Sprintf("Data service returned status %d", resp.StatusCode),
+		}
+	}
+
 	return map[string]interface{}{
 		"service": "invoice-service",
 		"status":  "healthy",
