@@ -1,14 +1,14 @@
 <!-- Dashboard Content - Architecture Diagram View -->
 <style>
-    /* Architecture Diagram Styles */
-    .architecture-container {
-        padding: 2rem;
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: var(--border-radius-lg);
-        margin-top: 2rem;
-        position: relative;
-        min-height: 600px;
-    }
+         /* Architecture Diagram Styles */
+     .architecture-container {
+         padding: 2rem;
+         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+         border-radius: var(--border-radius-lg);
+         margin-top: 2rem;
+         position: relative;
+         min-height: 500px;
+     }
 
     .architecture-title {
         text-align: center;
@@ -27,52 +27,107 @@
         font-size: 1.1rem;
     }
 
-    /* Layer positioning */
-    .architecture-layer {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 4rem;
-        position: relative;
-    }
+         /* Layer positioning - Horizontal Layout */
+     .architecture-layer {
+         display: flex;
+         align-items: center;
+         position: relative;
+         height: 100%;
+         min-height: 400px;
+         margin-top: 4rem;
+     }
 
-    .layer-ui {
-        justify-content: center;
-    }
+     .layer-gateway {
+         position: absolute;
+         left: 5%;
+         top: 50%;
+         transform: translateY(-50%);
+     }
 
-    .layer-gateway {
-        justify-content: center;
-    }
+     .layer-services {
+         position: absolute;
+         left: 50%;
+         top: 50%;
+         transform: translate(-50%, -50%);
+         display: flex;
+         flex-direction: column;
+         gap: 1.5rem;
+         align-items: center;
+     }
 
-    .layer-services {
-        justify-content: space-around;
-        flex-wrap: wrap;
-        gap: 2rem;
-    }
+     .layer-data {
+         position: absolute;
+         right: 5%;
+         top: 50%;
+         transform: translateY(-50%);
+     }
 
-    .layer-data {
-        justify-content: center;
-    }
+         /* Component nodes */
+     .arch-node {
+         background: white;
+         border-radius: var(--border-radius-lg);
+         box-shadow: var(--shadow-light);
+         padding: 1rem;
+         position: relative;
+         cursor: pointer;
+         transition: all 0.3s ease;
+         border: 3px solid transparent;
+         min-width: 180px;
+         max-width: 200px;
+     }
 
-    /* Component nodes */
-    .arch-node {
-        background: white;
-        border-radius: var(--border-radius-lg);
-        box-shadow: var(--shadow-light);
-        padding: 1.5rem;
-        text-align: center;
-        min-width: 160px;
-        position: relative;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border: 3px solid transparent;
-    }
+     .arch-node:hover {
+         transform: translateY(-5px) scale(1.03);
+         box-shadow: var(--shadow-heavy);
+         z-index: 10;
+     }
 
-    .arch-node:hover {
-        transform: translateY(-8px) scale(1.05);
-        box-shadow: var(--shadow-heavy);
-        z-index: 10;
-    }
+     /* Compact node layout */
+     .node-content {
+         display: grid;
+         grid-template-columns: auto 1fr;
+         grid-template-rows: auto auto;
+         gap: 0.5rem;
+         align-items: center;
+         padding: 0.5rem;
+     }
+
+     .node-icon-compact {
+         grid-row: 1 / 3;
+         grid-column: 1;
+         font-size: 2rem;
+         margin-right: 0.8rem;
+         opacity: 0.9;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+     }
+
+     .node-title-compact {
+         grid-row: 1;
+         grid-column: 2;
+         font-size: 1rem;
+         font-weight: 600;
+         margin: 0;
+         text-align: left;
+         line-height: 1.2;
+     }
+
+     .node-status-compact {
+         grid-row: 2;
+         grid-column: 2;
+         display: inline-flex;
+         align-items: center;
+         padding: 0.2rem 0.6rem;
+         border-radius: 15px;
+         font-size: 0.7rem;
+         font-weight: 500;
+         margin: 0;
+         align-self: start;
+         text-align: left;
+     }
+
+     /* Node actions are now handled by context menu only */
 
     /* Node types */
     .node-ui {
@@ -118,107 +173,183 @@
         box-shadow: 0 10px 30px rgba(0, 123, 255, 0.4);
     }
 
-    /* Node content */
-    .node-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        opacity: 0.9;
-    }
+         /* Legacy node content - kept for backward compatibility */
 
-    .node-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 0.5rem;
-    }
+     .node-service .node-status-compact {
+         background: var(--success-light);
+         color: var(--success-color);
+     }
 
-    .node-status {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        margin-top: 0.5rem;
-    }
+     /* Status variants for compact layout */
+     .status-online {
+         background: rgba(40, 167, 69, 0.2) !important;
+         color: var(--success-color) !important;
+     }
 
-    .node-service .node-status {
-        background: var(--success-light);
-        color: var(--success-color);
-    }
+     .status-offline {
+         background: rgba(220, 53, 69, 0.2) !important;
+         color: var(--danger-color) !important;
+     }
 
-    /* Connection lines */
-    .connection-line {
-        position: absolute;
-        background: linear-gradient(45deg, #ddd 0%, #bbb 100%);
-        z-index: 1;
-        opacity: 0.6;
-        transition: all 0.3s ease;
-    }
+     .status-loading {
+         background: rgba(255, 193, 7, 0.2) !important;
+         color: var(--warning-color) !important;
+     }
 
-    .connection-line.active {
-        background: linear-gradient(45deg, var(--primary-color) 0%, var(--info-color) 100%);
-        opacity: 0.8;
-        box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
-    }
+     .status-warning {
+         background: rgba(255, 193, 7, 0.2) !important;
+         color: var(--warning-color) !important;
+     }
 
-    /* Vertical connections */
-    .connection-vertical {
-        width: 3px;
-        height: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        margin-top: -30px;
-    }
+     /* Node buttons removed - now using context menu only */
 
-    /* Horizontal connections for services layer */
-    .connection-hub {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 80%;
-        height: 3px;
-        background: linear-gradient(90deg, transparent 0%, #ddd 20%, #ddd 80%, transparent 100%);
-        opacity: 0.6;
-    }
+         /* Connection lines - SVG based for better control */
+     .connections-svg {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         z-index: 1;
+         pointer-events: none;
+     }
 
-    /* Service connection spokes */
-    .service-spoke {
-        position: absolute;
-        width: 3px;
-        height: 40px;
-        background: linear-gradient(to bottom, #ddd 0%, transparent 100%);
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0.6;
-    }
+     .connection-line {
+         stroke-width: 2;
+         stroke-linecap: round;
+         fill: none;
+         opacity: 0.7;
+         transition: all 0.3s ease;
+         filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+     }
 
-    /* Data layer connections */
-    .data-connection {
-        position: absolute;
-        width: 3px;
-        height: 60px;
-        background: linear-gradient(to top, var(--primary-color) 0%, #ddd 100%);
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0.6;
-    }
+     /* Connection endpoints */
+     .connection-dot {
+         fill: #fff;
+         stroke-width: 1;
+         r: 1.5;
+         opacity: 0.7;
+         transition: all 0.3s ease;
+     }
 
-    /* Pulse animation for active connections */
-    @keyframes pulse {
-        0%, 100% { opacity: 0.6; }
-        50% { opacity: 1; }
-    }
+     .connection-dot.healthy {
+         stroke: #28a745;
+     }
 
-    .arch-node:hover .service-spoke,
-    .arch-node:hover .data-connection {
-        animation: pulse 1.5s infinite;
-        background: linear-gradient(to bottom, var(--success-color) 0%, var(--primary-color) 100%);
-    }
+     .connection-dot.degraded {
+         stroke: #ffc107;
+     }
+
+     .connection-dot.offline {
+         stroke: #dc3545;
+     }
+
+     .connection-dot.unknown {
+         stroke: #6c757d;
+     }
+
+     .connection-line.healthy {
+         stroke: #28a745;
+         stroke-dasharray: none;
+     }
+
+     .connection-line.degraded {
+         stroke: #ffc107;
+         stroke-dasharray: 8,4;
+         animation: dashFlow 2s linear infinite;
+     }
+
+     .connection-line.offline {
+         stroke: #dc3545;
+         stroke-dasharray: 4,4;
+         opacity: 0.5;
+     }
+
+     .connection-line.unknown {
+         stroke: #6c757d;
+         stroke-dasharray: 2,2;
+         opacity: 0.4;
+     }
+
+     @keyframes dashFlow {
+         0% { stroke-dashoffset: 0; }
+         100% { stroke-dashoffset: 24; }
+     }
+
+     /* Connection labels */
+     .connection-label {
+         position: absolute;
+         background: rgba(255, 255, 255, 0.9);
+         padding: 2px 6px;
+         border-radius: 4px;
+         font-size: 0.7rem;
+         font-weight: 600;
+         color: var(--dark-color);
+         z-index: 2;
+         pointer-events: none;
+         opacity: 0;
+         transition: opacity 0.3s ease;
+     }
+
+     .arch-node:hover + .connection-label,
+     .arch-node:hover ~ .connection-label {
+         opacity: 1;
+     }
+
+     /* Status legend in top header */
+     .connection-legend {
+         display: flex;
+         align-items: center;
+         gap: 1rem;
+         margin-top: 1rem;
+         font-size: 0.8rem;
+         justify-content: center;
+     }
+
+     .legend-item {
+         display: flex;
+         align-items: center;
+         gap: 0.3rem;
+     }
+
+     .legend-line {
+         width: 20px;
+         height: 2px;
+         border-radius: 1px;
+     }
+
+     .legend-line.healthy { background: #28a745; }
+     .legend-line.degraded { background: #ffc107; }
+     .legend-line.offline { background: #dc3545; }
+
+     /* Pulse animation for active connections */
+     @keyframes pulse {
+         0%, 100% { opacity: 0.7; }
+         50% { opacity: 0.9; }
+     }
+
+     @keyframes glow {
+         0%, 100% { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1)); }
+         50% { filter: drop-shadow(0 0 6px rgba(40, 167, 69, 0.4)); }
+     }
+
+     /* Enhanced hover effects for architecture nodes */
+     .arch-node:hover {
+         transform: translateY(-5px) scale(1.03);
+         box-shadow: var(--shadow-heavy);
+         z-index: 10;
+     }
+
+     /* Highlight connections when hovering over nodes */
+     .connections-svg .connection-line {
+         transition: all 0.3s ease;
+     }
+
+     .connections-svg .connection-dot {
+         transition: all 0.3s ease;
+     }
+
+     /* Connection hover effects are handled by JavaScript */
 
     /* Status indicators */
     .status-online .node-status {
@@ -236,31 +367,50 @@
         color: var(--warning-color);
     }
 
-    /* Mobile responsiveness */
-    @media (max-width: 768px) {
-        .architecture-container {
-            padding: 1rem;
-        }
-        
-        .layer-services {
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .arch-node {
-            min-width: 140px;
-            padding: 1rem;
-        }
-        
-        .node-icon {
-            font-size: 2rem;
-        }
-        
-        .architecture-layer {
-            margin-bottom: 2rem;
-        }
-    }
+         /* Mobile responsiveness */
+     @media (max-width: 768px) {
+         .architecture-container {
+             padding: 1rem;
+             min-height: 350px;
+         }
+         
+         .architecture-layer {
+             margin-top: 2rem;
+             min-height: 300px;
+         }
+         
+         .layer-gateway {
+             left: 2%;
+         }
+         
+         .layer-services {
+             gap: 1rem;
+         }
+         
+         .layer-data {
+             right: 2%;
+         }
+         
+         .arch-node {
+             min-width: 150px;
+             max-width: 160px;
+             padding: 0.8rem;
+         }
+         
+         .node-icon-compact {
+             font-size: 1.6rem;
+             margin-right: 0.6rem;
+         }
+         
+         .node-title-compact {
+             font-size: 0.9rem;
+         }
+         
+         .node-status-compact {
+             font-size: 0.65rem;
+             padding: 0.15rem 0.5rem;
+         }
+     }
 
     /* Tooltip on hover */
     .arch-node::before {
@@ -383,113 +533,141 @@
     <div class="architecture-title">
         <h2><i class="fas fa-network-wired me-3"></i>System Architecture</h2>
         <p>Ice Cream Store Management System Overview</p>
-    </div>
-
-    <!-- UI Layer -->
-    <div class="architecture-layer layer-ui">
-        <div class="arch-node node-ui" data-tooltip="User Interface - Dashboard & Management Portal">
-            <div class="node-icon">
-                <i class="fas fa-desktop"></i>
+        
+        <!-- Connection Status Legend -->
+        <div class="connection-legend">
+            <div class="legend-item">
+                <div class="legend-line healthy"></div>
+                <span>Healthy Connection</span>
             </div>
-            <div class="node-title">User Interface</div>
-            <div class="node-status">
-                <i class="fas fa-check-circle me-1"></i>Active
+            <div class="legend-item">
+                <div class="legend-line degraded"></div>
+                <span>Degraded Service</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-line offline"></div>
+                <span>Offline Service</span>
             </div>
         </div>
     </div>
 
-    <!-- UI to Gateway Connection -->
-    <div class="connection-line connection-vertical"></div>
-
-         <!-- Gateway Layer -->
-     <div class="architecture-layer layer-gateway">
-         <div class="arch-node node-gateway" data-tooltip="API Gateway - Central routing and authentication hub" data-service="gateway-service" oncontextmenu="showServiceContextMenu(event, 'gateway-service')">
-             <div class="node-icon">
-                 <i class="fas fa-network-wired"></i>
-             </div>
-             <div class="node-title">Gateway Service</div>
-             <div class="node-status status-loading" id="gateway-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
-     </div>
-
-    <!-- Gateway to Services Connection -->
-    <div class="connection-line connection-vertical"></div>
+        <!-- Gateway Layer -->
+    <div class="architecture-layer layer-gateway">
+        <div class="arch-node node-gateway" data-tooltip="API Gateway - Right-click to manage" data-service="gateway-service" oncontextmenu="showServiceContextMenu(event, 'gateway-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-network-wired"></i>
+                </div>
+                <div class="node-title-compact">Gateway Service</div>
+                <div class="node-status-compact status-loading" id="gateway-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Services Layer -->
     <div class="architecture-layer layer-services">
-        <div class="connection-hub"></div>
-        
-                 <!-- Session Service -->
-         <div class="arch-node node-service" data-tooltip="Session Management - User authentication and access control" data-service="session-service" oncontextmenu="showServiceContextMenu(event, 'session-service')">
-             <div class="service-spoke"></div>
-             <div class="data-connection"></div>
-             <div class="node-icon">
-                 <i class="fas fa-shield-alt"></i>
-             </div>
-             <div class="node-title">Session Service</div>
-             <div class="node-status status-loading" id="session-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
+        <!-- Session Service -->
+        <div class="arch-node node-service" data-tooltip="Session Management - Right-click to manage" data-service="session-service" oncontextmenu="showServiceContextMenu(event, 'session-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="node-title-compact">Session Service</div>
+                <div class="node-status-compact status-loading" id="session-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
 
-         <!-- Orders Service -->
-         <div class="arch-node node-service" data-tooltip="Order Processing - Ice cream orders and customer management" data-service="orders-service" onclick="navigateToRoute('orders')" oncontextmenu="showServiceContextMenu(event, 'orders-service')">
-             <div class="service-spoke"></div>
-             <div class="data-connection"></div>
-             <div class="node-icon">
-                 <i class="fas fa-ice-cream"></i>
-             </div>
-             <div class="node-title">Orders Service</div>
-             <div class="node-status status-loading" id="orders-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
+        <!-- Orders Service -->
+        <div class="arch-node node-service" data-tooltip="Order Processing - Right-click to manage" data-service="orders-service" onclick="navigateToRoute('orders')" oncontextmenu="showServiceContextMenu(event, 'orders-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-ice-cream"></i>
+                </div>
+                <div class="node-title-compact">Orders Service</div>
+                <div class="node-status-compact status-loading" id="orders-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
 
-         <!-- Inventory Service -->
-         <div class="arch-node node-service" data-tooltip="Inventory Management - Ingredients and supplier tracking" data-service="inventory-service" onclick="navigateToRoute('inventory')" oncontextmenu="showServiceContextMenu(event, 'inventory-service')">
-             <div class="service-spoke"></div>
-             <div class="data-connection"></div>
-             <div class="node-icon">
-                 <i class="fas fa-boxes"></i>
-             </div>
-             <div class="node-title">Inventory Service</div>
-             <div class="node-status status-loading" id="inventory-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
+        <!-- Inventory Service -->
+        <div class="arch-node node-service" data-tooltip="Inventory Management - Right-click to manage" data-service="inventory-service" onclick="navigateToRoute('inventory')" oncontextmenu="showServiceContextMenu(event, 'inventory-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="node-title-compact">Inventory Service</div>
+                <div class="node-status-compact status-loading" id="inventory-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
 
-         <!-- Invoice Service -->
-         <div class="arch-node node-service" data-tooltip="Invoice Management - Billing and payment processing" data-service="invoice-service" onclick="navigateToRoute('invoice')" oncontextmenu="showServiceContextMenu(event, 'invoice-service')">
-             <div class="service-spoke"></div>
-             <div class="data-connection"></div>
-             <div class="node-icon">
-                 <i class="fas fa-receipt"></i>
-             </div>
-             <div class="node-title">Invoice Service</div>
-             <div class="node-status status-loading" id="invoice-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
+        <!-- Invoice Service -->
+        <div class="arch-node node-service" data-tooltip="Invoice Management - Right-click to manage" data-service="invoice-service" onclick="navigateToRoute('invoice')" oncontextmenu="showServiceContextMenu(event, 'invoice-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="node-title-compact">Invoice Service</div>
+                <div class="node-status-compact status-loading" id="invoice-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Services to Data Connection -->
-    <div class="connection-line connection-vertical"></div>
+             <!-- Data Layer -->
+    <div class="architecture-layer layer-data">
+        <div class="arch-node node-data" data-tooltip="PostgreSQL Database - Right-click to manage" data-service="data-service" oncontextmenu="showServiceContextMenu(event, 'data-service')">
+            <div class="node-content">
+                <div class="node-icon-compact">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div class="node-title-compact">Data Service</div>
+                <div class="node-status-compact status-loading" id="data-arch-status">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Checking...
+                </div>
+            </div>
+        </div>
+    </div>
 
-         <!-- Data Layer -->
-     <div class="architecture-layer layer-data">
-         <div class="arch-node node-data" data-tooltip="PostgreSQL Database - Persistent data storage for all services" data-service="data-service" oncontextmenu="showServiceContextMenu(event, 'data-service')">
-             <div class="node-icon">
-                 <i class="fas fa-database"></i>
-             </div>
-             <div class="node-title">Data Service</div>
-             <div class="node-status status-loading" id="data-arch-status">
-                 <i class="fas fa-spinner fa-spin me-1"></i>Checking...
-             </div>
-         </div>
-     </div>
- </div>
+    <!-- SVG Connection Lines -->
+    <svg class="connections-svg" id="connectionsSvg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <!-- Gateway to Services Lines -->
+        <line class="connection-line healthy" id="gateway-session-line" x1="24" y1="50" x2="40" y2="35" data-source="gateway" data-target="session"></line>
+        <line class="connection-line healthy" id="gateway-orders-line" x1="24" y1="50" x2="40" y2="45" data-source="gateway" data-target="orders"></line>
+        <line class="connection-line healthy" id="gateway-inventory-line" x1="24" y1="50" x2="40" y2="55" data-source="gateway" data-target="inventory"></line>
+        <line class="connection-line healthy" id="gateway-invoice-line" x1="24" y1="50" x2="40" y2="65" data-source="gateway" data-target="invoice"></line>
+        
+        <!-- Services to Data Lines -->
+        <line class="connection-line healthy" id="session-data-line" x1="60" y1="35" x2="76" y2="50" data-source="session" data-target="data"></line>
+        <line class="connection-line healthy" id="orders-data-line" x1="60" y1="45" x2="76" y2="50" data-source="orders" data-target="data"></line>
+        <line class="connection-line healthy" id="inventory-data-line" x1="60" y1="55" x2="76" y2="50" data-source="inventory" data-target="data"></line>
+        <line class="connection-line healthy" id="invoice-data-line" x1="60" y1="65" x2="76" y2="50" data-source="invoice" data-target="data"></line>
+        
+        <!-- Connection Dots at Gateway -->
+        <circle class="connection-dot healthy" id="gateway-dot" cx="24" cy="50"></circle>
+        
+        <!-- Connection Dots at Services -->
+        <circle class="connection-dot healthy" id="session-gateway-dot" cx="40" cy="35"></circle>
+        <circle class="connection-dot healthy" id="orders-gateway-dot" cx="40" cy="45"></circle>
+        <circle class="connection-dot healthy" id="inventory-gateway-dot" cx="40" cy="55"></circle>
+        <circle class="connection-dot healthy" id="invoice-gateway-dot" cx="40" cy="65"></circle>
+        
+        <circle class="connection-dot healthy" id="session-data-dot" cx="60" cy="35"></circle>
+        <circle class="connection-dot healthy" id="orders-data-dot" cx="60" cy="45"></circle>
+        <circle class="connection-dot healthy" id="inventory-data-dot" cx="60" cy="55"></circle>
+        <circle class="connection-dot healthy" id="invoice-data-dot" cx="60" cy="65"></circle>
+        
+        <!-- Connection Dot at Data -->
+        <circle class="connection-dot healthy" id="data-dot" cx="76" cy="50"></circle>
+    </svg>
+</div>
 
  <!-- Context Menu -->
  <div id="serviceContextMenu" class="service-context-menu">
@@ -564,7 +742,7 @@
          archIds.forEach(archId => {
              const statusElement = document.getElementById(`${archId}-status`);
              if (statusElement) {
-                 statusElement.className = 'node-status status-offline';
+                 statusElement.className = 'node-status-compact status-offline';
                  statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>Offline';
              }
          });
@@ -579,6 +757,23 @@
              'invoice-service': 'unhealthy'
          };
          updateArchitectureNodeStates(allOfflineStatus);
+         
+         // Update all connection lines and dots to offline
+         const connectionLines = document.querySelectorAll('.connection-line');
+         connectionLines.forEach(line => {
+             line.className = 'connection-line offline';
+         });
+         
+         const connectionDots = document.querySelectorAll('.connection-dot');
+         connectionDots.forEach(dot => {
+             dot.className = 'connection-dot offline';
+         });
+         
+         // Update all buttons to offline state
+         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service'];
+         services.forEach(serviceName => {
+             updateArchitectureServiceButtons(serviceName, 'unhealthy');
+         });
      }
 
          // Context menu functionality
@@ -702,25 +897,25 @@
              // Special handling for gateway service
              if (archId === 'gateway-arch') {
                  if (overallStatus === 'healthy') {
-                     statusElement.className = 'node-status status-online';
+                     statusElement.className = 'node-status-compact status-online';
                      statusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>Online';
                  } else if (overallStatus === 'degraded') {
-                     statusElement.className = 'node-status status-warning';
+                     statusElement.className = 'node-status-compact status-warning';
                      statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Degraded';
                  } else {
-                     statusElement.className = 'node-status status-offline';
+                     statusElement.className = 'node-status-compact status-offline';
                      statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>Offline';
                  }
              } else {
                  // For all other services
                  if (serviceStatus === 'healthy') {
-                     statusElement.className = 'node-status status-online';
+                     statusElement.className = 'node-status-compact status-online';
                      statusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>Online';
                  } else if (serviceStatus === 'unhealthy') {
-                     statusElement.className = 'node-status status-offline';
+                     statusElement.className = 'node-status-compact status-offline';
                      statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>Offline';
                  } else {
-                     statusElement.className = 'node-status status-loading';
+                     statusElement.className = 'node-status-compact status-loading';
                      statusElement.innerHTML = '<i class="fas fa-question-circle me-1"></i>Unknown';
                  }
              }
@@ -728,6 +923,110 @@
          
          // Update visual node states
          updateArchitectureNodeStates(servicesStatus);
+         
+         // Update connection lines
+         updateConnectionLines(servicesStatus, overallStatus);
+         
+         // Update service buttons
+         updateAllArchitectureButtons(servicesStatus, overallStatus);
+     }
+
+     // Update connection line colors based on service health
+     function updateConnectionLines(servicesStatus, overallStatus) {
+         // Update Gateway dot
+         const gatewayDot = document.getElementById('gateway-dot');
+         if (gatewayDot) {
+             gatewayDot.className = `connection-dot ${getConnectionStatus(overallStatus)}`;
+         }
+         
+         // Update Data dot
+         const dataDot = document.getElementById('data-dot');
+         if (dataDot) {
+             const dataStatus = servicesStatus['data-service'];
+             dataDot.className = `connection-dot ${getConnectionStatus(dataStatus)}`;
+         }
+         
+         // Update Gateway to Services connections
+         const serviceConnections = {
+             'session-service': {
+                 line: 'gateway-session-line',
+                 gatewayDot: 'session-gateway-dot',
+                 dataDot: 'session-data-dot'
+             },
+             'orders-service': {
+                 line: 'gateway-orders-line',
+                 gatewayDot: 'orders-gateway-dot',
+                 dataDot: 'orders-data-dot'
+             },
+             'inventory-service': {
+                 line: 'gateway-inventory-line',
+                 gatewayDot: 'inventory-gateway-dot',
+                 dataDot: 'inventory-data-dot'
+             },
+             'invoice-service': {
+                 line: 'gateway-invoice-line',
+                 gatewayDot: 'invoice-gateway-dot',
+                 dataDot: 'invoice-data-dot'
+             }
+         };
+         
+         for (const [serviceName, elements] of Object.entries(serviceConnections)) {
+             const serviceStatus = servicesStatus[serviceName];
+             
+             // Update gateway-to-service line and dot
+             const gatewayLine = document.getElementById(elements.line);
+             const gatewayDot = document.getElementById(elements.gatewayDot);
+             if (gatewayLine && gatewayDot) {
+                 const connectionStatus = (overallStatus === 'healthy' && serviceStatus === 'healthy') ? 'healthy' :
+                                        (overallStatus === 'unhealthy' || serviceStatus === 'unhealthy') ? 'offline' : 'degraded';
+                 const statusClass = getConnectionStatus(connectionStatus);
+                 gatewayLine.className = `connection-line ${statusClass}`;
+                 gatewayDot.className = `connection-dot ${statusClass}`;
+             }
+             
+             // Update service-to-data line and dot  
+             const dataLine = document.getElementById(elements.line.replace('gateway', 'data').replace('session', 'session-data').replace('orders', 'orders-data').replace('inventory', 'inventory-data').replace('invoice', 'invoice-data'));
+             const dataDot = document.getElementById(elements.dataDot);
+             
+             // Find the correct data line ID
+             const dataLineId = serviceName.split('-')[0] + '-data-line';
+             const actualDataLine = document.getElementById(dataLineId);
+             
+             if (actualDataLine && dataDot) {
+                 const dataStatus = servicesStatus['data-service'];
+                 const connectionStatus = (serviceStatus === 'healthy' && dataStatus === 'healthy') ? 'healthy' : 
+                                        (serviceStatus === 'unhealthy' || dataStatus === 'unhealthy') ? 'offline' : 'degraded';
+                 const statusClass = getConnectionStatus(connectionStatus);
+                 actualDataLine.className = `connection-line ${statusClass}`;
+                 dataDot.className = `connection-dot ${statusClass}`;
+             }
+         }
+     }
+
+     // Get connection status class based on service health
+     function getConnectionStatus(status) {
+         if (status === 'healthy') return 'healthy';
+         if (status === 'unhealthy') return 'offline';
+         if (status === 'degraded') return 'degraded';
+         return 'unknown';
+     }
+
+     // Update all architecture service buttons
+     function updateAllArchitectureButtons(servicesStatus, overallStatus) {
+         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service'];
+         
+         services.forEach(serviceName => {
+             const serviceStatus = (serviceName === 'gateway-service') ? overallStatus : servicesStatus[serviceName];
+             updateArchitectureServiceButtons(serviceName, serviceStatus);
+         });
+     }
+
+     // Update buttons for a specific service in architecture diagram
+     // Note: Buttons are now only in context menu, so this function handles context menu state
+     function updateArchitectureServiceButtons(serviceName, serviceStatus) {
+         // Context menu buttons are updated when the menu is shown
+         // This function is kept for compatibility with the existing update system
+         return;
      }
 
      // Expose functions globally for dashboard.html
