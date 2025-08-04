@@ -63,7 +63,11 @@ start-locally: deps ## Run the service locally (no Docker)
 	fi
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8085$(RESET)"
-	@go run .
+	@echo "$(CYAN)📝 Loading configuration from config.env...$(RESET)"
+	@echo "$(CYAN)🚀 Starting service in background...$(RESET)"
+	@set -a && [ -f config.env ] && . ./config.env && set +a && nohup go run . > service.log 2>&1 & echo $$! > service.pid
+	@sleep 2
+	@echo "$(GREEN)✅ Service started successfully$(RESET)"
 
 stop-locally: ## Stop local service (if running in background)
 	@echo "$(YELLOW)🛑 Stopping local Invoice Service...$(RESET)"

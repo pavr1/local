@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -362,6 +363,36 @@ func checkDatabaseHealth(address string) bool {
 	return true
 }
 
+// isServiceRunning checks if a service is currently running by checking its port
+func isServiceRunning(serviceName string) bool {
+	// Map service names to their ports
+	servicePorts := map[string]string{
+		"data-service":      "5432", // PostgreSQL port
+		"gateway-service":   "8082",
+		"session-service":   "8081",
+		"orders-service":    "8083",
+		"inventory-service": "8084",
+		"invoice-service":   "8085",
+	}
+
+	port, exists := servicePorts[serviceName]
+	if !exists {
+		log.Printf("⚠️  Unknown service %s, cannot check running status", serviceName)
+		return false
+	}
+
+	// Check if the port is in use
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%s", port), 2*time.Second)
+	if err != nil {
+		// Port is not in use, service is not running
+		return false
+	}
+	defer conn.Close()
+
+	log.Printf("🔍 Service %s is running on port %s", serviceName, port)
+	return true
+}
+
 // Service management handlers
 func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -383,28 +414,67 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("🔧 Starting %s service (environment: %s)", serviceName, environment)
 
-	// Execute make command based on environment
-	makeTarget := fmt.Sprintf("start-%s", environment)
-	success, output, err := executeServiceCommand(serviceName, makeTarget)
+	// Check if service is already running
+	isRunning := isServiceRunning(serviceName)
+	var finalOutput strings.Builder
+	var finalSuccess bool = true
+	var finalError error
+
+	if isRunning {
+		log.Printf("⚠️  Service %s is already running, stopping it first...", serviceName)
+		finalOutput.WriteString(fmt.Sprintf("Service %s was already running, stopping first...\n", serviceName))
+
+		// Stop the service first
+		stopTarget := fmt.Sprintf("stop-%s", environment)
+		stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+		finalOutput.WriteString(fmt.Sprintf("Stop output: %s\n", stopOutput))
+
+		if !stopSuccess || stopErr != nil {
+			log.Printf("❌ Failed to stop running service %s: %v", serviceName, stopErr)
+			finalSuccess = false
+			finalError = fmt.Errorf("failed to stop running service: %v", stopErr)
+		} else {
+			log.Printf("✅ Successfully stopped running service %s", serviceName)
+			// Wait a moment for the service to fully stop
+			time.Sleep(2 * time.Second)
+		}
+	}
+
+	// Now start the service
+	if finalSuccess {
+		makeTarget := fmt.Sprintf("start-%s", environment)
+		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, makeTarget)
+		finalOutput.WriteString(fmt.Sprintf("Start output: %s", startOutput))
+
+		if !startSuccess || startErr != nil {
+			finalSuccess = false
+			finalError = startErr
+		}
+	}
+
+	message := fmt.Sprintf("Service %s start command executed", serviceName)
+	if isRunning {
+		message = fmt.Sprintf("Service %s was restarted (was already running)", serviceName)
+	}
 
 	response := map[string]interface{}{
 		"service":     serviceName,
 		"action":      "start",
 		"environment": environment,
-		"success":     success,
-		"message":     fmt.Sprintf("Service %s start command executed", serviceName),
-		"output":      output,
+		"success":     finalSuccess,
+		"message":     message,
+		"output":      finalOutput.String(),
 	}
 
-	if err != nil {
-		response["error"] = err.Error()
-		log.Printf("❌ Failed to start %s: %v", serviceName, err)
+	if finalError != nil {
+		response["error"] = finalError.Error()
+		log.Printf("❌ Failed to start %s: %v", serviceName, finalError)
 	} else {
 		log.Printf("✅ Successfully executed start command for %s", serviceName)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if success {
+	if finalSuccess {
 		w.WriteHeader(http.StatusOK)
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -432,16 +502,34 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("🔧 Stopping %s service (environment: %s)", serviceName, environment)
 
-	// Execute make command based on environment
-	makeTarget := fmt.Sprintf("stop-%s", environment)
-	success, output, err := executeServiceCommand(serviceName, makeTarget)
+	// Check if service is already stopped
+	isRunning := isServiceRunning(serviceName)
+	var success bool = true
+	var output string
+	var err error
+
+	if !isRunning {
+		log.Printf("ℹ️  Service %s is already stopped, ignoring stop request", serviceName)
+		output = fmt.Sprintf("Service %s was already stopped", serviceName)
+		success = true
+		err = nil
+	} else {
+		// Execute make command based on environment
+		makeTarget := fmt.Sprintf("stop-%s", environment)
+		success, output, err = executeServiceCommand(serviceName, makeTarget)
+	}
+
+	message := fmt.Sprintf("Service %s stop command executed", serviceName)
+	if !isRunning {
+		message = fmt.Sprintf("Service %s was already stopped", serviceName)
+	}
 
 	response := map[string]interface{}{
 		"service":     serviceName,
 		"action":      "stop",
 		"environment": environment,
 		"success":     success,
-		"message":     fmt.Sprintf("Service %s stop command executed", serviceName),
+		"message":     message,
 		"output":      output,
 	}
 

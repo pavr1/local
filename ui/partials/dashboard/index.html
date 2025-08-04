@@ -146,6 +146,7 @@
     .service-status {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         padding: 0.15rem 0.4rem;
         border-radius: 12px;
         font-size: 0.7rem;
@@ -265,6 +266,29 @@
     .restart-btn:hover .fas,
     .restart-btn:hover i {
         color: white !important;
+    }
+
+    /* Disabled Button Styles */
+    .action-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.5) !important;
+        color: #6c757d !important;
+        border-color: rgba(222, 226, 230, 0.5) !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .action-btn:disabled:hover {
+        transform: none !important;
+        box-shadow: none !important;
+        background: rgba(255, 255, 255, 0.5) !important;
+        color: #6c757d !important;
+    }
+
+    .action-btn:disabled .fas,
+    .action-btn:disabled i {
+        color: #6c757d !important;
     }
 
     /* Connection Lines */
@@ -400,13 +424,13 @@
                 </div>
             </div>
             <div class="service-actions">
-                <button class="action-btn start-btn" onclick="manageService('gateway-service', 'start')" title="Start Gateway">
+                <button class="action-btn start-btn" onclick="manageService('gateway-service', 'start')" title="Start Gateway" disabled>
                     <i class="fas fa-play"></i>
                 </button>
-                <button class="action-btn stop-btn" onclick="manageService('gateway-service', 'stop')" title="Stop Gateway">
+                <button class="action-btn stop-btn" onclick="manageService('gateway-service', 'stop')" title="Stop Gateway" disabled>
                     <i class="fas fa-stop"></i>
                 </button>
-                <button class="action-btn restart-btn" onclick="manageService('gateway-service', 'restart')" title="Restart Gateway">
+                <button class="action-btn restart-btn" onclick="manageService('gateway-service', 'restart')" title="Restart Gateway" disabled>
                     <i class="fas fa-sync"></i>
                 </button>
             </div>
@@ -437,20 +461,20 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('session-service', 'start')" title="Start Session">
+                    <button class="action-btn start-btn" onclick="manageService('session-service', 'start')" title="Start Session" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop')" title="Stop Session">
+                    <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop')" title="Stop Session" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart')" title="Restart Session">
+                    <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart')" title="Restart Session" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Orders Service -->
-            <div class="service-card small-card" data-service="orders-service" oncontextmenu="showServiceContextMenu(event, 'orders-service')" onclick="navigateToRoute('orders')">
+            <div class="service-card small-card" data-service="orders-service" oncontextmenu="showServiceContextMenu(event, 'orders-service')">
                 <div class="service-main">
                     <div class="service-icon">
                         <i class="fas fa-ice-cream"></i>
@@ -465,20 +489,20 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('orders-service', 'start')" title="Start Orders">
+                    <button class="action-btn start-btn" onclick="manageService('orders-service', 'start')" title="Start Orders" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop')" title="Stop Orders">
+                    <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop')" title="Stop Orders" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart')" title="Restart Orders">
+                    <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart')" title="Restart Orders" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Inventory Service -->
-            <div class="service-card small-card" data-service="inventory-service" oncontextmenu="showServiceContextMenu(event, 'inventory-service')" onclick="navigateToRoute('inventory')">
+            <div class="service-card small-card" data-service="inventory-service" oncontextmenu="showServiceContextMenu(event, 'inventory-service')">
                 <div class="service-main">
                     <div class="service-icon">
                         <i class="fas fa-boxes"></i>
@@ -493,20 +517,20 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start')" title="Start Inventory">
+                    <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start')" title="Start Inventory" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop')" title="Stop Inventory">
+                    <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop')" title="Stop Inventory" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart')" title="Restart Inventory">
+                    <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart')" title="Restart Inventory" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Invoice Service -->
-            <div class="service-card small-card" data-service="invoice-service" oncontextmenu="showServiceContextMenu(event, 'invoice-service')" onclick="navigateToRoute('invoice')">
+            <div class="service-card small-card" data-service="invoice-service" oncontextmenu="showServiceContextMenu(event, 'invoice-service')">
                 <div class="service-main">
                     <div class="service-icon">
                         <i class="fas fa-receipt"></i>
@@ -521,13 +545,13 @@
                     </div>
                 </div>
                 <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start')" title="Start Invoice">
+                    <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start')" title="Start Invoice" disabled>
                         <i class="fas fa-play"></i>
                     </button>
-                    <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop')" title="Stop Invoice">
+                    <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop')" title="Stop Invoice" disabled>
                         <i class="fas fa-stop"></i>
                     </button>
-                    <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart')" title="Restart Invoice">
+                    <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart')" title="Restart Invoice" disabled>
                         <i class="fas fa-sync"></i>
                     </button>
                 </div>
@@ -557,13 +581,13 @@
                 </div>
             </div>
             <div class="service-actions">
-                <button class="action-btn start-btn" onclick="manageService('data-service', 'start')" title="Start Database">
+                <button class="action-btn start-btn" onclick="manageService('data-service', 'start')" title="Start Database" disabled>
                     <i class="fas fa-play"></i>
                 </button>
-                <button class="action-btn stop-btn" onclick="manageService('data-service', 'stop')" title="Stop Database">
+                <button class="action-btn stop-btn" onclick="manageService('data-service', 'stop')" title="Stop Database" disabled>
                     <i class="fas fa-stop"></i>
                 </button>
-                <button class="action-btn restart-btn" onclick="manageService('data-service', 'restart')" title="Restart Database">
+                <button class="action-btn restart-btn" onclick="manageService('data-service', 'restart')" title="Restart Database" disabled>
                     <i class="fas fa-sync"></i>
                 </button>
             </div>
