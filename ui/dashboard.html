@@ -187,6 +187,79 @@
             border-color: rgba(220, 53, 69, 0.3);
         }
 
+        /* System Status Indicator in Header */
+        .system-status-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            position: relative;
+        }
+
+        .system-status-indicator .connection-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: relative;
+            display: inline-block;
+        }
+
+        .system-status-indicator .connection-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            opacity: 0.3;
+        }
+
+        /* System Status - Online */
+        .system-status-indicator.online .connection-indicator {
+            background: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+            animation: connectionOnline 2s ease-in-out infinite;
+        }
+
+        .system-status-indicator.online .connection-indicator::before {
+            background: #28a745;
+            animation: connectionPulse 2s ease-in-out infinite;
+        }
+
+        /* System Status - Checking */
+        .system-status-indicator.checking .connection-indicator {
+            background: #ffc107;
+            animation: connectionChecking 1.5s ease-in-out infinite;
+        }
+
+        .system-status-indicator.checking .connection-indicator::before {
+            background: #ffc107;
+            animation: connectionCheckingRing 1.5s ease-in-out infinite;
+        }
+
+        /* System Status - Offline */
+        .system-status-indicator.offline .connection-indicator {
+            background: #dc3545;
+            animation: connectionOffline 3s ease-in-out infinite;
+        }
+
+        .system-status-indicator.offline .connection-indicator::before {
+            background: #dc3545;
+            animation: connectionOfflineRing 3s ease-in-out infinite;
+        }
+
+        /* System Status - Degraded */
+        .system-status-indicator.degraded .connection-indicator {
+            background: #ffc107;
+            animation: connectionDegraded 2s ease-in-out infinite;
+        }
+
+        .system-status-indicator.degraded .connection-indicator::before {
+            background: #ffc107;
+            animation: connectionDegradedRing 2s ease-in-out infinite;
+        }
+
         .header-time {
             font-size: 0.9rem;
             font-weight: 400;
@@ -279,6 +352,41 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Smooth breathing animation for status refresh */
+        @keyframes statusBreathing {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 2px rgba(40, 167, 69, 0.3));
+            }
+            25% {
+                opacity: 0.4;
+                transform: scale(0.95);
+                filter: drop-shadow(0 0 6px rgba(40, 167, 69, 0.6));
+            }
+            50% {
+                opacity: 0.2;
+                transform: scale(0.9);
+                filter: drop-shadow(0 0 8px rgba(40, 167, 69, 0.8));
+            }
+            75% {
+                opacity: 0.4;
+                transform: scale(0.95);
+                filter: drop-shadow(0 0 6px rgba(40, 167, 69, 0.6));
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+                filter: drop-shadow(0 0 2px rgba(40, 167, 69, 0.3));
+            }
+        }
+
+        .status-breathing {
+            animation: statusBreathing 2s ease-in-out infinite;
+            transform-origin: center;
+            transition: all 0.3s ease;
         }
 
         /* Realistic heartbeat animation for status icon */
@@ -592,7 +700,9 @@
                     <!-- System Status -->
                     <div class="system-section">
                         <div class="header-status" id="system-status">
-                            <i class="fas fa-circle text-success me-2" style="font-size: 0.6rem;" id="system-status-icon"></i>
+                            <div class="system-status-indicator online" id="system-status-icon">
+                                <div class="connection-indicator"></div>
+                            </div>
                             <span id="system-status-text">System Online</span>
                         </div>
                     </div>
@@ -654,6 +764,12 @@
             
             // Start automatic health monitoring
             startHealthMonitoring();
+            
+            // Additional health check to ensure proper button states after content load
+            setTimeout(() => {
+                updateSystemStatus(false);
+                console.log('🔄 Dashboard: Secondary health check for button state verification');
+            }, 2000);
             
             // Test SweetAlert2 system
             setTimeout(() => {
@@ -959,14 +1075,11 @@
                 return; // Elements not found, skip update
             }
             
-            // Start beating animation to show refresh is active
-            systemStatusIcon.classList.add('status-beating');
+            // Start breathing animation to show refresh is active
+            systemStatusIcon.classList.add('status-breathing');
             
-            // Add visual indication during auto-refresh
-            if (isAutoRefresh) {
-                systemStatusIcon.style.opacity = '0.7';
-                systemStatusText.textContent = 'Checking Status...';
-            } else {
+            // Add visual indication during refresh
+            if (!isAutoRefresh) {
                 systemStatusText.textContent = 'Refreshing...';
             }
             
@@ -995,17 +1108,17 @@
                     
                     // Update top panel based on overall status
                     if (healthData.status === 'healthy') {
-                        systemStatusIcon.className = 'fas fa-circle text-success me-2';
+                        systemStatusIcon.className = 'system-status-indicator online';
                         systemStatusText.textContent = 'System Online';
                         systemStatusElement.className = 'header-status';
                         console.log('✅ System Status: All services healthy');
                     } else if (healthData.status === 'degraded') {
-                        systemStatusIcon.className = 'fas fa-circle text-warning me-2';
+                        systemStatusIcon.className = 'system-status-indicator degraded';
                         systemStatusText.textContent = 'System Degraded';
                         systemStatusElement.className = 'header-status header-status-warning';
                         console.log('⚠️  System Status: Some services degraded');
                     } else {
-                        systemStatusIcon.className = 'fas fa-circle text-warning me-2';
+                        systemStatusIcon.className = 'system-status-indicator degraded';
                         systemStatusText.textContent = 'System Issues';
                         systemStatusElement.className = 'header-status header-status-warning';
                         console.log('⚠️  System Status: Unknown status received');
@@ -1025,7 +1138,7 @@
                 const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '❌';
                 console.error(`${logPrefix} System status check failed:`, error.message);
                 // Gateway unreachable = system offline
-                systemStatusIcon.className = 'fas fa-circle text-danger me-2';
+                systemStatusIcon.className = 'system-status-indicator offline';
                 systemStatusText.textContent = 'System Offline';
                 systemStatusElement.className = 'header-status header-status-error';
                 
@@ -1033,11 +1146,8 @@
                 markAllServiceCardsOffline();
                 
             } finally {
-                // Stop beating animation and restore opacity
-                systemStatusIcon.classList.remove('status-beating');
-                if (isAutoRefresh) {
-                    systemStatusIcon.style.opacity = '1';
-                }
+                // Stop breathing animation - smooth transition back to normal
+                systemStatusIcon.classList.remove('status-breathing');
             }
         }
         
@@ -1062,30 +1172,30 @@
                 if (cardId === 'gateway') {
                     if (overallStatus === 'healthy') {
                         statusElement.className = 'service-status online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Online</span>';
                         console.log(`✅ ${cardId} card: Online (system healthy)`);
                     } else if (overallStatus === 'degraded') {
                         statusElement.className = 'service-status degraded';
-                        statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Degraded</span>';
                         console.log(`⚠️  ${cardId} card: Degraded (system degraded)`);
                     } else {
                         statusElement.className = 'service-status offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
                         console.log(`❌ ${cardId} card: Offline`);
                     }
                 } else {
                     // For all other services, use individual service status
                     if (serviceStatus === 'healthy') {
                         statusElement.className = 'service-status online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Online</span>';
                         console.log(`✅ ${cardId} card: Online`);
                     } else if (serviceStatus === 'unhealthy') {
                         statusElement.className = 'service-status offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
                         console.log(`❌ ${cardId} card: Offline`);
                     } else {
                         statusElement.className = 'service-status degraded';
-                        statusElement.innerHTML = '<i class="fas fa-question-circle me-2"></i>';
+                        statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Unknown</span>';
                         console.log(`⚠️  ${cardId} card: Unknown status`);
                     }
                 }
@@ -1113,7 +1223,7 @@
                 const statusElement = document.getElementById(`${serviceId}-status`);
                 if (statusElement) {
                     statusElement.className = 'service-status offline';
-                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
+                    statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
                     console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
                 }
                 
@@ -1183,6 +1293,24 @@
                     Alert.success(`Service ${action.charAt(0).toUpperCase() + action.slice(1)}`, 
                         `${serviceName} ${action} completed successfully!`);
                     
+                    // Special handling for data-service start: auto-restart dependent services
+                    if (serviceName === 'data-service' && action === 'start') {
+                        // Extended refresh schedule for auto-restart scenario
+                        setTimeout(() => {
+                            updateSystemStatus(false);
+                        }, 10000);
+                        
+                        setTimeout(() => {
+                            updateSystemStatus(false);
+                        }, 20000);
+                        
+                        setTimeout(() => {
+                            updateSystemStatus(false);
+                            Alert.success('Auto-Restart Complete', 
+                                'All dependent services have been restarted and are reconnecting!');
+                        }, 30000);
+                    }
+                    
                     // Immediately refresh header and dashboard status after success
                     updateSystemStatus(false);
                     
@@ -1240,9 +1368,29 @@
                     if (clickedButton) {
                         clearButtonState(clickedButton);
                     }
-                    disableServiceButtons(serviceName, false);
+                    // Re-enable buttons will be handled by updateSystemStatus → updateServiceCards → updateAllServiceButtons
                     updateSystemStatus(false);
-                }, 1500); // Give time for success/error animation to show
+                }, 800); // Reduced delay - just enough time for success/error animation to show
+            }
+        }
+
+        // Helper function to update service card visibility based on button states
+        function updateServiceCardVisibility(button) {
+            if (!button) return;
+            
+            const serviceCard = button.closest('.service-card');
+            if (!serviceCard) return;
+            
+            const serviceActions = serviceCard.querySelector('.service-actions');
+            if (!serviceActions) return;
+            
+            // Check if any button in this service has active operations
+            const hasActiveOperations = serviceActions.querySelector('.action-btn.loading, .action-btn.success, .action-btn.error');
+            
+            if (hasActiveOperations) {
+                serviceCard.classList.add('has-active-operations');
+            } else {
+                serviceCard.classList.remove('has-active-operations');
             }
         }
 
@@ -1269,6 +1417,9 @@
                     delete button.dataset.originalHTML;
                 }
             }
+            
+            // Update service card visibility
+            updateServiceCardVisibility(button);
         }
 
         function setButtonSuccessState(button) {
@@ -1280,10 +1431,15 @@
             
             console.log(`✅ Button success state: ${button.title || 'Unknown'}`);
             
+            // Update service card visibility
+            updateServiceCardVisibility(button);
+            
             // Clear success state after animation
             setTimeout(() => {
                 if (button.classList.contains('success')) {
                     button.classList.remove('success');
+                    // Update visibility again after clearing state
+                    updateServiceCardVisibility(button);
                 }
             }, 600);
         }
@@ -1297,10 +1453,15 @@
             
             console.log(`❌ Button error state: ${button.title || 'Unknown'}`);
             
+            // Update service card visibility
+            updateServiceCardVisibility(button);
+            
             // Clear error state after animation
             setTimeout(() => {
                 if (button.classList.contains('error')) {
                     button.classList.remove('error');
+                    // Update visibility again after clearing state
+                    updateServiceCardVisibility(button);
                 }
             }, 600);
         }
@@ -1316,6 +1477,9 @@
                 button.innerHTML = button.dataset.originalHTML;
                 delete button.dataset.originalHTML;
             }
+            
+            // Update service card visibility
+            updateServiceCardVisibility(button);
             
             console.log(`🔄 Button state cleared: ${button.title || 'Unknown'}`);
         }
@@ -1353,9 +1517,9 @@
             const systemStatusText = document.getElementById('system-status-text');
             
             if (systemStatusElement && systemStatusIcon && systemStatusText) {
-                // Add beating animation and show operation in progress
-                systemStatusIcon.classList.add('status-beating');
-                systemStatusIcon.className = 'fas fa-spinner fa-spin text-warning me-2 status-beating';
+                // Add breathing animation and show operation in progress
+                systemStatusIcon.classList.add('status-breathing');
+                systemStatusIcon.className = 'system-status-indicator checking status-breathing';
                 systemStatusText.textContent = `${action.charAt(0).toUpperCase() + action.slice(1)}ing Service...`;
                 systemStatusElement.className = 'header-status header-status-warning';
                 
@@ -1364,23 +1528,52 @@
         }
 
         // Update service management buttons based on status
-        function updateServiceButtons(servicePrefix, isOnline) {
-            const startBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'start')"]`);
-            const stopBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'stop')"]`);
-            const restartBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'restart')"]`);
+        function updateServiceButtons(servicePrefix, isOnline, dataServiceHealthy = true) {
+            const startBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'start'"]`);
+            const stopBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'stop'"]`);
+            const restartBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'restart'"]`);
+            
+            // Business services that depend on database
+            const businessServices = ['session', 'orders', 'inventory', 'invoice'];
+            const isBusinessService = businessServices.includes(servicePrefix);
             
             if (startBtn && stopBtn && restartBtn) {
+                // Helper function to safely update button if not in animation state
+                function safeUpdateButton(button, shouldDisable, reason = '') {
+                    const hasLoading = button.classList.contains('loading');
+                    const hasSuccess = button.classList.contains('success');
+                    const hasError = button.classList.contains('error');
+                    
+                    // Don't change button state if it's currently showing loading/success/error animations
+                    if (!hasLoading && !hasSuccess && !hasError) {
+                        button.disabled = shouldDisable;
+                        console.log(`🔘 ${button.title}: ${shouldDisable ? 'DISABLED' : 'ENABLED'} ${reason}`);
+                    } else {
+                        console.log(`🔄 ${button.title}: Skipped update (in animation)`);
+                    }
+                }
+                
                 if (isOnline) {
                     // Service is online: disable start, enable stop and restart
-                    startBtn.disabled = true;
-                    stopBtn.disabled = false;
-                    restartBtn.disabled = false;
+                    safeUpdateButton(startBtn, true, '(service online)');
+                    safeUpdateButton(stopBtn, false, '(service online)');
+                    safeUpdateButton(restartBtn, false, '(service online)');
                 } else {
-                    // Service is offline: enable start, disable stop and restart
-                    startBtn.disabled = false;
-                    stopBtn.disabled = true;
-                    restartBtn.disabled = true;
+                    // Service is offline
+                    if (isBusinessService && !dataServiceHealthy) {
+                        // Business service is down AND database is down: disable all buttons
+                        safeUpdateButton(startBtn, true, '(database down - cannot start)');
+                        safeUpdateButton(stopBtn, true, '(service offline)');
+                        safeUpdateButton(restartBtn, true, '(database down - cannot restart)');
+                    } else {
+                        // Service is down but database is healthy (or this is data-service itself)
+                        safeUpdateButton(startBtn, false, '(service offline - can start)');
+                        safeUpdateButton(stopBtn, true, '(service offline)');
+                        safeUpdateButton(restartBtn, true, '(service offline)');
+                    }
                 }
+                
+                console.log(`🔧 Service buttons updated for ${servicePrefix}-service: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy ? 'healthy' : 'down'})`);
             }
         }
 
@@ -1395,10 +1588,16 @@
                 'invoice-service': 'invoice'
             };
             
+            console.log('🔧 updateAllServiceButtons called with:', servicesStatus);
+            
+            // Check if data-service is healthy
+            const dataServiceHealthy = servicesStatus['data-service'] === 'healthy';
+            console.log(`📊 Data service status: ${dataServiceHealthy ? 'healthy' : 'unhealthy'}`);
+            
             for (const [gatewayServiceName, servicePrefix] of Object.entries(serviceMapping)) {
                 const serviceStatus = servicesStatus[gatewayServiceName];
                 const isOnline = serviceStatus === 'healthy';
-                updateServiceButtons(servicePrefix, isOnline);
+                updateServiceButtons(servicePrefix, isOnline, dataServiceHealthy);
             }
         }
 

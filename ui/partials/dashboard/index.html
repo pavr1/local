@@ -142,39 +142,154 @@
         align-items: center;
     }
 
-    /* Service Status */
+    /* Animated Connection Status Indicators */
     .service-status {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        padding: 0.15rem 0.4rem;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 500;
+        position: relative;
+        margin-left: 0.5rem;
     }
 
-    .service-status.online {
-        background: rgba(40, 167, 69, 0.1);
+    .connection-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        position: relative;
+        display: inline-block;
+        margin-right: 0.25rem;
+    }
+
+    .connection-indicator::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        opacity: 0.3;
+    }
+
+    /* Online - Steady green with subtle pulse */
+    .service-status.online .connection-indicator {
+        background: #28a745;
+        box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+        animation: connectionOnline 2s ease-in-out infinite;
+    }
+
+    .service-status.online .connection-indicator::before {
+        background: #28a745;
+        animation: connectionPulse 2s ease-in-out infinite;
+    }
+
+    /* Checking - Pulsing orange */
+    .service-status.checking .connection-indicator {
+        background: #ffc107;
+        animation: connectionChecking 1.5s ease-in-out infinite;
+    }
+
+    .service-status.checking .connection-indicator::before {
+        background: #ffc107;
+        animation: connectionCheckingRing 1.5s ease-in-out infinite;
+    }
+
+    /* Offline - Steady red with slow flash */
+    .service-status.offline .connection-indicator {
+        background: #dc3545;
+        animation: connectionOffline 3s ease-in-out infinite;
+    }
+
+    .service-status.offline .connection-indicator::before {
+        background: #dc3545;
+        animation: connectionOfflineRing 3s ease-in-out infinite;
+    }
+
+    /* Degraded - Alternating yellow/orange */
+    .service-status.degraded .connection-indicator {
+        background: #ffc107;
+        animation: connectionDegraded 2s ease-in-out infinite;
+    }
+
+    .service-status.degraded .connection-indicator::before {
+        background: #ffc107;
+        animation: connectionDegradedRing 2s ease-in-out infinite;
+    }
+
+    /* Connection Status Animations */
+    @keyframes connectionOnline {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.9; }
+    }
+
+    @keyframes connectionPulse {
+        0% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 0.3; }
+    }
+
+    @keyframes connectionChecking {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        25% { transform: scale(1.2); opacity: 0.7; }
+        50% { transform: scale(0.8); opacity: 1; }
+        75% { transform: scale(1.2); opacity: 0.7; }
+    }
+
+    @keyframes connectionCheckingRing {
+        0% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(2.2); opacity: 0; }
+        100% { transform: scale(1); opacity: 0.4; }
+    }
+
+    @keyframes connectionOffline {
+        0%, 85% { opacity: 1; }
+        90%, 95% { opacity: 0.3; }
+        100% { opacity: 1; }
+    }
+
+    @keyframes connectionOfflineRing {
+        0%, 85% { transform: scale(1); opacity: 0.2; }
+        90% { transform: scale(1.5); opacity: 0.4; }
+        95% { transform: scale(1.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 0.2; }
+    }
+
+    @keyframes connectionDegraded {
+        0%, 50% { background: #ffc107; }
+        51%, 100% { background: #fd7e14; }
+    }
+
+    @keyframes connectionDegradedRing {
+        0% { transform: scale(1); opacity: 0.3; }
+        25% { transform: scale(1.6); opacity: 0.1; }
+        50% { transform: scale(1); opacity: 0.3; }
+        75% { transform: scale(1.6); opacity: 0.1; }
+        100% { transform: scale(1); opacity: 0.3; }
+    }
+
+    /* Connection Status Text */
+    .connection-text {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-left: 0.25rem;
+    }
+
+    .service-status.online .connection-text {
         color: #28a745;
-        border: 1px solid rgba(40, 167, 69, 0.2);
     }
 
-    .service-status.checking {
-        background: rgba(255, 193, 7, 0.1);
+    .service-status.checking .connection-text {
         color: #ffc107;
-        border: 1px solid rgba(255, 193, 7, 0.2);
     }
 
-    .service-status.offline {
-        background: rgba(220, 53, 69, 0.1);
+    .service-status.offline .connection-text {
         color: #dc3545;
-        border: 1px solid rgba(220, 53, 69, 0.2);
     }
 
-    .service-status.degraded {
-        background: rgba(255, 193, 7, 0.1);
-        color: #ffc107;
-        border: 1px solid rgba(255, 193, 7, 0.2);
+    .service-status.degraded .connection-text {
+        color: #fd7e14;
     }
 
     /* Service Actions */
@@ -191,6 +306,15 @@
     }
 
     .service-card:hover .service-actions {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Keep actions visible when any button is in processing state */
+    .service-actions:has(.action-btn.loading),
+    .service-actions:has(.action-btn.success),
+    .service-actions:has(.action-btn.error),
+    .service-card.has-active-operations .service-actions {
         opacity: 1;
         transform: translateY(0);
     }
@@ -517,7 +641,8 @@
                 <h4>
                     User Interface
                     <div class="service-status online">
-                        <i class="fas fa-check-circle"></i>
+                        <div class="connection-indicator"></div>
+                        <span class="connection-text">Online</span>
                     </div>
                 </h4>
             </div>
@@ -540,7 +665,8 @@
                     <h4>
                         API Gateway
                         <div class="service-status checking" id="gateway-status">
-                            <i class="fas fa-spinner fa-spin"></i>
+                            <div class="connection-indicator"></div>
+                            <span class="connection-text">Checking</span>
                         </div>
                     </h4>
                 </div>
@@ -577,7 +703,8 @@
                         <h5>
                             Session
                             <div class="service-status checking" id="session-status">
-                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="connection-indicator"></div>
+                                <span class="connection-text">Checking</span>
                             </div>
                         </h5>
                     </div>
@@ -605,7 +732,8 @@
                         <h5>
                             Orders
                             <div class="service-status checking" id="orders-status">
-                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="connection-indicator"></div>
+                                <span class="connection-text">Checking</span>
                             </div>
                         </h5>
                     </div>
@@ -633,7 +761,8 @@
                         <h5>
                             Inventory
                             <div class="service-status checking" id="inventory-status">
-                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="connection-indicator"></div>
+                                <span class="connection-text">Checking</span>
                             </div>
                         </h5>
                     </div>
@@ -661,7 +790,8 @@
                         <h5>
                             Invoice
                             <div class="service-status checking" id="invoice-status">
-                                <i class="fas fa-spinner fa-spin"></i>
+                                <div class="connection-indicator"></div>
+                                <span class="connection-text">Checking</span>
                             </div>
                         </h5>
                     </div>
@@ -697,7 +827,8 @@
                     <h4>
                         PostgreSQL Database
                         <div class="service-status checking" id="data-status">
-                            <i class="fas fa-spinner fa-spin"></i>
+                            <div class="connection-indicator"></div>
+                            <span class="connection-text">Checking</span>
                         </div>
                     </h4>
                 </div>

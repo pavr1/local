@@ -461,6 +461,12 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("❌ Failed to start %s: %v", serviceName, finalError)
 	} else {
 		log.Printf("✅ Successfully executed start command for %s", serviceName)
+
+		// If data-service was successfully started, automatically restart all dependent services
+		if serviceName == "data-service" && finalSuccess {
+			log.Printf("🔄 Data service started successfully, auto-restarting dependent services...")
+			go restartDependentServices(environment)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -470,6 +476,56 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	json.NewEncoder(w).Encode(response)
+}
+
+// restartDependentServices automatically restarts all services that depend on the database
+func restartDependentServices(environment string) {
+	// Services that depend on data-service (in dependency order)
+	dependentServices := []string{
+		"session-service",
+		"orders-service",
+		"inventory-service",
+		"invoice-service",
+		"gateway-service", // Gateway last to ensure all other services are ready
+	}
+
+	log.Printf("🔄 Starting automatic restart of dependent services...")
+
+	for _, serviceName := range dependentServices {
+		log.Printf("🔄 Auto-restarting %s...", serviceName)
+
+		// Check if service is running before attempting restart
+		if isServiceRunning(serviceName) {
+			// Stop the service first
+			stopTarget := fmt.Sprintf("stop-%s", environment)
+			stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+
+			if !stopSuccess || stopErr != nil {
+				log.Printf("❌ Failed to stop %s during auto-restart: %v", serviceName, stopErr)
+				continue // Skip to next service
+			}
+
+			log.Printf("✅ Stopped %s, output: %s", serviceName, stopOutput)
+
+			// Wait for service to fully stop
+			time.Sleep(2 * time.Second)
+		}
+
+		// Start the service
+		startTarget := fmt.Sprintf("start-%s", environment)
+		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget)
+
+		if !startSuccess || startErr != nil {
+			log.Printf("❌ Failed to start %s during auto-restart: %v", serviceName, startErr)
+		} else {
+			log.Printf("✅ Successfully auto-restarted %s, output: %s", serviceName, startOutput)
+		}
+
+		// Wait before starting next service to avoid overwhelming the system
+		time.Sleep(3 * time.Second)
+	}
+
+	log.Printf("🎉 Completed automatic restart of dependent services!")
 }
 
 func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
