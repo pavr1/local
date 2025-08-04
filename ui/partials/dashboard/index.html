@@ -171,6 +171,17 @@
         opacity: 0.3;
     }
 
+    .connection-indicator::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        opacity: 0.3;
+    }
+
     /* Animations moved to dashboard.html for global availability */
     
     /* Service card connection indicators - enhanced colors to match header */
@@ -187,35 +198,35 @@
     
     .service-status.offline .connection-indicator {
         background: #ff1744; /* Vibrant red to match header */
-        box-shadow: 0 0 8px rgba(255, 23, 68, 0.5);
-        animation: connectionOffline 3s ease-in-out infinite;
+        box-shadow: 0 0 12px rgba(255, 23, 68, 0.6); /* Match header exactly */
+        animation: connectionOnline 2s ease-in-out infinite; /* Use same working keyframes as green */
     }
     
     .service-status.offline .connection-indicator::before {
         background: #ff1744;
-        animation: connectionOfflineRing 3s ease-in-out infinite;
+        animation: connectionPulse 2s ease-in-out infinite; /* Use same working keyframes as green */
     }
     
     .service-status.degraded .connection-indicator {
         background: #ff9500; /* Vibrant orange to match header */
-        box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
-        animation: connectionDegraded 2s ease-in-out infinite;
+        box-shadow: 0 0 12px rgba(255, 149, 0, 0.6); /* Match header exactly */
+        animation: connectionOnline 2s ease-in-out infinite; /* Use same working keyframes as green */
     }
     
     .service-status.degraded .connection-indicator::before {
         background: #ff9500;
-        animation: connectionDegradedRing 2s ease-in-out infinite;
+        animation: connectionPulse 2s ease-in-out infinite; /* Use same working keyframes as green */
     }
     
     .service-status.checking .connection-indicator {
         background: #ff9500; /* Vibrant orange to match header */
-        box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
-        animation: connectionChecking 1.5s ease-in-out infinite;
+        box-shadow: 0 0 12px rgba(255, 149, 0, 0.6); /* Match header exactly */
+        animation: connectionOnline 1.5s ease-in-out infinite; /* Use same working keyframes, slightly faster */
     }
     
     .service-status.checking .connection-indicator::before {
         background: #ff9500;
-        animation: connectionCheckingRing 1.5s ease-in-out infinite;
+        animation: connectionPulse 1.5s ease-in-out infinite; /* Use same working keyframes, slightly faster */
     }
 
     /* Connection Status Text */
@@ -591,7 +602,7 @@
             <div class="service-content">
                 <h4>
                     User Interface
-                    <div class="service-status online">
+                    <div class="service-status online" id="ui-status">
                         <div class="connection-indicator"></div>
                         <span class="connection-text">Online</span>
                     </div>
@@ -1028,22 +1039,95 @@
             
                          const serviceStatus = servicesStatus[serviceName];
             
-            // Special handling for gateway service - use overall status
-            const status = (serviceName === 'gateway-service') ? overallStatus : serviceStatus;
+            // Special handling for gateway service - use same logic as header
+            let status;
+            if (serviceName === 'gateway-service') {
+                // Count services to determine if it's fully offline vs degraded
+                let onlineServices = 0;
+                let totalServices = 0;
+                
+                for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
+                    totalServices++;
+                    if (svcStatus === 'healthy') {
+                        onlineServices++;
+                    }
+                }
+                
+                if (onlineServices === 0) {
+                    status = 'unhealthy'; // ALL services offline = gateway offline
+                } else if (onlineServices < totalServices) {
+                    status = 'degraded'; // SOME services offline = gateway degraded  
+                } else {
+                    status = 'healthy'; // ALL services online = gateway online
+                }
+                
+                console.log(`🚪 Gateway card status: ${onlineServices}/${totalServices} services online → ${status}`);
+            } else {
+                status = serviceStatus;
+            }
              
              if (status === 'healthy') {
                  statusElement.className = 'service-status online';
-                 statusElement.innerHTML = '<i class="fas fa-check-circle me-1"></i>';
+                 const textElement = statusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Online';
              } else if (status === 'degraded') {
                  statusElement.className = 'service-status degraded';
-                 statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>';
+                 const textElement = statusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Degraded';
              } else if (status === 'unhealthy') {
                  statusElement.className = 'service-status offline';
-                 statusElement.innerHTML = '<i class="fas fa-times-circle me-1"></i>';
+                 const textElement = statusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Offline';
                 } else {
                  statusElement.className = 'service-status checking';
-                 statusElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>';
+                 const textElement = statusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Checking';
              }
+         }
+         
+         // Update UI status to mirror Gateway status  
+         const uiStatusElement = document.getElementById('ui-status');
+         if (uiStatusElement) {
+             const gatewayStatus = servicesStatus['gateway-service'];
+             
+             // Use same counting logic as gateway card
+             let onlineServices = 0;
+             let totalServices = 0;
+             
+             for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
+                 totalServices++;
+                 if (svcStatus === 'healthy') {
+                     onlineServices++;
+                 }
+             }
+             
+             let uiStatus;
+             if (onlineServices === 0) {
+                 uiStatus = 'unhealthy'; // ALL services offline = UI offline
+             } else if (onlineServices < totalServices) {
+                 uiStatus = 'degraded'; // SOME services offline = UI degraded  
+             } else {
+                 uiStatus = 'healthy'; // ALL services online = UI online
+             }
+             
+             if (uiStatus === 'healthy') {
+                 uiStatusElement.className = 'service-status online';
+                 const textElement = uiStatusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Online';
+             } else if (uiStatus === 'degraded') {
+                 uiStatusElement.className = 'service-status degraded';
+                 const textElement = uiStatusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Degraded';
+             } else if (uiStatus === 'unhealthy') {
+                 uiStatusElement.className = 'service-status offline';
+                 const textElement = uiStatusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Offline';
+             } else {
+                 uiStatusElement.className = 'service-status checking';
+                 const textElement = uiStatusElement.querySelector('.connection-text');
+                 if (textElement) textElement.textContent = 'Checking';
+             }
+             console.log(`🖥️  UI status updated to mirror system: ${uiStatus}`);
          }
          
                  console.log('✅ Services dashboard updated');
@@ -1055,7 +1139,7 @@
             {
                 lineClass: '.service-connection:nth-of-type(2) .connection-line',
                 dotId: 'ui-gateway-dot',
-                status: overallStatus // UI to Gateway connection
+                status: servicesStatus['gateway-service'] || 'unhealthy' // UI mirrors Gateway status
             },
             {
                 lineClass: '.service-connection:nth-of-type(4) .connection-line', 
