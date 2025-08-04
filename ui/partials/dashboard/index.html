@@ -171,100 +171,51 @@
         opacity: 0.3;
     }
 
-    /* Online - Steady green with subtle pulse */
+    /* Animations moved to dashboard.html for global availability */
+    
+    /* Service card connection indicators - enhanced colors to match header */
     .service-status.online .connection-indicator {
-        background: #28a745;
-        box-shadow: 0 0 6px rgba(40, 167, 69, 0.4);
+        background: #00d851; /* Vibrant green to match header */
+        box-shadow: 0 0 8px rgba(0, 216, 81, 0.5);
         animation: connectionOnline 2s ease-in-out infinite;
     }
-
+    
     .service-status.online .connection-indicator::before {
-        background: #28a745;
+        background: #00d851;
         animation: connectionPulse 2s ease-in-out infinite;
     }
-
-    /* Checking - Pulsing orange */
-    .service-status.checking .connection-indicator {
-        background: #ffc107;
-        animation: connectionChecking 1.5s ease-in-out infinite;
-    }
-
-    .service-status.checking .connection-indicator::before {
-        background: #ffc107;
-        animation: connectionCheckingRing 1.5s ease-in-out infinite;
-    }
-
-    /* Offline - Steady red with slow flash */
+    
     .service-status.offline .connection-indicator {
-        background: #dc3545;
+        background: #ff1744; /* Vibrant red to match header */
+        box-shadow: 0 0 8px rgba(255, 23, 68, 0.5);
         animation: connectionOffline 3s ease-in-out infinite;
     }
-
+    
     .service-status.offline .connection-indicator::before {
-        background: #dc3545;
+        background: #ff1744;
         animation: connectionOfflineRing 3s ease-in-out infinite;
     }
-
-    /* Degraded - Alternating yellow/orange */
+    
     .service-status.degraded .connection-indicator {
-        background: #ffc107;
+        background: #ff9500; /* Vibrant orange to match header */
+        box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
         animation: connectionDegraded 2s ease-in-out infinite;
     }
-
+    
     .service-status.degraded .connection-indicator::before {
-        background: #ffc107;
+        background: #ff9500;
         animation: connectionDegradedRing 2s ease-in-out infinite;
     }
-
-    /* Connection Status Animations */
-    @keyframes connectionOnline {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.1); opacity: 0.9; }
+    
+    .service-status.checking .connection-indicator {
+        background: #ff9500; /* Vibrant orange to match header */
+        box-shadow: 0 0 8px rgba(255, 149, 0, 0.5);
+        animation: connectionChecking 1.5s ease-in-out infinite;
     }
-
-    @keyframes connectionPulse {
-        0% { transform: scale(1); opacity: 0.3; }
-        50% { transform: scale(1.8); opacity: 0; }
-        100% { transform: scale(1); opacity: 0.3; }
-    }
-
-    @keyframes connectionChecking {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        25% { transform: scale(1.2); opacity: 0.7; }
-        50% { transform: scale(0.8); opacity: 1; }
-        75% { transform: scale(1.2); opacity: 0.7; }
-    }
-
-    @keyframes connectionCheckingRing {
-        0% { transform: scale(1); opacity: 0.4; }
-        50% { transform: scale(2.2); opacity: 0; }
-        100% { transform: scale(1); opacity: 0.4; }
-    }
-
-    @keyframes connectionOffline {
-        0%, 85% { opacity: 1; }
-        90%, 95% { opacity: 0.3; }
-        100% { opacity: 1; }
-    }
-
-    @keyframes connectionOfflineRing {
-        0%, 85% { transform: scale(1); opacity: 0.2; }
-        90% { transform: scale(1.5); opacity: 0.4; }
-        95% { transform: scale(1.8); opacity: 0; }
-        100% { transform: scale(1); opacity: 0.2; }
-    }
-
-    @keyframes connectionDegraded {
-        0%, 50% { background: #ffc107; }
-        51%, 100% { background: #fd7e14; }
-    }
-
-    @keyframes connectionDegradedRing {
-        0% { transform: scale(1); opacity: 0.3; }
-        25% { transform: scale(1.6); opacity: 0.1; }
-        50% { transform: scale(1); opacity: 0.3; }
-        75% { transform: scale(1.6); opacity: 0.1; }
-        100% { transform: scale(1); opacity: 0.3; }
+    
+    .service-status.checking .connection-indicator::before {
+        background: #ff9500;
+        animation: connectionCheckingRing 1.5s ease-in-out infinite;
     }
 
     /* Connection Status Text */

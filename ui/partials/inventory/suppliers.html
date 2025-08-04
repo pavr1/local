@@ -146,7 +146,7 @@
         <h3 class="table-title">
             <i class="fas fa-truck me-2"></i>Suppliers Management
         </h3>
-        <button class="btn btn-add-supplier" onclick="openAddSupplierModal()">
+        <button class="btn btn-add-supplier" onclick="openModal('AddSupplierModal')">
             <i class="fas fa-plus me-2"></i>Add Supplier
         </button>
     </div>
@@ -275,7 +275,7 @@
                     <i class="fas fa-truck empty-state-icon"></i>
                     <h5>No Suppliers Found</h5>
                     <p class="text-muted">No suppliers have been added yet.</p>
-                    <button class="btn btn-primary" onclick="openAddSupplierModal()">
+                    <button class="btn btn-primary" onclick="openModal('AddSupplierModal')">
                         <i class="fas fa-plus me-2"></i>Add First Supplier
                     </button>
                 </div>
@@ -351,6 +351,17 @@
         const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
         modal.show();
     }
+
+    // Expose modal functions globally using the generic naming convention
+    // Pattern: window.open[ModalId] = function
+    window.openAddSupplierModal = openAddSupplierModal;
+    
+    // Future modal examples:
+    // window.openEditSupplierModal = editSupplierModal;
+    // window.openDeleteSupplierModal = deleteSupplierModal;
+    // window.openViewSupplierModal = viewSupplierModal;
+    
+    console.log('✅ Suppliers modal functions exposed globally');
 
     function resetSupplierForm() {
         const form = document.getElementById('addSupplierForm');
@@ -459,10 +470,46 @@
     }
 
     function viewSupplier(supplierId) {
+        // Future implementation: openModal('ViewSupplierModal');
         Alert.comingSoon('View Supplier Details');
     }
 
     function editSupplier(supplierId) {
+        // Future implementation: openModal('EditSupplierModal');
         Alert.comingSoon('Edit Supplier');
     }
+
+    // Expose additional functions globally for onclick handlers
+    window.viewSupplier = viewSupplier;
+    window.editSupplier = editSupplier;
+    window.saveSupplier = saveSupplier;
+    
+    /* 
+    ===========================================
+    GENERIC MODAL SYSTEM USAGE EXAMPLES
+    ===========================================
+    
+    1. FROM HTML (onclick handlers):
+       <button onclick="openModal('AddSupplierModal')">Add Supplier</button>
+       <button onclick="openModal('EditSupplierModal', 'inventory-suppliers')">Edit</button>
+    
+    2. FROM JAVASCRIPT (programmatic):
+       window.openModal('AddSupplierModal'); // On current page
+       window.openModal('AddIngredientModal', 'inventory-ingredients'); // Navigate first
+    
+    3. IMPLEMENTING NEW MODALS:
+       a) Create the modal function:
+          function openMyNewModal() { ... }
+       
+       b) Expose it globally:
+          window.openMyNewModal = openMyNewModal;
+       
+       c) Use in HTML:
+          <button onclick="openModal('MyNewModal')">Open</button>
+    
+    4. MODAL NAMING CONVENTION:
+       - Function name: openAddSupplierModal, openEditSupplierModal, etc.
+       - Modal ID for openModal(): 'AddSupplierModal', 'EditSupplierModal', etc.
+       - The system looks for window['open' + modalId]
+    */
 </script> 

@@ -217,47 +217,200 @@
 
         /* System Status - Online */
         .system-status-indicator.online .connection-indicator {
-            background: #28a745;
-            box-shadow: 0 0 8px rgba(40, 167, 69, 0.5);
+            background: #00d851; /* More vibrant green */
+            box-shadow: 0 0 12px rgba(0, 216, 81, 0.6);
             animation: connectionOnline 2s ease-in-out infinite;
         }
 
         .system-status-indicator.online .connection-indicator::before {
-            background: #28a745;
+            background: #00d851; /* More vibrant green */
             animation: connectionPulse 2s ease-in-out infinite;
         }
 
         /* System Status - Checking */
         .system-status-indicator.checking .connection-indicator {
-            background: #ffc107;
+            background: #ff9500; /* More vibrant orange */
+            box-shadow: 0 0 12px rgba(255, 149, 0, 0.6);
             animation: connectionChecking 1.5s ease-in-out infinite;
         }
 
         .system-status-indicator.checking .connection-indicator::before {
-            background: #ffc107;
+            background: #ff9500; /* More vibrant orange */
             animation: connectionCheckingRing 1.5s ease-in-out infinite;
         }
 
         /* System Status - Offline */
         .system-status-indicator.offline .connection-indicator {
-            background: #dc3545;
+            background: #ff1744; /* More vibrant red */
+            box-shadow: 0 0 12px rgba(255, 23, 68, 0.6);
             animation: connectionOffline 3s ease-in-out infinite;
         }
 
         .system-status-indicator.offline .connection-indicator::before {
-            background: #dc3545;
+            background: #ff1744; /* More vibrant red */
             animation: connectionOfflineRing 3s ease-in-out infinite;
         }
 
         /* System Status - Degraded */
         .system-status-indicator.degraded .connection-indicator {
-            background: #ffc107;
+            background: #ff9500; /* More vibrant orange */
+            box-shadow: 0 0 12px rgba(255, 149, 0, 0.6);
             animation: connectionDegraded 2s ease-in-out infinite;
         }
 
         .system-status-indicator.degraded .connection-indicator::before {
-            background: #ffc107;
+            background: #ff9500; /* More vibrant orange */
             animation: connectionDegradedRing 2s ease-in-out infinite;
+        }
+
+        /* Enhanced Connection Status Animations - Global for all pages */
+        @keyframes connectionOnline {
+            0%, 100% { 
+                transform: scale(1); 
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            50% { 
+                transform: scale(1.15); 
+                opacity: 0.85;
+                filter: brightness(1.3) saturate(1.2);
+            }
+        }
+
+        @keyframes connectionPulse {
+            0% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(1.9); 
+                opacity: 0;
+                filter: brightness(1.5);
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+        }
+
+        @keyframes connectionChecking {
+            0%, 100% { 
+                transform: scale(1); 
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            25% { 
+                transform: scale(1.2); 
+                opacity: 0.75;
+                filter: brightness(1.2) saturate(1.3);
+            }
+            50% { 
+                transform: scale(0.9); 
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            75% { 
+                transform: scale(1.2); 
+                opacity: 0.75;
+                filter: brightness(1.2) saturate(1.3);
+            }
+        }
+
+        @keyframes connectionCheckingRing {
+            0% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(2.2); 
+                opacity: 0;
+                filter: brightness(1.3);
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+        }
+
+        @keyframes connectionOffline {
+            0%, 85% { 
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+            90%, 95% { 
+                opacity: 0.4;
+                filter: brightness(1.2) saturate(0.8);
+            }
+            100% { 
+                opacity: 1;
+                filter: brightness(1) saturate(1);
+            }
+        }
+
+        @keyframes connectionOfflineRing {
+            0%, 85% { 
+                transform: scale(1); 
+                opacity: 0.3;
+                filter: brightness(1);
+            }
+            90% { 
+                transform: scale(1.5); 
+                opacity: 0.5;
+                filter: brightness(1.3);
+            }
+            95% { 
+                transform: scale(1.8); 
+                opacity: 0;
+                filter: brightness(1.3);
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 0.3;
+                filter: brightness(1);
+            }
+        }
+
+        @keyframes connectionDegraded {
+            0%, 50% { 
+                opacity: 1;
+                filter: brightness(1) hue-rotate(0deg);
+            }
+            51%, 100% { 
+                opacity: 0.7;
+                filter: brightness(1.2) hue-rotate(15deg);
+            }
+        }
+
+        @keyframes connectionDegradedRing {
+            0% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+            25% { 
+                transform: scale(1.6); 
+                opacity: 0.2;
+                filter: brightness(1.2);
+            }
+            50% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
+            75% { 
+                transform: scale(1.6); 
+                opacity: 0.2;
+                filter: brightness(1.2);
+            }
+            100% { 
+                transform: scale(1); 
+                opacity: 0.4;
+                filter: brightness(1);
+            }
         }
 
         .header-time {
@@ -1015,6 +1168,92 @@
             loadContent(route);
         };
 
+        /*
+        ===========================================
+        GENERIC MODAL MANAGEMENT SYSTEM
+        ===========================================
+        
+        This system allows you to open modals from any page without worrying about:
+        - Function not being defined yet (ReferenceError)
+        - Need to navigate to specific pages first
+        - Code duplication for modal management
+        
+        USAGE:
+        1. HTML: <button onclick="openModal('ModalName', 'required-page')">
+        2. JS: window.openModal('ModalName', 'required-page')
+        
+        FEATURES:
+        - Auto-navigation to required pages
+        - Smart waiting for functions to be defined
+        - Backward compatibility with existing code
+        - Debug helpers: listAvailableModals(), registerModal()
+        */
+        window.openModal = function(modalId, requiredPage = null) {
+            console.log(`📝 openModal called for: ${modalId}, required page: ${requiredPage}`);
+            
+            // If a specific page is required and we're not on it, navigate first
+            if (requiredPage && currentPage !== requiredPage) {
+                console.log(`🔄 Navigating to ${requiredPage} page first...`);
+                loadContent(requiredPage).then(() => {
+                    // After page loads, wait for the modal functions to be defined
+                    setTimeout(() => {
+                        const modalFunction = window[`open${modalId}`];
+                        if (modalFunction && typeof modalFunction === 'function') {
+                            console.log(`✅ Modal function open${modalId} found, calling it...`);
+                            modalFunction();
+                        } else {
+                            console.warn(`⚠️ Modal function open${modalId} not found after page load`);
+                            Alert.warning('Modal Not Ready', 'Please wait for the page to fully load and try again.');
+                        }
+                    }, 500);
+                });
+            } else {
+                // Already on correct page or no specific page required, try to open modal directly
+                console.log(`📋 Attempting to open modal ${modalId} on current page...`);
+                const modalFunction = window[`open${modalId}`];
+                if (modalFunction && typeof modalFunction === 'function') {
+                    console.log(`✅ Modal function open${modalId} found, calling it...`);
+                    modalFunction();
+                } else {
+                    // Function not yet loaded, wait a bit
+                    setTimeout(() => {
+                        const modalFunction = window[`open${modalId}`];
+                        if (modalFunction && typeof modalFunction === 'function') {
+                            console.log(`✅ Modal function open${modalId} found after wait, calling it...`);
+                            modalFunction();
+                        } else {
+                            console.warn(`⚠️ Modal function open${modalId} not found after timeout`);
+                            Alert.warning('Modal Not Ready', 'Please wait for the page to fully load and try again.');
+                        }
+                    }, 500);
+                }
+            }
+        };
+
+        // Backward compatibility wrapper for existing onclick handlers
+        window.openAddSupplierModal = function() {
+            window.openModal('AddSupplierModal', 'inventory-suppliers');
+        };
+
+        // Debug helper to list all available modal functions
+        window.listAvailableModals = function() {
+            const modalFunctions = Object.keys(window).filter(key => 
+                key.startsWith('open') && key.endsWith('Modal') && typeof window[key] === 'function'
+            );
+            console.log('📋 Available modal functions:', modalFunctions);
+            return modalFunctions;
+        };
+
+        // Helper function for developers to register new modals easily
+        window.registerModal = function(modalId, modalFunction, requiredPage = null) {
+            const functionName = `open${modalId}`;
+            window[functionName] = modalFunction;
+            console.log(`✅ Modal registered: ${functionName}${requiredPage ? ` (requires page: ${requiredPage})` : ''}`);
+            
+            // Return a convenient onclick handler string
+            return `openModal('${modalId}'${requiredPage ? `, '${requiredPage}'` : ''})`;
+        };
+
         // Auto-refresh system health status every 2 seconds for real-time updates
         let healthCheckInterval = null;
         
@@ -1227,8 +1466,8 @@
                     console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
                 }
                 
-                // Also disable management buttons
-                updateServiceButtons(serviceId, false);
+                // Also disable management buttons (assume database is also down when gateway is unreachable)
+                updateServiceButtons(serviceId, false, false);
             });
             
             // Update architecture diagram if present
@@ -1533,9 +1772,9 @@
             const stopBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'stop'"]`);
             const restartBtn = document.querySelector(`button[onclick*="manageService('${servicePrefix}-service', 'restart'"]`);
             
-            // Business services that depend on database
-            const businessServices = ['session', 'orders', 'inventory', 'invoice'];
-            const isBusinessService = businessServices.includes(servicePrefix);
+            // Services that depend on database (including gateway since it routes to business services)
+            const databaseDependentServices = ['session', 'orders', 'inventory', 'invoice', 'gateway'];
+            const isDatabaseDependent = databaseDependentServices.includes(servicePrefix);
             
             if (startBtn && stopBtn && restartBtn) {
                 // Helper function to safely update button if not in animation state
@@ -1560,8 +1799,8 @@
                     safeUpdateButton(restartBtn, false, '(service online)');
                 } else {
                     // Service is offline
-                    if (isBusinessService && !dataServiceHealthy) {
-                        // Business service is down AND database is down: disable all buttons
+                    if (isDatabaseDependent && !dataServiceHealthy) {
+                        // Database-dependent service is down AND database is down: disable all buttons
                         safeUpdateButton(startBtn, true, '(database down - cannot start)');
                         safeUpdateButton(stopBtn, true, '(service offline)');
                         safeUpdateButton(restartBtn, true, '(database down - cannot restart)');
@@ -1573,7 +1812,7 @@
                     }
                 }
                 
-                console.log(`🔧 Service buttons updated for ${servicePrefix}-service: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy ? 'healthy' : 'down'})`);
+                console.log(`🔧 Service buttons updated for ${servicePrefix}-service: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy ? 'healthy' : 'down'}${isDatabaseDependent ? ' - DB dependent' : ' - Independent'})`);
             }
         }
 
@@ -1596,7 +1835,20 @@
             
             for (const [gatewayServiceName, servicePrefix] of Object.entries(serviceMapping)) {
                 const serviceStatus = servicesStatus[gatewayServiceName];
-                const isOnline = serviceStatus === 'healthy';
+                
+                // Special handling for gateway - its button state should match its card status
+                // Gateway buttons should be disabled when system is degraded (not just when gateway service is down)
+                let isOnline;
+                if (servicePrefix === 'gateway') {
+                    // For gateway, use overall system health instead of individual service status
+                    // If any critical service is down (especially database), gateway should be considered offline for button purposes
+                    isOnline = dataServiceHealthy && serviceStatus === 'healthy';
+                    console.log(`🚪 Gateway button status: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy}, Gateway: ${serviceStatus})`);
+                } else {
+                    // For all other services, use individual service status
+                    isOnline = serviceStatus === 'healthy';
+                }
+                
                 updateServiceButtons(servicePrefix, isOnline, dataServiceHealthy);
             }
         }
