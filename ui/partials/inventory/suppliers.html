@@ -18,6 +18,12 @@
         align-items: center;
     }
 
+    .table-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
     .btn-add-supplier {
         background: var(--white);
         color: var(--primary-color);
@@ -32,12 +38,44 @@
         background: var(--primary-light);
         transform: translateY(-2px);
     }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        opacity: 0.6;
+    }
+
+    .error-state-icon {
+        font-size: 2.5rem;
+        color: var(--danger-color);
+        margin-bottom: 1rem;
+        opacity: 0.7;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid var(--primary-light);
+        border-top: 3px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 
 <!-- Suppliers Table -->
 <div class="suppliers-table">
     <div class="table-header">
-
+        <h3 class="table-title">
+            <i class="fas fa-truck me-2"></i>Suppliers Management
+        </h3>
         <button class="btn btn-add-supplier" onclick="Alert.comingSoon('Add Supplier')">
             <i class="fas fa-plus me-2"></i>Add Supplier
         </button>
@@ -94,8 +132,8 @@
         if (!suppliers || suppliers.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
-        
-                    
+                    <i class="fas fa-truck empty-state-icon"></i>
+                    <h5>No Suppliers Found</h5>
                     <p class="text-muted">No suppliers have been added yet.</p>
                     <button class="btn btn-primary" onclick="Alert.comingSoon('Add First Supplier')">
                         <i class="fas fa-plus me-2"></i>Add First Supplier
@@ -157,8 +195,8 @@
         const container = document.getElementById('suppliersTableContainer');
         container.innerHTML = `
             <div class="text-center py-5">
-    
-                
+                <i class="fas fa-exclamation-triangle error-state-icon"></i>
+                <h5>Unable to Load Suppliers</h5>
                 <p class="text-muted">${message}</p>
                 <button class="btn btn-primary" onclick="loadSuppliersData()">
                     <i class="fas fa-refresh me-2"></i>Retry

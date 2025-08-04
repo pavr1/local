@@ -440,6 +440,11 @@ body {
     transform: translateY(-2px) !important;
 }
 
+.btn-outline-info:hover i,
+.btn-outline-info:hover .fas {
+    color: var(--white) !important;
+}
+
 .btn-outline-warning {
     background: transparent !important;
     border: 2px solid var(--warning-color) !important;
@@ -453,6 +458,31 @@ body {
     background: var(--warning-color) !important;
     color: var(--white) !important;
     transform: translateY(-2px) !important;
+}
+
+.btn-outline-warning:hover i,
+.btn-outline-warning:hover .fas {
+    color: var(--white) !important;
+}
+
+.btn-outline-danger {
+    background: transparent !important;
+    border: 2px solid var(--danger-color) !important;
+    color: var(--danger-color) !important;
+    border-radius: var(--border-radius) !important;
+    font-weight: 600 !important;
+    transition: var(--transition) !important;
+}
+
+.btn-outline-danger:hover {
+    background: var(--danger-color) !important;
+    color: var(--white) !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-outline-danger:hover i,
+.btn-outline-danger:hover .fas {
+    color: var(--white) !important;
 }
 
 .btn-outline-secondary {
@@ -470,11 +500,121 @@ body {
     transform: translateY(-2px) !important;
 }
 
+.btn-outline-secondary:hover i,
+.btn-outline-secondary:hover .fas {
+    color: var(--white) !important;
+}
+
+/* Universal Bootstrap outline button icon fixes for ALL partials */
+.btn-outline-primary:hover i,
+.btn-outline-primary:hover .fas {
+    color: var(--white) !important;
+}
+
+.btn-outline-success:hover i,
+.btn-outline-success:hover .fas {
+    color: var(--white) !important;
+}
+
+/* Feature button specific overrides for partial pages */
+.feature-btn {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+.feature-btn:hover i,
+.feature-btn:hover .fas {
+    color: var(--white) !important;
+}
+
+/* Action button overrides */
+.action-btn {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+.action-btn:hover i,
+.action-btn:hover .fas {
+    color: var(--white) !important;
+}
+
+/* UNIVERSAL CATCH-ALL: Any Bootstrap outline button with icons - ensures ALL partials work */
+[class*="btn-outline"]:hover i,
+[class*="btn-outline"]:hover .fas,
+[class*="btn-outline"]:hover .fa {
+    color: var(--white) !important;
+}
+
+/* === DASHBOARD CONTEXT MENU STYLES === */
+
+/* Service Context Menu for Dashboard */
+.service-context-menu {
+    position: fixed;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-heavy);
+    z-index: 1000;
+    padding: 0;
+    min-width: 180px;
+    display: none;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.context-menu-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.context-menu-item:last-child {
+    border-bottom: none;
+}
+
+.context-menu-item:hover {
+    background-color: var(--primary-light);
+}
+
+.context-menu-item:hover i {
+    color: var(--primary-color) !important;
+}
+
+.context-menu-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.context-menu-item.disabled:hover {
+    background-color: white;
+}
+
+.context-menu-item i {
+    width: 16px;
+}
+
+.context-menu-header {
+    padding: 8px 16px;
+    background: var(--gradient-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin: 0;
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
 /* Small buttons */
 .btn-sm {
     padding: 0.5rem 1rem !important;
     font-size: 0.875rem !important;
-}
+} 
 
 /* === LOGOUT BUTTON STYLES === */
 

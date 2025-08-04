@@ -573,6 +573,11 @@
             // Load initial dashboard content
             await loadContent('dashboard');
             
+            // Initialize dynamic connections for architecture diagram
+            if (window.initializeDynamicConnections) {
+                window.initializeDynamicConnections();
+            }
+            
             // Start automatic health monitoring
             startHealthMonitoring();
             
@@ -973,31 +978,31 @@
                 // Special handling for gateway service - should reflect overall system status
                 if (cardId === 'gateway') {
                     if (overallStatus === 'healthy') {
-                        statusElement.className = 'service-status status-online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                        statusElement.className = 'service-status online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>';
                         console.log(`✅ ${cardId} card: Online (system healthy)`);
                     } else if (overallStatus === 'degraded') {
-                        statusElement.className = 'service-status status-warning';
-                        statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Degraded';
+                        statusElement.className = 'service-status degraded';
+                        statusElement.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>';
                         console.log(`⚠️  ${cardId} card: Degraded (system degraded)`);
                     } else {
-                        statusElement.className = 'service-status status-offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                        statusElement.className = 'service-status offline';
+                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
                         console.log(`❌ ${cardId} card: Offline`);
                     }
                 } else {
                     // For all other services, use individual service status
                     if (serviceStatus === 'healthy') {
-                        statusElement.className = 'service-status status-online';
-                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>Online';
+                        statusElement.className = 'service-status online';
+                        statusElement.innerHTML = '<i class="fas fa-check-circle me-2"></i>';
                         console.log(`✅ ${cardId} card: Online`);
                     } else if (serviceStatus === 'unhealthy') {
-                        statusElement.className = 'service-status status-offline';
-                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                        statusElement.className = 'service-status offline';
+                        statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
                         console.log(`❌ ${cardId} card: Offline`);
                     } else {
-                        statusElement.className = 'service-status status-warning';
-                        statusElement.innerHTML = '<i class="fas fa-question-circle me-2"></i>Unknown';
+                        statusElement.className = 'service-status degraded';
+                        statusElement.innerHTML = '<i class="fas fa-question-circle me-2"></i>';
                         console.log(`⚠️  ${cardId} card: Unknown status`);
                     }
                 }
@@ -1006,6 +1011,11 @@
             // Update architecture diagram if present
             if (typeof window.updateArchitectureStatus === 'function') {
                 window.updateArchitectureStatus(servicesStatus, overallStatus);
+            }
+            
+            // Update connection lines and dots if present
+            if (typeof window.updateConnectionLines === 'function') {
+                window.updateConnectionLines(servicesStatus, overallStatus);
             }
             
             // Update service management buttons based on current status
@@ -1019,8 +1029,8 @@
             serviceIds.forEach(serviceId => {
                 const statusElement = document.getElementById(`${serviceId}-status`);
                 if (statusElement) {
-                    statusElement.className = 'service-status status-offline';
-                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>Offline';
+                    statusElement.className = 'service-status offline';
+                    statusElement.innerHTML = '<i class="fas fa-times-circle me-2"></i>';
                     console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
                 }
                 
