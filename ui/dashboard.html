@@ -1240,11 +1240,6 @@
             }
         };
 
-        // Backward compatibility wrapper for existing onclick handlers
-        window.openAddSupplierModal = function() {
-            window.openModal('AddSupplierModal', 'inventory-suppliers');
-        };
-
         // Debug helper to list all available modal functions
         window.listAvailableModals = function() {
             const modalFunctions = Object.keys(window).filter(key => 

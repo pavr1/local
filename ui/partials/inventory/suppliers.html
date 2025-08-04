@@ -12,16 +12,10 @@
     .table-header {
         background: var(--primary-color);
         color: var(--white);
-        padding: 1.5rem 2rem;
+        padding: 1rem 2rem;
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start; /* Changed from space-between to left-align the button */
         align-items: center;
-    }
-
-    .table-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0;
     }
 
     .btn-add-supplier {
@@ -143,10 +137,7 @@
 <!-- Suppliers Table -->
 <div class="suppliers-table">
     <div class="table-header">
-        <h3 class="table-title">
-            <i class="fas fa-truck me-2"></i>Suppliers Management
-        </h3>
-        <button class="btn btn-add-supplier" onclick="openModal('AddSupplierModal')">
+        <button class="btn btn-add-supplier" onclick="openModal('AddSupplierModal', 'inventory-suppliers')">
             <i class="fas fa-plus me-2"></i>Add Supplier
         </button>
     </div>
@@ -248,8 +239,8 @@
         console.log('📥 Loading suppliers data...');
         
         try {
-            const serviceUrls = getServiceUrls();
-            const response = await fetch(`${serviceUrls.inventory}/api/v1/inventory/suppliers?limit=1000`);
+            // Use CONFIG object instead of undefined getServiceUrls function
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers?limit=1000`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -275,7 +266,7 @@
                     <i class="fas fa-truck empty-state-icon"></i>
                     <h5>No Suppliers Found</h5>
                     <p class="text-muted">No suppliers have been added yet.</p>
-                    <button class="btn btn-primary" onclick="openModal('AddSupplierModal')">
+                    <button class="btn btn-primary" onclick="openModal('AddSupplierModal', 'inventory-suppliers')">
                         <i class="fas fa-plus me-2"></i>Add First Supplier
                     </button>
                 </div>
@@ -352,17 +343,16 @@
         modal.show();
     }
 
-    // Expose modal functions globally using the generic naming convention
-    // Pattern: window.open[ModalId] = function
+    // Expose modal functions globally IMMEDIATELY for parent's openModal to find
+    // This must happen synchronously when script loads
     window.openAddSupplierModal = openAddSupplierModal;
+    console.log('✅ Suppliers modal functions exposed globally');
     
     // Future modal examples:
     // window.openEditSupplierModal = editSupplierModal;
     // window.openDeleteSupplierModal = deleteSupplierModal;
     // window.openViewSupplierModal = viewSupplierModal;
     
-    console.log('✅ Suppliers modal functions exposed globally');
-
     function resetSupplierForm() {
         const form = document.getElementById('addSupplierForm');
         form.reset();
@@ -426,8 +416,8 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         
         try {
-            const serviceUrls = getServiceUrls();
-            const response = await fetch(`${serviceUrls.inventory}/api/v1/inventory/suppliers`, {
+            // Use CONFIG object instead of undefined getServiceUrls function
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -512,4 +502,22 @@
        - Modal ID for openModal(): 'AddSupplierModal', 'EditSupplierModal', etc.
        - The system looks for window['open' + modalId]
     */
+
+    // Auto-initialize when script loads
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.initSuppliersContent) {
+            window.initSuppliersContent();
+        }
+    });
+
+    // Also initialize immediately if DOM is already ready
+    if (document.readyState === 'loading') {
+        // DOM still loading, wait for DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.initSuppliersContent();
+        });
+    } else {
+        // DOM already loaded, initialize immediately
+        window.initSuppliersContent();
+    }
 </script> 
