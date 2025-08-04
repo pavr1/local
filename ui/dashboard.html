@@ -1328,9 +1328,6 @@
             systemStatusIcon.classList.add('status-breathing');
             
             // Add visual indication during refresh
-            if (!isAutoRefresh) {
-                systemStatusText.textContent = 'Refreshing...';
-            }
             
             try {
                 const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '🔍';
