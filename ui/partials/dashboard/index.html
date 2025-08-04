@@ -1039,29 +1039,43 @@
             
                          const serviceStatus = servicesStatus[serviceName];
             
-            // Special handling for gateway service - use same logic as header
+            // Special handling for gateway service - improved recovery logic
             let status;
             if (serviceName === 'gateway-service') {
-                // Count services to determine if it's fully offline vs degraded
-                let onlineServices = 0;
-                let totalServices = 0;
+                // Gateway status logic:
+                // - Online: Gateway service healthy AND all business services healthy
+                // - Degraded: Gateway service healthy BUT any business services down (recovery mode)
+                // - Offline: Gateway service itself is down/unreachable
                 
-                for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
-                    totalServices++;
-                    if (svcStatus === 'healthy') {
-                        onlineServices++;
-                    }
-                }
+                const gatewayServiceHealthy = serviceStatus === 'healthy';
                 
-                if (onlineServices === 0) {
-                    status = 'unhealthy'; // ALL services offline = gateway offline
-                } else if (onlineServices < totalServices) {
-                    status = 'degraded'; // SOME services offline = gateway degraded  
+                if (!gatewayServiceHealthy) {
+                    // Gateway service itself is down = offline (but buttons stay enabled for recovery)
+                    status = 'unhealthy';
+                    console.log('🚪 Gateway card: Service itself is down - showing offline');
                 } else {
-                    status = 'healthy'; // ALL services online = gateway online
+                    // Gateway service is healthy - check business services
+                    let onlineBusinessServices = 0;
+                    let totalBusinessServices = 0;
+                    
+                    // Count only business services (exclude gateway itself)
+                    for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
+                        if (svcName !== 'gateway-service') { // Don't count gateway itself
+                            totalBusinessServices++;
+                            if (svcStatus === 'healthy') {
+                                onlineBusinessServices++;
+                            }
+                        }
+                    }
+                    
+                    if (onlineBusinessServices === totalBusinessServices) {
+                        status = 'healthy'; // Gateway healthy + all business services healthy = online
+                    } else {
+                        status = 'degraded'; // Gateway healthy but business services down = degraded (recovery mode)
+                    }
+                    
+                    console.log(`🚪 Gateway card: Service healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${status}`);
                 }
-                
-                console.log(`🚪 Gateway card status: ${onlineServices}/${totalServices} services online → ${status}`);
             } else {
                 status = serviceStatus;
             }
@@ -1088,26 +1102,35 @@
          // Update UI status to mirror Gateway status  
          const uiStatusElement = document.getElementById('ui-status');
          if (uiStatusElement) {
-             const gatewayStatus = servicesStatus['gateway-service'];
-             
-             // Use same counting logic as gateway card
-             let onlineServices = 0;
-             let totalServices = 0;
-             
-             for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
-                 totalServices++;
-                 if (svcStatus === 'healthy') {
-                     onlineServices++;
-                 }
-             }
+             const gatewayServiceHealthy = servicesStatus['gateway-service'] === 'healthy';
              
              let uiStatus;
-             if (onlineServices === 0) {
-                 uiStatus = 'unhealthy'; // ALL services offline = UI offline
-             } else if (onlineServices < totalServices) {
-                 uiStatus = 'degraded'; // SOME services offline = UI degraded  
+             if (!gatewayServiceHealthy) {
+                 // Gateway service itself is down = UI offline (can't reach gateway)
+                 uiStatus = 'unhealthy';
+                 console.log('🖥️  UI status: Gateway unreachable - showing offline');
              } else {
-                 uiStatus = 'healthy'; // ALL services online = UI online
+                 // Gateway service is healthy - check business services for UI status
+                 let onlineBusinessServices = 0;
+                 let totalBusinessServices = 0;
+                 
+                 // Count only business services (exclude gateway itself)
+                 for (const [svcName, svcStatus] of Object.entries(servicesStatus)) {
+                     if (svcName !== 'gateway-service') { // Don't count gateway itself
+                         totalBusinessServices++;
+                         if (svcStatus === 'healthy') {
+                             onlineBusinessServices++;
+                         }
+                     }
+                 }
+                 
+                 if (onlineBusinessServices === totalBusinessServices) {
+                     uiStatus = 'healthy'; // All business services healthy = UI online
+                 } else {
+                     uiStatus = 'degraded'; // Some business services down = UI degraded
+                 }
+                 
+                 console.log(`🖥️  UI status: Gateway healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${uiStatus}`);
              }
              
              if (uiStatus === 'healthy') {
@@ -1127,7 +1150,6 @@
                  const textElement = uiStatusElement.querySelector('.connection-text');
                  if (textElement) textElement.textContent = 'Checking';
              }
-             console.log(`🖥️  UI status updated to mirror system: ${uiStatus}`);
          }
          
                  console.log('✅ Services dashboard updated');

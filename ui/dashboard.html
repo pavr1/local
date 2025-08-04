@@ -1362,40 +1362,18 @@
                         systemStatusElement.className = 'header-status';
                         console.log('✅ System Status: All services healthy');
                     } else if (healthData.status === 'degraded') {
-                        // Count services to determine if it's fully offline vs degraded
-                        let onlineServices = 0;
-                        let totalServices = 0;
-                        
-                        if (healthData.services) {
-                            for (const [serviceName, serviceStatus] of Object.entries(healthData.services)) {
-                                totalServices++;
-                                if (serviceStatus === 'healthy') {
-                                    onlineServices++;
-                                }
-                            }
-                        }
-                        
-                        console.log(`📊 Service Status: ${onlineServices}/${totalServices} services online`);
-                        
-                        if (onlineServices === 0) {
-                            // ALL services are offline = System Offline (red animation)
-                            systemStatusIcon.className = 'system-status-indicator offline';
-                            systemStatusText.textContent = 'System Offline';
-                            systemStatusElement.className = 'header-status header-status-error';
-                            console.log('🔴 System Status: ALL services offline - showing as offline');
-                        } else {
-                            // SOME services are offline = System Degraded (orange animation)  
-                            systemStatusIcon.className = 'system-status-indicator degraded';
-                            systemStatusText.textContent = 'System Degraded';
-                            systemStatusElement.className = 'header-status header-status-warning';
-                            console.log(`⚠️  System Status: ${totalServices - onlineServices} services down - showing as degraded`);
-                        }
+                        // Always show degraded when any services are down
+                        // Gateway remains operational for system recovery
+                        systemStatusIcon.className = 'system-status-indicator degraded';
+                        systemStatusText.textContent = 'System Degraded';
+                        systemStatusElement.className = 'header-status header-status-warning';
+                        console.log('⚠️  System Status: Services degraded - Gateway available for recovery');
                     } else {
-                        // Unknown status = treat as offline for safety
+                        // Unknown status or gateway completely unreachable = treat as offline for safety
                         systemStatusIcon.className = 'system-status-indicator offline';
                         systemStatusText.textContent = 'System Offline';
                         systemStatusElement.className = 'header-status header-status-error';
-                        console.log('🔴 System Status: Unknown status - showing as offline for safety');
+                        console.log('🔴 System Status: Gateway unreachable - showing as offline');
                     }
                     
                     // Update individual service cards if they exist (dashboard page)
