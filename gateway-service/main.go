@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -80,6 +81,12 @@ func main() {
 
 	// Gateway health check endpoint
 	api.HandleFunc("/health", healthHandler).Methods("GET")
+
+	// ==== SERVICE MANAGEMENT ENDPOINTS ====
+	managementRouter := api.PathPrefix("/management").Subrouter()
+	managementRouter.HandleFunc("/services/{service}/start", serviceStartHandler).Methods("POST")
+	managementRouter.HandleFunc("/services/{service}/stop", serviceStopHandler).Methods("POST")
+	managementRouter.HandleFunc("/services/{service}/restart", serviceRestartHandler).Methods("POST")
 
 	// ==== PURE PROXY ROUTING TO SERVICES ====
 
@@ -353,6 +360,208 @@ func checkDatabaseHealth(address string) bool {
 	}
 	defer conn.Close()
 	return true
+}
+
+// Service management handlers
+func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["service"]
+
+	var requestBody struct {
+		Environment string `json:"environment"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	environment := requestBody.Environment
+	if environment == "" {
+		environment = "locally" // Default
+	}
+
+	log.Printf("🔧 Starting %s service (environment: %s)", serviceName, environment)
+
+	// Execute make command based on environment
+	makeTarget := fmt.Sprintf("start-%s", environment)
+	success, output, err := executeServiceCommand(serviceName, makeTarget)
+
+	response := map[string]interface{}{
+		"service":     serviceName,
+		"action":      "start",
+		"environment": environment,
+		"success":     success,
+		"message":     fmt.Sprintf("Service %s start command executed", serviceName),
+		"output":      output,
+	}
+
+	if err != nil {
+		response["error"] = err.Error()
+		log.Printf("❌ Failed to start %s: %v", serviceName, err)
+	} else {
+		log.Printf("✅ Successfully executed start command for %s", serviceName)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if success {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["service"]
+
+	var requestBody struct {
+		Environment string `json:"environment"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	environment := requestBody.Environment
+	if environment == "" {
+		environment = "locally" // Default
+	}
+
+	log.Printf("🔧 Stopping %s service (environment: %s)", serviceName, environment)
+
+	// Execute make command based on environment
+	makeTarget := fmt.Sprintf("stop-%s", environment)
+	success, output, err := executeServiceCommand(serviceName, makeTarget)
+
+	response := map[string]interface{}{
+		"service":     serviceName,
+		"action":      "stop",
+		"environment": environment,
+		"success":     success,
+		"message":     fmt.Sprintf("Service %s stop command executed", serviceName),
+		"output":      output,
+	}
+
+	if err != nil {
+		response["error"] = err.Error()
+		log.Printf("❌ Failed to stop %s: %v", serviceName, err)
+	} else {
+		log.Printf("✅ Successfully executed stop command for %s", serviceName)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if success {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	serviceName := vars["service"]
+
+	var requestBody struct {
+		Environment string `json:"environment"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	environment := requestBody.Environment
+	if environment == "" {
+		environment = "locally" // Default
+	}
+
+	log.Printf("🔧 Restarting %s service (environment: %s)", serviceName, environment)
+
+	// For restart, we execute stop then start
+	stopTarget := fmt.Sprintf("stop-%s", environment)
+	startTarget := fmt.Sprintf("start-%s", environment)
+
+	// First stop the service
+	stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+
+	// Wait a moment for graceful shutdown
+	time.Sleep(2 * time.Second)
+
+	// Then start the service
+	startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget)
+
+	success := stopSuccess && startSuccess
+	output := fmt.Sprintf("Stop output: %s\nStart output: %s", stopOutput, startOutput)
+
+	response := map[string]interface{}{
+		"service":     serviceName,
+		"action":      "restart",
+		"environment": environment,
+		"success":     success,
+		"message":     fmt.Sprintf("Service %s restart command executed", serviceName),
+		"output":      output,
+	}
+
+	if stopErr != nil || startErr != nil {
+		var errMsg string
+		if stopErr != nil {
+			errMsg += fmt.Sprintf("Stop error: %v ", stopErr)
+		}
+		if startErr != nil {
+			errMsg += fmt.Sprintf("Start error: %v", startErr)
+		}
+		response["error"] = errMsg
+		log.Printf("❌ Failed to restart %s: %s", serviceName, errMsg)
+	} else {
+		log.Printf("✅ Successfully executed restart command for %s", serviceName)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if success {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+// Execute service command using make in the appropriate directory
+func executeServiceCommand(serviceName, makeTarget string) (bool, string, error) {
+	// Map service names to directories
+	serviceDirectories := map[string]string{
+		"data-service":      "data-service",
+		"gateway-service":   "gateway-service",
+		"session-service":   "session-service",
+		"orders-service":    "orders-service",
+		"inventory-service": "inventory-service",
+		"invoice-service":   "invoice-service",
+	}
+
+	serviceDir, exists := serviceDirectories[serviceName]
+	if !exists {
+		return false, "", fmt.Errorf("unknown service: %s", serviceName)
+	}
+
+	// Build the command
+	cmd := exec.Command("make", makeTarget)
+	cmd.Dir = fmt.Sprintf("../%s", serviceDir) // Relative to gateway-service directory
+
+	log.Printf("🔧 Executing: cd %s && make %s", serviceDir, makeTarget)
+
+	// Capture output
+	output, err := cmd.CombinedOutput()
+
+	if err != nil {
+		log.Printf("❌ Command failed: %v, output: %s", err, string(output))
+		return false, string(output), err
+	}
+
+	log.Printf("✅ Command succeeded, output: %s", string(output))
+	return true, string(output), nil
 }
 
 func getEnv(key, defaultValue string) string {

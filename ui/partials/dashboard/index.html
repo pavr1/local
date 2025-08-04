@@ -23,12 +23,11 @@
         padding: 2rem;
         text-align: center;
         transition: var(--transition);
-        cursor: pointer;
         border: 2px solid transparent;
-        min-height: 220px;
+        min-height: 280px;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
     }
 
     .service-card:hover {
@@ -64,6 +63,14 @@
     .service-card.secondary:hover {
         border-color: var(--secondary-color);
         background: rgba(108, 117, 125, 0.1);
+    }
+
+    .service-content {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        cursor: pointer;
     }
 
     .service-icon {
@@ -117,6 +124,7 @@
         border-radius: var(--border-radius);
         font-size: 0.9rem;
         font-weight: 500;
+        margin-bottom: 1rem;
     }
 
     .status-online {
@@ -139,6 +147,69 @@
         color: var(--warning-color);
     }
 
+    .service-actions {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .service-btn {
+        background: none;
+        border: 2px solid transparent;
+        color: var(--secondary-color);
+        padding: 0.5rem 1rem;
+        border-radius: var(--border-radius);
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .service-btn:hover {
+        transform: translateY(-1px);
+    }
+
+    .service-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .service-btn.btn-start {
+        border-color: var(--success-color);
+        color: var(--success-color);
+    }
+
+    .service-btn.btn-start:hover:not(:disabled) {
+        background: var(--success-color);
+        color: white;
+    }
+
+    .service-btn.btn-stop {
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+    }
+
+    .service-btn.btn-stop:hover:not(:disabled) {
+        background: var(--danger-color);
+        color: white;
+    }
+
+    .service-btn.btn-restart {
+        border-color: var(--warning-color);
+        color: var(--warning-color);
+    }
+
+    .service-btn.btn-restart:hover:not(:disabled) {
+        background: var(--warning-color);
+        color: white;
+    }
+
             /* Mobile responsiveness */
         @media (max-width: 768px) {
             .service-cards {
@@ -149,6 +220,15 @@
             .service-card {
                 padding: 1.5rem;
             }
+
+            .service-actions {
+                flex-direction: column;
+                gap: 0.3rem;
+            }
+
+            .service-btn {
+                justify-content: center;
+            }
         }
 </style>
 
@@ -156,86 +236,164 @@
 <!-- Service Cards Grid -->
 <div class="service-cards">
     <!-- Data Service -->
-    <div class="service-card primary" onclick="Alert.info('Data Service', 'PostgreSQL database providing secure data storage for all ice cream store operations.')">
-        <div class="service-icon">
-            <i class="fas fa-database"></i>
+    <div class="service-card primary">
+        <div class="service-content" onclick="Alert.info('Data Service', 'PostgreSQL database providing secure data storage for all ice cream store operations.')">
+            <div class="service-icon">
+                <i class="fas fa-database"></i>
+            </div>
+            <h3 class="service-title">Data Service</h3>
+            <p class="service-description">
+                PostgreSQL database storing all ice cream business data
+            </p>
+            <div class="service-status status-loading" id="data-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Data Service</h3>
-        <p class="service-description">
-            PostgreSQL database storing all ice cream business data
-        </p>
-        <div class="service-status status-loading" id="data-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('data-service', 'start')" title="Start Data Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('data-service', 'stop')" title="Stop Data Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('data-service', 'restart')" title="Restart Data Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 
     <!-- Gateway Service -->
-    <div class="service-card info" onclick="Alert.info('Gateway Service', 'Central API gateway managing authentication, routing, and service coordination.')">
-        <div class="service-icon">
-            <i class="fas fa-network-wired"></i>
+    <div class="service-card info">
+        <div class="service-content" onclick="Alert.info('Gateway Service', 'Central API gateway managing authentication, routing, and service coordination.')">
+            <div class="service-icon">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <h3 class="service-title">Gateway Service</h3>
+            <p class="service-description">
+                Central API gateway routing and authentication hub
+            </p>
+            <div class="service-status status-loading" id="gateway-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Gateway Service</h3>
-        <p class="service-description">
-            Central API gateway routing and authentication hub
-        </p>
-        <div class="service-status status-loading" id="gateway-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('gateway-service', 'start')" title="Start Gateway Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('gateway-service', 'stop')" title="Stop Gateway Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('gateway-service', 'restart')" title="Restart Gateway Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 
     <!-- Orders Service -->
-    <div class="service-card success" onclick="navigateToRoute('orders')">
-        <div class="service-icon">
-            <i class="fas fa-ice-cream"></i>
+    <div class="service-card success">
+        <div class="service-content" onclick="navigateToRoute('orders')">
+            <div class="service-icon">
+                <i class="fas fa-ice-cream"></i>
+            </div>
+            <h3 class="service-title">Orders Management</h3>
+            <p class="service-description">
+                Process ice cream orders and track customer preferences
+            </p>
+            <div class="service-status status-loading" id="orders-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Orders Management</h3>
-        <p class="service-description">
-            Process ice cream orders and track customer preferences
-        </p>
-        <div class="service-status status-loading" id="orders-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('orders-service', 'start')" title="Start Orders Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('orders-service', 'stop')" title="Stop Orders Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('orders-service', 'restart')" title="Restart Orders Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 
     <!-- Inventory Service -->
-    <div class="service-card warning" onclick="navigateToRoute('inventory')">
-        <div class="service-icon">
-            <i class="fas fa-boxes"></i>
+    <div class="service-card warning">
+        <div class="service-content" onclick="navigateToRoute('inventory')">
+            <div class="service-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <h3 class="service-title">Inventory Management</h3>
+            <p class="service-description">
+                Monitor ice cream ingredients and supply levels
+            </p>
+            <div class="service-status status-loading" id="inventory-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Inventory Management</h3>
-        <p class="service-description">
-            Monitor ice cream ingredients and supply levels
-        </p>
-        <div class="service-status status-loading" id="inventory-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('inventory-service', 'start')" title="Start Inventory Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('inventory-service', 'stop')" title="Stop Inventory Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('inventory-service', 'restart')" title="Restart Inventory Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 
     <!-- Invoice Service -->
-    <div class="service-card danger" onclick="navigateToRoute('invoice')">
-        <div class="service-icon">
-            <i class="fas fa-receipt"></i>
+    <div class="service-card danger">
+        <div class="service-content" onclick="navigateToRoute('invoice')">
+            <div class="service-icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+            <h3 class="service-title">Invoice Management</h3>
+            <p class="service-description">
+                Handle ice cream sales and customer billing
+            </p>
+            <div class="service-status status-loading" id="invoice-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Invoice Management</h3>
-        <p class="service-description">
-            Handle ice cream sales and customer billing
-        </p>
-        <div class="service-status status-loading" id="invoice-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('invoice-service', 'start')" title="Start Invoice Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('invoice-service', 'stop')" title="Stop Invoice Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('invoice-service', 'restart')" title="Restart Invoice Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 
         <!-- Session Service -->
-    <div class="service-card secondary" onclick="Alert.info('Session Management', 'Secure staff authentication and access control system.')">
-        <div class="service-icon">
-            <i class="fas fa-shield-alt"></i>
+    <div class="service-card secondary">
+        <div class="service-content" onclick="Alert.info('Session Management', 'Secure staff authentication and access control system.')">
+            <div class="service-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3 class="service-title">Session Management</h3>
+            <p class="service-description">
+                Secure staff authentication and access control
+            </p>
+            <div class="service-status status-loading" id="session-status">
+                <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+            </div>
         </div>
-        <h3 class="service-title">Session Management</h3>
-        <p class="service-description">
-            Secure staff authentication and access control
-        </p>
-        <div class="service-status status-loading" id="session-status">
-            <i class="fas fa-spinner fa-spin me-2"></i>Checking...
+        <div class="service-actions">
+            <button class="service-btn btn-start" onclick="manageService('session-service', 'start')" title="Start Session Service">
+                <i class="fas fa-play"></i> Start
+            </button>
+            <button class="service-btn btn-stop" onclick="manageService('session-service', 'stop')" title="Stop Session Service">
+                <i class="fas fa-stop"></i> Stop
+            </button>
+            <button class="service-btn btn-restart" onclick="manageService('session-service', 'restart')" title="Restart Session Service">
+                <i class="fas fa-sync"></i> Restart
+            </button>
         </div>
     </div>
 </div>
