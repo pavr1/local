@@ -67,7 +67,14 @@ start-locally: deps ## Run the service locally (no Docker)
 
 stop-locally: ## Stop local service (if running in background)
 	@echo "$(YELLOW)🛑 Stopping local Invoice Service...$(RESET)"
-	@pkill -f "go run main.go" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@if lsof -ti:8085 >/dev/null 2>&1; then \
+		echo "$(YELLOW)Found service on port 8085, stopping...$(RESET)"; \
+		lsof -ti:8085 | xargs kill -9 2>/dev/null || true; \
+		echo "$(GREEN)✅ Service on port 8085 stopped$(RESET)"; \
+	else \
+		echo "$(YELLOW)No service found on port 8085$(RESET)"; \
+	fi
+	@pkill -f "go run main.go" 2>/dev/null || true
 	@pkill -f "invoice-service" 2>/dev/null || true
 	@echo "$(GREEN)✅ Local service stopped$(RESET)"
 

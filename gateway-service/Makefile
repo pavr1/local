@@ -69,7 +69,14 @@ start-locally: deps ## Run the service locally (no Docker)
 
 stop-locally: ## Stop local service (if running in background)
 	@echo "$(YELLOW)🛑 Stopping local Gateway Service...$(RESET)"
-	@pkill -f "go run" 2>/dev/null || echo "$(YELLOW)No local service found running$(RESET)"
+	@if lsof -ti:8082 >/dev/null 2>&1; then \
+		echo "$(YELLOW)Found service on port 8082, stopping...$(RESET)"; \
+		lsof -ti:8082 | xargs kill -9 2>/dev/null || true; \
+		echo "$(GREEN)✅ Service on port 8082 stopped$(RESET)"; \
+	else \
+		echo "$(YELLOW)No service found on port 8082$(RESET)"; \
+	fi
+	@pkill -f "go run" 2>/dev/null || true
 	@pkill -f "gateway-service" 2>/dev/null || true
 	@echo "$(GREEN)✅ Local service stopped$(RESET)"
 

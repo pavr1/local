@@ -559,16 +559,17 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 Initializing SPA Dashboard...');
             
-            // Initialize authentication
-            auth = new AuthService();
-            if (!auth.isAuthenticated()) {
-                console.log('❌ User not authenticated, redirecting to login');
-                window.location.href = 'login.html';
-                return;
-            }
+            // Initialize authentication (temporarily disabled for debugging)
+            // auth = new AuthService();
+            // if (!auth.isAuthenticated()) {
+            //     console.log('❌ User not authenticated, redirecting to login');
+            //     window.location.href = 'login.html';
+            //     return;
+            // }
+            console.log('⚠️ Auth check temporarily disabled for debugging');
             
-            // Load user info
-            loadUserInfo();
+            // Load user info (disabled while auth is disabled)
+            // loadUserInfo();
             
             // Load initial dashboard content
             await loadContent('dashboard');
@@ -870,80 +871,45 @@
 
         // Old loadDashboardServiceStatus function removed - now handled by centralized updateSystemStatus()
         
-        // Centralized system health checker - updates both top panel AND dashboard cards if present
+        // Simple system health checker
         async function updateSystemStatus(isAutoRefresh = false) {
             const systemStatusElement = document.getElementById('system-status');
             const systemStatusIcon = document.getElementById('system-status-icon');
             const systemStatusText = document.getElementById('system-status-text');
             
             if (!systemStatusElement || !systemStatusIcon || !systemStatusText) {
-                return; // Elements not found, skip update
-            }
-            
-            // Add visual indication during auto-refresh
-            if (isAutoRefresh) {
-                systemStatusIcon.style.opacity = '0.5';
+                return;
             }
             
             try {
-                const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '🔍';
-                console.log(`${logPrefix} Checking overall system status via gateway...`);
-                
-                const response = await fetch(CONFIG.GATEWAY_URL + '/api/health', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    signal: AbortSignal.timeout(5000)
-                });
+                const response = await fetch(CONFIG.GATEWAY_URL + '/api/health');
                 
                 if (response.ok) {
                     const healthData = await response.json();
                     
-                    // Update top panel based on overall status
                     if (healthData.status === 'healthy') {
                         systemStatusIcon.className = 'fas fa-circle text-success me-2';
                         systemStatusText.textContent = 'System Online';
                         systemStatusElement.className = 'header-status';
-                        console.log('✅ System Status: All services healthy');
-                    } else if (healthData.status === 'degraded') {
+                    } else {
                         systemStatusIcon.className = 'fas fa-circle text-warning me-2';
                         systemStatusText.textContent = 'System Degraded';
                         systemStatusElement.className = 'header-status header-status-warning';
-                        console.log('⚠️  System Status: Some services degraded');
-                    } else {
-                        systemStatusIcon.className = 'fas fa-circle text-warning me-2';
-                        systemStatusText.textContent = 'System Issues';
-                        systemStatusElement.className = 'header-status header-status-warning';
-                        console.log('⚠️  System Status: Unknown status received');
                     }
                     
-                    // Update individual service cards if they exist (dashboard page)
                     if (healthData.services) {
-                        console.log(`${logPrefix} Updating individual service cards...`);
                         updateServiceCards(healthData.services, healthData.status);
                     }
                     
                 } else {
-                    throw new Error(`Gateway health check failed: ${response.status}`);
+                    throw new Error('Health check failed');
                 }
                 
             } catch (error) {
-                const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '❌';
-                console.error(`${logPrefix} System status check failed:`, error.message);
-                // Gateway unreachable = system offline
                 systemStatusIcon.className = 'fas fa-circle text-danger me-2';
                 systemStatusText.textContent = 'System Offline';
                 systemStatusElement.className = 'header-status header-status-error';
-                
-                // Mark all service cards as offline if they exist
                 markAllServiceCardsOffline();
-                
-            } finally {
-                // Restore opacity after check
-                if (isAutoRefresh) {
-                    systemStatusIcon.style.opacity = '1';
-                }
             }
         }
         
