@@ -197,19 +197,27 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="ingredientCategory" class="form-label">Category</label>
-                            <select class="form-control" id="ingredientCategory" name="ingredient_category_id">
-                                <option value="">Select a category</option>
-                                <!-- Categories will be loaded dynamically -->
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="ingredientCategoryDisplay" readonly placeholder="Select a category" style="background: white;">
+                                <input type="hidden" id="ingredientCategory" name="ingredient_category_id">
+                                <button type="button" class="btn btn-outline-info" onclick="openCategoryPicker('add')" title="Select Category">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="ingredientSupplier" class="form-label">Supplier</label>
-                            <select class="form-control" id="ingredientSupplier" name="supplier_id">
-                                <option value="">Select a supplier</option>
-                                <!-- Suppliers will be loaded dynamically -->
-                            </select>
+                            <div class="input-group">
+                                <select class="form-control" id="ingredientSupplier" name="supplier_id">
+                                    <option value="">Select a supplier</option>
+                                    <!-- Suppliers will be loaded dynamically -->
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierModalFromIngredient('add')" title="Create New Supplier">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <!-- Spacer for alignment -->
@@ -285,19 +293,27 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="editIngredientCategory" class="form-label">Category</label>
-                            <select class="form-control" id="editIngredientCategory" name="ingredient_category_id">
-                                <option value="">Select a category</option>
-                                <!-- Categories will be loaded dynamically -->
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="editIngredientCategoryDisplay" readonly placeholder="Select a category" style="background: white;">
+                                <input type="hidden" id="editIngredientCategory" name="ingredient_category_id">
+                                <button type="button" class="btn btn-outline-info" onclick="openCategoryPicker('edit')" title="Select Category">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="editIngredientSupplier" class="form-label">Supplier</label>
-                            <select class="form-control" id="editIngredientSupplier" name="supplier_id">
-                                <option value="">Select a supplier</option>
-                                <!-- Suppliers will be loaded dynamically -->
-                            </select>
+                            <div class="input-group">
+                                <select class="form-control" id="editIngredientSupplier" name="supplier_id">
+                                    <option value="">Select a supplier</option>
+                                    <!-- Suppliers will be loaded dynamically -->
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierModalFromIngredient('edit')" title="Create New Supplier">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <!-- Spacer for alignment -->
@@ -320,6 +336,49 @@
                 <button type="button" class="btn btn-save-ingredient" onclick="updateIngredient()">
                     <i class="fas fa-save me-2"></i>Update Ingredient
                 </button>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<!-- Category Picker Modal -->
+<div class="modal fade" id="categoryPickerModal" tabindex="-1" aria-labelledby="categoryPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryPickerModalLabel">
+                    <i class="fas fa-tags me-2"></i>Select Category
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <input type="text" class="form-control" id="categorySearchInput" placeholder="Search categories..." onkeyup="filterCategories()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover" id="categoryPickerTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Description</th>
+                                        <th>Status</th>
+                                        <th width="80">Select</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryPickerTableBody">
+                                    <!-- Categories will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>

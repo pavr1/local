@@ -1900,19 +1900,12 @@
         // SUPPLIERS PAGE FUNCTIONALITY
         // ===========================================
 
-        // Suppliers content initialization function
-        window.initSuppliersContent = async function() {
-            console.log('🚚 Initializing Suppliers Content...');
-            
-            try {
-                // Load suppliers data
-                await loadSuppliersData();
-                
-                console.log('✅ Suppliers Content initialized successfully');
-            } catch (error) {
-                console.error('❌ Error initializing suppliers content:', error);
-            }
-        };
+        // Initialize suppliers content
+        async function initSuppliersContent() {
+            console.log('🔧 Initializing Suppliers content...');
+            await loadSuppliersData();
+            console.log('✅ Suppliers content initialized');
+        }
 
         async function loadSuppliersData() {
             console.log('📥 Loading suppliers data...');
@@ -2017,25 +2010,47 @@
 
         // Modal and form functions
         window.openAddSupplierModal = function() {
-            console.log('🔧 Opening add supplier modal...');
             resetSupplierForm();
-            const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
-            modal.show();
+            const modalElement = document.getElementById('addSupplierModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                // Dynamically inject the supplier modal HTML
+                injectSupplierModal();
+                // Wait a bit for DOM update, then open modal
+                setTimeout(() => {
+                    resetSupplierForm();
+                    const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
+                    modal.show();
+                }, 100);
+            }
         };
         
         function resetSupplierForm() {
             const form = document.getElementById('addSupplierForm');
-            form.reset();
-            form.classList.remove('was-validated');
-            
-            // Remove validation classes
-            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
-            
-            // Reset button
-            const saveBtn = document.getElementById('saveSupplierBtn');
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
+            if (form) {
+                form.reset();
+                form.classList.remove('was-validated');
+                
+                // Remove validation classes with null checks
+                const supplierName = document.getElementById('supplierName');
+                const contactNumber = document.getElementById('contactNumber');
+                const supplierEmail = document.getElementById('supplierEmail');
+                const supplierAddress = document.getElementById('supplierAddress');
+                
+                if (supplierName) supplierName.classList.remove('is-invalid', 'is-valid');
+                if (contactNumber) contactNumber.classList.remove('is-invalid', 'is-valid');
+                if (supplierEmail) supplierEmail.classList.remove('is-invalid', 'is-valid');
+                if (supplierAddress) supplierAddress.classList.remove('is-invalid', 'is-valid');
+                
+                // Reset button if it exists
+                const saveBtn = document.getElementById('saveSupplierBtn');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
+                }
+            }
         }
 
         async function saveSupplier() {
@@ -2101,17 +2116,41 @@
                     // Success
                     Alert.success('Supplier created successfully!');
                     
-                    // Close modal
+                    // Hide modal
                     const modal = bootstrap.Modal.getInstance(document.getElementById('addSupplierModal'));
                     modal.hide();
                     
-                    // Reload suppliers list
-                    await loadSuppliersData();
+                    // Reload suppliers if on suppliers page
+                    if (document.getElementById('suppliersTableContainer')) {
+                        await loadSuppliersData();
+                    }
                     
+                    // If called from ingredient modal, refresh dropdowns
+                    if (currentIngredientModal) {
+                        // Refresh supplier data for ingredient dropdowns
+                        await loadDropdownData();
+                        
+                        // Repopulate the supplier dropdown in the ingredient form
+                        const supplierSelect = currentIngredientModal === 'add' 
+                            ? document.getElementById('ingredientSupplier')
+                            : document.getElementById('editIngredientSupplier');
+                        
+                        if (supplierSelect) {
+                            supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
+                            availableSuppliers.forEach(supplier => {
+                                supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                            });
+                            
+                            // Auto-select the newly created supplier
+                            if (result.data && result.data.id) {
+                                supplierSelect.value = result.data.id;
+                            }
+                        }
+                        
+                        currentIngredientModal = null;
+                    }
                 } else {
-                    // API returned error
-                    const errorMessage = result.message || result.error || 'Failed to create supplier';
-                    Alert.error('Error: ' + errorMessage);
+                    throw new Error(result.message || 'Failed to create supplier');
                 }
                 
             } catch (error) {
@@ -2375,6 +2414,7 @@
         window.updateSupplier = updateSupplier;
         window.deleteSupplier = deleteSupplier;
         window.loadSuppliersData = loadSuppliersData;
+        window.initSuppliersContent = initSuppliersContent;
 
         console.log('✅ Suppliers functionality initialized and exposed globally');
 
@@ -3022,6 +3062,9 @@
                 form.reset();
                 document.getElementById('ingredientName').classList.remove('is-invalid');
                 document.getElementById('ingredientDescription').classList.remove('is-invalid');
+                // Clear category display fields
+                document.getElementById('ingredientCategory').value = '';
+                document.getElementById('ingredientCategoryDisplay').value = '';
             }
         }
 
@@ -3157,7 +3200,22 @@
             // Populate edit form
             document.getElementById('editIngredientName').value = ingredient.name;
             document.getElementById('editIngredientDescription').value = ingredient.description || '';
-            document.getElementById('editIngredientCategory').value = ingredient.ingredient_category_id || '';
+            
+            // Handle category display
+            if (ingredient.ingredient_category_id && availableCategories.length > 0) {
+                const category = availableCategories.find(c => c.id === ingredient.ingredient_category_id);
+                if (category) {
+                    document.getElementById('editIngredientCategory').value = ingredient.ingredient_category_id;
+                    document.getElementById('editIngredientCategoryDisplay').value = category.name;
+                } else {
+                    document.getElementById('editIngredientCategory').value = '';
+                    document.getElementById('editIngredientCategoryDisplay').value = '';
+                }
+            } else {
+                document.getElementById('editIngredientCategory').value = '';
+                document.getElementById('editIngredientCategoryDisplay').value = '';
+            }
+            
             document.getElementById('editIngredientSupplier').value = ingredient.supplier_id || '';
 
             // Show edit modal
@@ -3279,6 +3337,250 @@
 
         console.log('✅ Ingredients functionality initialized and exposed globally');
 
+        // ===== SUPPLIER INTEGRATION FOR INGREDIENTS =====
+        let currentIngredientModal = null; // Track which modal opened the supplier modal
+
+        // Open supplier modal from ingredient form
+        window.openSupplierModalFromIngredient = function(modalType) {
+            currentIngredientModal = modalType;
+            openAddSupplierModal();
+        };
+
+        // Note: Supplier creation from ingredients now uses navigation flow with sessionStorage
+
+        // ===== CATEGORY PICKER FUNCTIONALITY =====
+        let currentCategoryModal = null; // Track which modal opened the category picker
+
+        // Open category picker modal
+        window.openCategoryPicker = async function(modalType) {
+            currentCategoryModal = modalType;
+            await loadDropdownData(); // Ensure categories are loaded
+            populateCategoryPicker();
+            
+            const modal = new bootstrap.Modal(document.getElementById('categoryPickerModal'));
+            modal.show();
+        };
+
+        // Populate category picker table
+        function populateCategoryPicker() {
+            const tbody = document.getElementById('categoryPickerTableBody');
+            if (!tbody) return;
+
+            if (!availableCategories || availableCategories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-tags me-2"></i>No categories available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = availableCategories.map(category => `
+                <tr class="category-row" data-category-id="${category.id}" data-category-name="${category.name.toLowerCase()}" data-category-description="${category.description.toLowerCase()}">
+                    <td class="fw-bold">${category.name}</td>
+                    <td class="text-muted">${category.description}</td>
+                    <td>
+                        <span class="status-badge ${category.is_active ? 'status-active' : 'status-inactive'}">
+                            ${category.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectCategory('${category.id}', '${category.name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter categories based on search
+        window.filterCategories = function() {
+            const searchTerm = document.getElementById('categorySearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.category-row');
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-category-name');
+                const description = row.getAttribute('data-category-description');
+                
+                if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
+
+        // Select a category
+        window.selectCategory = function(categoryId, categoryName) {
+            if (currentCategoryModal === 'add') {
+                document.getElementById('ingredientCategory').value = categoryId;
+                document.getElementById('ingredientCategoryDisplay').value = categoryName;
+            } else {
+                document.getElementById('editIngredientCategory').value = categoryId;
+                document.getElementById('editIngredientCategoryDisplay').value = categoryName;
+            }
+
+            // Close category picker modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryPickerModal'));
+            modal.hide();
+            
+            currentCategoryModal = null;
+        };
+
+        // Update populateDropdowns function to work with new category picker
+        function populateDropdowns(categorySelectId, supplierSelectId) {
+            // Skip category dropdown population since we use the picker now
+            
+            // Populate suppliers
+            const supplierSelect = document.getElementById(supplierSelectId);
+            if (supplierSelect) {
+                supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
+                availableSuppliers.forEach(supplier => {
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                });
+            }
+        }
+
+        console.log('✅ Ingredients functionality initialized and exposed globally');
+
+        // Inject supplier modal HTML dynamically
+        function injectSupplierModal() {
+            // Check if modal already exists
+            if (document.getElementById('addSupplierModal')) {
+                return;
+            }
+
+            // Inject CSS if not already present
+            if (!document.getElementById('supplier-modal-styles')) {
+                const style = document.createElement('style');
+                style.id = 'supplier-modal-styles';
+                style.textContent = `
+                    /* Supplier Modal Styles */
+                    .supplier-modal-content {
+                        border: none;
+                        border-radius: var(--border-radius-lg);
+                        box-shadow: var(--shadow-heavy);
+                    }
+                    
+                    .supplier-modal-header {
+                        background: var(--gradient-primary);
+                        color: var(--white);
+                        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+                        border-bottom: none;
+                    }
+                    
+                    .btn-save-supplier {
+                        background: var(--gradient-primary);
+                        border: none;
+                        border-radius: var(--border-radius);
+                        padding: 0.75rem 2rem;
+                        font-weight: 600;
+                        color: var(--white);
+                        transition: var(--transition);
+                    }
+                    
+                    .btn-save-supplier:hover {
+                        transform: translateY(-2px);
+                        box-shadow: var(--shadow-medium);
+                        color: var(--white);
+                    }
+                    
+                    .btn-save-supplier:disabled {
+                        opacity: 0.7;
+                        transform: none;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Create modal HTML
+            const modalHTML = `
+                <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-labelledby="addSupplierModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content supplier-modal-content">
+                            <div class="modal-header supplier-modal-header">
+                                <h5 class="modal-title" id="addSupplierModalLabel">
+                                    <i class="fas fa-plus me-2"></i>Add New Supplier
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1);"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addSupplierForm" novalidate>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="supplierName" class="form-label">
+                                                Supplier Name <span class="text-danger">*</span>
+                                            </label>
+                                            <input type="text" class="form-control" id="supplierName" name="supplier_name" 
+                                                   maxlength="255" required>
+                                            <div class="invalid-feedback">
+                                                Please provide a valid supplier name (1-255 characters).
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="contactNumber" class="form-label">Contact Number</label>
+                                            <input type="tel" class="form-control" id="contactNumber" name="contact_number" 
+                                                   maxlength="50" placeholder="+1 (555) 123-4567">
+                                            <div class="invalid-feedback">
+                                                Please provide a valid contact number (max 50 characters).
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="supplierEmail" class="form-label">Email Address</label>
+                                            <input type="email" class="form-control" id="supplierEmail" name="email" 
+                                                   maxlength="255" placeholder="supplier@example.com">
+                                            <div class="invalid-feedback">
+                                                Please provide a valid email address.
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="supplierAddress" class="form-label">Address</label>
+                                            <input type="text" class="form-control" id="supplierAddress" name="address" 
+                                                   placeholder="123 Main St, City, State, ZIP">
+                                            <div class="invalid-feedback">
+                                                Please provide a valid address.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="supplierNotes" class="form-label">Notes</label>
+                                        <textarea class="form-control" id="supplierNotes" name="notes" rows="3" 
+                                                  placeholder="Additional notes about this supplier..."></textarea>
+                                        <div class="invalid-feedback">
+                                            Please provide valid notes.
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-save-supplier" id="saveSupplierBtn" onclick="saveSupplier()">
+                                    <i class="fas fa-save me-2"></i>Save Supplier
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Inject modal into body
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Set up cleanup when modal is hidden
+            const modal = document.getElementById('addSupplierModal');
+            modal.addEventListener('hidden.bs.modal', function() {
+                // Remove modal from DOM after it's hidden, unless we're on suppliers page
+                if (!document.getElementById('suppliersTableContainer')) {
+                    setTimeout(() => {
+                        modal.remove();
+                    }, 100);
+                }
+            });
+        }
     </script>
 </body>
 </html> 
