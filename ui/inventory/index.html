@@ -145,6 +145,11 @@
             background: var(--info-light);
         }
 
+        .nav-card.categories:hover {
+            border-color: var(--warning-color);
+            background: var(--warning-light);
+        }
+
         .nav-card-icon {
             font-size: 3rem;
             margin-bottom: 1.5rem;
@@ -153,6 +158,10 @@
 
         .nav-card.ingredients .nav-card-icon {
             color: var(--info-color);
+        }
+
+        .nav-card.categories .nav-card-icon {
+            color: var(--warning-color);
         }
 
         .nav-card h5 {
@@ -257,6 +266,11 @@
             <div class="overview-sublabel">In inventory</div>
         </div>
         <div class="overview-card">
+            <div class="overview-number">24</div>
+            <div class="overview-label">Categories</div>
+            <div class="overview-sublabel">Ingredient types</div>
+        </div>
+        <div class="overview-card">
             <div class="overview-number">85%</div>
             <div class="overview-label">Stock Level</div>
             <div class="overview-sublabel">Average availability</div>
@@ -293,6 +307,18 @@
                 <p>Track ingredient stock levels, expiration dates, and reorder points</p>
                 <button class="btn btn-outline-info">
                     <i class="fas fa-arrow-right me-2"></i>Manage Ingredients
+                </button>
+            </div>
+
+            <!-- Ingredient Categories Card -->
+            <div class="nav-card categories" onclick="navigateToCategories()">
+                <div class="nav-card-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <h5>Ingredient Categories</h5>
+                <p>Organize ingredients by type for better inventory management and reporting</p>
+                <button class="btn btn-outline-warning">
+                    <i class="fas fa-arrow-right me-2"></i>Manage Categories
                 </button>
             </div>
         </div>
@@ -373,6 +399,10 @@
 
         function navigateToIngredients() {
             window.location.href = 'ingredients.html';
+        }
+
+        function navigateToCategories() {
+            window.location.href = 'ingredient_categories.html';
         }
 
         // Initialize the page when DOM is loaded
