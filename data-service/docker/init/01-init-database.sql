@@ -50,18 +50,34 @@ CREATE TABLE ingredients (
 -- Existences Table
 CREATE TABLE existences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_reference_code INTEGER UNIQUE NOT NULL DEFAULT nextval('existence_reference_seq'),
     ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
-    supplier_id UUID NOT NULL REFERENCES suppliers(id) ON DELETE CASCADE,
-    existence_reference INTEGER DEFAULT nextval('existence_reference_seq'),
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity >= 0),
-    unit_type VARCHAR(50) NOT NULL,
-    price_per_unit DECIMAL(10,2) NOT NULL CHECK (price_per_unit >= 0),
-    expiration_date DATE NOT NULL,
-    purchase_date DATE DEFAULT CURRENT_DATE,
-    available DECIMAL(10,2) NOT NULL CHECK (available >= 0),
+    invoice_detail_id UUID NOT NULL REFERENCES invoice_details(id) ON DELETE CASCADE, -- Must reference ingredients with category "ingredient" only
+    --units
+    units_purchased DECIMAL(10,2) NOT NULL, -- get this from invoice detail
+    units_available DECIMAL(10,2) NOT NULL, -- same as unit purchased, update when running out
+    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')), -- get from invoice detail
+    --items
+    items_per_unit INTEGER NOT NULL, --ie. Galon has 31 ice-cream balls
+    cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
+    cost_per_unit DECIMAL(10,2) NOT NULL, -- get from invoice detail
+    --costs
+    total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
+    remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
+    --expiry
+    expiration_date DATE, -- get from invoice detail
+    --incomes & taxes
+    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
+    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost * income_margin_percentage / 100) STORED,
+    iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
+    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * iva_percentage / 100) STORED,
+    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
+    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
+    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
+    final_price DECIMAL(10,2),
+    --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(existence_reference)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Runout Ingredient Report Table
@@ -379,8 +395,11 @@ CREATE INDEX idx_ingredient_categories_active ON ingredient_categories(is_active
 CREATE INDEX idx_ingredients_name ON ingredients(name);
 CREATE INDEX idx_ingredients_category ON ingredients(ingredient_category_id);
 CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
-CREATE INDEX idx_existences_ingredient_id ON existences(ingredient_id);
-CREATE INDEX idx_existences_supplier_id ON existences(supplier_id);
+CREATE INDEX idx_existences_ingredient ON existences(ingredient_id);
+CREATE INDEX idx_existences_reference_code ON existences(existence_reference_code);
+CREATE INDEX idx_existences_invoice_detail ON existences(invoice_detail_id);
+CREATE INDEX idx_existences_available ON existences(units_available);
+CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
 CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 CREATE INDEX idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
 CREATE INDEX idx_recipe_ingredients_ingredient_id ON recipe_ingredients(ingredient_id);

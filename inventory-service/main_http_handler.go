@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	existencesHandlers "inventory-service/entities/existences/handlers"
 	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
@@ -23,9 +24,9 @@ type MainHttpHandler struct {
 	SuppliersHandler            *suppliersHandlers.HttpHandler
 	IngredientCategoriesHandler *ingredientCategoriesHandlers.HttpHandler
 	IngredientsHandler          *ingredientsHandlers.HttpHandler
+	ExistencesHandler           *existencesHandlers.HttpHandler
 
 	// TODO: Add other entity handlers when implemented
-	// ExistencesHandler  *existencesHandlers.HttpHandler
 	// RecipesHandler     *recipesHandlers.HttpHandler
 	// etc.
 }
@@ -44,12 +45,17 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db, logger)
 	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler, logger)
 
+	// Initialize existences handlers
+	existencesDBHandler := existencesHandlers.NewDBHandler(db, logger)
+	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler, logger)
+
 	return &MainHttpHandler{
 		db:                          db,
 		logger:                      logger,
 		SuppliersHandler:            suppliersHttpHandler,
 		IngredientCategoriesHandler: ingredientCategoriesHttpHandler,
 		IngredientsHandler:          ingredientsHttpHandler,
+		ExistencesHandler:           existencesHttpHandler,
 		// TODO: Add other handlers when implemented
 		// etc.
 	}
@@ -68,6 +74,11 @@ func (h *MainHttpHandler) GetIngredientCategoriesHandler() *ingredientCategories
 // GetIngredientsHandler returns the ingredients HTTP handler
 func (h *MainHttpHandler) GetIngredientsHandler() *ingredientsHandlers.HttpHandler {
 	return h.IngredientsHandler
+}
+
+// GetExistencesHandler returns the existences HTTP handler
+func (h *MainHttpHandler) GetExistencesHandler() *existencesHandlers.HttpHandler {
+	return h.ExistencesHandler
 }
 
 // TODO: Add getter methods for other entity handlers when implemented
@@ -108,8 +119,8 @@ func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 			"suppliers":             "ready",
 			"ingredient_categories": "ready",
 			"ingredients":           "ready",
+			"existences":            "ready",
 			// TODO: Add other entities when implemented
-			// "existences":  "ready",
 			// "recipes":     "ready",
 		},
 	}

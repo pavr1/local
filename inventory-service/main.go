@@ -222,8 +222,25 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// DELETE /api/v1/inventory/ingredients/{id} - Delete ingredient
 	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().DeleteIngredient).Methods("DELETE")
 
+	// Existences endpoints under inventory
+	existencesRouter := inventoryRouter.PathPrefix("/existences").Subrouter()
+
+	// GET /api/v1/inventory/existences - List all existences
+	existencesRouter.HandleFunc("", mainHandler.GetExistencesHandler().ListExistences).Methods("GET")
+
+	// POST /api/v1/inventory/existences - Create new existence
+	existencesRouter.HandleFunc("", mainHandler.GetExistencesHandler().CreateExistence).Methods("POST")
+
+	// GET /api/v1/inventory/existences/{id} - Get existence by ID
+	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().GetExistence).Methods("GET")
+
+	// PUT /api/v1/inventory/existences/{id} - Update existence
+	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().UpdateExistence).Methods("PUT")
+
+	// DELETE /api/v1/inventory/existences/{id} - Delete existence
+	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().DeleteExistence).Methods("DELETE")
+
 	// TODO: Add other entity endpoints under inventory when implemented
-	// existencesRouter := inventoryRouter.PathPrefix("/existences").Subrouter()
 	// recipesRouter := inventoryRouter.PathPrefix("/recipes").Subrouter()
 
 	// Logging middleware
