@@ -2138,7 +2138,7 @@
                         if (supplierSelect) {
                             supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
                             availableSuppliers.forEach(supplier => {
-                                supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                                supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
                             });
                             
                             // Auto-select the newly created supplier
@@ -3041,7 +3041,7 @@
             if (supplierSelect) {
                 supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
                 availableSuppliers.forEach(supplier => {
-                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
                 });
             }
         }
@@ -3438,7 +3438,7 @@
             if (supplierSelect) {
                 supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
                 availableSuppliers.forEach(supplier => {
-                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.name}</option>`;
+                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
                 });
             }
         }
