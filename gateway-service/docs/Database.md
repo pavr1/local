@@ -104,7 +104,10 @@ CREATE INDEX idx_suppliers_email ON suppliers(email);
 CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes
@@ -115,6 +118,7 @@ CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 **Field Descriptions:**
 - `id`: Primary key, UUID (auto-generated)
 - `name`: Ingredient identifier/name (unique)
+- `description`: Detailed description of the ingredient (optional)
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for local store purchases)
 
 ### Existences Table
