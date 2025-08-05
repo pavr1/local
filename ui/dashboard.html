@@ -2115,19 +2115,250 @@
         }
 
         function viewSupplier(supplierId) {
-            // Future implementation: openModal('ViewSupplierModal');
-            Alert.comingSoon('View Supplier Details');
+            console.log('👁️ Viewing supplier:', supplierId);
+            loadSupplierForView(supplierId);
         }
 
         function editSupplier(supplierId) {
-            // Future implementation: openModal('EditSupplierModal');
-            Alert.comingSoon('Edit Supplier');
+            console.log('✏️ Editing supplier:', supplierId);
+            loadSupplierForEdit(supplierId);
+        }
+
+        async function loadSupplierForView(supplierId) {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                const supplier = result.data;
+                
+                // Populate view modal
+                document.getElementById('viewSupplierName').textContent = supplier.supplier_name || '-';
+                document.getElementById('viewContactNumber').textContent = supplier.contact_number || '-';
+                document.getElementById('viewSupplierEmail').textContent = supplier.email || '-';
+                document.getElementById('viewSupplierAddress').textContent = supplier.address || '-';
+                document.getElementById('viewSupplierNotes').textContent = supplier.notes || '-';
+                
+                // Format dates
+                const createdDate = supplier.created_at ? new Date(supplier.created_at).toLocaleDateString() : '-';
+                const updatedDate = supplier.updated_at ? new Date(supplier.updated_at).toLocaleDateString() : '-';
+                document.getElementById('viewCreatedDate').textContent = createdDate;
+                document.getElementById('viewUpdatedDate').textContent = updatedDate;
+                
+                // Store supplier ID for edit button
+                window.currentViewSupplierId = supplierId;
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('viewSupplierModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('❌ Error loading supplier for view:', error);
+                Alert.error('Failed to load supplier details. Please try again.');
+            }
+        }
+
+        async function loadSupplierForEdit(supplierId) {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                const supplier = result.data;
+                
+                // Reset form
+                resetEditSupplierForm();
+                
+                // Populate edit form
+                document.getElementById('editSupplierId').value = supplier.id;
+                document.getElementById('editSupplierName').value = supplier.supplier_name || '';
+                document.getElementById('editContactNumber').value = supplier.contact_number || '';
+                document.getElementById('editSupplierEmail').value = supplier.email || '';
+                document.getElementById('editSupplierAddress').value = supplier.address || '';
+                document.getElementById('editSupplierNotes').value = supplier.notes || '';
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('editSupplierModal'));
+                modal.show();
+                
+            } catch (error) {
+                console.error('❌ Error loading supplier for edit:', error);
+                Alert.error('Failed to load supplier for editing. Please try again.');
+            }
+        }
+
+        window.openEditSupplierModal = function() {
+            // Called from view modal's edit button
+            if (window.currentViewSupplierId) {
+                loadSupplierForEdit(window.currentViewSupplierId);
+            }
+        };
+
+        function resetEditSupplierForm() {
+            const form = document.getElementById('editSupplierForm');
+            form.reset();
+            form.classList.remove('was-validated');
+            
+            // Remove validation classes
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+            
+            // Reset button
+            const updateBtn = document.getElementById('updateSupplierBtn');
+            updateBtn.disabled = false;
+            updateBtn.innerHTML = '<i class="fas fa-save me-2"></i>Update Supplier';
+        }
+
+        async function updateSupplier() {
+            const form = document.getElementById('editSupplierForm');
+            const updateBtn = document.getElementById('updateSupplierBtn');
+            const supplierId = document.getElementById('editSupplierId').value;
+            
+            // Reset validation state
+            form.classList.remove('was-validated');
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const supplierData = {};
+            
+            // Process form fields
+            for (let [key, value] of formData.entries()) {
+                if (key !== 'id') { // Skip hidden ID field
+                    const trimmedValue = value.trim();
+                    if (trimmedValue) {
+                        supplierData[key] = trimmedValue;
+                    }
+                }
+            }
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!supplierData.supplier_name || supplierData.supplier_name.length < 1 || supplierData.supplier_name.length > 255) {
+                document.getElementById('editSupplierName').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (supplierData.contact_number && supplierData.contact_number.length > 50) {
+                document.getElementById('editContactNumber').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (supplierData.email && (supplierData.email.length > 255 || !isValidEmail(supplierData.email))) {
+                document.getElementById('editSupplierEmail').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Update button state
+            updateBtn.disabled = true;
+            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(supplierData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success
+                    Alert.success('Supplier updated successfully!');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editSupplierModal'));
+                    modal.hide();
+                    
+                    // Reload suppliers list
+                    await loadSuppliersData();
+                    
+                } else {
+                    // API returned error
+                    const errorMessage = result.message || result.error || 'Failed to update supplier';
+                    Alert.error('Error: ' + errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error updating supplier:', error);
+                Alert.error('Failed to update supplier. Please check your connection and try again.');
+            }
+            
+            // Reset button state
+            updateBtn.disabled = false;
+            updateBtn.innerHTML = '<i class="fas fa-save me-2"></i>Update Supplier';
+        }
+
+        async function deleteSupplier() {
+            const supplierId = document.getElementById('editSupplierId').value;
+            const supplierName = document.getElementById('editSupplierName').value;
+            
+            // Confirm deletion
+            const result = await Swal.fire({
+                title: 'Delete Supplier?',
+                text: `Are you sure you want to delete "${supplierName}"? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            });
+            
+            if (!result.isConfirmed) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`, {
+                    method: 'DELETE'
+                });
+                
+                const deleteResult = await response.json();
+                
+                if (response.ok && deleteResult.success) {
+                    // Success
+                    Alert.success('Supplier deleted successfully!');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editSupplierModal'));
+                    modal.hide();
+                    
+                    // Reload suppliers list
+                    await loadSuppliersData();
+                    
+                } else {
+                    // API returned error
+                    const errorMessage = deleteResult.message || deleteResult.error || 'Failed to delete supplier';
+                    Alert.error('Error: ' + errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error deleting supplier:', error);
+                Alert.error('Failed to delete supplier. Please check your connection and try again.');
+            }
         }
 
         // Expose additional functions globally for onclick handlers
         window.viewSupplier = viewSupplier;
         window.editSupplier = editSupplier;
         window.saveSupplier = saveSupplier;
+        window.updateSupplier = updateSupplier;
+        window.deleteSupplier = deleteSupplier;
         window.loadSuppliersData = loadSuppliersData;
 
         console.log('✅ Suppliers functionality initialized and exposed globally');
