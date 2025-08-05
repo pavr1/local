@@ -56,16 +56,44 @@ start-locally: deps ## Run the service locally (no Docker)
 
 stop-locally: ## Stop local service (if running in background)
 	@echo "$(YELLOW)🛑 Stopping local Orders Service...$(RESET)"
+	@echo "$(CYAN)🔍 Finding and killing all related processes...$(RESET)"
+	
+	# Kill processes on port 8083
 	@if lsof -ti:8083 >/dev/null 2>&1; then \
 		echo "$(YELLOW)Found service on port 8083, stopping...$(RESET)"; \
 		lsof -ti:8083 | xargs kill -9 2>/dev/null || true; \
-		echo "$(GREEN)✅ Service on port 8083 stopped$(RESET)"; \
-	else \
-		echo "$(YELLOW)No service found on port 8083$(RESET)"; \
+		sleep 1; \
 	fi
-	@pkill -f "go run main.go" 2>/dev/null || true
+	
+	# Kill Go processes related to orders service
+	@pkill -f "go run.*main.go" 2>/dev/null || true
 	@pkill -f "orders-service" 2>/dev/null || true
-	@echo "$(GREEN)✅ Local service stopped$(RESET)"
+	@pkill -f "main.go" 2>/dev/null || true
+	@pkill -f "/go-build/.*orders" 2>/dev/null || true
+	
+	# Kill any remaining processes using port 8083
+	@lsof -ti:8083 | xargs kill -9 2>/dev/null || true
+	
+	# Clean up temporary files and build artifacts
+	@echo "$(CYAN)🧹 Cleaning up resources...$(RESET)"
+	@rm -f orders-service 2>/dev/null || true
+	@rm -f service.pid 2>/dev/null || true
+	@rm -f service.log 2>/dev/null || true
+	@rm -f *.out 2>/dev/null || true
+	@rm -f *.log 2>/dev/null || true
+	@rm -f coverage.html 2>/dev/null || true
+	@rm -rf /tmp/go-build-* 2>/dev/null || true
+	
+	# Final verification
+	@sleep 2
+	@if lsof -ti:8083 >/dev/null 2>&1; then \
+		echo "$(RED)⚠️  Warning: Port 8083 still in use after cleanup$(RESET)"; \
+		lsof -ti:8083 | xargs kill -9 2>/dev/null || true; \
+	else \
+		echo "$(GREEN)✅ Port 8083 is now free$(RESET)"; \
+	fi
+	
+	@echo "$(GREEN)✅ Local service stopped and resources cleaned$(RESET)"
 
 ## 🐳 Container Management Commands
 

@@ -3627,7 +3627,7 @@
                 }
 
                 const queryString = params.toString();
-                const url = `${CONFIG.GATEWAY_URL}/inventory/existences${queryString ? '?' + queryString : ''}`;
+                const url = `${CONFIG.GATEWAY_URL}/api/v1/inventory/existences${queryString ? '?' + queryString : ''}`;
                 
                 const response = await fetch(url);
                 
@@ -3852,7 +3852,7 @@
                     final_price: parseFloat(document.getElementById('existenceFinalPrice').value) || null
                 };
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/existences`, {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3912,7 +3912,7 @@
         // View existence
         async function viewExistence(id) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/existences/${id}`);
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${id}`);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -3973,7 +3973,7 @@
         // Edit existence
         async function editExistence(id) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/existences/${id}`);
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${id}`);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -4037,7 +4037,7 @@
                     final_price: parseFloat(document.getElementById('editExistenceFinalPrice').value) || null
                 };
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/existences/${existenceId}`, {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -4105,7 +4105,7 @@
 
             if (result.isConfirmed) {
                 try {
-                    const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/existences/${id}`, {
+                    const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${id}`, {
                         method: 'DELETE'
                     });
 

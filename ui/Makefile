@@ -42,9 +42,44 @@ start-locally: ## Start UI development server locally
 	@npm start
 
 stop-locally: ## Stop UI development server (manual process)
-	@echo "$(YELLOW)🛑 To stop UI development server:$(RESET)"
-	@echo "$(YELLOW)   Press Ctrl+C in the terminal running the server$(RESET)"
-	@echo "$(YELLOW)   Or run: pkill -f 'npm start' || pkill -f 'live-server'$(RESET)"
+	@echo "$(YELLOW)🛑 Stopping local UI Service...$(RESET)"
+	@echo "$(CYAN)🔍 Finding and killing all related processes...$(RESET)"
+	
+	# Kill processes on port 3000
+	@if lsof -ti:3000 >/dev/null 2>&1; then \
+		echo "$(YELLOW)Found service on port 3000, stopping...$(RESET)"; \
+		lsof -ti:3000 | xargs kill -9 2>/dev/null || true; \
+		sleep 1; \
+	fi
+	
+	# Kill npm and node processes related to UI service
+	@pkill -f "npm start" 2>/dev/null || true
+	@pkill -f "live-server" 2>/dev/null || true
+	@pkill -f "http-server" 2>/dev/null || true
+	@pkill -f "serve" 2>/dev/null || true
+	@pkill -f "node.*ui" 2>/dev/null || true
+	
+	# Kill any remaining processes using port 3000
+	@lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+	
+	# Clean up temporary files and build artifacts
+	@echo "$(CYAN)🧹 Cleaning up resources...$(RESET)"
+	@rm -rf node_modules/.cache 2>/dev/null || true
+	@rm -f *.log 2>/dev/null || true
+	@rm -rf .parcel-cache 2>/dev/null || true
+	@rm -rf dist 2>/dev/null || true
+	@rm -rf build 2>/dev/null || true
+	
+	# Final verification
+	@sleep 2
+	@if lsof -ti:3000 >/dev/null 2>&1; then \
+		echo "$(RED)⚠️  Warning: Port 3000 still in use after cleanup$(RESET)"; \
+		lsof -ti:3000 | xargs kill -9 2>/dev/null || true; \
+	else \
+		echo "$(GREEN)✅ Port 3000 is now free$(RESET)"; \
+	fi
+	
+	@echo "$(GREEN)✅ Local UI service stopped and resources cleaned$(RESET)"
 
 ## 🐳 Container Management Commands
 

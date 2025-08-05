@@ -94,6 +94,43 @@ start-locally: start-data start-session start-orders start-inventory start-invoi
 
 stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
 	@echo "$(YELLOW)🛑 All local services stopped$(RESET)"
+	@echo "$(CYAN)🔍 Performing final cleanup...$(RESET)"
+	
+	# Nuclear option: Kill any remaining processes that might be related to our services
+	@echo "$(CYAN)💥 Killing any remaining Go processes...$(RESET)"
+	@pkill -f "go run" 2>/dev/null || true
+	@pkill -f "main.go" 2>/dev/null || true
+	@pkill -f "icecream" 2>/dev/null || true
+	@pkill -f "8081\|8082\|8083\|8084\|8085\|3000" 2>/dev/null || true
+	
+	# Kill any processes still using our ports
+	@echo "$(CYAN)🔌 Freeing up all service ports...$(RESET)"
+	@for port in 3000 8081 8082 8083 8084 8085; do \
+		if lsof -ti:$$port >/dev/null 2>&1; then \
+			echo "$(YELLOW)Killing processes on port $$port$(RESET)"; \
+			lsof -ti:$$port | xargs kill -9 2>/dev/null || true; \
+		fi; \
+	done
+	
+	# Clean up any temporary files in the root directory
+	@echo "$(CYAN)🧹 Cleaning up temporary files...$(RESET)"
+	@rm -f *.log 2>/dev/null || true
+	@rm -f *.pid 2>/dev/null || true
+	@rm -f *.out 2>/dev/null || true
+	@rm -rf /tmp/go-build-* 2>/dev/null || true
+	
+	# Final verification
+	@sleep 2
+	@echo "$(CYAN)✅ Final verification of port availability:$(RESET)"
+	@for port in 3000 8081 8082 8083 8084 8085; do \
+		if lsof -ti:$$port >/dev/null 2>&1; then \
+			echo "$(RED)⚠️  Port $$port still in use$(RESET)"; \
+		else \
+			echo "$(GREEN)✅ Port $$port is free$(RESET)"; \
+		fi; \
+	done
+	
+	@echo "$(GREEN)🎉 Complete system shutdown and cleanup finished!$(RESET)"
 
 restart-locally: stop-locally start-locally ## Restart all local services
 	@echo "$(GREEN)🔄 All local services restarted!$(RESET)"
@@ -368,7 +405,7 @@ test-gateway: ## Test gateway service
 	@cd $(GATEWAY_SERVICE) && $(MAKE) test
 
 test-ui: ## Test UI service
-	@echo "$(CYAN)�� Testing UI Service...$(RESET)"
+	@echo "$(CYAN)🧪 Testing UI Service...$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) test
 
 health-data: ## Check data service health
