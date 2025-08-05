@@ -2565,7 +2565,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showAlert('Success', 'Category created successfully!', 'success');
+                    Alert.success('Category created successfully!');
                     
                     // Hide modal
                     const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
@@ -2578,7 +2578,7 @@
                 }
             } catch (error) {
                 console.error('❌ Error saving category:', error);
-                showAlert('Error', error.message, 'error');
+                Alert.error('Error: ' + error.message);
             }
         };
 
@@ -2610,7 +2610,7 @@
         window.viewCategory = async function(categoryId) {
             const category = categories.find(c => c.id === categoryId);
             if (!category) {
-                showAlert('Error', 'Category not found', 'error');
+                Alert.error('Category not found');
                 return;
             }
 
@@ -2658,7 +2658,7 @@
         window.editCategory = function(categoryId) {
             const category = categories.find(c => c.id === categoryId);
             if (!category) {
-                showAlert('Error', 'Category not found', 'error');
+                Alert.error('Category not found');
                 return;
             }
 
@@ -2712,7 +2712,7 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showAlert('Success', 'Category updated successfully!', 'success');
+                    Alert.success('Category updated successfully!');
                     
                     // Hide modal
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editCategoryModal'));
@@ -2725,7 +2725,7 @@
                 }
             } catch (error) {
                 console.error('❌ Error updating category:', error);
-                showAlert('Error', error.message, 'error');
+                Alert.error('Error: ' + error.message);
             }
         };
 
@@ -2778,14 +2778,14 @@
                     const deleteResult = await response.json();
 
                     if (response.ok && deleteResult.success) {
-                        showAlert('Success', 'Category deleted successfully!', 'success');
+                        Alert.success('Category deleted successfully!');
                         await loadCategoriesData();
                     } else {
                         throw new Error(deleteResult.message || 'Failed to delete category');
                     }
                 } catch (error) {
                     console.error('❌ Error deleting category:', error);
-                    showAlert('Error', error.message, 'error');
+                    Alert.error('Error: ' + error.message);
                 }
             }
         };
