@@ -10,6 +10,7 @@
 ## Table of Contents
 1. [Inventory Management Entities](#inventory-management-entities)
    - [Suppliers Table](#suppliers-table)
+   - [Ingredient Categories Table](#ingredient-categories-table)
    - [Ingredients Table](#ingredients-table)
    - [Existences Table](#existences-table)
    - [Runout Ingredient Report Table](#runout-ingredient-report-table)
@@ -97,6 +98,59 @@ CREATE INDEX idx_suppliers_email ON suppliers(email);
 - `address`: Physical address of supplier
 - `notes`: Additional notes about the supplier
 
+### Ingredient Categories Table
+**Purpose:** Categorize ingredients by type for better inventory management, reporting, and cost analysis
+
+```sql
+CREATE TABLE ingredient_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX idx_ingredient_categories_name ON ingredient_categories(name);
+CREATE INDEX idx_ingredient_categories_active ON ingredient_categories(is_active);
+
+-- Insert default ingredient categories
+INSERT INTO ingredient_categories (name, description) VALUES
+('dairy_products', 'Milk, cream, butter, eggs, cheese, yogurt'),
+('sweeteners', 'Sugar, honey, artificial sweeteners, syrups, agave'),
+('flavorings_extracts', 'Vanilla extract, almond extract, food coloring, artificial flavors'),
+('fruits_fresh', 'Fresh strawberries, bananas, berries, seasonal fruits'),
+('fruits_preserved', 'Dried fruits, fruit purees, jams, frozen fruits'),
+('nuts_seeds', 'Almonds, walnuts, pistachios, coconut, seeds'),
+('chocolate_cocoa', 'Cocoa powder, chocolate chips, chocolate bars, white chocolate'),
+('stabilizers_emulsifiers', 'Xanthan gum, lecithin, agar, gelatin'),
+('candies_confections', 'Gummy bears, chocolate chips, candy pieces, marshmallows'),
+('cookies_baked_goods', 'Cookie crumbs, brownie pieces, cake chunks'),
+('cereals_grains', 'Granola, cereal pieces, oats, rice crisps'),
+('sauces_syrups', 'Chocolate sauce, caramel, fruit syrups, hot fudge'),
+('toppings_garnishes', 'Sprinkles, whipped cream, cherries, nuts for topping'),
+('specialty_toppings', 'Edible glitter, candy decorations, specialty sauces'),
+('containers_cups', 'Ice cream cups, takeaway containers, tubs, bowls'),
+('cones_wafers', 'Ice cream cones, waffle cones, crepes, wafer cookies'),
+('utensils_serving', 'Spoons, napkins, straws, stirrers'),
+('packaging_materials', 'Bags, lids, labels, boxes, wrapping'),
+('cleaning_supplies', 'Sanitizers, detergents, cleaning cloths, brushes'),
+('equipment_parts', 'Machine parts, filters, maintenance supplies'),
+('office_supplies', 'Receipt paper, pens, markers, tags'),
+('beverages', 'Coffee, tea, soft drinks, water'),
+('snacks_sides', 'Chips, crackers, other snacks'),
+('bread_pastry', 'Bread for sandwiches, pastries, muffins');
+```
+
+**Field Descriptions:**
+- `id`: Primary key, UUID (auto-generated)
+- `name`: Category name (unique, snake_case format)
+- `description`: Detailed description of the category and examples
+- `is_active`: Whether the category is currently active/available
+- `created_at`: When the category was created
+- `updated_at`: When the category was last modified
+
 ### Ingredients Table
 **Purpose:** Store raw materials/ingredients information with pricing and supplier details
 
@@ -105,6 +159,7 @@ CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
+    ingredient_category_id UUID REFERENCES ingredient_categories(id) ON DELETE SET NULL,
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -112,6 +167,7 @@ CREATE TABLE ingredients (
 
 -- Indexes
 CREATE INDEX idx_ingredients_name ON ingredients(name);
+CREATE INDEX idx_ingredients_category ON ingredients(ingredient_category_id);
 CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 ```
 
@@ -119,6 +175,7 @@ CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 - `id`: Primary key, UUID (auto-generated)
 - `name`: Ingredient identifier/name (unique)
 - `description`: Detailed description of the ingredient (optional)
+- `ingredient_category_id`: Foreign key reference to ingredient_categories table (UUID, nullable for uncategorized ingredients)
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for local store purchases)
 
 ### Existences Table
@@ -315,6 +372,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 ### Inventory Management
 - **suppliers** ← **invoices** (One-to-Many: One supplier can have multiple invoices)
 - **suppliers** ← **ingredients** (One-to-Many: One supplier can provide multiple ingredients)
+- **ingredient_categories** ← **ingredients** (One-to-Many: One category can contain multiple ingredients)
 - **invoice_items** ← **existences** (One-to-Many: One invoice item can contain multiple existences/batches)
 - **ingredients** ← **existences** (One-to-Many: One ingredient can have multiple purchase batches/existences)
 - **existences** ← **runout_ingredient_report** (One-to-Many: One existence can have multiple runout reports)
