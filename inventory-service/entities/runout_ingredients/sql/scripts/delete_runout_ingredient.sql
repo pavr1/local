@@ -1,0 +1,1 @@
+DELETE FROM runout_ingredient_report WHERE id = $1; 

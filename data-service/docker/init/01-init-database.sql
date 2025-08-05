@@ -47,39 +47,6 @@ CREATE TABLE ingredients (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Existences Table
-CREATE TABLE existences (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    existence_reference_code INTEGER UNIQUE NOT NULL DEFAULT nextval('existence_reference_seq'),
-    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
-    invoice_detail_id UUID NOT NULL REFERENCES invoice_details(id) ON DELETE CASCADE, -- Must reference ingredients with category "ingredient" only
-    --units
-    units_purchased DECIMAL(10,2) NOT NULL, -- get this from invoice detail
-    units_available DECIMAL(10,2) NOT NULL, -- same as unit purchased, update when running out
-    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')), -- get from invoice detail
-    --items
-    items_per_unit INTEGER NOT NULL, --ie. Galon has 31 ice-cream balls
-    cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
-    cost_per_unit DECIMAL(10,2) NOT NULL, -- get from invoice detail
-    --costs
-    total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
-    remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
-    --expiry
-    expiration_date DATE, -- get from invoice detail
-    --incomes & taxes
-    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
-    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost * income_margin_percentage / 100) STORED,
-    iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
-    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * iva_percentage / 100) STORED,
-    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
-    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
-    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
-    final_price DECIMAL(10,2),
-    --dates
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Runout Ingredient Report Table
 CREATE TABLE runout_ingredient_report (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -175,6 +142,39 @@ CREATE TABLE invoice_details (
     price DECIMAL(10,2) NOT NULL CHECK (price > 0),
     total DECIMAL(10,2) GENERATED ALWAYS AS (count * price) STORED,
     expiration_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Existences Table
+CREATE TABLE existences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_reference_code INTEGER UNIQUE NOT NULL DEFAULT nextval('existence_reference_seq'),
+    ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
+    invoice_detail_id UUID NOT NULL, -- TODO: Add REFERENCES invoice_details(id) ON DELETE CASCADE after table order is fixed
+    --units
+    units_purchased DECIMAL(10,2) NOT NULL, -- get this from invoice detail
+    units_available DECIMAL(10,2) NOT NULL, -- same as unit purchased, update when running out
+    unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')), -- get from invoice detail
+    --items
+    items_per_unit INTEGER NOT NULL, --ie. Galon has 31 ice-cream balls
+    cost_per_item DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_unit / items_per_unit) STORED,
+    cost_per_unit DECIMAL(10,2) NOT NULL, -- get from invoice detail
+    --costs
+    total_purchase_cost DECIMAL(12,2) GENERATED ALWAYS AS (units_purchased * cost_per_unit) STORED,
+    remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
+    --expiry
+    expiration_date DATE, -- get from invoice detail
+    --incomes & taxes
+    income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
+    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost * income_margin_percentage / 100) STORED,
+    iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
+    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * iva_percentage / 100) STORED,
+    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
+    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
+    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
+    final_price DECIMAL(10,2),
+    --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
