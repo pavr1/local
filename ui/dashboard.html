@@ -1880,6 +1880,258 @@
         // Expose environment management globally
         window.setServiceEnvironment = setServiceEnvironment;
         window.manageService = manageService;
+
+        // ===========================================
+        // SUPPLIERS PAGE FUNCTIONALITY
+        // ===========================================
+
+        // Suppliers content initialization function
+        window.initSuppliersContent = async function() {
+            console.log('🚚 Initializing Suppliers Content...');
+            
+            try {
+                // Load suppliers data
+                await loadSuppliersData();
+                
+                console.log('✅ Suppliers Content initialized successfully');
+            } catch (error) {
+                console.error('❌ Error initializing suppliers content:', error);
+            }
+        };
+
+        async function loadSuppliersData() {
+            console.log('📥 Loading suppliers data...');
+            
+            try {
+                // Use CONFIG object instead of undefined getServiceUrls function
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const suppliers = data.data || [];
+                
+                displaySuppliers(suppliers);
+                
+            } catch (error) {
+                console.error('❌ Error loading suppliers:', error);
+                displaySuppliersError('Failed to load suppliers. Please check your connection and try again.');
+            }
+        }
+
+        function displaySuppliers(suppliers) {
+            const container = document.getElementById('suppliersTableContainer');
+            
+            if (!suppliers || suppliers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-truck empty-state-icon"></i>
+                        <h5>No Suppliers Found</h5>
+                        <p class="text-muted">No suppliers have been added yet.</p>
+                        <button class="btn btn-primary" onclick="openAddSupplierModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Supplier
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Contact Person</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${suppliers.map(supplier => `
+                                <tr>
+                                    <td>
+                                        <strong>${supplier.supplier_name || 'N/A'}</strong>
+                                        ${supplier.address ? `<br><small class="text-muted">${supplier.address}</small>` : ''}
+                                    </td>
+                                    <td>${supplier.contact_person || 'N/A'}</td>
+                                    <td>
+                                        ${supplier.email ? `<a href="mailto:${supplier.email}">${supplier.email}</a>` : 'N/A'}
+                                    </td>
+                                    <td>
+                                        ${supplier.contact_number ? `<a href="tel:${supplier.contact_number}">${supplier.contact_number}</a>` : 'N/A'}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">Active</span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewSupplier('${supplier.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editSupplier('${supplier.id}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = tableHtml;
+        }
+
+        function displaySuppliersError(message) {
+            const container = document.getElementById('suppliersTableContainer');
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle error-state-icon"></i>
+                    <h5>Unable to Load Suppliers</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadSuppliersData()">
+                        <i class="fas fa-refresh me-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        // Modal and form functions
+        window.openAddSupplierModal = function() {
+            console.log('🔧 Opening add supplier modal...');
+            resetSupplierForm();
+            const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
+            modal.show();
+        };
+        
+        function resetSupplierForm() {
+            const form = document.getElementById('addSupplierForm');
+            form.reset();
+            form.classList.remove('was-validated');
+            
+            // Remove validation classes
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            form.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+            
+            // Reset button
+            const saveBtn = document.getElementById('saveSupplierBtn');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
+        }
+
+        async function saveSupplier() {
+            const form = document.getElementById('addSupplierForm');
+            const saveBtn = document.getElementById('saveSupplierBtn');
+            
+            // Reset validation state
+            form.classList.remove('was-validated');
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const supplierData = {};
+            
+            // Process form fields
+            for (let [key, value] of formData.entries()) {
+                const trimmedValue = value.trim();
+                if (trimmedValue) {
+                    supplierData[key] = trimmedValue;
+                }
+            }
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!supplierData.supplier_name || supplierData.supplier_name.length < 1 || supplierData.supplier_name.length > 255) {
+                document.getElementById('supplierName').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (supplierData.contact_number && supplierData.contact_number.length > 50) {
+                document.getElementById('contactNumber').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (supplierData.email && (supplierData.email.length > 255 || !isValidEmail(supplierData.email))) {
+                document.getElementById('supplierEmail').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Update button state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            try {
+                // Use CONFIG object instead of undefined getServiceUrls function
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(supplierData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success
+                    Alert.success('Supplier created successfully!');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSupplierModal'));
+                    modal.hide();
+                    
+                    // Reload suppliers list
+                    await loadSuppliersData();
+                    
+                } else {
+                    // API returned error
+                    const errorMessage = result.message || result.error || 'Failed to create supplier';
+                    Alert.error('Error: ' + errorMessage);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error saving supplier:', error);
+                Alert.error('Failed to save supplier. Please check your connection and try again.');
+            }
+            
+            // Reset button state
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function viewSupplier(supplierId) {
+            // Future implementation: openModal('ViewSupplierModal');
+            Alert.comingSoon('View Supplier Details');
+        }
+
+        function editSupplier(supplierId) {
+            // Future implementation: openModal('EditSupplierModal');
+            Alert.comingSoon('Edit Supplier');
+        }
+
+        // Expose additional functions globally for onclick handlers
+        window.viewSupplier = viewSupplier;
+        window.editSupplier = editSupplier;
+        window.saveSupplier = saveSupplier;
+        window.loadSuppliersData = loadSuppliersData;
+
+        console.log('✅ Suppliers functionality initialized and exposed globally');
+
     </script>
 </body>
 </html> 
