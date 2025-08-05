@@ -19,61 +19,66 @@ func TestCreateIngredient(t *testing.T) {
 		expectedError  bool
 		expectedResult *models.Ingredient
 	}{
-		"successful_creation_with_description": {
+		"successful_creation_with_description_and_category": {
 			request: models.CreateIngredientRequest{
-				Name:        "Vanilla Extract",
-				Description: stringPtr("Pure vanilla extract for flavoring"),
-				SupplierID:  stringPtr("supplier-123"),
+				Name:                 "Vanilla Extract",
+				Description:          stringPtr("Pure vanilla extract for flavoring"),
+				IngredientCategoryID: stringPtr("category-123"),
+				SupplierID:           stringPtr("supplier-123"),
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract for flavoring", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
+					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract for flavoring", "category-123", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
 				mock.ExpectQuery("INSERT INTO ingredients").
-					WithArgs("Vanilla Extract", "Pure vanilla extract for flavoring", "supplier-123").
+					WithArgs("Vanilla Extract", "Pure vanilla extract for flavoring", "category-123", "supplier-123").
 					WillReturnRows(rows)
 			},
 			expectedError: false,
 			expectedResult: &models.Ingredient{
-				ID:          "ingredient-123",
-				Name:        "Vanilla Extract",
-				Description: stringPtr("Pure vanilla extract for flavoring"),
-				SupplierID:  stringPtr("supplier-123"),
-				CreatedAt:   "2024-01-01T00:00:00Z",
-				UpdatedAt:   "2024-01-01T00:00:00Z",
+				ID:                   "ingredient-123",
+				Name:                 "Vanilla Extract",
+				Description:          stringPtr("Pure vanilla extract for flavoring"),
+				IngredientCategoryID: stringPtr("category-123"),
+				SupplierID:           stringPtr("supplier-123"),
+				CreatedAt:            "2024-01-01T00:00:00Z",
+				UpdatedAt:            "2024-01-01T00:00:00Z",
 			},
 		},
-		"successful_creation_without_description": {
+		"successful_creation_without_description_and_category": {
 			request: models.CreateIngredientRequest{
-				Name:        "Sugar",
-				Description: nil,
-				SupplierID:  nil,
+				Name:                 "Sugar",
+				Description:          nil,
+				IngredientCategoryID: nil,
+				SupplierID:           nil,
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-456", "Sugar", nil, nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
+					AddRow("ingredient-456", "Sugar", nil, nil, nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
 				mock.ExpectQuery("INSERT INTO ingredients").
-					WithArgs("Sugar", nil, nil).
+					WithArgs("Sugar", nil, nil, nil).
 					WillReturnRows(rows)
 			},
 			expectedError: false,
 			expectedResult: &models.Ingredient{
-				ID:          "ingredient-456",
-				Name:        "Sugar",
-				Description: nil,
-				SupplierID:  nil,
-				CreatedAt:   "2024-01-01T00:00:00Z",
-				UpdatedAt:   "2024-01-01T00:00:00Z",
+				ID:                   "ingredient-456",
+				Name:                 "Sugar",
+				Description:          nil,
+				IngredientCategoryID: nil,
+				SupplierID:           nil,
+				CreatedAt:            "2024-01-01T00:00:00Z",
+				UpdatedAt:            "2024-01-01T00:00:00Z",
 			},
 		},
 		"database_error": {
 			request: models.CreateIngredientRequest{
-				Name:        "Test Ingredient",
-				Description: stringPtr("Test description"),
-				SupplierID:  nil,
+				Name:                 "Test Ingredient",
+				Description:          stringPtr("Test description"),
+				IngredientCategoryID: stringPtr("category-789"),
+				SupplierID:           nil,
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("INSERT INTO ingredients").
-					WithArgs("Test Ingredient", "Test description", nil).
+					WithArgs("Test Ingredient", "Test description", "category-789", nil).
 					WillReturnError(sql.ErrConnDone)
 			},
 			expectedError:  true,
@@ -121,26 +126,27 @@ func TestGetIngredientByID(t *testing.T) {
 		"successful_retrieval": {
 			ingredientID: "ingredient-123",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
-				mock.ExpectQuery("SELECT id, name, description, supplier_id, created_at, updated_at FROM ingredients WHERE id").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
+					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract", "category-123", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
+				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients WHERE id").
 					WithArgs("ingredient-123").
 					WillReturnRows(rows)
 			},
 			expectedError: false,
 			expectedResult: &models.Ingredient{
-				ID:          "ingredient-123",
-				Name:        "Vanilla Extract",
-				Description: stringPtr("Pure vanilla extract"),
-				SupplierID:  stringPtr("supplier-123"),
-				CreatedAt:   "2024-01-01T00:00:00Z",
-				UpdatedAt:   "2024-01-01T00:00:00Z",
+				ID:                   "ingredient-123",
+				Name:                 "Vanilla Extract",
+				Description:          stringPtr("Pure vanilla extract"),
+				IngredientCategoryID: stringPtr("category-123"),
+				SupplierID:           stringPtr("supplier-123"),
+				CreatedAt:            "2024-01-01T00:00:00Z",
+				UpdatedAt:            "2024-01-01T00:00:00Z",
 			},
 		},
 		"ingredient_not_found": {
 			ingredientID: "nonexistent-id",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, name, description, supplier_id, created_at, updated_at FROM ingredients WHERE id").
+				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients WHERE id").
 					WithArgs("nonexistent-id").
 					WillReturnError(sql.ErrNoRows)
 			},
@@ -187,36 +193,38 @@ func TestListIngredients(t *testing.T) {
 	}{
 		"successful_list": {
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-1", "Sugar", nil, nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z").
-					AddRow("ingredient-2", "Vanilla", "Pure vanilla extract", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
-				mock.ExpectQuery("SELECT id, name, description, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
+					AddRow("ingredient-1", "Sugar", nil, "category-1", nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z").
+					AddRow("ingredient-2", "Vanilla", "Pure vanilla extract", "category-2", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
+				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
 					WillReturnRows(rows)
 			},
 			expectedError: false,
 			expectedResults: []models.Ingredient{
 				{
-					ID:          "ingredient-1",
-					Name:        "Sugar",
-					Description: nil,
-					SupplierID:  nil,
-					CreatedAt:   "2024-01-01T00:00:00Z",
-					UpdatedAt:   "2024-01-01T00:00:00Z",
+					ID:                   "ingredient-1",
+					Name:                 "Sugar",
+					Description:          nil,
+					IngredientCategoryID: stringPtr("category-1"),
+					SupplierID:           nil,
+					CreatedAt:            "2024-01-01T00:00:00Z",
+					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
 				{
-					ID:          "ingredient-2",
-					Name:        "Vanilla",
-					Description: stringPtr("Pure vanilla extract"),
-					SupplierID:  stringPtr("supplier-123"),
-					CreatedAt:   "2024-01-01T00:00:00Z",
-					UpdatedAt:   "2024-01-01T00:00:00Z",
+					ID:                   "ingredient-2",
+					Name:                 "Vanilla",
+					Description:          stringPtr("Pure vanilla extract"),
+					IngredientCategoryID: stringPtr("category-2"),
+					SupplierID:           stringPtr("supplier-123"),
+					CreatedAt:            "2024-01-01T00:00:00Z",
+					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
 			},
 		},
 		"empty_result": {
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"})
-				mock.ExpectQuery("SELECT id, name, description, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"})
+				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
 					WillReturnRows(rows)
 			},
 			expectedError:   false,
@@ -264,25 +272,27 @@ func TestUpdateIngredient(t *testing.T) {
 		"successful_update_all_fields": {
 			ingredientID: "ingredient-123",
 			request: models.UpdateIngredientRequest{
-				Name:        stringPtr("Updated Vanilla"),
-				Description: stringPtr("Updated description"),
-				SupplierID:  stringPtr("new-supplier-456"),
+				Name:                 stringPtr("Updated Vanilla"),
+				Description:          stringPtr("Updated description"),
+				IngredientCategoryID: stringPtr("new-category-456"),
+				SupplierID:           stringPtr("new-supplier-456"),
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-123", "Updated Vanilla", "Updated description", "new-supplier-456", "2024-01-01T00:00:00Z", "2024-01-01T12:00:00Z")
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
+					AddRow("ingredient-123", "Updated Vanilla", "Updated description", "new-category-456", "new-supplier-456", "2024-01-01T00:00:00Z", "2024-01-01T12:00:00Z")
 				mock.ExpectQuery("UPDATE ingredients SET").
-					WithArgs("ingredient-123", "Updated Vanilla", "Updated description", "new-supplier-456").
+					WithArgs("ingredient-123", "Updated Vanilla", "Updated description", "new-category-456", "new-supplier-456").
 					WillReturnRows(rows)
 			},
 			expectedError: false,
 			expectedResult: &models.Ingredient{
-				ID:          "ingredient-123",
-				Name:        "Updated Vanilla",
-				Description: stringPtr("Updated description"),
-				SupplierID:  stringPtr("new-supplier-456"),
-				CreatedAt:   "2024-01-01T00:00:00Z",
-				UpdatedAt:   "2024-01-01T12:00:00Z",
+				ID:                   "ingredient-123",
+				Name:                 "Updated Vanilla",
+				Description:          stringPtr("Updated description"),
+				IngredientCategoryID: stringPtr("new-category-456"),
+				SupplierID:           stringPtr("new-supplier-456"),
+				CreatedAt:            "2024-01-01T00:00:00Z",
+				UpdatedAt:            "2024-01-01T12:00:00Z",
 			},
 		},
 		"ingredient_not_found": {
@@ -292,7 +302,7 @@ func TestUpdateIngredient(t *testing.T) {
 			},
 			setupMock: func(mock sqlmock.Sqlmock) {
 				mock.ExpectQuery("UPDATE ingredients SET").
-					WithArgs("nonexistent-id", "Test Name", nil, nil).
+					WithArgs("nonexistent-id", "Test Name", nil, nil, nil).
 					WillReturnError(sql.ErrNoRows)
 			},
 			expectedError:  true,
