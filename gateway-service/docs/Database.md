@@ -186,7 +186,7 @@ CREATE TABLE existences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     existence_reference_code INTEGER UNIQUE NOT NULL,
     ingredient_id UUID NOT NULL REFERENCES ingredients(id) ON DELETE CASCADE,
-    invoice_detail_id UUID NOT NULL REFERENCES invoice_details(id) ON DELETE CASCADE, -- Must reference ingredients with category "ingredient" only
+    invoice_detail_id UUID NOT NULL, -- Will reference invoice_details(id) when invoice service is implemented
     --units
     units_purchased DECIMAL(10,2) NOT NULL, -- get this from invoice detail
     units_available DECIMAL(10,2) NOT NULL, -- same as unit purchased, update when running out
@@ -231,7 +231,7 @@ CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 - `id`: Primary key, UUID (auto-generated)
 - `existence_reference_code`: Simple numeric consecutive code for easy identification
 - `ingredient_id`: Foreign key reference to ingredients table (UUID)
-- `invoice_detail_id`: Foreign key reference to invoice_details table (UUID, must reference ingredients if category is ingredient only)
+- `invoice_detail_id`: UUID field for invoice detail reference (will reference invoice_details table when invoice service is implemented)
 - `units_purchased`: Original quantity purchased (get this from invoice detail)
 - `units_available`: Current quantity available (get from invoice detail, update when running out)
 - `unit_type`: Unit of measurement for this existence (get from invoice detail - Liters, Gallons, Units, Bag)

@@ -9,6 +9,10 @@ import (
 	existencesHandlers "inventory-service/entities/existences/handlers"
 	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"
+	recipeCategoriesHandlers "inventory-service/entities/recipe_categories/handlers"
+	recipeIngredientsHandlers "inventory-service/entities/recipe_ingredients/handlers"
+	recipesHandlers "inventory-service/entities/recipes/handlers"
+	runoutIngredientsHandlers "inventory-service/entities/runout_ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
 
 	"github.com/sirupsen/logrus"
@@ -25,10 +29,10 @@ type MainHttpHandler struct {
 	IngredientCategoriesHandler *ingredientCategoriesHandlers.HttpHandler
 	IngredientsHandler          *ingredientsHandlers.HttpHandler
 	ExistencesHandler           *existencesHandlers.HttpHandler
-
-	// TODO: Add other entity handlers when implemented
-	// RecipesHandler     *recipesHandlers.HttpHandler
-	// etc.
+	RunoutIngredientsHandler    *runoutIngredientsHandlers.RunoutIngredientHTTPHandler
+	RecipeCategoriesHandler     *recipeCategoriesHandlers.RecipeCategoryHTTPHandler
+	RecipesHandler              *recipesHandlers.RecipeHTTPHandler
+	RecipeIngredientsHandler    *recipeIngredientsHandlers.RecipeIngredientHTTPHandler
 }
 
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
@@ -49,6 +53,18 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 	existencesDBHandler := existencesHandlers.NewDBHandler(db, logger)
 	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler, logger)
 
+	// Initialize runout ingredients handlers
+	runoutIngredientsHttpHandler := runoutIngredientsHandlers.NewRunoutIngredientHTTPHandler(db, logger)
+
+	// Initialize recipe categories handlers
+	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewRecipeCategoryHTTPHandler(db, logger)
+
+	// Initialize recipes handlers
+	recipesHttpHandler := recipesHandlers.NewRecipeHTTPHandler(db, logger)
+
+	// Initialize recipe ingredients handlers
+	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewRecipeIngredientHTTPHandler(db, logger)
+
 	return &MainHttpHandler{
 		db:                          db,
 		logger:                      logger,
@@ -56,8 +72,10 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 		IngredientCategoriesHandler: ingredientCategoriesHttpHandler,
 		IngredientsHandler:          ingredientsHttpHandler,
 		ExistencesHandler:           existencesHttpHandler,
-		// TODO: Add other handlers when implemented
-		// etc.
+		RunoutIngredientsHandler:    runoutIngredientsHttpHandler,
+		RecipeCategoriesHandler:     recipeCategoriesHttpHandler,
+		RecipesHandler:              recipesHttpHandler,
+		RecipeIngredientsHandler:    recipeIngredientsHttpHandler,
 	}
 }
 
@@ -81,7 +99,25 @@ func (h *MainHttpHandler) GetExistencesHandler() *existencesHandlers.HttpHandler
 	return h.ExistencesHandler
 }
 
-// TODO: Add getter methods for other entity handlers when implemented
+// GetRunoutIngredientsHandler returns the runout ingredients HTTP handler
+func (h *MainHttpHandler) GetRunoutIngredientsHandler() *runoutIngredientsHandlers.RunoutIngredientHTTPHandler {
+	return h.RunoutIngredientsHandler
+}
+
+// GetRecipeCategoriesHandler returns the recipe categories HTTP handler
+func (h *MainHttpHandler) GetRecipeCategoriesHandler() *recipeCategoriesHandlers.RecipeCategoryHTTPHandler {
+	return h.RecipeCategoriesHandler
+}
+
+// GetRecipesHandler returns the recipes HTTP handler
+func (h *MainHttpHandler) GetRecipesHandler() *recipesHandlers.RecipeHTTPHandler {
+	return h.RecipesHandler
+}
+
+// GetRecipeIngredientsHandler returns the recipe ingredients HTTP handler
+func (h *MainHttpHandler) GetRecipeIngredientsHandler() *recipeIngredientsHandlers.RecipeIngredientHTTPHandler {
+	return h.RecipeIngredientsHandler
+}
 
 // HealthCheck provides a health check endpoint for the entire service
 func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
@@ -98,30 +134,25 @@ func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 			"status":  "unhealthy",
 			"message": "Data service connection failed",
 			"error":   err.Error(),
+			"time":    time.Now().Format(time.RFC3339),
 		}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		h.logger.WithField("status_code", resp.StatusCode).Error("Data service health check failed")
+		h.logger.WithField("status_code", resp.StatusCode).Error("Data service returned non-OK status during health check")
 		return map[string]interface{}{
 			"service": "inventory-service",
 			"status":  "unhealthy",
-			"message": "Data service is unhealthy",
-			"error":   fmt.Sprintf("Data service returned status %d", resp.StatusCode),
+			"message": fmt.Sprintf("Data service returned status %d", resp.StatusCode),
+			"time":    time.Now().Format(time.RFC3339),
 		}
 	}
 
 	return map[string]interface{}{
 		"service": "inventory-service",
 		"status":  "healthy",
-		"entities": map[string]string{
-			"suppliers":             "ready",
-			"ingredient_categories": "ready",
-			"ingredients":           "ready",
-			"existences":            "ready",
-			// TODO: Add other entities when implemented
-			// "recipes":     "ready",
-		},
+		"message": "Service is running normally",
+		"time":    time.Now().Format(time.RFC3339),
 	}
 }

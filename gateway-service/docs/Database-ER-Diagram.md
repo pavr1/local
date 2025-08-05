@@ -358,7 +358,7 @@ erDiagram
     EXISTENCES ||--o{ WASTE_LOSS : "existence_id"
     
     INVOICE ||--o{ INVOICE_DETAILS : "invoice_id"
-    INVOICE_DETAILS ||--o{ EXISTENCES : "invoice_detail_id"
+    %% INVOICE_DETAILS ||--o{ EXISTENCES : "invoice_detail_id" -- Will be implemented when invoice service is ready
     
     RECIPE_CATEGORIES ||--o{ RECIPES : "recipe_category_id"
     
