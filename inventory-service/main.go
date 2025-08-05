@@ -186,6 +186,24 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// DELETE /api/v1/inventory/suppliers/{id} - Delete supplier
 	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().DeleteSupplier).Methods("DELETE")
 
+	// Ingredient Categories endpoints under inventory
+	categoriesRouter := inventoryRouter.PathPrefix("/ingredient-categories").Subrouter()
+
+	// GET /api/v1/inventory/ingredient-categories - List all ingredient categories
+	categoriesRouter.HandleFunc("", mainHandler.GetIngredientCategoriesHandler().ListIngredientCategories).Methods("GET")
+
+	// POST /api/v1/inventory/ingredient-categories - Create new ingredient category
+	categoriesRouter.HandleFunc("", mainHandler.GetIngredientCategoriesHandler().CreateIngredientCategory).Methods("POST")
+
+	// GET /api/v1/inventory/ingredient-categories/{id} - Get ingredient category by ID
+	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().GetIngredientCategory).Methods("GET")
+
+	// PUT /api/v1/inventory/ingredient-categories/{id} - Update ingredient category
+	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().UpdateIngredientCategory).Methods("PUT")
+
+	// DELETE /api/v1/inventory/ingredient-categories/{id} - Delete ingredient category
+	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().DeleteIngredientCategory).Methods("DELETE")
+
 	// Ingredients endpoints under inventory
 	ingredientsRouter := inventoryRouter.PathPrefix("/ingredients").Subrouter()
 

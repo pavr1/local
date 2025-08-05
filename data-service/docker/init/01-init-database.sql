@@ -26,11 +26,25 @@ CREATE TABLE suppliers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ingredient Categories Table
+CREATE TABLE ingredient_categories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Ingredients Table
 CREATE TABLE ingredients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL UNIQUE,
-    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL
+    description TEXT,
+    ingredient_category_id UUID REFERENCES ingredient_categories(id) ON DELETE SET NULL,
+    supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Existences Table
@@ -360,6 +374,11 @@ CREATE TABLE audit_logs (
 -- =============================================================================
 
 -- Inventory indexes
+CREATE INDEX idx_ingredient_categories_name ON ingredient_categories(name);
+CREATE INDEX idx_ingredient_categories_active ON ingredient_categories(is_active);
+CREATE INDEX idx_ingredients_name ON ingredients(name);
+CREATE INDEX idx_ingredients_category ON ingredients(ingredient_category_id);
+CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 CREATE INDEX idx_existences_ingredient_id ON existences(ingredient_id);
 CREATE INDEX idx_existences_supplier_id ON existences(supplier_id);
 CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
@@ -487,6 +506,33 @@ INSERT INTO expense_categories (category_name, description) VALUES
 ('Transportation', 'Delivery and transportation costs'),
 ('Other', 'Miscellaneous expenses');
 
+-- Insert default ingredient categories
+INSERT INTO ingredient_categories (name, description) VALUES
+('dairy_products', 'Milk, cream, butter, eggs, cheese, yogurt'),
+('sweeteners', 'Sugar, honey, artificial sweeteners, syrups, agave'),
+('flavorings_extracts', 'Vanilla extract, almond extract, food coloring, artificial flavors'),
+('fruits_fresh', 'Fresh strawberries, bananas, berries, seasonal fruits'),
+('fruits_preserved', 'Dried fruits, fruit purees, jams, frozen fruits'),
+('nuts_seeds', 'Almonds, walnuts, pistachios, coconut, seeds'),
+('chocolate_cocoa', 'Cocoa powder, chocolate chips, chocolate bars, white chocolate'),
+('stabilizers_emulsifiers', 'Xanthan gum, lecithin, agar, gelatin'),
+('candies_confections', 'Gummy bears, chocolate chips, candy pieces, marshmallows'),
+('cookies_baked_goods', 'Cookie crumbs, brownie pieces, cake chunks'),
+('cereals_grains', 'Granola, cereal pieces, oats, rice crisps'),
+('sauces_syrups', 'Chocolate sauce, caramel, fruit syrups, hot fudge'),
+('toppings_garnishes', 'Sprinkles, whipped cream, cherries, nuts for topping'),
+('specialty_toppings', 'Edible glitter, candy decorations, specialty sauces'),
+('containers_cups', 'Ice cream cups, takeaway containers, tubs, bowls'),
+('cones_wafers', 'Ice cream cones, waffle cones, crepes, wafer cookies'),
+('utensils_serving', 'Spoons, napkins, straws, stirrers'),
+('packaging_materials', 'Bags, lids, labels, boxes, wrapping'),
+('cleaning_supplies', 'Sanitizers, detergents, cleaning cloths, brushes'),
+('equipment_parts', 'Machine parts, filters, maintenance supplies'),
+('office_supplies', 'Receipt paper, pens, markers, tags'),
+('beverages', 'Coffee, tea, soft drinks, water'),
+('snacks_sides', 'Chips, crackers, other snacks'),
+('bread_pastry', 'Bread for sandwiches, pastries, muffins');
+
 -- Insert default recipe categories
 INSERT INTO recipe_categories (name, description) VALUES
 ('Postres', 'Dessert ice creams and frozen treats'),
@@ -510,6 +556,12 @@ $$ language 'plpgsql';
 
 -- Apply update triggers to all tables with updated_at
 CREATE TRIGGER update_suppliers_updated_at BEFORE UPDATE ON suppliers 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_ingredient_categories_updated_at BEFORE UPDATE ON ingredient_categories 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_ingredients_updated_at BEFORE UPDATE ON ingredients 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_existences_updated_at BEFORE UPDATE ON existences 

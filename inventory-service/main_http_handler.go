@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
 
@@ -19,8 +20,9 @@ type MainHttpHandler struct {
 	logger *logrus.Logger
 
 	// Entity handlers
-	SuppliersHandler   *suppliersHandlers.HttpHandler
-	IngredientsHandler *ingredientsHandlers.HttpHandler
+	SuppliersHandler            *suppliersHandlers.HttpHandler
+	IngredientCategoriesHandler *ingredientCategoriesHandlers.HttpHandler
+	IngredientsHandler          *ingredientsHandlers.HttpHandler
 
 	// TODO: Add other entity handlers when implemented
 	// ExistencesHandler  *existencesHandlers.HttpHandler
@@ -34,15 +36,20 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 	suppliersDBHandler := suppliersHandlers.NewDBHandler(db, logger)
 	suppliersHttpHandler := suppliersHandlers.NewHttpHandler(suppliersDBHandler, logger)
 
+	// Initialize ingredient categories handlers
+	ingredientCategoriesDBHandler := ingredientCategoriesHandlers.NewDBHandler(db, logger)
+	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler, logger)
+
 	// Initialize ingredients handlers
 	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db, logger)
 	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler, logger)
 
 	return &MainHttpHandler{
-		db:                 db,
-		logger:             logger,
-		SuppliersHandler:   suppliersHttpHandler,
-		IngredientsHandler: ingredientsHttpHandler,
+		db:                          db,
+		logger:                      logger,
+		SuppliersHandler:            suppliersHttpHandler,
+		IngredientCategoriesHandler: ingredientCategoriesHttpHandler,
+		IngredientsHandler:          ingredientsHttpHandler,
 		// TODO: Add other handlers when implemented
 		// etc.
 	}
@@ -51,6 +58,11 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 // GetSuppliersHandler returns the suppliers HTTP handler
 func (h *MainHttpHandler) GetSuppliersHandler() *suppliersHandlers.HttpHandler {
 	return h.SuppliersHandler
+}
+
+// GetIngredientCategoriesHandler returns the ingredient categories HTTP handler
+func (h *MainHttpHandler) GetIngredientCategoriesHandler() *ingredientCategoriesHandlers.HttpHandler {
+	return h.IngredientCategoriesHandler
 }
 
 // GetIngredientsHandler returns the ingredients HTTP handler
@@ -93,8 +105,9 @@ func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 		"service": "inventory-service",
 		"status":  "healthy",
 		"entities": map[string]string{
-			"suppliers":   "ready",
-			"ingredients": "ready",
+			"suppliers":             "ready",
+			"ingredient_categories": "ready",
+			"ingredients":           "ready",
 			// TODO: Add other entities when implemented
 			// "existences":  "ready",
 			// "recipes":     "ready",
