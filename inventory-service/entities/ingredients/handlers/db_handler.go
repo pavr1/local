@@ -28,8 +28,8 @@ func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest) (*model
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.CreateIngredientQuery,
-		req.Name, req.SupplierID).
-		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
+		req.Name, req.Description, req.SupplierID).
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
 
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
@@ -51,7 +51,7 @@ func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.GetIngredientByIDQuery, id).
-		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -79,12 +79,17 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 	var ingredients []models.Ingredient
 	for rows.Next() {
 		var ingredient models.Ingredient
-		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
+		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
 		if err != nil {
 			h.logger.WithError(err).Warn("Failed to scan ingredient row, skipping")
 			continue
 		}
 		ingredients = append(ingredients, ingredient)
+	}
+
+	// Ensure we return an empty slice instead of nil for consistency
+	if ingredients == nil {
+		ingredients = []models.Ingredient{}
 	}
 
 	h.logger.WithFields(logrus.Fields{
@@ -99,8 +104,8 @@ func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientReque
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.UpdateIngredientQuery,
-		id, req.Name, req.SupplierID).
-		Scan(&ingredient.ID, &ingredient.Name, &ingredient.SupplierID)
+		id, req.Name, req.Description, req.SupplierID).
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

@@ -2,21 +2,26 @@ package models
 
 // Ingredient represents an ingredient used in ice cream production
 type Ingredient struct {
-	ID         string  `json:"id" db:"id"`
-	Name       string  `json:"name" db:"name"`
-	SupplierID *string `json:"supplier_id" db:"supplier_id"`
+	ID          string  `json:"id" db:"id"`
+	Name        string  `json:"name" db:"name"`
+	Description *string `json:"description" db:"description"`
+	SupplierID  *string `json:"supplier_id" db:"supplier_id"`
+	CreatedAt   string  `json:"created_at" db:"created_at"`
+	UpdatedAt   string  `json:"updated_at" db:"updated_at"`
 }
 
 // CreateIngredientRequest represents the request to create a new ingredient
 type CreateIngredientRequest struct {
-	Name       string  `json:"name" validate:"required,min=1,max=255"`
-	SupplierID *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
+	Name        string  `json:"name" validate:"required,min=1,max=255"`
+	Description *string `json:"description,omitempty" validate:"omitempty,max=1000"`
+	SupplierID  *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // UpdateIngredientRequest represents the request to update an ingredient
 type UpdateIngredientRequest struct {
-	Name       *string `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
-	SupplierID *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
+	Name        *string `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
+	Description *string `json:"description,omitempty" validate:"omitempty,max=1000"`
+	SupplierID  *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // GetIngredientRequest represents the request to get an ingredient by ID
