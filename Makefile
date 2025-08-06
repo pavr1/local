@@ -253,6 +253,9 @@ fresh-ui: ## Fresh install UI service only
 start-data: ## Start data service locally (containers for DB only)
 	@echo "$(CYAN)🗄️  Starting Data Service...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) start
+	@echo "$(CYAN)🚀 Starting Data Service HTTP server...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) start-locally &
+	@sleep 2
 
 start-session: ## Start session service locally
 	@echo "$(CYAN)🔐 Starting Session Service locally...$(RESET)"
@@ -286,6 +289,7 @@ start-ui: ## Start UI service locally
 
 stop-data: ## Stop data service
 	@echo "$(YELLOW)🗄️  Stopping Data Service...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) stop-locally
 	@cd $(DATA_SERVICE) && $(MAKE) stop
 
 stop-session: ## Stop session service locally

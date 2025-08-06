@@ -1,0 +1,941 @@
+<!-- Inventory Recipes Content -->
+<style>
+    /* Recipes-specific styles */
+
+    .recipes-table {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        overflow: hidden;
+    }
+
+    .table-header {
+        background: var(--primary-color);
+        color: var(--white);
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+    }
+
+    .btn-add-recipe {
+        background: var(--white);
+        color: var(--primary-color);
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: var(--border-radius);
+        font-weight: 600;
+        transition: var(--transition);
+    }
+
+    .btn-add-recipe:hover {
+        background: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    .empty-state-icon {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        opacity: 0.6;
+    }
+
+    .error-state-icon {
+        font-size: 2.5rem;
+        color: var(--danger-color);
+        margin-bottom: 1rem;
+        opacity: 0.7;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid var(--primary-light);
+        border-top: 3px solid var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Modal and form styles */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .modal-header {
+        background: var(--gradient-primary);
+        color: var(--white);
+        border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-weight: 600;
+    }
+
+    .btn-close {
+        filter: brightness(0) invert(1);
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: var(--border-radius);
+        padding: 0.75rem 1rem;
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-control.is-invalid {
+        border-color: var(--danger-color);
+    }
+
+    .invalid-feedback {
+        font-size: 0.875rem;
+        color: var(--danger-color);
+    }
+
+    .btn-save-recipe {
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: var(--border-radius);
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        color: var(--white);
+        transition: var(--transition);
+    }
+
+    .btn-save-recipe:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+        color: var(--white);
+    }
+
+    .btn-save-recipe:disabled {
+        opacity: 0.7;
+        transform: none;
+    }
+
+    /* Status badges */
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-inactive {
+        background: #f8d7da;
+        color: #721c24;
+    }
+</style>
+
+<!-- Recipes Table -->
+<div class="recipes-table">
+    <div class="table-header">
+        <button class="btn btn-add-recipe" onclick="openAddRecipeModal()">
+            <i class="fas fa-plus me-2"></i>Add Recipe
+        </button>
+    </div>
+    
+    <div class="table-container" id="recipesTableContainer">
+        <div class="loading-table text-center py-5">
+            <div class="loading-spinner"></div>
+            <p>Loading recipes...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Recipe Modal -->
+<div class="modal fade" id="addRecipeModal" tabindex="-1" aria-labelledby="addRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRecipeModalLabel">
+                    <i class="fas fa-plus me-2"></i>Add New Recipe
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addRecipeForm" novalidate>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="recipeName" class="form-label">
+                                Recipe Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="recipeName" name="name" 
+                                   maxlength="255" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid recipe name (1-255 characters).
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="recipeCategoryId" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-control" id="recipeCategoryId" name="recipe_category_id" required>
+                                <option value="">Select a category</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a recipe category.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="recipeDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="recipeDescription" name="description" 
+                                      rows="3" maxlength="500" placeholder="Brief description of this recipe"></textarea>
+                            <div class="invalid-feedback">
+                                Please provide a valid description (max 500 characters).
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="recipeInstructions" class="form-label">Instructions</label>
+                            <textarea class="form-control" id="recipeInstructions" name="instructions" 
+                                      rows="3" maxlength="1000" placeholder="Step-by-step instructions"></textarea>
+                            <div class="invalid-feedback">
+                                Please provide valid instructions (max 1000 characters).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="recipePreparationTime" class="form-label">Preparation Time (minutes)</label>
+                            <input type="number" min="0" class="form-control" id="recipePreparationTime" name="preparation_time" 
+                                   placeholder="30">
+                            <div class="invalid-feedback">
+                                Please provide a valid preparation time.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="recipeIsActive" class="form-label">Status</label>
+                            <select class="form-control" id="recipeIsActive" name="is_active">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-save-recipe" id="saveRecipeBtn" onclick="saveRecipe()">
+                    <i class="fas fa-save me-2"></i>Save Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Recipe Modal -->
+<div class="modal fade" id="viewRecipeModal" tabindex="-1" aria-labelledby="viewRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewRecipeModalLabel">
+                    <i class="fas fa-eye me-2"></i>Recipe Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="viewRecipeContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Recipe Modal -->
+<div class="modal fade" id="editRecipeModal" tabindex="-1" aria-labelledby="editRecipeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRecipeModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Recipe
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editRecipeForm" novalidate>
+                    <input type="hidden" id="editRecipeId" name="id">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipeName" class="form-label">
+                                Recipe Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="editRecipeName" name="name" 
+                                   maxlength="255" required>
+                            <div class="invalid-feedback">
+                                Please provide a valid recipe name (1-255 characters).
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipeCategoryId" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-control" id="editRecipeCategoryId" name="recipe_category_id" required>
+                                <option value="">Select a category</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a recipe category.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipeDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editRecipeDescription" name="description" 
+                                      rows="3" maxlength="500" placeholder="Brief description of this recipe"></textarea>
+                            <div class="invalid-feedback">
+                                Please provide a valid description (max 500 characters).
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipeInstructions" class="form-label">Instructions</label>
+                            <textarea class="form-control" id="editRecipeInstructions" name="instructions" 
+                                      rows="3" maxlength="1000" placeholder="Step-by-step instructions"></textarea>
+                            <div class="invalid-feedback">
+                                Please provide valid instructions (max 1000 characters).
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipePreparationTime" class="form-label">Preparation Time (minutes)</label>
+                            <input type="number" min="0" class="form-control" id="editRecipePreparationTime" name="preparation_time" 
+                                   placeholder="30">
+                            <div class="invalid-feedback">
+                                Please provide a valid preparation time.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="editRecipeIsActive" class="form-label">Status</label>
+                            <select class="form-control" id="editRecipeIsActive" name="is_active">
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-save-recipe" id="updateRecipeBtn" onclick="updateRecipe()">
+                    <i class="fas fa-save me-2"></i>Update Recipe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let recipes = [];
+    let recipeCategories = [];
+    let currentRecipe = null;
+
+    // Initialize recipes content
+    async function initRecipesContent() {
+        console.log('🔧 Initializing Recipes content...');
+        await loadRecipesData();
+        await loadRecipeCategories();
+        console.log('✅ Recipes content initialized');
+    }
+
+    // Load all recipes data
+    async function loadRecipesData() {
+        try {
+            showRecipesLoading();
+            
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch recipes: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            console.log('📦 Recipes loaded:', result);
+            
+            if (result.success && Array.isArray(result.data)) {
+                displayRecipes(result.data);
+            } else {
+                displayRecipesError('Invalid response format');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading recipes:', error);
+            displayRecipesError(error.message);
+        }
+    }
+
+    // Load recipe categories for dropdowns
+    async function loadRecipeCategories() {
+        try {
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && Array.isArray(result.data)) {
+                    recipeCategories = result.data.filter(c => c.is_active);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading recipe categories:', error);
+        }
+    }
+
+    // Show loading state
+    function showRecipesLoading() {
+        const container = document.getElementById('recipesTableContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="d-flex justify-content-center align-items-center py-5">
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        Loading recipes...
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // Display error state
+    function displayRecipesError(message) {
+        const container = document.getElementById('recipesTableContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="d-flex flex-column justify-content-center align-items-center py-5">
+                    <div class="error-state-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h5 class="text-danger mb-2">Error Loading Recipes</h5>
+                    <p class="text-muted mb-3">${message}</p>
+                    <button class="btn btn-primary" onclick="loadRecipesData()">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    // Display recipes in table
+    function displayRecipes(recipesData) {
+        const container = document.getElementById('recipesTableContainer');
+        
+        if (!container) {
+            console.error('❌ Recipes table container not found');
+            return;
+        }
+
+        if (!recipesData || recipesData.length === 0) {
+            container.innerHTML = `
+                <div class="d-flex flex-column justify-content-center align-items-center py-5">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">No Recipes Found</h5>
+                    <p class="text-muted mb-3">No recipes have been created yet.</p>
+                    <button class="btn btn-primary" onclick="openAddRecipeModal()">
+                        <i class="fas fa-plus me-2"></i>Add First Recipe
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Store data globally
+        recipes = recipesData;
+
+        const tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Description</th>
+                            <th>Prep Time</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${recipesData.map(item => {
+                            const category = recipeCategories.find(c => c.id === item.recipe_category_id);
+                            const categoryName = category ? category.name : 'Unknown';
+                            
+                            return `
+                                <tr>
+                                    <td><code>${item.id}</code></td>
+                                    <td><strong>${item.name}</strong></td>
+                                    <td><span class="badge bg-info">${categoryName}</span></td>
+                                    <td>${item.description ? item.description.substring(0, 50) + '...' : '-'}</td>
+                                    <td>${item.preparation_time ? item.preparation_time + ' min' : '-'}</td>
+                                    <td>
+                                        <span class="status-badge ${item.is_active ? 'status-active' : 'status-inactive'}">
+                                            ${item.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewRecipe('${item.id}')" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="editRecipe('${item.id}')" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteRecipe('${item.id}')" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = tableHtml;
+    }
+
+    // Populate category dropdowns
+    function populateCategoryDropdowns() {
+        const categorySelects = ['recipeCategoryId', 'editRecipeCategoryId'];
+        
+        categorySelects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">Select a category</option>';
+                recipeCategories.forEach(category => {
+                    select.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+                });
+            }
+        });
+    }
+
+    // Modal and form functions
+    window.openAddRecipeModal = async function() {
+        await loadRecipeCategories();
+        populateCategoryDropdowns();
+        resetRecipeForm();
+        const modalElement = document.getElementById('addRecipeModal');
+        if (modalElement) {
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+    };
+    
+    function resetRecipeForm() {
+        const form = document.getElementById('addRecipeForm');
+        if (form) {
+            form.reset();
+            form.classList.remove('was-validated');
+            
+            // Remove validation classes
+            const fields = ['recipeName', 'recipeCategoryId', 'recipeDescription', 'recipeInstructions', 'recipePreparationTime'];
+            fields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) field.classList.remove('is-invalid', 'is-valid');
+            });
+            
+            // Reset button
+            const saveBtn = document.getElementById('saveRecipeBtn');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Recipe';
+            }
+        }
+    }
+
+    async function saveRecipe() {
+        const form = document.getElementById('addRecipeForm');
+        const saveBtn = document.getElementById('saveRecipeBtn');
+        
+        // Reset validation state
+        form.classList.remove('was-validated');
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Collect form data
+        const formData = new FormData(form);
+        const recipeData = {};
+        
+        // Process form fields
+        for (let [key, value] of formData.entries()) {
+            const trimmedValue = value.trim();
+            if (trimmedValue) {
+                recipeData[key] = trimmedValue;
+            }
+        }
+        
+        // Handle boolean field
+        recipeData.is_active = document.getElementById('recipeIsActive').value === 'true';
+        
+        // Handle numeric field
+        if (recipeData.preparation_time) {
+            recipeData.preparation_time = parseInt(recipeData.preparation_time);
+        }
+        
+        // Validate required fields
+        let isValid = true;
+        
+        if (!recipeData.name || recipeData.name.length < 1 || recipeData.name.length > 255) {
+            document.getElementById('recipeName').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!recipeData.recipe_category_id) {
+            document.getElementById('recipeCategoryId').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (recipeData.description && recipeData.description.length > 500) {
+            document.getElementById('recipeDescription').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (recipeData.instructions && recipeData.instructions.length > 1000) {
+            document.getElementById('recipeInstructions').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        // Update button state
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+        
+        try {
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(recipeData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                Alert.success('Recipe created successfully!');
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
+                modal.hide();
+                
+                // Reload data
+                await loadRecipesData();
+            } else {
+                throw new Error(result.message || 'Failed to create recipe');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error saving recipe:', error);
+            Alert.error('Failed to save recipe. Please check your connection and try again.');
+        }
+        
+        // Reset button state
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Recipe';
+    }
+
+    function viewRecipe(recipeId) {
+        console.log('👁️ Viewing recipe:', recipeId);
+        loadRecipeForView(recipeId);
+    }
+
+    function editRecipe(recipeId) {
+        console.log('✏️ Editing recipe:', recipeId);
+        loadRecipeForEdit(recipeId);
+    }
+
+    async function loadRecipeForView(recipeId) {
+        try {
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            const recipe = result.data;
+            
+            const category = recipeCategories.find(c => c.id === recipe.recipe_category_id);
+            const categoryName = category ? category.name : 'Unknown';
+            
+            // Populate view modal
+            document.getElementById('viewRecipeContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Recipe Information</h6>
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">ID:</td>
+                                <td><code>${recipe.id}</code></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Name:</td>
+                                <td><strong>${recipe.name}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Category:</td>
+                                <td><span class="badge bg-info">${categoryName}</span></td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Description:</td>
+                                <td>${recipe.description || 'No description'}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Preparation Time:</td>
+                                <td>${recipe.preparation_time ? recipe.preparation_time + ' minutes' : 'Not specified'}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Status:</td>
+                                <td>
+                                    <span class="status-badge ${recipe.is_active ? 'status-active' : 'status-inactive'}">
+                                        ${recipe.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Created:</td>
+                                <td>${new Date(recipe.created_at).toLocaleString()}</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Last Updated:</td>
+                                <td>${new Date(recipe.updated_at).toLocaleString()}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Instructions</h6>
+                        <div class="border rounded p-3 bg-light">
+                            <p class="mb-0">${recipe.instructions || 'No instructions available'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            currentRecipe = recipe;
+            
+            const modal = new bootstrap.Modal(document.getElementById('viewRecipeModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('❌ Error loading recipe for view:', error);
+            Alert.error('Failed to load recipe details. Please try again.');
+        }
+    }
+
+    async function loadRecipeForEdit(recipeId) {
+        try {
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            const recipe = result.data;
+            
+            // Populate edit form
+            document.getElementById('editRecipeId').value = recipe.id;
+            document.getElementById('editRecipeName').value = recipe.name;
+            document.getElementById('editRecipeDescription').value = recipe.description || '';
+            document.getElementById('editRecipeInstructions').value = recipe.instructions || '';
+            document.getElementById('editRecipePreparationTime').value = recipe.preparation_time || '';
+            document.getElementById('editRecipeIsActive').value = recipe.is_active.toString();
+            
+            // Populate category dropdown
+            await loadRecipeCategories();
+            populateCategoryDropdowns();
+            document.getElementById('editRecipeCategoryId').value = recipe.recipe_category_id;
+            
+            currentRecipe = recipe;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editRecipeModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('❌ Error loading recipe for edit:', error);
+            Alert.error('Failed to load recipe for editing. Please try again.');
+        }
+    }
+
+    async function updateRecipe() {
+        const form = document.getElementById('editRecipeForm');
+        const updateBtn = document.getElementById('updateRecipeBtn');
+        
+        if (!currentRecipe) {
+            Alert.error('No recipe selected for update.');
+            return;
+        }
+        
+        // Reset validation state
+        form.classList.remove('was-validated');
+        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        // Collect form data
+        const formData = new FormData(form);
+        const recipeData = {};
+        
+        // Process form fields
+        for (let [key, value] of formData.entries()) {
+            const trimmedValue = value.trim();
+            if (trimmedValue) {
+                recipeData[key] = trimmedValue;
+            }
+        }
+        
+        // Handle boolean field
+        recipeData.is_active = document.getElementById('editRecipeIsActive').value === 'true';
+        
+        // Handle numeric field
+        if (recipeData.preparation_time) {
+            recipeData.preparation_time = parseInt(recipeData.preparation_time);
+        }
+        
+        // Validate required fields
+        let isValid = true;
+        
+        if (!recipeData.name || recipeData.name.length < 1 || recipeData.name.length > 255) {
+            document.getElementById('editRecipeName').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!recipeData.recipe_category_id) {
+            document.getElementById('editRecipeCategoryId').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (recipeData.description && recipeData.description.length > 500) {
+            document.getElementById('editRecipeDescription').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (recipeData.instructions && recipeData.instructions.length > 1000) {
+            document.getElementById('editRecipeInstructions').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            form.classList.add('was-validated');
+            return;
+        }
+        
+        // Update button state
+        updateBtn.disabled = true;
+        updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+        
+        try {
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(recipeData)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                Alert.success('Recipe updated successfully!');
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
+                modal.hide();
+                
+                // Reload data
+                await loadRecipesData();
+            } else {
+                throw new Error(result.message || 'Failed to update recipe');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error updating recipe:', error);
+            Alert.error('Failed to update recipe. Please check your connection and try again.');
+        }
+        
+        // Reset button state
+        updateBtn.disabled = false;
+        updateBtn.innerHTML = '<i class="fas fa-save me-2"></i>Update Recipe';
+    }
+
+    async function deleteRecipe(recipeId) {
+        const recipe = recipes.find(r => r.id === recipeId);
+        if (!recipe) {
+            Alert.error('Recipe not found');
+            return;
+        }
+        
+        const confirmed = await Swal.fire({
+            title: 'Delete Recipe?',
+            text: `Are you sure you want to delete "${recipe.name}"? This action cannot be undone.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+        
+        if (confirmed.isConfirmed) {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    Alert.success('Recipe deleted successfully!');
+                    await loadRecipesData();
+                } else {
+                    const result = await response.json();
+                    throw new Error(result.message || 'Failed to delete recipe');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error deleting recipe:', error);
+                Alert.error('Failed to delete recipe. Please try again.');
+            }
+        }
+    }
+
+    // Expose functions globally
+    window.initRecipesContent = initRecipesContent;
+    window.loadRecipesData = loadRecipesData;
+    window.openAddRecipeModal = openAddRecipeModal;
+    window.viewRecipe = viewRecipe;
+    window.editRecipe = editRecipe;
+    window.deleteRecipe = deleteRecipe;
+</script> 
