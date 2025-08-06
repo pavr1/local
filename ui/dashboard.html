@@ -811,7 +811,7 @@
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link nav-sub" onclick="toggleSubmenu('recipes')" data-page="inventory-recipes">
+                                <button class="nav-link nav-sub" onclick="toggleSubmenu('recipes')">
                                     <i class="fas fa-utensils me-2"></i>Recipes
                                     <i class="fas fa-chevron-down ms-auto"></i>
                                 </button>
@@ -1022,6 +1022,9 @@
             'inventory-ingredients': 'partials/inventory/ingredients.html',
             'inventory-categories': 'partials/inventory/categories.html',
             'inventory-existences': 'partials/inventory/existences.html',
+            'inventory-runout-ingredients': 'partials/inventory/runout-ingredients.html',
+            'inventory-recipe-categories': 'partials/inventory/recipe-categories.html',
+            'inventory-recipes': 'partials/inventory/recipes.html',
             'invoice': 'partials/invoice/index.html',
             'invoice-details': 'partials/invoice/details.html'
         };
@@ -4441,6 +4444,302 @@
                     }, 100);
                 }
             });
+        }
+
+        // Initialize Runout Ingredients Content
+        async function initRunoutIngredientsContent() {
+            console.log('🔧 Initializing Runout Ingredients content...');
+            await loadRunoutIngredientsData();
+            console.log('✅ Runout Ingredients content initialized');
+        }
+
+        async function loadRunoutIngredientsData() {
+            console.log('📥 Loading runout ingredients data...');
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const runoutIngredients = data.data || [];
+                
+                displayRunoutIngredients(runoutIngredients);
+                
+            } catch (error) {
+                console.error('❌ Error loading runout ingredients:', error);
+                displayRunoutIngredientsError('Failed to load runout ingredients. Please check your connection and try again.');
+            }
+        }
+
+        function displayRunoutIngredients(runoutIngredients) {
+            const container = document.getElementById('runoutIngredientsTableContainer');
+            
+            if (!runoutIngredients || runoutIngredients.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-exclamation-triangle empty-state-icon"></i>
+                        <h5>No Runout Ingredients Found</h5>
+                        <p class="text-muted">No runout ingredients have been reported yet.</p>
+                        <button class="btn btn-primary" onclick="openAddRunoutIngredientModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Report
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Existence</th>
+                                <th>Employee</th>
+                                <th>Quantity</th>
+                                <th>Unit Type</th>
+                                <th>Report Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${runoutIngredients.map(item => `
+                                <tr>
+                                    <td>
+                                        <strong>${item.existence_reference_code || 'N/A'}</strong>
+                                    </td>
+                                    <td>${item.employee_id || 'N/A'}</td>
+                                    <td>${item.quantity || 'N/A'}</td>
+                                    <td>${item.unit_type || 'N/A'}</td>
+                                    <td>${item.report_date || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewRunoutIngredient('${item.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editRunoutIngredient('${item.id}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = tableHtml;
+        }
+
+        function displayRunoutIngredientsError(message) {
+            const container = document.getElementById('runoutIngredientsTableContainer');
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle error-state-icon"></i>
+                    <h5>Error Loading Data</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadRunoutIngredientsData()">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize Recipe Categories Content
+        async function initRecipeCategoriesContent() {
+            console.log('🔧 Initializing Recipe Categories content...');
+            await loadRecipeCategoriesData();
+            console.log('✅ Recipe Categories content initialized');
+        }
+
+        async function loadRecipeCategoriesData() {
+            console.log('📥 Loading recipe categories data...');
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const recipeCategories = data.data || [];
+                
+                displayRecipeCategories(recipeCategories);
+                
+            } catch (error) {
+                console.error('❌ Error loading recipe categories:', error);
+                displayRecipeCategoriesError('Failed to load recipe categories. Please check your connection and try again.');
+            }
+        }
+
+        function displayRecipeCategories(recipeCategories) {
+            const container = document.getElementById('recipeCategoriesTableContainer');
+            
+            if (!recipeCategories || recipeCategories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-tags empty-state-icon"></i>
+                        <h5>No Recipe Categories Found</h5>
+                        <p class="text-muted">No recipe categories have been created yet.</p>
+                        <button class="btn btn-primary" onclick="openAddRecipeCategoryModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Category
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${recipeCategories.map(category => `
+                                <tr>
+                                    <td>
+                                        <strong>${category.name || 'N/A'}</strong>
+                                    </td>
+                                    <td>${category.description || 'N/A'}</td>
+                                    <td>${category.created_at || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewRecipeCategory('${category.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editRecipeCategory('${category.id}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = tableHtml;
+        }
+
+        function displayRecipeCategoriesError(message) {
+            const container = document.getElementById('recipeCategoriesTableContainer');
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle error-state-icon"></i>
+                    <h5>Error Loading Data</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadRecipeCategoriesData()">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+        }
+
+        // Initialize Recipes Content
+        async function initRecipesContent() {
+            console.log('🔧 Initializing Recipes content...');
+            await loadRecipesData();
+            console.log('✅ Recipes content initialized');
+        }
+
+        async function loadRecipesData() {
+            console.log('📥 Loading recipes data...');
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const recipes = data.data || [];
+                
+                displayRecipes(recipes);
+                
+            } catch (error) {
+                console.error('❌ Error loading recipes:', error);
+                displayRecipesError('Failed to load recipes. Please check your connection and try again.');
+            }
+        }
+
+        function displayRecipes(recipes) {
+            const container = document.getElementById('recipesTableContainer');
+            
+            if (!recipes || recipes.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-utensils empty-state-icon"></i>
+                        <h5>No Recipes Found</h5>
+                        <p class="text-muted">No recipes have been created yet.</p>
+                        <button class="btn btn-primary" onclick="openAddRecipeModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Recipe
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Total Cost</th>
+                                <th>Created At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${recipes.map(recipe => `
+                                <tr>
+                                    <td>
+                                        <strong>${recipe.name || 'N/A'}</strong>
+                                    </td>
+                                    <td>${recipe.description || 'N/A'}</td>
+                                    <td>${recipe.category_id || 'N/A'}</td>
+                                    <td>$${recipe.total_cost || '0.00'}</td>
+                                    <td>${recipe.created_at || 'N/A'}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewRecipe('${recipe.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary ms-1" onclick="editRecipe('${recipe.id}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = tableHtml;
+        }
+
+        function displayRecipesError(message) {
+            const container = document.getElementById('recipesTableContainer');
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle error-state-icon"></i>
+                    <h5>Error Loading Data</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadRecipesData()">
+                        <i class="fas fa-redo me-2"></i>Try Again
+                    </button>
+                </div>
+            `;
         }
     </script>
 </body>

@@ -47,16 +47,6 @@ CREATE TABLE ingredients (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Runout Ingredient Report Table
-CREATE TABLE runout_ingredient_report (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
-    employee_id UUID NOT NULL, -- References users table
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity >= 0),
-    unit_type VARCHAR(50) NOT NULL,
-    report_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Recipe Categories Table
 CREATE TABLE recipe_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -167,14 +157,26 @@ CREATE TABLE existences (
     expiration_date DATE, -- get from invoice detail
     --incomes & taxes
     income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
-    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost * income_margin_percentage / 100) STORED,
+    income_margin_amount DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
     iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
-    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * iva_percentage / 100) STORED,
+    iva_amount DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
     service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
-    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_purchase_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
-    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_purchase_cost + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
+    service_tax_amount DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
+    calculated_price DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
     final_price DECIMAL(10,2),
     --dates
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Runout Ingredient Report Table
+CREATE TABLE runout_ingredient_report (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL, -- References users table
+    quantity DECIMAL(10,2) NOT NULL CHECK (quantity >= 0),
+    unit_type VARCHAR(50) NOT NULL,
+    report_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -593,6 +595,9 @@ CREATE TRIGGER update_recipes_updated_at BEFORE UPDATE ON recipes
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_recipe_ingredients_updated_at BEFORE UPDATE ON recipe_ingredients 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_runout_ingredient_report_updated_at BEFORE UPDATE ON runout_ingredient_report 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_expense_categories_updated_at BEFORE UPDATE ON expense_categories 
