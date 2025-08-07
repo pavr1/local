@@ -120,6 +120,10 @@ func main() {
 	invoiceRouter.HandleFunc("/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
 
+	// Expense Categories routes (proxied to invoice service)
+	expenseCategoriesRouter := api.PathPrefix("/v1/expense-categories").Subrouter()
+	expenseCategoriesRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/expense-categories"))
+
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
 
@@ -160,6 +164,8 @@ func main() {
 	fmt.Printf("      ALL  /api/v1/invoices/*        → %s\n", config.InvoiceServiceURL)
 	fmt.Printf("           ├─ /invoices/*           → Invoice management\n")
 	fmt.Printf("           └─ /invoices/{id}/details  → Invoice details management\n")
+	fmt.Printf("      ALL  /api/v1/expense-categories/* → %s\n", config.InvoiceServiceURL)
+	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
 	fmt.Println("")
 	fmt.Println("📋 SESSION MANAGEMENT:")
 	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)

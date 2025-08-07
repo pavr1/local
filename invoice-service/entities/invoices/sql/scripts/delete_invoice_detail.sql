@@ -1,0 +1,1 @@
+DELETE FROM invoice_details WHERE id = $1; 

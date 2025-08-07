@@ -1,1 +1,1 @@
-SELECT COUNT(*) FROM invoice 
+SELECT COUNT(*) FROM invoice; 

@@ -89,6 +89,7 @@ CREATE TABLE expense_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     category_name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -107,12 +108,12 @@ CREATE TABLE expenses (
 -- Invoice Table (modernized expense tracking)
 CREATE TABLE invoice (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    invoice_number VARCHAR(50) NOT NULL UNIQUE,
+    invoice_number VARCHAR(100) NOT NULL UNIQUE,
     transaction_date DATE NOT NULL,
     transaction_type VARCHAR(10) NOT NULL CHECK (transaction_type IN ('income', 'outcome')),
     supplier_id UUID REFERENCES suppliers(id) ON DELETE SET NULL,
     expense_category_id UUID NOT NULL REFERENCES expense_categories(id) ON DELETE RESTRICT,
-    total_amount DECIMAL(10,2),
+    total_amount DECIMAL(12,2),
     image_url VARCHAR(500) NOT NULL,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -124,11 +125,11 @@ CREATE TABLE invoice_details (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID NOT NULL REFERENCES invoice(id) ON DELETE CASCADE,
     ingredient_id UUID REFERENCES ingredients(id) ON DELETE SET NULL,
-    detail VARCHAR(255) NOT NULL,
+    detail TEXT NOT NULL,
     count DECIMAL(10,2) NOT NULL CHECK (count > 0),
     unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
     price DECIMAL(10,2) NOT NULL CHECK (price > 0),
-    total DECIMAL(10,2) GENERATED ALWAYS AS (count * price) STORED,
+    total DECIMAL(12,2) GENERATED ALWAYS AS (count * price) STORED,
     expiration_date DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -432,12 +433,16 @@ CREATE INDEX idx_sessions_is_active ON sessions(is_active);
 CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active);
 
 -- Indexes for Invoice Tables
-CREATE INDEX idx_invoice_transaction_type ON invoice(transaction_type);
-CREATE INDEX idx_invoice_supplier_id ON invoice(supplier_id);
-CREATE INDEX idx_invoice_expense_category_id ON invoice(expense_category_id);
+CREATE INDEX idx_invoice_number ON invoice(invoice_number);
+CREATE INDEX idx_invoice_supplier ON invoice(supplier_id);
+CREATE INDEX idx_invoice_category ON invoice(expense_category_id);
 CREATE INDEX idx_invoice_transaction_date ON invoice(transaction_date);
-CREATE INDEX idx_invoice_details_invoice_id ON invoice_details(invoice_id);
-CREATE INDEX idx_invoice_details_ingredient_id ON invoice_details(ingredient_id);
+CREATE INDEX idx_invoice_transaction_type ON invoice(transaction_type);
+CREATE INDEX idx_invoice_details_invoice ON invoice_details(invoice_id);
+CREATE INDEX idx_invoice_details_ingredient ON invoice_details(ingredient_id);
+CREATE INDEX idx_invoice_details_total ON invoice_details(total);
+CREATE INDEX idx_invoice_details_unit_type ON invoice_details(unit_type);
+CREATE INDEX idx_invoice_details_expiration ON invoice_details(expiration_date);
 
 -- =============================================================================
 -- ADD FOREIGN KEY CONSTRAINTS THAT WERE DEFERRED
@@ -514,16 +519,11 @@ INSERT INTO users (username, password_hash, full_name, role_id) VALUES
 
 -- Insert default expense categories
 INSERT INTO expense_categories (category_name, description) VALUES
-('Ingredients', 'Raw materials and ingredients for ice cream production'),
-('Equipment', 'Machinery and equipment purchases'),
-('Utilities', 'Electricity, water, gas bills'),
-('Rent', 'Store rent and property costs'),
-('Salaries', 'Employee wages and benefits'),
-('Marketing', 'Advertising and promotional expenses'),
-('Maintenance', 'Equipment maintenance and repairs'),
-('Packaging', 'Containers, cups, spoons, napkins'),
-('Transportation', 'Delivery and transportation costs'),
-('Other', 'Miscellaneous expenses');
+('Salary payments', 'Employee salaries and wages'),
+('Service payments', 'Utility services, maintenance, subscriptions'),
+('Rent payments', 'Property rent and lease payments'),
+('Ingredients', 'Ingredient and supply purchases'),
+('Other operational expenses', 'Miscellaneous business expenses');
 
 -- Insert default ingredient categories
 INSERT INTO ingredient_categories (name, description) VALUES
@@ -599,6 +599,12 @@ CREATE TRIGGER update_runout_ingredient_report_updated_at BEFORE UPDATE ON runou
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_expense_categories_updated_at BEFORE UPDATE ON expense_categories 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_invoice_updated_at BEFORE UPDATE ON invoice 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_invoice_details_updated_at BEFORE UPDATE ON invoice_details 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses 

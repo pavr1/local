@@ -1,1 +1,1 @@
-DELETE FROM invoice WHERE id = $1 
+DELETE FROM invoice WHERE id = $1; 

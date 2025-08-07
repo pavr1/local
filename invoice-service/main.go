@@ -190,6 +190,17 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// Invoice details standalone routes
 	api.HandleFunc("/invoice-details", invoicesHandler.ListInvoiceDetails).Methods("GET")
 
+	// Expense Categories routes
+	expenseCategoriesRouter := api.PathPrefix("/expense-categories").Subrouter()
+	expenseCategoriesHandler := mainHandler.GetExpenseCategoriesHandler()
+
+	// Main expense category operations
+	expenseCategoriesRouter.HandleFunc("", expenseCategoriesHandler.CreateExpenseCategory).Methods("POST")
+	expenseCategoriesRouter.HandleFunc("", expenseCategoriesHandler.ListExpenseCategories).Methods("GET")
+	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.GetExpenseCategory).Methods("GET")
+	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.UpdateExpenseCategory).Methods("PUT")
+	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.DeleteExpenseCategory).Methods("DELETE")
+
 	logger.Info("HTTP router configured successfully")
 	return router
 }
