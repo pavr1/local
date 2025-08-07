@@ -60,12 +60,10 @@ CREATE TABLE recipe_categories (
 CREATE TABLE recipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     recipe_name VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
-    instructions TEXT,
-    preparation_time INTEGER, -- in minutes
-    serving_size INTEGER,
-    price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
-    category_id UUID REFERENCES recipe_categories(id) ON DELETE SET NULL,
+    recipe_description TEXT,
+    picture_url VARCHAR(500),
+    recipe_category_id UUID REFERENCES recipe_categories(id) ON DELETE SET NULL,
+    total_recipe_cost DECIMAL(10,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

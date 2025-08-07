@@ -933,14 +933,32 @@
         let currentPage = 'dashboard';
         let auth = null;
 
+        // Initialize SPA Dashboard
+        async function initializeDashboard() {
+            try {
+                // Check authentication
+                if (!isAuthenticated()) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Initialize health monitoring
+                startHealthMonitoring();
+                
+                // Load initial content
+                await loadContent('dashboard');
+                
+            } catch (error) {
+                console.error('❌ Dashboard initialization failed:', error);
+                showError('Failed to initialize dashboard. Please refresh the page.');
+            }
+        }
+
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Initializing SPA Dashboard...');
-            
             // Initialize authentication
             auth = new AuthService();
             if (!auth.isAuthenticated()) {
-                console.log('❌ User not authenticated, redirecting to login');
                 window.location.href = 'login.html';
                 return;
             }
@@ -962,21 +980,16 @@
             // Additional health check to ensure proper button states after content load
             setTimeout(() => {
                 updateSystemStatus(false);
-                console.log('🔄 Dashboard: Secondary health check for button state verification');
             }, 2000);
             
             // Test SweetAlert2 system
             setTimeout(() => {
                 Alert.success('Dashboard Ready', 'Welcome to your Ice Cream Store management system!');
             }, 1000);
-            
-            console.log('✅ SPA Dashboard initialized successfully');
         });
 
         // Content loading function
         async function loadContent(page) {
-            console.log('📄 Loading content:', page);
-            
             try {
                 // Show loading state
                 showLoading();
@@ -1050,7 +1063,6 @@
             };
             
             // Setup header time (always visible in top panel)
-            console.log('🕐 Setting up header time...');
             setTimeout(() => {
                 const headerTimeElement = document.getElementById('header-time');
                 
@@ -1063,12 +1075,10 @@
                 
                 updateHeaderTime(); // Set immediately
                 setInterval(updateHeaderTime, 1000); // Update every second
-                console.log('✅ Header time setup complete');
             }, 200);
             
             const initFunction = initMap[page];
             if (initFunction && typeof window[initFunction] === 'function') {
-                console.log('🔧 Initializing page:', initFunction);
                 await window[initFunction]();
             }
             
@@ -1266,17 +1276,14 @@
         - Debug helpers: listAvailableModals(), registerModal()
         */
         window.openModal = function(modalId, requiredPage = null) {
-            console.log(`📝 openModal called for: ${modalId}, required page: ${requiredPage}`);
             
             // If a specific page is required and we're not on it, navigate first
             if (requiredPage && currentPage !== requiredPage) {
-                console.log(`🔄 Navigating to ${requiredPage} page first...`);
                 loadContent(requiredPage).then(() => {
                     // After page loads, wait for the modal functions to be defined
                     setTimeout(() => {
                         const modalFunction = window[`open${modalId}`];
                         if (modalFunction && typeof modalFunction === 'function') {
-                            console.log(`✅ Modal function open${modalId} found, calling it...`);
                             modalFunction();
                         } else {
                             console.warn(`⚠️ Modal function open${modalId} not found after page load`);
@@ -1286,17 +1293,14 @@
                 });
             } else {
                 // Already on correct page or no specific page required, try to open modal directly
-                console.log(`📋 Attempting to open modal ${modalId} on current page...`);
                 const modalFunction = window[`open${modalId}`];
                 if (modalFunction && typeof modalFunction === 'function') {
-                    console.log(`✅ Modal function open${modalId} found, calling it...`);
                     modalFunction();
                 } else {
                     // Function not yet loaded, wait a bit
                     setTimeout(() => {
                         const modalFunction = window[`open${modalId}`];
                         if (modalFunction && typeof modalFunction === 'function') {
-                            console.log(`✅ Modal function open${modalId} found after wait, calling it...`);
                             modalFunction();
                         } else {
                             console.warn(`⚠️ Modal function open${modalId} not found after timeout`);
@@ -1312,7 +1316,6 @@
             const modalFunctions = Object.keys(window).filter(key => 
                 key.startsWith('open') && key.endsWith('Modal') && typeof window[key] === 'function'
             );
-            console.log('📋 Available modal functions:', modalFunctions);
             return modalFunctions;
         };
 
@@ -1320,7 +1323,6 @@
         window.registerModal = function(modalId, modalFunction, requiredPage = null) {
             const functionName = `open${modalId}`;
             window[functionName] = modalFunction;
-            console.log(`✅ Modal registered: ${functionName}${requiredPage ? ` (requires page: ${requiredPage})` : ''}`);
             
             // Return a convenient onclick handler string
             return `openModal('${modalId}'${requiredPage ? `, '${requiredPage}'` : ''})`;
@@ -1340,14 +1342,12 @@
                 await updateSystemStatus(true); // true = isAutoRefresh
             }, 2000); // 2 seconds for real-time updates
             
-            console.log('✅ Health monitoring started (2-second intervals)');
         }
         
         function stopHealthMonitoring() {
             if (healthCheckInterval) {
                 clearInterval(healthCheckInterval);
                 healthCheckInterval = null;
-                console.log('🛑 Health monitoring stopped');
             }
         }
 
@@ -1363,12 +1363,10 @@
 
         // Dashboard content initialization function
         window.initDashboardContent = async function() {
-            console.log('🏠 Initializing Dashboard Content...');
             
             try {
                 // Service status will be loaded by the centralized updateSystemStatus() 
                 // which is called automatically on page load and every 30 seconds
-                console.log('✅ Dashboard Content initialized successfully - service status handled centrally');
             } catch (error) {
                 console.error('❌ Error initializing dashboard content:', error);
             }
@@ -1393,8 +1391,6 @@
             
             try {
                 const logPrefix = isAutoRefresh ? '🔄 [Auto]' : '🔍';
-                console.log(`${logPrefix} Checking overall system status via gateway...`);
-                console.log(`${logPrefix} Fetching: ${CONFIG.GATEWAY_URL}/api/health`);
                 
                 // Use AbortController for better browser compatibility
                 const controller = new AbortController();
@@ -1412,32 +1408,27 @@
                 
                 if (response.ok) {
                     const healthData = await response.json();
-                    console.log(`${logPrefix} Health check response:`, healthData);
                     
                     // Update top panel based on overall status and service counts
                     if (healthData.status === 'healthy') {
                         systemStatusIcon.className = 'system-status-indicator online';
                         systemStatusText.textContent = 'System Online';
                         systemStatusElement.className = 'header-status';
-                        console.log('✅ System Status: All services healthy');
                     } else if (healthData.status === 'degraded') {
                         // Always show degraded when any services are down
                         // Gateway remains operational for system recovery
                         systemStatusIcon.className = 'system-status-indicator degraded';
                         systemStatusText.textContent = 'System Degraded';
                         systemStatusElement.className = 'header-status header-status-warning';
-                        console.log('⚠️  System Status: Services degraded - Gateway available for recovery');
                     } else {
                         // Unknown status or gateway completely unreachable = treat as offline for safety
                         systemStatusIcon.className = 'system-status-indicator offline';
                         systemStatusText.textContent = 'System Offline';
                         systemStatusElement.className = 'header-status header-status-error';
-                        console.log('🔴 System Status: Gateway unreachable - showing as offline');
                     }
                     
                     // Update individual service cards if they exist (dashboard page)
                     if (healthData.services) {
-                        console.log(`${logPrefix} Updating individual service cards...`);
                         updateServiceCards(healthData.services, healthData.status);
                     }
                     
@@ -1954,13 +1945,10 @@
 
         // Initialize suppliers content
         async function initSuppliersContent() {
-            console.log('🔧 Initializing Suppliers content...');
             await loadSuppliersData();
-            console.log('✅ Suppliers content initialized');
         }
 
         async function loadSuppliersData() {
-            console.log('📥 Loading suppliers data...');
             
             try {
                 // Use CONFIG object instead of undefined getServiceUrls function
@@ -2478,7 +2466,6 @@
         async function initCategoriesContent() {
             console.log('🏷️ Initializing Categories content...');
             await loadCategoriesData();
-            console.log('✅ Categories content initialized');
         }
 
         // Load categories data
@@ -2897,7 +2884,6 @@
         async function initIngredientsContent() {
             console.log('🌱 Initializing Ingredients content...');
             await loadIngredientsData();
-            console.log('✅ Ingredients content initialized');
         }
 
         // Load ingredients data
@@ -3644,10 +3630,8 @@
 
         // Initialize existences content
         async function initExistencesContent() {
-            console.log('🔧 Initializing Existences content...');
             await loadExistencesData();
             await loadFilterIngredients();
-            console.log('✅ Existences content initialized');
         }
 
         // Load all existences data
@@ -4448,13 +4432,10 @@
 
         // Initialize Runout Ingredients Content
         async function initRunoutIngredientsContent() {
-            console.log('🔧 Initializing Runout Ingredients content...');
             await loadRunoutIngredientsData();
-            console.log('✅ Runout Ingredients content initialized');
         }
 
         async function loadRunoutIngredientsData() {
-            console.log('📥 Loading runout ingredients data...');
             
             try {
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients?limit=1000`);
@@ -4548,13 +4529,10 @@
 
         // Initialize Recipe Categories Content
         async function initRecipeCategoriesContent() {
-            console.log('🔧 Initializing Recipe Categories content...');
             await loadRecipeCategoriesData();
-            console.log('✅ Recipe Categories content initialized');
         }
 
         async function loadRecipeCategoriesData() {
-            console.log('📥 Loading recipe categories data...');
             
             try {
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
@@ -4644,13 +4622,10 @@
 
         // Initialize Recipes Content
         async function initRecipesContent() {
-            console.log('🔧 Initializing Recipes content...');
             await loadRecipesData();
-            console.log('✅ Recipes content initialized');
         }
 
         async function loadRecipesData() {
-            console.log('📥 Loading recipes data...');
             
             try {
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes?limit=1000`);
