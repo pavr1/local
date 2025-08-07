@@ -16,13 +16,22 @@ type Recipe struct {
 	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
+// RecipeIngredient represents a recipe ingredient with quantity
+type RecipeIngredient struct {
+	IngredientID   string  `json:"ingredient_id" validate:"required,uuid"`
+	NumberOfUnits  float64 `json:"number_of_units" validate:"required,min=0.001"`
+	IngredientName string  `json:"ingredient_name,omitempty"` // For display purposes
+	UnitType       string  `json:"unit_type,omitempty"`       // For display purposes
+}
+
 // CreateRecipeRequest represents the request to create a new recipe
 type CreateRecipeRequest struct {
-	RecipeName        string  `json:"recipe_name" validate:"required,min=1,max=255"`
-	RecipeDescription *string `json:"recipe_description,omitempty"`
-	PictureURL        *string `json:"picture_url,omitempty"`
-	RecipeCategoryID  string  `json:"recipe_category_id" validate:"required,uuid"`
-	TotalRecipeCost   float64 `json:"total_recipe_cost" validate:"required,min=0"`
+	RecipeName        string             `json:"recipe_name" validate:"required,min=1,max=255"`
+	RecipeDescription *string            `json:"recipe_description,omitempty"`
+	PictureURL        *string            `json:"picture_url,omitempty"`
+	RecipeCategoryID  string             `json:"recipe_category_id" validate:"required,uuid"`
+	TotalRecipeCost   float64            `json:"total_recipe_cost" validate:"required,min=0"`
+	Ingredients       []RecipeIngredient `json:"ingredients" validate:"required,min=1"`
 }
 
 // UpdateRecipeRequest represents the request to update a recipe

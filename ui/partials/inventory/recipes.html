@@ -186,57 +186,75 @@
                             <label for="recipeName" class="form-label">
                                 Recipe Name <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="recipeName" name="name" 
+                            <input type="text" class="form-control" id="recipeName" name="recipe_name" 
                                    maxlength="255" required>
                             <div class="invalid-feedback">
                                 Please provide a valid recipe name (1-255 characters).
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="recipeCategoryId" class="form-label">
+                            <label for="recipeCategoryDisplay" class="form-label">
                                 Category <span class="text-danger">*</span>
                             </label>
-                            <select class="form-control" id="recipeCategoryId" name="recipe_category_id" required>
-                                <option value="">Select a category</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="recipeCategoryDisplay" 
+                                       placeholder="Search categories..." readonly>
+                                <input type="hidden" id="recipeCategoryId" name="recipe_category_id">
+                                <button type="button" class="btn btn-outline-secondary" onclick="openRecipeCategoryPicker()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="openAddRecipeCategoryModal()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">
                                 Please select a recipe category.
                             </div>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-12 mb-3">
                             <label for="recipeDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="recipeDescription" name="description" 
+                            <textarea class="form-control" id="recipeDescription" name="recipe_description" 
                                       rows="3" maxlength="500" placeholder="Brief description of this recipe"></textarea>
                             <div class="invalid-feedback">
                                 Please provide a valid description (max 500 characters).
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="recipeInstructions" class="form-label">Instructions</label>
-                            <textarea class="form-control" id="recipeInstructions" name="instructions" 
-                                      rows="3" maxlength="1000" placeholder="Step-by-step instructions"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="recipePictureUrl" class="form-label">Recipe Image</label>
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="recipeImageFile" 
+                                       accept="image/*" onchange="handleRecipeImageUpload()">
+                                <button type="button" class="btn btn-outline-secondary" onclick="clearRecipeImage()">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div id="recipeImagePreview" class="mt-2" style="display: none;">
+                                <img id="recipeImagePreviewImg" class="img-thumbnail" style="max-height: 200px;">
+                            </div>
+                            <input type="hidden" id="recipePictureUrl" name="picture_url">
                             <div class="invalid-feedback">
-                                Please provide valid instructions (max 1000 characters).
+                                Please select a valid image file.
                             </div>
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="recipePreparationTime" class="form-label">Preparation Time (minutes)</label>
-                            <input type="number" min="0" class="form-control" id="recipePreparationTime" name="preparation_time" 
-                                   placeholder="30">
-                            <div class="invalid-feedback">
-                                Please provide a valid preparation time.
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Recipe Ingredients <span class="text-danger">*</span></label>
+                            <div class="ingredients-container">
+                                <div id="recipeIngredientsList" class="mb-3">
+                                    <!-- Ingredients will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" onclick="addRecipeIngredient()">
+                                    <i class="fas fa-plus me-2"></i>Add Ingredient
+                                </button>
                             </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="recipeIsActive" class="form-label">Status</label>
-                            <select class="form-control" id="recipeIsActive" name="is_active">
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </select>
+                            <div class="invalid-feedback">
+                                Please add at least one ingredient to the recipe.
+                            </div>
                         </div>
                     </div>
                 </form>
@@ -349,6 +367,81 @@
                 <button type="button" class="btn btn-save-recipe" id="updateRecipeBtn" onclick="updateRecipe()">
                     <i class="fas fa-save me-2"></i>Update Recipe
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Category Picker Modal -->
+<div class="modal fade" id="recipeCategoryPickerModal" tabindex="-1" aria-labelledby="recipeCategoryPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recipeCategoryPickerModalLabel">
+                    <i class="fas fa-search me-2"></i>Select Recipe Category
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="recipeCategorySearchInput" 
+                           placeholder="Search recipe categories..." onkeyup="filterRecipeCategories()">
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover" id="recipeCategoryPickerTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipeCategoryPickerTableBody">
+                            <!-- Recipe categories will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Ingredient Picker Modal -->
+<div class="modal fade" id="recipeIngredientPickerModal" tabindex="-1" aria-labelledby="recipeIngredientPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="recipeIngredientPickerModalLabel">
+                    <i class="fas fa-search me-2"></i>Select Ingredient
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="recipeIngredientSearchInput" 
+                           placeholder="Search ingredients..." onkeyup="filterRecipeIngredients()">
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover" id="recipeIngredientPickerTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Unit Type</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipeIngredientPickerTableBody">
+                            <!-- Ingredients will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>

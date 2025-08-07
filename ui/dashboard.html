@@ -4401,7 +4401,7 @@
                         <h5>No Recipes Found</h5>
                         <p class="text-muted">No recipes have been created yet.</p>
                         <button class="btn btn-primary" onclick="openAddRecipeModal()">
-                            <i class="fas fa-plus me-2"></i>Add First Recipe
+                            <i class="fas fa-plus me-2"></i>Add Recipe
                         </button>
                     </div>
                 `;
@@ -4894,6 +4894,306 @@
             saveBtn.disabled = false;
             saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
         }
+
+        // Add existence modal function (placeholder)
+        window.openAddExistenceModal = function() {
+            console.log('🔧 openAddExistenceModal called');
+            const modalElement = document.getElementById('addExistenceModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('❌ Add existence modal not found');
+                Alert.info('Add existence functionality coming soon!');
+            }
+        };
+
+        // Global function for recipes modal
+        window.openAddRecipeModal = function() {
+            console.log('🔧 openAddRecipeModal called from global scope');
+            const modalElement = document.getElementById('addRecipeModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('❌ Add recipe modal not found');
+                Alert.info('Add recipe functionality coming soon!');
+            }
+        };
+
+        // Recipe Category Picker Functions
+        let allRecipeCategories = [];
+        let filteredRecipeCategories = [];
+
+        window.openRecipeCategoryPicker = async function() {
+            await loadRecipeCategoriesForPicker();
+            const modal = new bootstrap.Modal(document.getElementById('recipeCategoryPickerModal'));
+            modal.show();
+        };
+
+        async function loadRecipeCategoriesForPicker() {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                allRecipeCategories = result.data || [];
+                filteredRecipeCategories = [...allRecipeCategories];
+                
+                displayRecipeCategoriesForPicker();
+                
+            } catch (error) {
+                console.error('❌ Error loading recipe categories for picker:', error);
+                Alert.error('Failed to load recipe categories. Please try again.');
+            }
+        }
+
+        function displayRecipeCategoriesForPicker() {
+            const tbody = document.getElementById('recipeCategoryPickerTableBody');
+            
+            if (!filteredRecipeCategories || filteredRecipeCategories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" class="text-center text-muted py-4">
+                            <i class="fas fa-search me-2"></i>No recipe categories found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredRecipeCategories.map(category => `
+                <tr>
+                    <td><strong>${category.name || 'N/A'}</strong></td>
+                    <td>${category.description || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectRecipeCategory('${category.id}', '${category.name}')">
+                            <i class="fas fa-check me-1"></i>Select
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.filterRecipeCategories = function() {
+            const searchTerm = document.getElementById('recipeCategorySearchInput').value.toLowerCase();
+            
+            filteredRecipeCategories = allRecipeCategories.filter(category => 
+                (category.name && category.name.toLowerCase().includes(searchTerm)) ||
+                (category.description && category.description.toLowerCase().includes(searchTerm))
+            );
+            
+            displayRecipeCategoriesForPicker();
+        };
+
+        window.selectRecipeCategory = function(categoryId, categoryName) {
+            document.getElementById('recipeCategoryId').value = categoryId;
+            document.getElementById('recipeCategoryDisplay').value = categoryName;
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recipeCategoryPickerModal'));
+            modal.hide();
+            
+            // Clear search
+            document.getElementById('recipeCategorySearchInput').value = '';
+        };
+
+        // Add recipe category modal function (placeholder)
+        window.openAddRecipeCategoryModal = function() {
+            Alert.info('Add recipe category functionality coming soon!');
+        };
+
+        // Recipe Image Upload Functions
+        window.handleRecipeImageUpload = function() {
+            const fileInput = document.getElementById('recipeImageFile');
+            const preview = document.getElementById('recipeImagePreview');
+            const previewImg = document.getElementById('recipeImagePreviewImg');
+            const urlInput = document.getElementById('recipePictureUrl');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    Alert.error('Please select a valid image file.');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    Alert.error('Image file size must be less than 5MB.');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                    urlInput.value = e.target.result; // Store as data URL for now
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        window.clearRecipeImage = function() {
+            const fileInput = document.getElementById('recipeImageFile');
+            const preview = document.getElementById('recipeImagePreview');
+            const urlInput = document.getElementById('recipePictureUrl');
+            
+            fileInput.value = '';
+            preview.style.display = 'none';
+            urlInput.value = '';
+        };
+
+        // Recipe Ingredients Management
+        let recipeIngredients = [];
+        let allIngredients = [];
+        let filteredIngredients = [];
+
+        window.addRecipeIngredient = function() {
+            openRecipeIngredientPicker();
+        };
+
+        window.openRecipeIngredientPicker = async function() {
+            await loadIngredientsForRecipe();
+            const modal = new bootstrap.Modal(document.getElementById('recipeIngredientPickerModal'));
+            modal.show();
+        };
+
+        async function loadIngredientsForRecipe() {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                allIngredients = result.data || [];
+                filteredIngredients = [...allIngredients];
+                
+                displayIngredientsForRecipe();
+                
+            } catch (error) {
+                console.error('❌ Error loading ingredients for recipe:', error);
+                Alert.error('Failed to load ingredients. Please try again.');
+            }
+        }
+
+        function displayIngredientsForRecipe() {
+            const tbody = document.getElementById('recipeIngredientPickerTableBody');
+            
+            if (!filteredIngredients || filteredIngredients.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-search me-2"></i>No ingredients found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredIngredients.map(ingredient => `
+                <tr>
+                    <td><strong>${ingredient.name || 'N/A'}</strong></td>
+                    <td>${ingredient.category_name || 'N/A'}</td>
+                    <td><span class="badge bg-secondary">${ingredient.unit_type || 'N/A'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectRecipeIngredient('${ingredient.id}', '${ingredient.name}', '${ingredient.unit_type}')">
+                            <i class="fas fa-check me-1"></i>Select
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.filterRecipeIngredients = function() {
+            const searchTerm = document.getElementById('recipeIngredientSearchInput').value.toLowerCase();
+            
+            filteredIngredients = allIngredients.filter(ingredient => 
+                (ingredient.name && ingredient.name.toLowerCase().includes(searchTerm)) ||
+                (ingredient.category_name && ingredient.category_name.toLowerCase().includes(searchTerm))
+            );
+            
+            displayIngredientsForRecipe();
+        };
+
+        window.selectRecipeIngredient = function(ingredientId, ingredientName, unitType) {
+            // Add ingredient to the list
+            const ingredient = {
+                id: ingredientId,
+                name: ingredientName,
+                unit_type: unitType,
+                quantity: 1
+            };
+            
+            recipeIngredients.push(ingredient);
+            displayRecipeIngredients();
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recipeIngredientPickerModal'));
+            modal.hide();
+            
+            // Clear search
+            document.getElementById('recipeIngredientSearchInput').value = '';
+        };
+
+        function displayRecipeIngredients() {
+            const container = document.getElementById('recipeIngredientsList');
+            
+            if (!recipeIngredients || recipeIngredients.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-info-circle me-2"></i>No ingredients added yet
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = recipeIngredients.map((ingredient, index) => `
+                <div class="card mb-2">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <strong>${ingredient.name}</strong>
+                                <br><small class="text-muted">${ingredient.unit_type}</small>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" step="0.001" min="0.001" class="form-control form-control-sm" 
+                                       value="${ingredient.quantity}" 
+                                       onchange="updateRecipeIngredientQuantity(${index}, this.value)">
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted">units</span>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeIngredient(${index})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.updateRecipeIngredientQuantity = function(index, quantity) {
+            if (recipeIngredients[index]) {
+                recipeIngredients[index].quantity = parseFloat(quantity) || 1;
+            }
+        };
+
+        window.removeRecipeIngredient = function(index) {
+            recipeIngredients.splice(index, 1);
+            displayRecipeIngredients();
+        };
     </script>
 </body>
 </html> 
