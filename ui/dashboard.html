@@ -4122,6 +4122,171 @@
             }
         };
 
+        // Global picker functions for runout ingredients
+        window.openExistencePicker = async function() {
+            console.log('🔧 openExistencePicker called');
+            await loadExistencesForPicker();
+            const modal = new bootstrap.Modal(document.getElementById('existencePickerModal'));
+            modal.show();
+        };
+
+        window.openUnitTypePicker = function() {
+            console.log('🔧 openUnitTypePicker called');
+            displayUnitTypesForPicker();
+            const modal = new bootstrap.Modal(document.getElementById('unitTypePickerModal'));
+            modal.show();
+        };
+
+        // Existence picker data and functions
+        let allExistences = [];
+        let filteredExistences = [];
+
+        async function loadExistencesForPicker() {
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                allExistences = result.data || [];
+                filteredExistences = [...allExistences];
+                
+                displayExistencesForPicker();
+                
+            } catch (error) {
+                console.error('❌ Error loading existences for picker:', error);
+                Alert.error('Failed to load existences. Please try again.');
+            }
+        }
+
+        function displayExistencesForPicker() {
+            const tbody = document.getElementById('existencePickerTableBody');
+            
+            if (!filteredExistences || filteredExistences.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-search me-2"></i>No existences found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filteredExistences.map(existence => `
+                <tr>
+                    <td><code>${existence.reference_code || 'N/A'}</code></td>
+                    <td>${existence.ingredient_name || 'N/A'}</td>
+                    <td><strong>${existence.current_stock || '0'}</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectExistence('${existence.id}', '${existence.reference_code}')">
+                            <i class="fas fa-check me-1"></i>Select
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.filterExistences = function() {
+            const searchTerm = document.getElementById('existenceSearchInput').value.toLowerCase();
+            
+            filteredExistences = allExistences.filter(existence => 
+                (existence.reference_code && existence.reference_code.toLowerCase().includes(searchTerm)) ||
+                (existence.ingredient_name && existence.ingredient_name.toLowerCase().includes(searchTerm))
+            );
+            
+            displayExistencesForPicker();
+        };
+
+        window.selectExistence = function(existenceId, referenceCode) {
+            document.getElementById('runoutExistenceId').value = existenceId;
+            document.getElementById('runoutExistenceDisplay').value = referenceCode;
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('existencePickerModal'));
+            modal.hide();
+            
+            // Clear search
+            document.getElementById('existenceSearchInput').value = '';
+        };
+
+        // Unit type picker data and functions
+        const unitTypes = [
+            { value: 'kg', label: 'Kilograms (kg)' },
+            { value: 'g', label: 'Grams (g)' },
+            { value: 'l', label: 'Liters (l)' },
+            { value: 'ml', label: 'Milliliters (ml)' },
+            { value: 'pcs', label: 'Pieces (pcs)' },
+            { value: 'units', label: 'Units' },
+            { value: 'oz', label: 'Ounces (oz)' },
+            { value: 'lb', label: 'Pounds (lb)' },
+            { value: 'gal', label: 'Gallons (gal)' },
+            { value: 'qt', label: 'Quarts (qt)' },
+            { value: 'pt', label: 'Pints (pt)' },
+            { value: 'cup', label: 'Cups' },
+            { value: 'tbsp', label: 'Tablespoons (tbsp)' },
+            { value: 'tsp', label: 'Teaspoons (tsp)' }
+        ];
+        let filteredUnitTypes = [...unitTypes];
+
+        function displayUnitTypesForPicker() {
+            const list = document.getElementById('unitTypePickerList');
+            
+            if (!filteredUnitTypes || filteredUnitTypes.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-search me-2"></i>No unit types found
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = filteredUnitTypes.map(unitType => `
+                <button type="button" class="list-group-item list-group-item-action" 
+                        onclick="selectUnitType('${unitType.value}', '${unitType.label}')">
+                    <i class="fas fa-ruler me-2"></i>${unitType.label}
+                </button>
+            `).join('');
+        }
+
+        window.filterUnitTypes = function() {
+            const searchTerm = document.getElementById('unitTypeSearchInput').value.toLowerCase();
+            
+            filteredUnitTypes = unitTypes.filter(unitType => 
+                unitType.label.toLowerCase().includes(searchTerm) ||
+                unitType.value.toLowerCase().includes(searchTerm)
+            );
+            
+            displayUnitTypesForPicker();
+        };
+
+        window.selectUnitType = function(unitTypeValue, unitTypeLabel) {
+            document.getElementById('runoutUnitType').value = unitTypeValue;
+            document.getElementById('runoutUnitTypeDisplay').value = unitTypeLabel;
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('unitTypePickerModal'));
+            modal.hide();
+            
+            // Clear search
+            document.getElementById('unitTypeSearchInput').value = '';
+        };
+
+        // Add existence modal function (placeholder)
+        window.openAddExistenceModal = function() {
+            console.log('🔧 openAddExistenceModal called');
+            const modalElement = document.getElementById('addExistenceModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('❌ Add existence modal not found');
+                Alert.info('Add existence functionality coming soon!');
+            }
+        };
+
         // Initialize Recipe Categories Content
         async function initRecipeCategoriesContent() {
             await loadRecipeCategoriesData();

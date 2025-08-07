@@ -183,50 +183,48 @@
                 <form id="addRunoutIngredientForm" novalidate>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="existenceId" class="form-label">
-                                Existence ID <span class="text-danger">*</span>
+                            <label for="runoutExistenceDisplay" class="form-label">
+                                Existence <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="existenceId" name="existence_id" 
-                                   required>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="runoutExistenceDisplay" 
+                                       placeholder="Search existences..." readonly>
+                                <input type="hidden" id="runoutExistenceId" name="existence_id">
+                                <button type="button" class="btn btn-outline-secondary" onclick="openExistencePicker()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="openAddExistenceModal()">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">
-                                Please provide a valid existence ID.
+                                Please select an existence.
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="employeeId" class="form-label">
-                                Employee ID <span class="text-danger">*</span>
-                            </label>
-                            <input type="text" class="form-control" id="employeeId" name="employee_id" 
-                                   required>
-                            <div class="invalid-feedback">
-                                Please provide a valid employee ID.
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="quantity" class="form-label">
+                            <label for="runoutQuantity" class="form-label">
                                 Quantity <span class="text-danger">*</span>
                             </label>
-                            <input type="number" step="0.01" min="0" class="form-control" id="quantity" name="quantity" 
+                            <input type="number" step="0.01" min="0" class="form-control" id="runoutQuantity" name="quantity" 
                                    required>
                             <div class="invalid-feedback">
                                 Please provide a valid quantity (must be positive).
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="unitType" class="form-label">
+                            <label for="runoutUnitTypeDisplay" class="form-label">
                                 Unit Type <span class="text-danger">*</span>
                             </label>
-                            <select class="form-control" id="unitType" name="unit_type" required>
-                                <option value="">Select unit type</option>
-                                <option value="kg">Kilograms (kg)</option>
-                                <option value="g">Grams (g)</option>
-                                <option value="l">Liters (l)</option>
-                                <option value="ml">Milliliters (ml)</option>
-                                <option value="pcs">Pieces (pcs)</option>
-                                <option value="units">Units</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="runoutUnitTypeDisplay" 
+                                       placeholder="Search unit types..." readonly>
+                                <input type="hidden" id="runoutUnitType" name="unit_type">
+                                <button type="button" class="btn btn-outline-secondary" onclick="openUnitTypePicker()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">
                                 Please select a unit type.
                             </div>
@@ -335,6 +333,70 @@
                 <button type="button" class="btn btn-save-runout-ingredient" id="updateRunoutIngredientBtn" onclick="updateRunoutIngredient()">
                     <i class="fas fa-save me-2"></i>Update Runout Ingredient
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Existence Picker Modal -->
+<div class="modal fade" id="existencePickerModal" tabindex="-1" aria-labelledby="existencePickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="existencePickerModalLabel">
+                    <i class="fas fa-search me-2"></i>Select Existence
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="existenceSearchInput" 
+                           placeholder="Search existences..." onkeyup="filterExistences()">
+                </div>
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-hover" id="existencePickerTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Reference Code</th>
+                                <th>Ingredient</th>
+                                <th>Current Stock</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="existencePickerTableBody">
+                            <!-- Existences will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Unit Type Picker Modal -->
+<div class="modal fade" id="unitTypePickerModal" tabindex="-1" aria-labelledby="unitTypePickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="unitTypePickerModalLabel">
+                    <i class="fas fa-search me-2"></i>Select Unit Type
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="unitTypeSearchInput" 
+                           placeholder="Search unit types..." onkeyup="filterUnitTypes()">
+                </div>
+                <div class="list-group" id="unitTypePickerList">
+                    <!-- Unit types will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
@@ -493,8 +555,14 @@
             form.reset();
             form.classList.remove('was-validated');
             
+            // Clear picker displays
+            document.getElementById('runoutExistenceDisplay').value = '';
+            document.getElementById('runoutExistenceId').value = '';
+            document.getElementById('runoutUnitTypeDisplay').value = '';
+            document.getElementById('runoutUnitType').value = '';
+            
             // Remove validation classes
-            const fields = ['existenceId', 'employeeId', 'quantity', 'unitType'];
+            const fields = ['runoutExistenceDisplay', 'runoutQuantity', 'runoutUnitTypeDisplay'];
             fields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) field.classList.remove('is-invalid', 'is-valid');
@@ -533,22 +601,17 @@
         let isValid = true;
         
         if (!runoutIngredientData.existence_id) {
-            document.getElementById('existenceId').classList.add('is-invalid');
-            isValid = false;
-        }
-        
-        if (!runoutIngredientData.employee_id) {
-            document.getElementById('employeeId').classList.add('is-invalid');
+            document.getElementById('runoutExistenceDisplay').classList.add('is-invalid');
             isValid = false;
         }
         
         if (!runoutIngredientData.quantity || parseFloat(runoutIngredientData.quantity) <= 0) {
-            document.getElementById('quantity').classList.add('is-invalid');
+            document.getElementById('runoutQuantity').classList.add('is-invalid');
             isValid = false;
         }
         
         if (!runoutIngredientData.unit_type) {
-            document.getElementById('unitType').classList.add('is-invalid');
+            document.getElementById('runoutUnitTypeDisplay').classList.add('is-invalid');
             isValid = false;
         }
         
@@ -556,6 +619,12 @@
             form.classList.add('was-validated');
             return;
         }
+        
+        // Get employee ID from session (for now, use a placeholder)
+        // TODO: Implement session service call to get current employee ID
+        runoutIngredientData.employee_id = 'current-employee-id'; // Placeholder
+        
+        // Report date will be set by the server automatically
         
         // Update button state
         saveBtn.disabled = true;
@@ -835,6 +904,12 @@
     window.viewRunoutIngredient = viewRunoutIngredient;
     window.editRunoutIngredient = editRunoutIngredient;
     window.deleteRunoutIngredient = deleteRunoutIngredient;
+    window.openExistencePicker = openExistencePicker;
+    window.openUnitTypePicker = openUnitTypePicker;
+    window.filterExistences = filterExistences;
+    window.filterUnitTypes = filterUnitTypes;
+    window.selectExistence = selectExistence;
+    window.selectUnitType = selectUnitType;
     
     console.log('🔧 Runout ingredients functions exposed globally');
     console.log('🔧 openAddRunoutIngredientModal available:', typeof window.openAddRunoutIngredientModal);
