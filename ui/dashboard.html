@@ -3308,10 +3308,7 @@
                             <i class="fas fa-boxes"></i>
                         </div>
                         <h5 class="text-muted mb-2">No Existences Found</h5>
-                        <p class="text-muted mb-3">Start by adding your first existence.</p>
-                        <button class="btn btn-primary" onclick="openAddExistenceModal()">
-                            <i class="fas fa-plus me-2"></i>Add New Existence
-                        </button>
+                        <p class="text-muted mb-3">Existences are created automatically when invoices are processed.</p>
                     </div>
                 `;
                 return;
@@ -4274,18 +4271,7 @@
             document.getElementById('unitTypeSearchInput').value = '';
         };
 
-        // Add existence modal function (placeholder)
-        window.openAddExistenceModal = function() {
-            console.log('🔧 openAddExistenceModal called');
-            const modalElement = document.getElementById('addExistenceModal');
-            if (modalElement) {
-                const modal = new bootstrap.Modal(modalElement);
-                modal.show();
-            } else {
-                console.error('❌ Add existence modal not found');
-                Alert.info('Add existence functionality coming soon!');
-            }
-        };
+
 
         // Initialize Recipe Categories Content
         async function initRecipeCategoriesContent() {
