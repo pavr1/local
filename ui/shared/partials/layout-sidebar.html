@@ -24,58 +24,30 @@
                     </a>
                 </li>
                 
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" data-service="inventory" data-bs-toggle="collapse" data-bs-target="#inventorySubmenu" aria-expanded="false">
-                        <i class="fas fa-warehouse me-2"></i>
-                        <span>Inventory</span>
-                        <span class="service-status-indicator" id="sidebar-inventory-status"></span>
+                <!-- Inventory Management -->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="loadContent('inventory')">
+                        <i class="fas fa-boxes me-2"></i>
+                        Inventory
                     </a>
-                    <div class="collapse" id="inventorySubmenu">
-                        <ul class="nav nav-pills flex-column ms-3">
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../inventory/index.html">
-                                    <i class="fas fa-chart-bar me-2"></i>Overview
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../inventory/suppliers.html">
-                                    <i class="fas fa-truck me-2"></i>Suppliers
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../inventory/ingredients.html">
-                                    <i class="fas fa-seedling me-2"></i>Ingredients
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../inventory/ingredient_categories.html">
-                                    <i class="fas fa-tags me-2"></i>Categories
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+                    <ul class="nav-sub">
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('inventory')">Overview</a></li>
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('inventory-suppliers')">Suppliers</a></li>
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('inventory-ingredients')">Ingredients</a></li>
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('inventory-categories')">Categories</a></li>
+                    </ul>
                 </li>
-                
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" data-service="expenses" data-bs-toggle="collapse" data-bs-target="#expenseSubmenu" aria-expanded="false">
-                        <i class="fas fa-file-invoice me-2"></i>
-                        <span>Expenses</span>
-                        <span class="service-status-indicator" id="sidebar-expenses-status"></span>
+
+                <!-- Invoice Management -->
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="loadContent('invoice')">
+                        <i class="fas fa-receipt me-2"></i>
+                        Invoices
                     </a>
-                    <div class="collapse" id="expenseSubmenu">
-                        <ul class="nav nav-pills flex-column ms-3">
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../invoice/index.html">
-                                    <i class="fas fa-chart-pie me-2"></i>Overview
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link nav-sub" href="../invoice/invoices.html">
-                                    <i class="fas fa-file-invoice me-2"></i>Invoices
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
+                    <ul class="nav-sub">
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('invoice')">Overview</a></li>
+                        <li><a class="nav-link nav-sub" href="#" onclick="loadContent('invoice-details')">Management</a></li>
+                    </ul>
                 </li>
                 
                 <li class="nav-item">
@@ -98,7 +70,7 @@
                 <button class="btn btn-sm btn-outline-primary w-100 mb-2" onclick="navigateToService('orders')" title="Create New Order">
                     <i class="fas fa-plus me-2"></i>New Order
                 </button>
-                <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="navigateToService('expenses')" title="Add Invoice">
+                <button class="btn btn-sm btn-outline-success w-100 mb-2" onclick="navigateToInvoice()" title="Add Invoice">
                     <i class="fas fa-file-invoice me-2"></i>Add Invoice
                 </button>
                 <button class="btn btn-sm btn-outline-info w-100 mb-2" onclick="checkSystemHealth()" title="Check System Health">
@@ -442,6 +414,12 @@ function navigateToService(service) {
             } else {
                 alert('Service not yet available');
             }
+    }
+}
+
+function navigateToInvoice() {
+    if (typeof loadContent === 'function') {
+        loadContent('invoice');
     }
 }
 

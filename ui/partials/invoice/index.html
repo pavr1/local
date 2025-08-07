@@ -280,10 +280,15 @@
 
     // Navigation functions
     function navigateToInvoices() {
-        window.location.href = 'invoice.html';
+        if (typeof loadContent === 'function') {
+            loadContent('invoice-details');
+        } else {
+            // Fallback for standalone usage
+            window.location.href = 'invoice.html';
+        }
     }
 
     function navigateToExpenseCategories() {
-        window.location.href = 'expense-categories.html';
+        Alert.comingSoon('Expense Categories Management');
     }
 </script> 

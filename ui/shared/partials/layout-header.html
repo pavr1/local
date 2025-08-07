@@ -234,6 +234,14 @@ class LayoutHeader {
     }
     
     updateBreadcrumb() {
+        // Check if we're in a subdirectory and adjust paths accordingly
+        const currentPath = window.location.pathname;
+        let isInSubdirectory = false;
+        
+        if (currentPath.includes('/inventory/') || currentPath.includes('/invoice/')) {
+            isInSubdirectory = true;
+        }
+
         const path = window.location.pathname;
         const breadcrumb = document.getElementById('layout-breadcrumb');
         const currentPage = document.getElementById('layout-current-page');
