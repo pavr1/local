@@ -98,32 +98,88 @@
             margin-top: 1rem;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--secondary-color);
+        .transaction-type-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .empty-state i {
-            font-size: 4rem;
+        .transaction-income {
+            background: var(--success-light);
+            color: var(--success-color);
+        }
+
+        .transaction-outcome {
+            background: var(--danger-light);
+            color: var(--danger-color);
+        }
+
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .items-section {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
             margin-bottom: 1rem;
-            opacity: 0.5;
+        }
+
+        .item-row {
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: var(--light-color);
+        }
+
+        .remove-item-btn {
+            color: var(--danger-color);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .add-item-btn {
+            background: var(--success-color);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
         }
 
         .loading-spinner {
-            text-align: center;
-            padding: 3rem;
-            color: var(--secondary-color);
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             .invoices-header {
-                padding: 1.5rem;
+                padding: 2rem 1rem;
             }
 
-            .invoice-card {
-                padding: 1rem;
+            .filter-controls {
+                padding: 1.5rem;
             }
 
             .invoice-header {
@@ -131,407 +187,725 @@
                 align-items: flex-start;
                 gap: 0.5rem;
             }
-
-            .invoice-actions {
-                flex-wrap: wrap;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Page Header -->
-    <div class="invoices-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h1><i class="fas fa-invoice me-3"></i>Invoices Management</h1>
-                <p class="mb-0 opacity-75">Create, view, and manage expense invoices with line items</p>
-            </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-light" onclick="refreshInvoices()" title="Refresh">
-                    <i class="fas fa-refresh"></i>
-                </button>
-                <button class="btn btn-light" onclick="createNewInvoice()">
-                    <i class="fas fa-plus me-2"></i>New Invoice
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- Include shared layout components -->
+    <div id="layout-header"></div>
+    <div id="layout-sidebar"></div>
 
-    <!-- Filter and Search Controls -->
-    <div class="filter-controls">
-        <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="search-input" class="form-control search-input" placeholder="Search invoices...">
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid">
+            <!-- Header -->
+            <div class="invoices-header">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1 class="mb-2">
+                            <i class="fas fa-receipt me-2"></i>
+                            Invoice Management
+                        </h1>
+                        <p class="mb-0">Manage ice cream store invoices and financial transactions</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-light" onclick="openCreateInvoiceModal()">
+                            <i class="fas fa-plus me-2"></i>
+                            New Invoice
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-2">
-                <select id="category-filter" class="form-select">
-                    <option value="">All Categories</option>
-                </select>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" class="form-control search-input" id="searchInput" placeholder="Search invoices...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="transactionTypeFilter">
+                            <option value="">All Transaction Types</option>
+                            <option value="income">Income</option>
+                            <option value="outcome">Outcome</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="expenseCategoryFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" onclick="loadInvoices()">
+                            <i class="fas fa-filter me-2"></i>
+                            Filter
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-2">
-                <select id="date-filter" class="form-select">
-                    <option value="">All Dates</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="year">This Year</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select id="sort-order" class="form-select">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="amount-high">Highest Amount</option>
-                    <option value="amount-low">Lowest Amount</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary btn-sm" onclick="exportInvoices()" title="Export">
-                        <i class="fas fa-download"></i>
-                    </button>
-                    <button class="btn btn-primary flex-grow-1" onclick="createNewInvoice()">
-                        <i class="fas fa-plus me-2"></i>New
-                    </button>
+
+            <!-- Invoices List -->
+            <div id="invoicesList">
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p>Loading invoices...</p>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Invoices List -->
-    <div id="invoices-container">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin fa-2x"></i>
-            <p class="mt-2">Loading invoices...</p>
-        </div>
-    </div>
-
-    <!-- Pagination -->
-    <nav aria-label="Invoices pagination" class="mt-4" id="pagination-nav" style="display: none;">
-        <ul class="pagination justify-content-center" id="pagination-container">
-            <!-- Pagination will be generated dynamically -->
-        </ul>
-    </nav>
-
-    <!-- Invoice Details Modal -->
-    <div class="modal fade" id="invoiceModal" tabindex="-1" aria-labelledby="invoiceModalLabel" aria-hidden="true">
+    <!-- Create Invoice Modal -->
+    <div class="modal fade" id="createInvoiceModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="invoiceModalLabel">Invoice Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="invoiceModalBody">
-                    <!-- Invoice details will be loaded here -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" class="btn btn-primary" onclick="editCurrentInvoice()">Edit Invoice</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Invoice Modal -->
-    <div class="modal fade" id="createInvoiceModal" tabindex="-1" aria-labelledby="createInvoiceModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createInvoiceModalLabel">Create New Invoice</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title">Create New Invoice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="invoiceForm">
-                        <!-- Invoice form will be populated here -->
+                    <form id="createInvoiceForm">
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="invoiceNumber" class="form-label">Invoice Number</label>
+                                <div class="form-group">
+                                    <label for="invoiceNumber">Invoice Number *</label>
                                     <input type="text" class="form-control" id="invoiceNumber" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="purchaseDate" class="form-label">Purchase Date</label>
-                                    <input type="date" class="form-control" id="purchaseDate" required>
+                                <div class="form-group">
+                                    <label for="transactionDate">Transaction Date *</label>
+                                    <input type="datetime-local" class="form-control" id="transactionDate" required>
                                 </div>
                             </div>
                         </div>
+
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="supplierId" class="form-label">Supplier (Optional)</label>
-                                    <select class="form-select" id="supplierId">
-                                        <option value="">Select Supplier</option>
+                                <div class="form-group">
+                                    <label for="transactionType">Transaction Type *</label>
+                                    <select class="form-select" id="transactionType" required>
+                                        <option value="">Select Type</option>
+                                        <option value="income">Income</option>
+                                        <option value="outcome">Outcome</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="expenseCategoryId" class="form-label">Expense Category</label>
-                                    <select class="form-select" id="expenseCategoryId" required>
+                                <div class="form-group">
+                                    <label for="expenseCategory">Expense Category *</label>
+                                    <select class="form-select" id="expenseCategory" required>
                                         <option value="">Select Category</option>
                                     </select>
                                 </div>
                             </div>
                         </div>
+
                         <div class="row">
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="imageUrl" class="form-label">Invoice Image URL (Optional)</label>
-                                    <input type="url" class="form-control" id="imageUrl">
+                                <div class="form-group">
+                                    <label for="supplierId">Supplier ID (Optional)</label>
+                                    <input type="text" class="form-control" id="supplierId">
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="notes" class="form-label">Notes (Optional)</label>
-                                    <textarea class="form-control" id="notes" rows="2"></textarea>
+                                <div class="form-group">
+                                    <label for="imageUrl">Image URL *</label>
+                                    <input type="url" class="form-control" id="imageUrl" required>
                                 </div>
                             </div>
                         </div>
-                        
-                        <h6 class="mt-4 mb-3">Invoice Items</h6>
-                        <div id="invoice-items-container">
-                            <!-- Invoice items will be added dynamically -->
+
+                        <div class="form-group">
+                            <label for="notes">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" rows="3"></textarea>
                         </div>
-                        
-                        <div class="d-flex justify-content-between mt-3">
-                            <button type="button" class="btn btn-outline-secondary" onclick="addInvoiceItem()">
-                                <i class="fas fa-plus me-2"></i>Add Item
-                            </button>
-                            <div class="total-display">
-                                <strong>Total: $<span id="totalAmount">0.00</span></strong>
+
+                        <!-- Items Section -->
+                        <div class="items-section">
+                            <h6>Invoice Items</h6>
+                            <div id="itemsContainer">
+                                <!-- Items will be added here dynamically -->
                             </div>
+                            <button type="button" class="add-item-btn" onclick="addItemRow()">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Item
+                            </button>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+                    <button type="button" class="btn btn-primary" onclick="createInvoice()">Create Invoice</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap 5 JS Bundle -->
+    <!-- Edit Invoice Modal -->
+    <div class="modal fade" id="editInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Invoice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editInvoiceForm">
+                        <input type="hidden" id="editInvoiceId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editInvoiceNumber">Invoice Number *</label>
+                                    <input type="text" class="form-control" id="editInvoiceNumber" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editTransactionDate">Transaction Date *</label>
+                                    <input type="datetime-local" class="form-control" id="editTransactionDate" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editTransactionType">Transaction Type *</label>
+                                    <select class="form-select" id="editTransactionType" required>
+                                        <option value="">Select Type</option>
+                                        <option value="income">Income</option>
+                                        <option value="outcome">Outcome</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editExpenseCategory">Expense Category *</label>
+                                    <select class="form-select" id="editExpenseCategory" required>
+                                        <option value="">Select Category</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editSupplierId">Supplier ID (Optional)</label>
+                                    <input type="text" class="form-control" id="editSupplierId">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="editImageUrl">Image URL *</label>
+                                    <input type="url" class="form-control" id="editImageUrl" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editNotes">Notes (Optional)</label>
+                            <textarea class="form-control" id="editNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="updateInvoice()">Update Invoice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Font Awesome JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
-    
-    <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Configuration -->
-    <script src="../config.js?v=1.1"></script>
-    
-    <!-- Shared JavaScript -->
+    <!-- Shared Scripts -->
     <script src="../shared/js/auth.js"></script>
-    <script src="../shared/js/status.js"></script>
     <script src="../shared/js/alerts.js"></script>
     <script src="../shared/js/load-partials.js"></script>
+    <script src="../shared/js/status.js"></script>
 
     <script>
-        class InvoicesPage {
-            constructor() {
-                this.invoices = [];
-                this.currentPage = 1;
-                this.invoicesPerPage = 10;
-                this.init();
-            }
+        // Global variables
+        let invoices = [];
+        let expenseCategories = [];
+        let currentInvoiceId = null;
 
-            async init() {
-                console.log('🧾 Initializing Invoices Management Page (Standardized Layout)...');
-                
-                // Setup standardized layout framework
-                await window.PartialLoader.setupStandardLayout({
-                    pageTitle: 'Invoices Management',
-                    includeSidebar: true,
-                    includeHeader: true
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLayoutComponents();
+            loadExpenseCategories();
+            loadInvoices();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', debounce(filterInvoices, 300));
+            document.getElementById('transactionTypeFilter').addEventListener('change', filterInvoices);
+            document.getElementById('expenseCategoryFilter').addEventListener('change', filterInvoices);
+        }
+
+        // Load expense categories
+        async function loadExpenseCategories() {
+            try {
+                const response = await fetch('/api/v1/expense-categories', {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
-                
-                // Initialize authentication
-                const auth = new AuthService();
-                if (!auth.isAuthenticated()) {
-                    console.log('❌ User not authenticated, redirecting to login');
-                    window.location.href = '../login.html';
-                    return;
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        expenseCategories = data.data;
+                        populateExpenseCategoryDropdowns();
+                    }
                 }
-
-                // Setup event listeners
-                this.setupEventListeners();
-                
-                // Load invoices data
-                await this.loadInvoices();
-                
-                console.log('✅ Invoices Management Page initialized successfully');
+            } catch (error) {
+                console.error('Error loading expense categories:', error);
+                Alert.error('Failed to load expense categories');
             }
+        }
 
-            setupEventListeners() {
-                // Search and filter functionality
-                document.getElementById('search-input')?.addEventListener('input', () => this.applyFilters());
-                document.getElementById('category-filter')?.addEventListener('change', () => this.applyFilters());
-                document.getElementById('date-filter')?.addEventListener('change', () => this.applyFilters());
-                document.getElementById('sort-order')?.addEventListener('change', () => this.applyFilters());
-            }
-
-            async loadInvoices() {
-                try {
-                    console.log('📊 Loading invoices...');
+        // Populate expense category dropdowns
+        function populateExpenseCategoryDropdowns() {
+            const dropdowns = ['expenseCategory', 'editExpenseCategory', 'expenseCategoryFilter'];
+            
+            dropdowns.forEach(dropdownId => {
+                const dropdown = document.getElementById(dropdownId);
+                if (dropdown) {
+                    // Clear existing options except the first one
+                    while (dropdown.children.length > 1) {
+                        dropdown.removeChild(dropdown.lastChild);
+                    }
                     
-                    // Sample data for demonstration
-                    this.invoices = [
-                        {
-                            id: 'demo-1',
-                            invoice_number: 'INV-2024-001',
-                            purchase_date: '2024-01-15T10:30:00Z',
-                            total_amount: 45.98,
-                            supplier_name: 'Fresh Dairy Co.',
-                            category: 'Ingredients',
-                            notes: 'Premium vanilla extract, organic sugar, chocolate chips'
-                        },
-                        {
-                            id: 'demo-2',
-                            invoice_number: 'INV-2024-002',
-                            purchase_date: '2024-01-16T14:15:00Z',
-                            total_amount: 128.50,
-                            supplier_name: 'Equipment Supply Inc.',
-                            category: 'Equipment',
-                            notes: 'Ice cream machine parts, cleaning supplies'
-                        },
-                        {
-                            id: 'demo-3',
-                            invoice_number: 'INV-2024-003',
-                            purchase_date: '2024-01-17T09:45:00Z',
-                            total_amount: 89.25,
-                            supplier_name: 'City Utilities',
-                            category: 'Utilities',
-                            notes: 'Electricity bill, water service'
-                        }
-                    ];
-
-                    this.displayInvoices();
-                    
-                } catch (error) {
-                    console.error('❌ Error loading invoices:', error);
-                    this.showEmptyState('Error loading invoices');
-                }
-            }
-
-            displayInvoices() {
-                const container = document.getElementById('invoices-container');
-                
-                if (this.invoices.length === 0) {
-                    this.showEmptyState();
-                    return;
-                }
-
-                const invoicesHtml = this.invoices.map(invoice => this.createInvoiceCard(invoice)).join('');
-                container.innerHTML = invoicesHtml;
-            }
-
-            createInvoiceCard(invoice) {
-                const date = new Date(invoice.purchase_date);
-                const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                return `
-                    <div class="invoice-card" onclick="viewInvoice('${invoice.id}')">
-                        <div class="invoice-header">
-                            <div>
-                                <div class="invoice-number">${invoice.invoice_number}</div>
-                                <div class="invoice-date">${formattedDate}</div>
-                            </div>
-                            <div class="text-end">
-                                <div class="invoice-amount">$${invoice.total_amount.toFixed(2)}</div>
-                                <span class="badge bg-primary">${invoice.category}</span>
-                            </div>
-                        </div>
-                        <div class="mb-2">
-                            <small class="text-muted">${invoice.notes || 'No notes'}</small>
-                        </div>
-                        <div class="invoice-actions">
-                            <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); viewInvoice('${invoice.id}')">
-                                <i class="fas fa-eye me-1"></i>View
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); editInvoice('${invoice.id}')">
-                                <i class="fas fa-edit me-1"></i>Edit
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteInvoice('${invoice.id}')">
-                                <i class="fas fa-trash me-1"></i>Delete
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-
-            showEmptyState(message = 'No invoices found') {
-                const container = document.getElementById('invoices-container');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-invoice"></i>
-                        <h4>${message}</h4>
-                        <p>Create your first invoice to get started.</p>
-                        <button class="btn btn-primary" onclick="createNewInvoice()">
-                            <i class="fas fa-plus me-2"></i>Create Invoice
-                        </button>
-                    </div>
-                `;
-            }
-
-            applyFilters() {
-                console.log('🔍 Applying filters...');
-                // In real implementation, this would filter the invoices
-                this.displayInvoices();
-            }
-        }
-
-        // Global functions for invoice management
-        function createNewInvoice() {
-            Alert.info('Create Invoice', 'Invoice creation form would open here in the full implementation.');
-        }
-
-        function viewInvoice(invoiceId) {
-            Alert.info('View Invoice', `This would show details for invoice ${invoiceId} in the full implementation.`);
-        }
-
-        function editInvoice(invoiceId) {
-            Alert.info('Edit Invoice', `This would open the edit form for invoice ${invoiceId}.`);
-        }
-
-        function deleteInvoice(invoiceId) {
-            Swal.fire({
-                title: 'Delete Invoice?',
-                text: `Are you sure you want to delete invoice ${invoiceId}?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Alert.success('Deleted!', 'Invoice has been deleted.');
+                    // Add new options
+                    expenseCategories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.category_name;
+                        dropdown.appendChild(option);
+                    });
                 }
             });
         }
 
-        function refreshInvoices() {
-            if (window.invoicesPage) {
-                window.invoicesPage.loadInvoices();
-                Alert.success('Refreshed', 'Invoices data has been updated.');
+        // Load invoices
+        async function loadInvoices() {
+            try {
+                showLoading();
+                
+                const response = await fetch('/api/v1/invoices', {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        invoices = data.data;
+                        displayInvoices(invoices);
+                    } else {
+                        Alert.error(data.message || 'Failed to load invoices');
+                    }
+                } else {
+                    Alert.error('Failed to load invoices');
+                }
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                Alert.error('Failed to load invoices');
+            } finally {
+                hideLoading();
             }
         }
 
-        function exportInvoices() {
-            Alert.info('Export Invoices', 'This would export invoices to Excel/PDF.');
+        // Display invoices
+        function displayInvoices(invoicesToShow) {
+            const container = document.getElementById('invoicesList');
+            
+            if (invoicesToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5>No invoices found</h5>
+                        <p class="text-muted">Create your first invoice to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const invoicesHTML = invoicesToShow.map(invoice => `
+                <div class="invoice-card" onclick="viewInvoice('${invoice.id}')">
+                    <div class="invoice-header">
+                        <div>
+                            <div class="invoice-number">${invoice.invoice_number}</div>
+                            <div class="invoice-date">${formatDate(invoice.transaction_date)}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="invoice-amount">$${invoice.total_amount || 0}</div>
+                            <span class="transaction-type-badge ${invoice.transaction_type === 'income' ? 'transaction-income' : 'transaction-outcome'}">
+                                ${invoice.transaction_type}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="invoice-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editInvoice('${invoice.id}'); event.stopPropagation();">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${invoice.id}'); event.stopPropagation();">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = invoicesHTML;
         }
 
-        // Initialize the page when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            window.invoicesPage = new InvoicesPage();
-        });
+        // Filter invoices
+        function filterInvoices() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const transactionType = document.getElementById('transactionTypeFilter').value;
+            const expenseCategory = document.getElementById('expenseCategoryFilter').value;
+
+            const filtered = invoices.filter(invoice => {
+                const matchesSearch = invoice.invoice_number.toLowerCase().includes(searchTerm);
+                const matchesType = !transactionType || invoice.transaction_type === transactionType;
+                const matchesCategory = !expenseCategory || invoice.expense_category_id === expenseCategory;
+                
+                return matchesSearch && matchesType && matchesCategory;
+            });
+
+            displayInvoices(filtered);
+        }
+
+        // Open create invoice modal
+        function openCreateInvoiceModal() {
+            document.getElementById('createInvoiceForm').reset();
+            document.getElementById('itemsContainer').innerHTML = '';
+            addItemRow(); // Add first item row
+            new bootstrap.Modal(document.getElementById('createInvoiceModal')).show();
+        }
+
+        // Add item row
+        function addItemRow() {
+            const container = document.getElementById('itemsContainer');
+            const itemIndex = container.children.length;
+            
+            const itemHTML = `
+                <div class="item-row" data-index="${itemIndex}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label>Detail *</label>
+                            <input type="text" class="form-control" name="detail" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Count *</label>
+                            <input type="number" class="form-control" name="count" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Unit Type *</label>
+                            <select class="form-select" name="unitType" required>
+                                <option value="">Select</option>
+                                <option value="Liters">Liters</option>
+                                <option value="Gallons">Gallons</option>
+                                <option value="Units">Units</option>
+                                <option value="Bag">Bag</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Price *</label>
+                            <input type="number" class="form-control" name="price" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Expiration Date</label>
+                            <input type="date" class="form-control" name="expirationDate">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="remove-item-btn" onclick="removeItemRow(${itemIndex})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', itemHTML);
+        }
+
+        // Remove item row
+        function removeItemRow(index) {
+            const container = document.getElementById('itemsContainer');
+            const rows = container.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                rows[index].remove();
+                // Reindex remaining rows
+                container.querySelectorAll('.item-row').forEach((row, newIndex) => {
+                    row.dataset.index = newIndex;
+                    row.querySelector('.remove-item-btn').onclick = () => removeItemRow(newIndex);
+                });
+            }
+        }
+
+        // Create invoice
+        async function createInvoice() {
+            try {
+                const form = document.getElementById('createInvoiceForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const items = [];
+                const itemRows = document.querySelectorAll('#itemsContainer .item-row');
+                
+                itemRows.forEach(row => {
+                    const detail = row.querySelector('[name="detail"]').value;
+                    const count = parseFloat(row.querySelector('[name="count"]').value);
+                    const unitType = row.querySelector('[name="unitType"]').value;
+                    const price = parseFloat(row.querySelector('[name="price"]').value);
+                    const expirationDate = row.querySelector('[name="expirationDate"]').value;
+
+                    if (detail && count && unitType && price) {
+                        const item = {
+                            detail: detail,
+                            count: count,
+                            unit_type: unitType,
+                            price: price
+                        };
+
+                        if (expirationDate) {
+                            item.expiration_date = new Date(expirationDate).toISOString();
+                        }
+
+                        items.push(item);
+                    }
+                });
+
+                if (items.length === 0) {
+                    Alert.error('At least one item is required');
+                    return;
+                }
+
+                const invoiceData = {
+                    invoice_number: document.getElementById('invoiceNumber').value,
+                    transaction_date: new Date(document.getElementById('transactionDate').value).toISOString(),
+                    transaction_type: document.getElementById('transactionType').value,
+                    expense_category_id: document.getElementById('expenseCategory').value,
+                    image_url: document.getElementById('imageUrl').value,
+                    notes: document.getElementById('notes').value || null,
+                    items: items
+                };
+
+                const supplierId = document.getElementById('supplierId').value;
+                if (supplierId) {
+                    invoiceData.supplier_id = supplierId;
+                }
+
+                const response = await fetch('/api/v1/invoices', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        Alert.success('Invoice created successfully');
+                        bootstrap.Modal.getInstance(document.getElementById('createInvoiceModal')).hide();
+                        loadInvoices();
+                    } else {
+                        Alert.error(data.message || 'Failed to create invoice');
+                    }
+                } else {
+                    Alert.error('Failed to create invoice');
+                }
+            } catch (error) {
+                console.error('Error creating invoice:', error);
+                Alert.error('Failed to create invoice');
+            }
+        }
+
+        // Edit invoice
+        async function editInvoice(invoiceId) {
+            try {
+                const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        const invoice = data.data;
+                        populateEditForm(invoice);
+                        new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
+                    } else {
+                        Alert.error(data.message || 'Failed to load invoice');
+                    }
+                } else {
+                    Alert.error('Failed to load invoice');
+                }
+            } catch (error) {
+                console.error('Error loading invoice:', error);
+                Alert.error('Failed to load invoice');
+            }
+        }
+
+        // Populate edit form
+        function populateEditForm(invoice) {
+            currentInvoiceId = invoice.id;
+            document.getElementById('editInvoiceId').value = invoice.id;
+            document.getElementById('editInvoiceNumber').value = invoice.invoice_number;
+            document.getElementById('editTransactionDate').value = formatDateTimeLocal(invoice.transaction_date);
+            document.getElementById('editTransactionType').value = invoice.transaction_type;
+            document.getElementById('editExpenseCategory').value = invoice.expense_category_id;
+            document.getElementById('editImageUrl').value = invoice.image_url;
+            document.getElementById('editNotes').value = invoice.notes || '';
+            document.getElementById('editSupplierId').value = invoice.supplier_id || '';
+        }
+
+        // Update invoice
+        async function updateInvoice() {
+            try {
+                const form = document.getElementById('editInvoiceForm');
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                const invoiceData = {
+                    invoice_number: document.getElementById('editInvoiceNumber').value,
+                    transaction_date: new Date(document.getElementById('editTransactionDate').value).toISOString(),
+                    transaction_type: document.getElementById('editTransactionType').value,
+                    expense_category_id: document.getElementById('editExpenseCategory').value,
+                    image_url: document.getElementById('editImageUrl').value,
+                    notes: document.getElementById('editNotes').value || null
+                };
+
+                const supplierId = document.getElementById('editSupplierId').value;
+                if (supplierId) {
+                    invoiceData.supplier_id = supplierId;
+                }
+
+                const response = await fetch(`/api/v1/invoices/${currentInvoiceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        Alert.success('Invoice updated successfully');
+                        bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
+                        loadInvoices();
+                    } else {
+                        Alert.error(data.message || 'Failed to update invoice');
+                    }
+                } else {
+                    Alert.error('Failed to update invoice');
+                }
+            } catch (error) {
+                console.error('Error updating invoice:', error);
+                Alert.error('Failed to update invoice');
+            }
+        }
+
+        // Delete invoice
+        async function deleteInvoice(invoiceId) {
+            const result = await Alert.confirm('Are you sure you want to delete this invoice?');
+            if (!result) return;
+
+            try {
+                const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        Alert.success('Invoice deleted successfully');
+                        loadInvoices();
+                    } else {
+                        Alert.error(data.message || 'Failed to delete invoice');
+                    }
+                } else {
+                    Alert.error('Failed to delete invoice');
+                }
+            } catch (error) {
+                console.error('Error deleting invoice:', error);
+                Alert.error('Failed to delete invoice');
+            }
+        }
+
+        // View invoice details
+        function viewInvoice(invoiceId) {
+            // Navigate to invoice details page
+            window.location.href = `details.html?id=${invoiceId}`;
+        }
+
+        // Utility functions
+        function showLoading() {
+            document.getElementById('invoicesList').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p>Loading invoices...</p>
+                </div>
+            `;
+        }
+
+        function hideLoading() {
+            // Loading is handled by displayInvoices
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+
+        function formatDateTimeLocal(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
     </script>
 </body>
+</html> 
 </html> 

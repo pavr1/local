@@ -82,14 +82,94 @@
         font-size: 0.95rem;
         color: var(--secondary-color);
     }
+
+    .stats-overview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stats-card {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: var(--shadow-light);
+        border-left: 4px solid var(--info-color);
+        transition: var(--transition);
+    }
+
+    .stats-card:nth-child(2) {
+        border-left-color: var(--success-color);
+    }
+
+    .stats-card:nth-child(3) {
+        border-left-color: var(--warning-color);
+    }
+
+    .stats-card:nth-child(4) {
+        border-left-color: var(--danger-color);
+    }
+
+    .stats-card:hover {
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--info-color);
+    }
+
+    .stats-card:nth-child(2) .stats-number {
+        color: var(--success-color);
+    }
+
+    .stats-card:nth-child(3) .stats-number {
+        color: var(--warning-color);
+    }
+
+    .stats-card:nth-child(4) .stats-number {
+        color: var(--danger-color);
+    }
+
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 </style>
 
 <!-- Invoice Management Features -->
 <div class="invoice-features">
+    <!-- Statistics Overview -->
+    <div class="stats-overview">
+        <div class="stats-card">
+            <div class="stats-number" id="totalInvoices">-</div>
+            <div class="stats-label">Total Invoices</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number" id="totalIncome">-</div>
+            <div class="stats-label">Total Income</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number" id="totalExpenses">-</div>
+            <div class="stats-label">Total Expenses</div>
+        </div>
+        <div class="stats-card">
+            <div class="stats-number" id="netProfit">-</div>
+            <div class="stats-label">Net Profit</div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <!-- Invoice Management -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToRoute('invoice-details')">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToInvoices()">
                 <div class="feature-icon">
                     <i class="fas fa-receipt"></i>
                 </div>
@@ -100,28 +180,28 @@
             </button>
         </div>
         
+        <!-- Expense Categories -->
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="navigateToExpenseCategories()">
+                <div class="feature-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Expense Categories</strong></p>
+                    <p>Manage expense categories for better financial organization</p>
+                </div>
+            </button>
+        </div>
+
         <!-- Financial Analytics -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Invoice Analytics')">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Invoice Analytics')">
                 <div class="feature-icon">
                     <i class="fas fa-chart-pie"></i>
                 </div>
                 <div class="feature-content">
                     <p><strong>Financial Analytics</strong></p>
                     <p>Track ice cream sales performance, revenue trends, and profit analysis</p>
-                </div>
-            </button>
-        </div>
-
-        <!-- Customer Billing -->
-        <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="Alert.comingSoon('Customer Billing')">
-                <div class="feature-icon">
-                    <i class="fas fa-credit-card"></i>
-                </div>
-                <div class="feature-content">
-                    <p><strong>Customer Billing</strong></p>
-                    <p>Process payments, manage customer accounts, and handle refunds</p>
                 </div>
             </button>
         </div>
@@ -147,9 +227,63 @@
         console.log('💰 Initializing Invoice Content...');
         
         try {
+            await loadInvoiceStatistics();
             console.log('✅ Invoice Content initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing invoice content:', error);
         }
     };
+
+    // Load invoice statistics
+    async function loadInvoiceStatistics() {
+        try {
+            const response = await fetch('/api/v1/invoices', {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    calculateStatistics(data.data);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading invoice statistics:', error);
+        }
+    }
+
+    // Calculate and display statistics
+    function calculateStatistics(invoices) {
+        let totalInvoices = invoices.length;
+        let totalIncome = 0;
+        let totalExpenses = 0;
+
+        invoices.forEach(invoice => {
+            const amount = invoice.total_amount || 0;
+            if (invoice.transaction_type === 'income') {
+                totalIncome += amount;
+            } else {
+                totalExpenses += amount;
+            }
+        });
+
+        const netProfit = totalIncome - totalExpenses;
+
+        document.getElementById('totalInvoices').textContent = totalInvoices;
+        document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
+        document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
+        document.getElementById('netProfit').textContent = `$${netProfit.toFixed(2)}`;
+    }
+
+    // Navigation functions
+    function navigateToInvoices() {
+        window.location.href = 'invoices.html';
+    }
+
+    function navigateToExpenseCategories() {
+        window.location.href = 'expense-categories.html';
+    }
 </script> 
