@@ -17,7 +17,7 @@
    - [Recipe Categories Table](#recipe-categories-table)
    - [Recipes Table](#recipes-table)
    - [Recipe Ingredients Table](#recipe-ingredients-table)
-2. [Expenses Management Entities](#expenses-management-entities)
+2. [Invoice Management Entities](#invoice-management-entities)
    - [Expense Categories Table](#expense-categories-table)
    - [Invoice Table](#invoice-table)
    - [Invoice Details Table](#invoice-details-table)
@@ -380,7 +380,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - **recipe_categories** ← **recipes** (One-to-Many: One category can contain multiple recipes)
 - **recipes** ← **recipe_ingredients** → **ingredients** (Many-to-Many: Recipes contain multiple ingredients, ingredients can be in multiple recipes)
 
-### Expenses Management
+### Invoice Management
 - **expense_categories** ← **invoices** (One-to-Many: One category can have multiple invoices)
 - **invoices** ← **invoice_items** (One-to-Many: One invoice can have multiple line items)
 
@@ -429,7 +429,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 - Maintain invoice totals when existences are added/modified
 - Link invoices to invoice management system for accounting integration
 
-### Expenses Management
+### Invoice Management
 - Organize invoice documents in monthly directories (MM-yyyy format)
 - Calculate monthly invoice totals from invoices
 - Link invoices directly to their expense categories
@@ -477,7 +477,7 @@ CREATE INDEX idx_recipe_ingredients_ingredient ON recipe_ingredients(ingredient_
 
 ---
 
-## Expenses Management Entities
+## Invoice Management Entities
 
 ### Expense Categories Table
 **Purpose:** Define and manage different categories of business expenses for classification and reporting purposes.
