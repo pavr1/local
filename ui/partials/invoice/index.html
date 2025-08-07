@@ -169,7 +169,7 @@
     <div class="row g-4">
         <!-- Invoice Management -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="navigateToInvoices()">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="loadContent('invoice-details')">
                 <div class="feature-icon">
                     <i class="fas fa-receipt"></i>
                 </div>
@@ -182,7 +182,7 @@
         
         <!-- Expense Categories -->
         <div class="col-md-6">
-            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="navigateToExpenseCategories()">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="Alert.comingSoon('Expense Categories Management')">
                 <div class="feature-icon">
                     <i class="fas fa-tags"></i>
                 </div>
@@ -276,19 +276,5 @@
         document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
         document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
         document.getElementById('netProfit').textContent = `$${netProfit.toFixed(2)}`;
-    }
-
-    // Navigation functions
-    function navigateToInvoices() {
-        if (typeof loadContent === 'function') {
-            loadContent('invoice-details');
-        } else {
-            // Fallback for standalone usage
-            window.location.href = 'invoice.html';
-        }
-    }
-
-    function navigateToExpenseCategories() {
-        Alert.comingSoon('Expense Categories Management');
     }
 </script> 

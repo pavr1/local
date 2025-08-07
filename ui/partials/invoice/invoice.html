@@ -80,6 +80,26 @@
         color: var(--danger-color);
     }
 
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .table th {
+        background: var(--light-color);
+        border-bottom: 2px solid var(--border-color);
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .table td {
+        vertical-align: middle;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
     .modal-body {
         max-height: 70vh;
         overflow-y: auto;
@@ -121,51 +141,6 @@
         cursor: pointer;
     }
 
-    .invoice-card {
-        background: var(--white);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        border-radius: var(--border-radius);
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        transition: var(--transition);
-        cursor: pointer;
-    }
-
-    .invoice-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-medium);
-    }
-
-    .invoice-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .invoice-number {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: var(--primary-color);
-    }
-
-    .invoice-amount {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: var(--success-color);
-    }
-
-    .invoice-date {
-        color: var(--secondary-color);
-        font-size: 0.9rem;
-    }
-
-    .invoice-actions {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
     /* Mobile responsiveness */
     @media (max-width: 768px) {
         .search-filters {
@@ -176,12 +151,6 @@
             padding: 1rem;
             flex-direction: column;
             gap: 1rem;
-        }
-
-        .invoice-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
         }
     }
 </style>
@@ -222,11 +191,37 @@
     </div>
 </div>
 
-<!-- Invoices List -->
-<div id="invoicesList">
-    <div class="text-center py-5">
-        <div class="loading-spinner"></div>
-        <p>Loading invoices...</p>
+<!-- Invoices Table -->
+<div class="invoices-table">
+    <div class="table-header">
+        <button class="btn-add-invoice" onclick="openCreateInvoiceModal()">
+            <i class="fas fa-plus me-2"></i>Create Invoice
+        </button>
+        <div></div>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Total Amount</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="invoicesTableBody">
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="loading-spinner"></div>
+                        <p>Loading invoices...</p>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -406,11 +401,14 @@
         console.log('💰 Initializing Invoice List Content...');
         
         try {
+            console.log('Loading expense categories...');
             await loadExpenseCategories();
+            console.log('Loading invoices...');
             await loadInvoices();
             console.log('✅ Invoice List Content initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing invoice list content:', error);
+            Alert.error('Failed to initialize invoice content');
         }
     };
 
@@ -462,29 +460,44 @@
     // Load invoices
     async function loadInvoices() {
         try {
+            console.log('Loading invoices...');
             showLoading();
+            
+            // Check if getAuthToken function exists
+            const authToken = typeof getAuthToken === 'function' ? getAuthToken() : '';
+            console.log('Auth token available:', !!authToken);
             
             const response = await fetch('/api/v1/invoices', {
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });
 
+            console.log('Response status:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
+                console.log('Response data:', data);
+                
                 if (data.success) {
                     invoices = data.data;
+                    console.log('Invoices loaded:', invoices.length);
                     displayInvoices(invoices);
                 } else {
+                    console.error('API returned error:', data.message);
                     Alert.error(data.message || 'Failed to load invoices');
+                    showError('Failed to load invoices: ' + (data.message || 'Unknown error'));
                 }
             } else {
+                console.error('HTTP error:', response.status, response.statusText);
                 Alert.error('Failed to load invoices');
+                showError('Failed to load invoices: HTTP ' + response.status);
             }
         } catch (error) {
             console.error('Error loading invoices:', error);
             Alert.error('Failed to load invoices');
+            showError('Failed to load invoices: ' + error.message);
         } finally {
             hideLoading();
         }
@@ -492,42 +505,46 @@
 
     // Display invoices
     function displayInvoices(invoicesToShow) {
-        const container = document.getElementById('invoicesList');
+        const container = document.getElementById('invoicesTableBody');
         
         if (invoicesToShow.length === 0) {
             container.innerHTML = `
-                <div class="text-center py-5">
-                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                    <h5>No invoices found</h5>
-                    <p class="text-muted">Create your first invoice to get started</p>
-                </div>
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5>No invoices found</h5>
+                        <p class="text-muted">Create your first invoice to get started</p>
+                    </td>
+                </tr>
             `;
             return;
         }
 
         const invoicesHTML = invoicesToShow.map(invoice => `
-            <div class="invoice-card" onclick="viewInvoice('${invoice.id}')">
-                <div class="invoice-header">
-                    <div>
-                        <div class="invoice-number">${invoice.invoice_number}</div>
-                        <div class="invoice-date">${formatDate(invoice.transaction_date)}</div>
+            <tr>
+                <td>${invoice.invoice_number}</td>
+                <td>${formatDate(invoice.transaction_date)}</td>
+                <td>
+                    <span class="transaction-type-badge ${invoice.transaction_type === 'income' ? 'transaction-income' : 'transaction-outcome'}">
+                        ${invoice.transaction_type}
+                    </span>
+                </td>
+                <td>${invoice.expense_category ? invoice.expense_category.category_name : 'N/A'}</td>
+                <td>$${invoice.total_amount || 0}</td>
+                <td>
+                    <span class="badge bg-success">Paid</span>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editInvoice('${invoice.id}'); event.stopPropagation();">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${invoice.id}'); event.stopPropagation();">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                    <div class="text-end">
-                        <div class="invoice-amount">$${invoice.total_amount || 0}</div>
-                        <span class="transaction-type-badge ${invoice.transaction_type === 'income' ? 'transaction-income' : 'transaction-outcome'}">
-                            ${invoice.transaction_type}
-                        </span>
-                    </div>
-                </div>
-                <div class="invoice-actions">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editInvoice('${invoice.id}'); event.stopPropagation();">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${invoice.id}'); event.stopPropagation();">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+                </td>
+            </tr>
         `).join('');
 
         container.innerHTML = invoicesHTML;
@@ -562,11 +579,38 @@
     }
 
     // Open create invoice modal
-    function openCreateInvoiceModal() {
-        document.getElementById('createInvoiceForm').reset();
-        document.getElementById('itemsContainer').innerHTML = '';
-        addItemRow(); // Add first item row
-        new bootstrap.Modal(document.getElementById('createInvoiceModal')).show();
+    window.openCreateInvoiceModal = function() {
+        console.log('Opening create invoice modal...');
+        
+        try {
+            const form = document.getElementById('createInvoiceForm');
+            const itemsContainer = document.getElementById('itemsContainer');
+            const modal = document.getElementById('createInvoiceModal');
+            
+            console.log('Form found:', !!form);
+            console.log('Items container found:', !!itemsContainer);
+            console.log('Modal found:', !!modal);
+            
+            if (form) {
+                form.reset();
+            }
+            
+            if (itemsContainer) {
+                itemsContainer.innerHTML = '';
+                addItemRow(); // Add first item row
+            }
+            
+            if (modal && typeof bootstrap !== 'undefined') {
+                new bootstrap.Modal(modal).show();
+                console.log('Modal opened successfully');
+            } else {
+                console.error('Modal or Bootstrap not found');
+                Alert.error('Modal could not be opened');
+            }
+        } catch (error) {
+            console.error('Error opening modal:', error);
+            Alert.error('Failed to open create invoice modal');
+        }
     }
 
     // Add item row
@@ -841,11 +885,13 @@
 
     // Utility functions
     function showLoading() {
-        document.getElementById('invoicesList').innerHTML = `
-            <div class="text-center py-5">
-                <div class="loading-spinner"></div>
-                <p>Loading invoices...</p>
-            </div>
+        document.getElementById('invoicesTableBody').innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="loading-spinner"></div>
+                    <p>Loading invoices...</p>
+                </td>
+            </tr>
         `;
     }
 
@@ -863,5 +909,22 @@
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    // Show error in table
+    function showError(message) {
+        const container = document.getElementById('invoicesTableBody');
+        container.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <h5>Error Loading Invoices</h5>
+                    <p class="text-muted">${message}</p>
+                    <button class="btn btn-primary" onclick="loadInvoices()">
+                        <i class="fas fa-refresh me-2"></i>Retry
+                    </button>
+                </td>
+            </tr>
+        `;
     }
 </script> 
