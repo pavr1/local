@@ -115,12 +115,12 @@ func main() {
 	inventoryRouter.HandleFunc("/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
 
-	// Invoice routes (proxied to invoice service)
+	// Invoice service routes
 	invoiceRouter := api.PathPrefix("/v1/invoice").Subrouter()
 	invoiceRouter.HandleFunc("/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
 
-	// Expense Categories routes (proxied to invoice service)
+	// Expense Categories routes
 	expenseCategoriesRouter := api.PathPrefix("/v1/expense-categories").Subrouter()
 	expenseCategoriesRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/expense-categories"))
 

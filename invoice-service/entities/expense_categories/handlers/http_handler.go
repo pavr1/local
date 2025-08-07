@@ -20,9 +20,6 @@ type DBHandlerInterface interface {
 	DeleteExpenseCategory(id string) error
 }
 
-// Ensure DBHandler implements DBHandlerInterface
-var _ DBHandlerInterface = (*DBHandler)(nil)
-
 // HttpHandler handles HTTP requests for expense category operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
@@ -121,7 +118,7 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 	expenseCategories, err := h.dbHandler.ListExpenseCategories()
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoriesListResponse{
+		response := models.ExpenseCategoryListResponse{
 			Success: false,
 			Data:    []models.ExpenseCategory{},
 			Count:   0,
@@ -131,7 +128,7 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	response := models.ExpenseCategoriesListResponse{
+	response := models.ExpenseCategoryListResponse{
 		Success: true,
 		Data:    expenseCategories,
 		Count:   len(expenseCategories),

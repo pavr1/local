@@ -183,12 +183,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
 	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
 
-	// Invoice with details operations
-	invoicesRouter.HandleFunc("/{id}/details", invoicesHandler.GetInvoiceDetailsByInvoiceID).Methods("GET")
-	invoicesRouter.HandleFunc("/{id}/details", invoicesHandler.CreateInvoiceDetail).Methods("POST")
-
-	// Invoice details standalone routes
-	api.HandleFunc("/invoice-details", invoicesHandler.ListInvoiceDetails).Methods("GET")
+	// Invoice details are managed through the main invoice APIs
 
 	// Expense Categories routes
 	expenseCategoriesRouter := api.PathPrefix("/expense-categories").Subrouter()
