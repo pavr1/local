@@ -210,11 +210,12 @@
                         <div class="col-md-6 mb-3">
                             <label for="ingredientSupplier" class="form-label">Supplier</label>
                             <div class="input-group">
-                                <select class="form-control" id="ingredientSupplier" name="supplier_id">
-                                    <option value="">Select a supplier</option>
-                                    <!-- Suppliers will be loaded dynamically -->
-                                </select>
-                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierModalFromIngredient('add')" title="Create New Supplier">
+                                <input type="text" class="form-control" id="ingredientSupplierDisplay" readonly placeholder="Select a supplier" style="background: white;">
+                                <input type="hidden" id="ingredientSupplier" name="supplier_id">
+                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierPicker('add')" title="Select Supplier">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="openSupplierModalFromIngredient('add')" title="Create New Supplier">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -306,11 +307,12 @@
                         <div class="col-md-6 mb-3">
                             <label for="editIngredientSupplier" class="form-label">Supplier</label>
                             <div class="input-group">
-                                <select class="form-control" id="editIngredientSupplier" name="supplier_id">
-                                    <option value="">Select a supplier</option>
-                                    <!-- Suppliers will be loaded dynamically -->
-                                </select>
-                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierModalFromIngredient('edit')" title="Create New Supplier">
+                                <input type="text" class="form-control" id="editIngredientSupplierDisplay" readonly placeholder="Select a supplier" style="background: white;">
+                                <input type="hidden" id="editIngredientSupplier" name="supplier_id">
+                                <button type="button" class="btn btn-outline-primary" onclick="openSupplierPicker('edit')" title="Select Supplier">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="openSupplierModalFromIngredient('edit')" title="Create New Supplier">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -371,6 +373,49 @@
                                 </thead>
                                 <tbody id="categoryPickerTableBody">
                                     <!-- Categories will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div> 
+
+<!-- Supplier Picker Modal -->
+<div class="modal fade" id="supplierPickerModal" tabindex="-1" aria-labelledby="supplierPickerModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="supplierPickerModalLabel">
+                    <i class="fas fa-truck me-2"></i>Select Supplier
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <input type="text" class="form-control" id="supplierSearchInput" placeholder="Search suppliers..." onkeyup="filterSuppliers()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover" id="supplierPickerTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Supplier</th>
+                                        <th>Contact</th>
+                                        <th>Status</th>
+                                        <th width="80">Select</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supplierPickerTableBody">
+                                    <!-- Suppliers will be loaded here -->
                                 </tbody>
                             </table>
                         </div>

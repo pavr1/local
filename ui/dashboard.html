@@ -2992,41 +2992,32 @@
 
         // Create ingredient table row
         function createIngredientRow(ingredient) {
-            const createdDate = new Date(ingredient.created_at).toLocaleDateString();
-            const truncatedDescription = ingredient.description && ingredient.description.length > 50 
-                ? ingredient.description.substring(0, 50) + '...' 
-                : ingredient.description || 'No description';
-            
-            // Find category and supplier names
-            const categoryName = ingredient.ingredient_category_id && availableCategories.length > 0 
-                ? availableCategories.find(c => c.id === ingredient.ingredient_category_id)?.name || 'Unknown'
-                : 'No category';
-            
-            const supplierName = ingredient.supplier_id && availableSuppliers.length > 0
-                ? availableSuppliers.find(s => s.id === ingredient.supplier_id)?.name || 'Unknown'
-                : 'No supplier';
+            const category = availableCategories.find(c => c.id === ingredient.ingredient_category_id);
+            const supplier = availableSuppliers.find(s => s.id === ingredient.supplier_id);
             
             return `
                 <tr>
-                    <td class="fw-bold">${ingredient.name}</td>
-                    <td class="text-muted">${truncatedDescription}</td>
+                    <td><strong>${ingredient.ingredient_name}</strong></td>
+                    <td>${ingredient.description || '-'}</td>
                     <td>
-                        ${categoryName !== 'No category' ? `<span class="category-badge">${categoryName}</span>` : '<span class="text-muted">No category</span>'}
+                        ${category ? `<span class="badge bg-info">${category.name}</span>` : '-'}
                     </td>
                     <td>
-                        ${supplierName !== 'No supplier' ? `<span class="supplier-badge">${supplierName}</span>` : '<span class="text-muted">No supplier</span>'}
+                        ${supplier ? `<span class="supplier-badge">${supplier.supplier_name}</span>` : '-'}
                     </td>
-                    <td class="text-muted">${createdDate}</td>
-                    <td class="text-end">
-                        <button class="btn btn-outline-info btn-sm me-1" onclick="viewIngredient('${ingredient.id}')" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-outline-warning btn-sm me-1" onclick="editIngredient('${ingredient.id}')" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteIngredient('${ingredient.id}', '${ingredient.name.replace(/'/g, "\\'")}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                    <td>${new Date(ingredient.created_at).toLocaleDateString()}</td>
+                    <td>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="viewIngredient('${ingredient.id}')" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="editIngredient('${ingredient.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteIngredient('${ingredient.id}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -3065,420 +3056,8 @@
 
         // Populate dropdowns
         function populateDropdowns(categorySelectId, supplierSelectId) {
-            // Populate categories
-            const categorySelect = document.getElementById(categorySelectId);
-            if (categorySelect) {
-                categorySelect.innerHTML = '<option value="">Select a category</option>';
-                availableCategories.forEach(category => {
-                    categorySelect.innerHTML += `<option value="${category.id}">${category.name}</option>`;
-                });
-            }
-
-            // Populate suppliers
-            const supplierSelect = document.getElementById(supplierSelectId);
-            if (supplierSelect) {
-                supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
-                availableSuppliers.forEach(supplier => {
-                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
-                });
-            }
-        }
-
-        // Open add ingredient modal
-        window.openAddIngredientModal = async function() {
-            await loadDropdownData();
-            populateDropdowns('ingredientCategory', 'ingredientSupplier');
-            resetAddIngredientForm();
-            const modal = new bootstrap.Modal(document.getElementById('addIngredientModal'));
-            modal.show();
-        };
-
-        // Reset add ingredient form
-        function resetAddIngredientForm() {
-            const form = document.getElementById('addIngredientForm');
-            if (form) {
-                form.reset();
-                document.getElementById('ingredientName').classList.remove('is-invalid');
-                document.getElementById('ingredientDescription').classList.remove('is-invalid');
-                // Clear category display fields
-                document.getElementById('ingredientCategory').value = '';
-                document.getElementById('ingredientCategoryDisplay').value = '';
-            }
-        }
-
-        // Save new ingredient
-        window.saveIngredient = async function() {
-            if (!validateAddIngredientForm()) {
-                return;
-            }
-
-            const ingredientData = {
-                name: document.getElementById('ingredientName').value.trim(),
-                description: document.getElementById('ingredientDescription').value.trim() || null,
-                ingredient_category_id: document.getElementById('ingredientCategory').value || null,
-                supplier_id: document.getElementById('ingredientSupplier').value || null
-            };
-
-            try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(ingredientData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    Alert.success('Ingredient created successfully!');
-                    
-                    // Hide modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addIngredientModal'));
-                    modal.hide();
-                    
-                    // Reload ingredients
-                    await loadIngredientsData();
-                } else {
-                    throw new Error(result.message || 'Failed to create ingredient');
-                }
-            } catch (error) {
-                console.error('❌ Error saving ingredient:', error);
-                Alert.error('Error: ' + error.message);
-            }
-        };
-
-        // Validate add ingredient form
-        function validateAddIngredientForm() {
-            let isValid = true;
-
-            const nameField = document.getElementById('ingredientName');
-
-            if (!nameField.value.trim()) {
-                nameField.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                nameField.classList.remove('is-invalid');
-            }
-
-            return isValid;
-        }
-
-        // View ingredient details
-        window.viewIngredient = async function(ingredientId) {
-            const ingredient = ingredients.find(i => i.id === ingredientId);
-            if (!ingredient) {
-                Alert.error('Ingredient not found');
-                return;
-            }
-
-            // Find category and supplier names
-            const categoryName = ingredient.ingredient_category_id && availableCategories.length > 0 
-                ? availableCategories.find(c => c.id === ingredient.ingredient_category_id)?.name || 'Unknown'
-                : 'No category';
-            
-            const supplierName = ingredient.supplier_id && availableSuppliers.length > 0
-                ? availableSuppliers.find(s => s.id === ingredient.supplier_id)?.name || 'Unknown'
-                : 'No supplier';
-
-            const content = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Ingredient Information</h6>
-                        <table class="table table-borderless">
-                            <tr>
-                                <td class="fw-bold">Name:</td>
-                                <td>${ingredient.name}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Category:</td>
-                                <td>${categoryName}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Supplier:</td>
-                                <td>${supplierName}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Created:</td>
-                                <td>${new Date(ingredient.created_at).toLocaleString()}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold">Last Updated:</td>
-                                <td>${new Date(ingredient.updated_at).toLocaleString()}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="fw-bold">Description</h6>
-                        <p class="text-muted">${ingredient.description || 'No description available'}</p>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('viewIngredientContent').innerHTML = content;
-            currentIngredient = ingredient;
-
-            const modal = new bootstrap.Modal(document.getElementById('viewIngredientModal'));
-            modal.show();
-        };
-
-        // Edit ingredient
-        window.editIngredient = async function(ingredientId) {
-            const ingredient = ingredients.find(i => i.id === ingredientId);
-            if (!ingredient) {
-                Alert.error('Ingredient not found');
-                return;
-            }
-
-            currentIngredient = ingredient;
-
-            await loadDropdownData();
-            populateDropdowns('editIngredientCategory', 'editIngredientSupplier');
-
-            // Populate edit form
-            document.getElementById('editIngredientName').value = ingredient.name;
-            document.getElementById('editIngredientDescription').value = ingredient.description || '';
-            
-            // Handle category display
-            if (ingredient.ingredient_category_id && availableCategories.length > 0) {
-                const category = availableCategories.find(c => c.id === ingredient.ingredient_category_id);
-                if (category) {
-                    document.getElementById('editIngredientCategory').value = ingredient.ingredient_category_id;
-                    document.getElementById('editIngredientCategoryDisplay').value = category.name;
-                } else {
-                    document.getElementById('editIngredientCategory').value = '';
-                    document.getElementById('editIngredientCategoryDisplay').value = '';
-                }
-            } else {
-                document.getElementById('editIngredientCategory').value = '';
-                document.getElementById('editIngredientCategoryDisplay').value = '';
-            }
-            
-            document.getElementById('editIngredientSupplier').value = ingredient.supplier_id || '';
-
-            // Show edit modal
-            const modal = new bootstrap.Modal(document.getElementById('editIngredientModal'));
-            modal.show();
-        };
-
-        // Edit ingredient from view modal
-        window.editIngredientFromView = function() {
-            if (currentIngredient) {
-                // Hide view modal
-                const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewIngredientModal'));
-                viewModal.hide();
-                
-                // Show edit modal after view modal is hidden
-                setTimeout(() => {
-                    editIngredient(currentIngredient.id);
-                }, 300);
-            }
-        };
-
-        // Update ingredient
-        window.updateIngredient = async function() {
-            if (!validateEditIngredientForm()) {
-                return;
-            }
-
-            const ingredientData = {
-                name: document.getElementById('editIngredientName').value.trim(),
-                description: document.getElementById('editIngredientDescription').value.trim() || null,
-                ingredient_category_id: document.getElementById('editIngredientCategory').value || null,
-                supplier_id: document.getElementById('editIngredientSupplier').value || null
-            };
-
-            try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients/${currentIngredient.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(ingredientData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    Alert.success('Ingredient updated successfully!');
-                    
-                    // Hide modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editIngredientModal'));
-                    modal.hide();
-                    
-                    // Reload ingredients
-                    await loadIngredientsData();
-                } else {
-                    throw new Error(result.message || 'Failed to update ingredient');
-                }
-            } catch (error) {
-                console.error('❌ Error updating ingredient:', error);
-                Alert.error('Error: ' + error.message);
-            }
-        };
-
-        // Validate edit ingredient form
-        function validateEditIngredientForm() {
-            let isValid = true;
-
-            const nameField = document.getElementById('editIngredientName');
-
-            if (!nameField.value.trim()) {
-                nameField.classList.add('is-invalid');
-                isValid = false;
-            } else {
-                nameField.classList.remove('is-invalid');
-            }
-
-            return isValid;
-        }
-
-        // Delete ingredient
-        window.deleteIngredient = async function(ingredientId, ingredientName) {
-            const result = await Swal.fire({
-                title: 'Delete Ingredient',
-                text: `Are you sure you want to delete "${ingredientName}"? This action cannot be undone.`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#dc3545',
-                cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, delete it!',
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                try {
-                    const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients/${ingredientId}`, {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-
-                    const deleteResult = await response.json();
-
-                    if (response.ok && deleteResult.success) {
-                        Alert.success('Ingredient deleted successfully!');
-                        await loadIngredientsData();
-                    } else {
-                        throw new Error(deleteResult.message || 'Failed to delete ingredient');
-                    }
-                } catch (error) {
-                    console.error('❌ Error deleting ingredient:', error);
-                    Alert.error('Error: ' + error.message);
-                }
-            }
-        };
-
-        // Expose ingredients functions globally
-        window.loadIngredientsData = loadIngredientsData;
-
-        console.log('✅ Ingredients functionality initialized and exposed globally');
-
-        // ===== SUPPLIER INTEGRATION FOR INGREDIENTS =====
-        let currentIngredientModal = null; // Track which modal opened the supplier modal
-
-        // Open supplier modal from ingredient form
-        window.openSupplierModalFromIngredient = function(modalType) {
-            currentIngredientModal = modalType;
-            openAddSupplierModal();
-        };
-
-        // Note: Supplier creation from ingredients now uses navigation flow with sessionStorage
-
-        // ===== CATEGORY PICKER FUNCTIONALITY =====
-        let currentCategoryModal = null; // Track which modal opened the category picker
-
-        // Open category picker modal
-        window.openCategoryPicker = async function(modalType) {
-            currentCategoryModal = modalType;
-            await loadDropdownData(); // Ensure categories are loaded
-            populateCategoryPicker();
-            
-            const modal = new bootstrap.Modal(document.getElementById('categoryPickerModal'));
-            modal.show();
-        };
-
-        // Populate category picker table
-        function populateCategoryPicker() {
-            const tbody = document.getElementById('categoryPickerTableBody');
-            if (!tbody) return;
-
-            if (!availableCategories || availableCategories.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="text-center text-muted py-4">
-                            <i class="fas fa-tags me-2"></i>No categories available
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            tbody.innerHTML = availableCategories.map(category => `
-                <tr class="category-row" data-category-id="${category.id}" data-category-name="${category.name.toLowerCase()}" data-category-description="${category.description.toLowerCase()}">
-                    <td class="fw-bold">${category.name}</td>
-                    <td class="text-muted">${category.description}</td>
-                    <td>
-                        <span class="status-badge ${category.is_active ? 'status-active' : 'status-inactive'}">
-                            ${category.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="selectCategory('${category.id}', '${category.name.replace(/'/g, "\\'")}')">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // Filter categories based on search
-        window.filterCategories = function() {
-            const searchTerm = document.getElementById('categorySearchInput').value.toLowerCase();
-            const rows = document.querySelectorAll('.category-row');
-
-            rows.forEach(row => {
-                const name = row.getAttribute('data-category-name');
-                const description = row.getAttribute('data-category-description');
-                
-                if (name.includes(searchTerm) || description.includes(searchTerm)) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        };
-
-        // Select a category
-        window.selectCategory = function(categoryId, categoryName) {
-            if (currentCategoryModal === 'add') {
-                document.getElementById('ingredientCategory').value = categoryId;
-                document.getElementById('ingredientCategoryDisplay').value = categoryName;
-            } else {
-                document.getElementById('editIngredientCategory').value = categoryId;
-                document.getElementById('editIngredientCategoryDisplay').value = categoryName;
-            }
-
-            // Close category picker modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryPickerModal'));
-            modal.hide();
-            
-            currentCategoryModal = null;
-        };
-
-        // Update populateDropdowns function to work with new category picker
-        function populateDropdowns(categorySelectId, supplierSelectId) {
-            // Skip category dropdown population since we use the picker now
-            
-            // Populate suppliers
-            const supplierSelect = document.getElementById(supplierSelectId);
-            if (supplierSelect) {
-                supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
-                availableSuppliers.forEach(supplier => {
-                    supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
-                });
-            }
+            // Skip dropdown population since we use the picker modals now
+            // This function is kept for compatibility but no longer populates dropdowns
         }
 
         console.log('✅ Ingredients functionality initialized and exposed globally');
@@ -4715,6 +4294,438 @@
                     </button>
                 </div>
             `;
+        }
+
+        // Supplier Picker Functions
+        let currentSupplierModal = null; // Track which modal opened the supplier picker
+
+        // Open supplier picker modal
+        window.openSupplierPicker = async function(modalType) {
+            currentSupplierModal = modalType;
+            await loadDropdownData(); // Ensure suppliers are loaded
+            populateSupplierPicker();
+            
+            const modal = new bootstrap.Modal(document.getElementById('supplierPickerModal'));
+            modal.show();
+        };
+
+        // Populate supplier picker table
+        function populateSupplierPicker() {
+            const tbody = document.getElementById('supplierPickerTableBody');
+            if (!tbody) return;
+
+            if (!availableSuppliers || availableSuppliers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-truck me-2"></i>No suppliers available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = availableSuppliers.map(supplier => `
+                <tr class="supplier-row" data-supplier-id="${supplier.id}" data-supplier-name="${supplier.supplier_name.toLowerCase()}" data-supplier-contact="${(supplier.contact_number || '').toLowerCase()}" data-supplier-email="${(supplier.email || '').toLowerCase()}">
+                    <td class="fw-bold">${supplier.supplier_name}</td>
+                    <td class="text-muted">
+                        ${supplier.contact_number ? `<div><i class="fas fa-phone me-1"></i>${supplier.contact_number}</div>` : ''}
+                        ${supplier.email ? `<div><i class="fas fa-envelope me-1"></i>${supplier.email}</div>` : ''}
+                    </td>
+                    <td>
+                        <span class="status-badge status-active">
+                            Active
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectSupplier('${supplier.id}', '${supplier.supplier_name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter suppliers based on search
+        window.filterSuppliers = function() {
+            const searchTerm = document.getElementById('supplierSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.supplier-row');
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-supplier-name');
+                const contact = row.getAttribute('data-supplier-contact');
+                const email = row.getAttribute('data-supplier-email');
+                
+                if (name.includes(searchTerm) || contact.includes(searchTerm) || email.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
+
+        // Select a supplier
+        window.selectSupplier = function(supplierId, supplierName) {
+            if (currentSupplierModal === 'add') {
+                document.getElementById('ingredientSupplier').value = supplierId;
+                document.getElementById('ingredientSupplierDisplay').value = supplierName;
+            } else {
+                document.getElementById('editIngredientSupplier').value = supplierId;
+                document.getElementById('editIngredientSupplierDisplay').value = supplierName;
+            }
+
+            // Close supplier picker modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('supplierPickerModal'));
+            modal.hide();
+            
+            currentSupplierModal = null;
+        };
+
+        // Ingredient Modal Functions
+        window.openAddIngredientModal = async function() {
+            await loadDropdownData();
+            resetIngredientForm();
+            const modal = new bootstrap.Modal(document.getElementById('addIngredientModal'));
+            modal.show();
+        };
+
+        function resetIngredientForm() {
+            const form = document.getElementById('addIngredientForm');
+            if (form) {
+                form.reset();
+                form.classList.remove('was-validated');
+                
+                // Clear picker displays
+                document.getElementById('ingredientCategoryDisplay').value = '';
+                document.getElementById('ingredientCategory').value = '';
+                document.getElementById('ingredientSupplierDisplay').value = '';
+                document.getElementById('ingredientSupplier').value = '';
+                
+                // Remove validation classes
+                const fields = ['ingredientName', 'ingredientDescription'];
+                fields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (field) field.classList.remove('is-invalid', 'is-valid');
+                });
+            }
+        }
+
+        async function saveIngredient() {
+            const form = document.getElementById('addIngredientForm');
+            const saveBtn = document.querySelector('#addIngredientModal .btn-save-ingredient');
+            
+            // Reset validation state
+            form.classList.remove('was-validated');
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const ingredientData = {};
+            
+            // Process form fields
+            for (let [key, value] of formData.entries()) {
+                const trimmedValue = value.trim();
+                if (trimmedValue) {
+                    ingredientData[key] = trimmedValue;
+                }
+            }
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!ingredientData.ingredient_name || ingredientData.ingredient_name.length < 1 || ingredientData.ingredient_name.length > 255) {
+                document.getElementById('ingredientName').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!ingredientData.ingredient_category_id) {
+                document.getElementById('ingredientCategoryDisplay').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!ingredientData.supplier_id) {
+                document.getElementById('ingredientSupplierDisplay').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Update button state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(ingredientData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    Alert.success('Ingredient created successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addIngredientModal'));
+                    modal.hide();
+                    
+                    // Reload data
+                    await loadIngredientsData();
+                } else {
+                    throw new Error(result.message || 'Failed to create ingredient');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error saving ingredient:', error);
+                Alert.error('Failed to save ingredient. Please check your connection and try again.');
+            }
+            
+            // Reset button state
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Ingredient';
+        }
+
+        function viewIngredient(ingredientId) {
+            console.log('👁️ Viewing ingredient:', ingredientId);
+            // TODO: Implement view ingredient functionality
+            Alert.info('View ingredient functionality coming soon!');
+        }
+
+        function editIngredient(ingredientId) {
+            console.log('✏️ Editing ingredient:', ingredientId);
+            // TODO: Implement edit ingredient functionality
+            Alert.info('Edit ingredient functionality coming soon!');
+        }
+
+        async function deleteIngredient(ingredientId) {
+            const ingredient = ingredients.find(i => i.id === ingredientId);
+            if (!ingredient) {
+                Alert.error('Ingredient not found');
+                return;
+            }
+            
+            const confirmed = await Swal.fire({
+                title: 'Delete Ingredient?',
+                text: `Are you sure you want to delete "${ingredient.ingredient_name}"? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            });
+            
+            if (confirmed.isConfirmed) {
+                try {
+                    const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients/${ingredientId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        Alert.success('Ingredient deleted successfully!');
+                        await loadIngredientsData();
+                    } else {
+                        const result = await response.json();
+                        throw new Error(result.message || 'Failed to delete ingredient');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Error deleting ingredient:', error);
+                    Alert.error('Failed to delete ingredient. Please try again.');
+                }
+            }
+        }
+
+        // Category Picker Functions
+        let currentCategoryModal = null; // Track which modal opened the category picker
+
+        // Open category picker modal
+        window.openCategoryPicker = async function(modalType) {
+            currentCategoryModal = modalType;
+            await loadDropdownData(); // Ensure categories are loaded
+            populateCategoryPicker();
+            
+            const modal = new bootstrap.Modal(document.getElementById('categoryPickerModal'));
+            modal.show();
+        };
+
+        // Populate category picker table
+        function populateCategoryPicker() {
+            const tbody = document.getElementById('categoryPickerTableBody');
+            if (!tbody) return;
+
+            if (!availableCategories || availableCategories.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            <i class="fas fa-tags me-2"></i>No categories available
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = availableCategories.map(category => `
+                <tr class="category-row" data-category-id="${category.id}" data-category-name="${category.name.toLowerCase()}" data-category-description="${category.description.toLowerCase()}">
+                    <td class="fw-bold">${category.name}</td>
+                    <td class="text-muted">${category.description}</td>
+                    <td>
+                        <span class="status-badge ${category.is_active ? 'status-active' : 'status-inactive'}">
+                            ${category.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectCategory('${category.id}', '${category.name.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Filter categories based on search
+        window.filterCategories = function() {
+            const searchTerm = document.getElementById('categorySearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.category-row');
+
+            rows.forEach(row => {
+                const name = row.getAttribute('data-category-name');
+                const description = row.getAttribute('data-category-description');
+                
+                if (name.includes(searchTerm) || description.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        };
+
+        // Select a category
+        window.selectCategory = function(categoryId, categoryName) {
+            if (currentCategoryModal === 'add') {
+                document.getElementById('ingredientCategory').value = categoryId;
+                document.getElementById('ingredientCategoryDisplay').value = categoryName;
+            } else {
+                document.getElementById('editIngredientCategory').value = categoryId;
+                document.getElementById('editIngredientCategoryDisplay').value = categoryName;
+            }
+
+            // Close category picker modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('categoryPickerModal'));
+            modal.hide();
+            
+            currentCategoryModal = null;
+        };
+
+        // Supplier Modal Functions
+        let currentIngredientModal = null; // Track which modal opened the supplier modal
+
+        // Open supplier modal from ingredient form
+        window.openSupplierModalFromIngredient = function(modalType) {
+            currentIngredientModal = modalType;
+            injectSupplierModal();
+            
+            // Update the save button to call the correct function
+            const saveBtn = document.getElementById('saveSupplierBtn');
+            if (saveBtn) {
+                saveBtn.onclick = saveSupplierFromIngredient;
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
+            modal.show();
+        };
+
+        // Save supplier from ingredient modal
+        async function saveSupplierFromIngredient() {
+            const form = document.getElementById('addSupplierForm');
+            const saveBtn = document.getElementById('saveSupplierBtn');
+            
+            // Reset validation state
+            form.classList.remove('was-validated');
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const supplierData = {};
+            
+            // Process form fields
+            for (let [key, value] of formData.entries()) {
+                const trimmedValue = value.trim();
+                if (trimmedValue) {
+                    supplierData[key] = trimmedValue;
+                }
+            }
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!supplierData.supplier_name || supplierData.supplier_name.length < 1 || supplierData.supplier_name.length > 255) {
+                document.getElementById('supplierName').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Update button state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            try {
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(supplierData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    Alert.success('Supplier created successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSupplierModal'));
+                    modal.hide();
+                    
+                    // Reload suppliers data
+                    await loadDropdownData();
+                    
+                    // If called from ingredient modal, refresh dropdowns
+                    if (currentIngredientModal) {
+                        // Auto-select the newly created supplier
+                        const newSupplier = result.data;
+                        if (currentIngredientModal === 'add') {
+                            document.getElementById('ingredientSupplier').value = newSupplier.id;
+                            document.getElementById('ingredientSupplierDisplay').value = newSupplier.supplier_name;
+                        } else {
+                            document.getElementById('editIngredientSupplier').value = newSupplier.id;
+                            document.getElementById('editIngredientSupplierDisplay').value = newSupplier.supplier_name;
+                        }
+                    }
+                    
+                    currentIngredientModal = null;
+                } else {
+                    throw new Error(result.message || 'Failed to create supplier');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error saving supplier:', error);
+                Alert.error('Failed to save supplier. Please check your connection and try again.');
+            }
+            
+            // Reset button state
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
         }
     </script>
 </body>
