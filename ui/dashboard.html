@@ -5224,6 +5224,34 @@
                 const result = await response.json();
                 const ingredient = result.data;
                 
+                // Get category and supplier names if IDs exist
+                let categoryName = 'Not assigned';
+                let supplierName = 'Not assigned';
+                
+                if (ingredient.ingredient_category_id) {
+                    try {
+                        const categoryResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories/${ingredient.ingredient_category_id}`);
+                        if (categoryResponse.ok) {
+                            const categoryResult = await categoryResponse.json();
+                            categoryName = categoryResult.data.name;
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch category name:', error);
+                    }
+                }
+                
+                if (ingredient.supplier_id) {
+                    try {
+                        const supplierResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${ingredient.supplier_id}`);
+                        if (supplierResponse.ok) {
+                            const supplierResult = await supplierResponse.json();
+                            supplierName = supplierResult.data.supplier_name;
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch supplier name:', error);
+                    }
+                }
+                
                 // Populate view modal
                 document.getElementById('viewIngredientContent').innerHTML = `
                     <div class="row">
@@ -5231,24 +5259,20 @@
                             <h6 class="fw-bold">Ingredient Information</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <td class="fw-bold">ID:</td>
-                                    <td><code>${ingredient.id}</code></td>
-                                </tr>
-                                <tr>
                                     <td class="fw-bold">Name:</td>
                                     <td><strong>${ingredient.name}</strong></td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Category:</td>
-                                    <td>${ingredient.category_name || 'N/A'}</td>
+                                    <td>${categoryName}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Supplier:</td>
-                                    <td>${ingredient.supplier_name || 'N/A'}</td>
+                                    <td>${supplierName}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Description:</td>
-                                    <td>${ingredient.description || 'N/A'}</td>
+                                    <td>${ingredient.description || 'No description provided'}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold">Created:</td>
@@ -5285,11 +5309,39 @@
                 const result = await response.json();
                 const ingredient = result.data;
                 
+                // Get category and supplier names if IDs exist
+                let categoryName = '';
+                let supplierName = '';
+                
+                if (ingredient.ingredient_category_id) {
+                    try {
+                        const categoryResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories/${ingredient.ingredient_category_id}`);
+                        if (categoryResponse.ok) {
+                            const categoryResult = await categoryResponse.json();
+                            categoryName = categoryResult.data.name;
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch category name:', error);
+                    }
+                }
+                
+                if (ingredient.supplier_id) {
+                    try {
+                        const supplierResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${ingredient.supplier_id}`);
+                        if (supplierResponse.ok) {
+                            const supplierResult = await supplierResponse.json();
+                            supplierName = supplierResult.data.supplier_name;
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch supplier name:', error);
+                    }
+                }
+                
                 // Populate edit form
                 document.getElementById('editIngredientName').value = ingredient.name;
-                document.getElementById('editIngredientCategoryDisplay').value = ingredient.category_name || '';
+                document.getElementById('editIngredientCategoryDisplay').value = categoryName;
                 document.getElementById('editIngredientCategory').value = ingredient.ingredient_category_id || '';
-                document.getElementById('editIngredientSupplierDisplay').value = ingredient.supplier_name || '';
+                document.getElementById('editIngredientSupplierDisplay').value = supplierName;
                 document.getElementById('editIngredientSupplier').value = ingredient.supplier_id || '';
                 document.getElementById('editIngredientDescription').value = ingredient.description || '';
                 
