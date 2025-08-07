@@ -487,15 +487,6 @@
     }
 
     // Modal and form functions
-    window.openAddRunoutIngredientModal = function() {
-        resetRunoutIngredientForm();
-        const modalElement = document.getElementById('addRunoutIngredientModal');
-        if (modalElement) {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        }
-    };
-    
     function resetRunoutIngredientForm() {
         const form = document.getElementById('addRunoutIngredientForm');
         if (form) {
@@ -841,8 +832,10 @@
     // Expose functions globally
     window.initRunoutIngredientsContent = initRunoutIngredientsContent;
     window.loadRunoutIngredientsData = loadRunoutIngredientsData;
-    window.openAddRunoutIngredientModal = openAddRunoutIngredientModal;
     window.viewRunoutIngredient = viewRunoutIngredient;
     window.editRunoutIngredient = editRunoutIngredient;
     window.deleteRunoutIngredient = deleteRunoutIngredient;
+    
+    console.log('🔧 Runout ingredients functions exposed globally');
+    console.log('🔧 openAddRunoutIngredientModal available:', typeof window.openAddRunoutIngredientModal);
 </script> 

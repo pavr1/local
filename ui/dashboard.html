@@ -4044,7 +4044,7 @@
                         <h5>No Runout Ingredients Found</h5>
                         <p class="text-muted">No runout ingredients have been reported yet.</p>
                         <button class="btn btn-primary" onclick="openAddRunoutIngredientModal()">
-                            <i class="fas fa-plus me-2"></i>Add First Report
+                            <i class="fas fa-plus me-2"></i>Add Runout Ingredient
                         </button>
                     </div>
                 `;
@@ -4105,6 +4105,22 @@
                 </div>
             `;
         }
+
+        // Global function for runout ingredients modal
+        window.openAddRunoutIngredientModal = function() {
+            console.log('🔧 openAddRunoutIngredientModal called from global scope');
+            const modalElement = document.getElementById('addRunoutIngredientModal');
+            if (modalElement) {
+                // Reset form if resetRunoutIngredientForm function exists
+                if (typeof resetRunoutIngredientForm === 'function') {
+                    resetRunoutIngredientForm();
+                }
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            } else {
+                console.error('❌ Modal element not found');
+            }
+        };
 
         // Initialize Recipe Categories Content
         async function initRecipeCategoriesContent() {
