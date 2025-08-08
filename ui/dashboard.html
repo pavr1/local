@@ -769,10 +769,18 @@
                     </li>
                     
                     <li class="nav-item">
-                        <button class="nav-link" onclick="loadContent('orders')" data-page="orders">
+                        <button class="nav-link" onclick="toggleSubmenu('orders')" data-page="orders">
                             <i class="fas fa-shopping-cart me-2"></i>
                             Orders
+                            <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
+                        <ul class="nav flex-column ms-3" id="orders-submenu" style="display: none;">
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('orders')" data-page="orders">
+                                    <i class="fas fa-th-large me-2"></i>Overview
+                                </button>
+                            </li>
+                        </ul>
                     </li>
                     
                     <li class="nav-item">
@@ -782,6 +790,11 @@
                             <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
                         <ul class="nav flex-column ms-3" id="inventory-submenu" style="display: none;">
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('inventory-overview')" data-page="inventory-overview">
+                                    <i class="fas fa-th-large me-2"></i>Overview
+                                </button>
+                            </li>
                             <li class="nav-item">
                                 <li class="nav-item">
                                     <button class="nav-link nav-sub" onclick="toggleSubmenu('ingredients')" data-page="inventory-ingredients">
@@ -828,6 +841,11 @@
                                     </li>
                                 </ul>
                             </li>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('inventory-suppliers')" data-page="inventory-suppliers">
+                                    <i class="fas fa-truck me-2"></i>Suppliers
+                                </button>
+                            </li>
                         </ul>
                     </li>
                     
@@ -839,8 +857,8 @@
                         </button>
                         <ul class="nav flex-column ms-3" id="invoice-submenu" style="display: none;">
                             <li class="nav-item">
-                                <button class="nav-link nav-sub" onclick="loadContent('invoice')" data-page="invoice">
-                                    <i class="fas fa-chart-pie me-2"></i>Overview
+                                <button class="nav-link nav-sub" onclick="loadContent('invoice-overview')" data-page="invoice-overview">
+                                    <i class="fas fa-th-large me-2"></i>Overview
                                 </button>
                             </li>
                             <li class="nav-item">
@@ -1037,6 +1055,7 @@
             'dashboard': 'partials/dashboard/index.html',
             'orders': 'partials/orders/index.html',
             'inventory': 'partials/inventory/index.html',
+            'inventory-overview': 'partials/inventory/overview.html',
             'inventory-suppliers': 'partials/inventory/suppliers.html',
             'inventory-ingredients': 'partials/inventory/ingredients.html',
             'inventory-categories': 'partials/inventory/categories.html',
@@ -1045,6 +1064,7 @@
             'inventory-recipe-categories': 'partials/inventory/recipe-categories.html',
             'inventory-recipes': 'partials/inventory/recipes.html',
             'invoice': 'partials/invoice/index.html',
+            'invoice-overview': 'partials/invoice/overview.html',
             'invoice-details': 'partials/invoice/invoice.html',
             'invoice-expense-categories': 'partials/invoice/expense-categories.html'
         };
@@ -1058,6 +1078,7 @@
                 'dashboard': 'initDashboardContent',
                 'orders': 'initOrdersContent',
                 'inventory': 'initInventoryContent',
+                'inventory-overview': 'initInventoryOverviewContent',
                 'inventory-suppliers': 'initSuppliersContent',
                 'inventory-ingredients': 'initIngredientsContent',
                 'inventory-categories': 'initCategoriesContent',
@@ -1066,6 +1087,7 @@
                 'inventory-recipe-categories': 'initRecipeCategoriesContent',
                 'inventory-recipes': 'initRecipesContent',
                 'invoice': 'initInvoiceContent',
+                'invoice-overview': 'initInvoiceOverviewContent',
                 'invoice-details': 'initInvoiceContent',
                 'invoice-expense-categories': 'initExpenseCategoriesContent'
             };
@@ -1126,6 +1148,11 @@
                     subtitle: 'Track ingredients, manage suppliers, and monitor stock levels',
                     icon: 'fas fa-warehouse'
                 },
+                'inventory-overview': { 
+                    title: 'Inventory Overview', 
+                    subtitle: 'Manage ingredients, existences, recipes, and suppliers',
+                    icon: 'fas fa-th-large'
+                },
                 'inventory-suppliers': { 
                     title: 'Suppliers Management', 
                     subtitle: 'Manage supplier relationships and vendor information',
@@ -1166,6 +1193,11 @@
                     title: 'Invoice Management', 
                     subtitle: 'Manage invoices, track payments, and handle billing',
                     icon: 'fas fa-file-invoice-dollar'
+                },
+                'invoice-overview': { 
+                    title: 'Invoice Overview', 
+                    subtitle: 'Manage invoices and expense categories',
+                    icon: 'fas fa-th-large'
                 },
                 'invoice-details': { 
                     title: 'Invoice Details', 

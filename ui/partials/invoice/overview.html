@@ -1,0 +1,266 @@
+<!-- Invoice Overview Content - extracted from invoice/index.html -->
+<style>
+    /* Invoice Overview-specific styles */
+
+    .coming-soon {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+
+    .coming-soon i {
+        font-size: 4rem;
+        color: var(--primary-color);
+        margin-bottom: 2rem;
+        opacity: 0.8;
+    }
+
+    .coming-soon h2 {
+        color: var(--dark-color);
+        margin-bottom: 1rem;
+    }
+
+    .coming-soon .lead {
+        color: var(--secondary-color);
+        margin-bottom: 3rem;
+    }
+
+    .feature-btn {
+        background: var(--white);
+        border: 2px solid transparent;
+        border-radius: var(--border-radius-lg);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .feature-btn:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .feature-btn.btn-outline-success:hover {
+        border-color: var(--success-color);
+        background: var(--success-light);
+    }
+
+    .feature-btn.btn-outline-info:hover {
+        border-color: var(--info-color);
+        background: var(--info-light);
+    }
+
+    .feature-btn.btn-outline-warning:hover {
+        border-color: var(--warning-color);
+        background: var(--warning-light);
+    }
+
+    .feature-btn.btn-outline-primary:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-light);
+    }
+
+    .feature-icon {
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-icon i {
+        font-size: 3rem;
+        color: var(--primary-color);
+    }
+
+    .btn-outline-success .feature-icon i {
+        color: var(--success-color);
+    }
+
+    .btn-outline-info .feature-icon i {
+        color: var(--info-color);
+    }
+
+    .btn-outline-warning .feature-icon i {
+        color: var(--warning-color);
+    }
+
+    .feature-content h5 {
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .feature-content p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+    }
+
+    .development-timeline {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+    }
+
+    .timeline-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-header i {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .roadmap-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 1rem;
+        background: var(--background-light);
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .roadmap-item i {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: var(--primary-color);
+    }
+
+    .roadmap-item h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .roadmap-item p {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .invoice-header {
+            padding: 2rem 1rem;
+        }
+
+        .feature-btn {
+            padding: 1.5rem 1rem;
+            min-height: 150px;
+        }
+
+        .feature-icon i {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<!-- Invoice Overview Section -->
+<div class="coming-soon">
+    <!-- Feature Grid -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="loadContent('invoice-details')">
+                <div class="feature-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Invoice Management</strong></p>
+                    <p>Create, edit, and manage customer invoices and payments</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="loadContent('invoice-expense-categories')">
+                <div class="feature-icon">
+                    <i class="fas fa-tags"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Expense Categories</strong></p>
+                    <p>Organize and categorize business expenses and costs</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="Alert.comingSoon('Financial Reports')">
+                <div class="feature-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Financial Reports</strong></p>
+                    <p>Generate financial reports and business analytics</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="Alert.comingSoon('Tax Management')">
+                <div class="feature-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Tax Management</strong></p>
+                    <p>Calculate and track taxes for invoices and expenses</p>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Development Timeline -->
+<div class="development-timeline">
+    <div class="timeline-header">
+        <p class="text-muted">Invoice and financial management features</p>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Invoice Management</strong>
+            <p>Create and manage customer invoices with payment tracking</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Expense Tracking</strong>
+            <p>Categorize and track business expenses and costs</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Financial Reports</strong>
+            <p>Generate comprehensive financial reports and analytics</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Tax Calculations</strong>
+            <p>Automated tax calculations and compliance tracking</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Invoice Overview content initialization function
+    window.initInvoiceOverviewContent = async function() {
+        console.log('💰 Initializing Invoice Overview Content...');
+        
+        try {
+            // Any invoice overview-specific initialization can go here
+            console.log('✅ Invoice Overview Content initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing invoice overview content:', error);
+        }
+    };
+</script> 

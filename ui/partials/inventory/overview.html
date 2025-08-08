@@ -1,0 +1,266 @@
+<!-- Inventory Overview Content - extracted from inventory/index.html -->
+<style>
+    /* Inventory Overview-specific styles */
+
+    .coming-soon {
+        text-align: center;
+        padding: 3rem 2rem;
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        margin-bottom: 2rem;
+    }
+
+    .coming-soon i {
+        font-size: 4rem;
+        color: var(--primary-color);
+        margin-bottom: 2rem;
+        opacity: 0.8;
+    }
+
+    .coming-soon h2 {
+        color: var(--dark-color);
+        margin-bottom: 1rem;
+    }
+
+    .coming-soon .lead {
+        color: var(--secondary-color);
+        margin-bottom: 3rem;
+    }
+
+    .feature-btn {
+        background: var(--white);
+        border: 2px solid transparent;
+        border-radius: var(--border-radius-lg);
+        padding: 2rem 1.5rem;
+        text-align: center;
+        transition: var(--transition);
+        cursor: pointer;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .feature-btn:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-heavy);
+    }
+
+    .feature-btn.btn-outline-success:hover {
+        border-color: var(--success-color);
+        background: var(--success-light);
+    }
+
+    .feature-btn.btn-outline-info:hover {
+        border-color: var(--info-color);
+        background: var(--info-light);
+    }
+
+    .feature-btn.btn-outline-warning:hover {
+        border-color: var(--warning-color);
+        background: var(--warning-light);
+    }
+
+    .feature-btn.btn-outline-primary:hover {
+        border-color: var(--primary-color);
+        background: var(--primary-light);
+    }
+
+    .feature-icon {
+        margin-bottom: 1.5rem;
+    }
+
+    .feature-icon i {
+        font-size: 3rem;
+        color: var(--primary-color);
+    }
+
+    .btn-outline-success .feature-icon i {
+        color: var(--success-color);
+    }
+
+    .btn-outline-info .feature-icon i {
+        color: var(--info-color);
+    }
+
+    .btn-outline-warning .feature-icon i {
+        color: var(--warning-color);
+    }
+
+    .feature-content h5 {
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .feature-content p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+    }
+
+    .development-timeline {
+        background: var(--white);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-light);
+        padding: 2rem;
+    }
+
+    .timeline-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .timeline-header i {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+    }
+
+    .roadmap-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: var(--border-radius);
+        margin-bottom: 1rem;
+        background: var(--background-light);
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .roadmap-item i {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        color: var(--primary-color);
+    }
+
+    .roadmap-item h6 {
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .roadmap-item p {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        color: var(--secondary-color);
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .inventory-header {
+            padding: 2rem 1rem;
+        }
+
+        .feature-btn {
+            padding: 1.5rem 1rem;
+            min-height: 150px;
+        }
+
+        .feature-icon i {
+            font-size: 2rem;
+        }
+    }
+</style>
+
+<!-- Inventory Overview Section -->
+<div class="coming-soon">
+    <!-- Feature Grid -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-success w-100 h-100" onclick="loadContent('inventory-ingredients')">
+                <div class="feature-icon">
+                    <i class="fas fa-seedling"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Ingredients</strong></p>
+                    <p>Manage ice cream ingredients, categories, and suppliers</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-info w-100 h-100" onclick="loadContent('inventory-existences')">
+                <div class="feature-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Existences</strong></p>
+                    <p>Track inventory levels and stock management</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-warning w-100 h-100" onclick="loadContent('inventory-recipes')">
+                <div class="feature-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Recipes</strong></p>
+                    <p>Create and manage ice cream recipes and categories</p>
+                </div>
+            </button>
+        </div>
+        
+        <div class="col-md-6">
+            <button class="btn feature-btn btn-outline-primary w-100 h-100" onclick="loadContent('inventory-suppliers')">
+                <div class="feature-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="feature-content">
+                    <p><strong>Suppliers</strong></p>
+                    <p>Manage ingredient suppliers and vendor information</p>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Development Timeline -->
+<div class="development-timeline">
+    <div class="timeline-header">
+        <p class="text-muted">Inventory management features and capabilities</p>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Ingredients Management</strong>
+            <p>Add, edit, and categorize ice cream ingredients with supplier tracking</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Stock Tracking</strong>
+            <p>Monitor inventory levels and track existences across all ingredients</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Recipe Management</strong>
+            <p>Create and manage ice cream recipes with ingredient requirements</p>
+        </div>
+    </div>
+    
+    <div class="roadmap-item">
+        <div>
+            <strong>Supplier Management</strong>
+            <p>Track suppliers and manage vendor relationships</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Inventory Overview content initialization function
+    window.initInventoryOverviewContent = async function() {
+        console.log('📦 Initializing Inventory Overview Content...');
+        
+        try {
+            // Any inventory overview-specific initialization can go here
+            console.log('✅ Inventory Overview Content initialized successfully');
+        } catch (error) {
+            console.error('❌ Error initializing inventory overview content:', error);
+        }
+    };
+</script> 
