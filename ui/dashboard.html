@@ -5405,6 +5405,32 @@
             }
         };
 
+        // === TOKEN VALIDATION AND REFRESH ===
+        
+        // Periodic token validation to prevent expiration
+        function startTokenValidation() {
+            // Check token every 5 minutes
+            setInterval(async () => {
+                try {
+                    if (window.authService && window.authService.isAuthenticated()) {
+                        const isValid = await window.authService.validateToken();
+                        if (!isValid) {
+                            console.warn('Token validation failed, redirecting to login');
+                            window.location.href = 'login.html';
+                        }
+                    }
+                } catch (error) {
+                    console.error('Token validation error:', error);
+                    window.location.href = 'login.html';
+                }
+            }, 5 * 60 * 1000); // 5 minutes
+        }
+
+        // Start token validation when dashboard loads
+        if (window.authService) {
+            startTokenValidation();
+        }
+
 
     </script>
 </body>

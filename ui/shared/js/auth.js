@@ -99,90 +99,103 @@ class AuthService {
         } catch (error) {
             console.warn('⚠️ Logout API call failed:', error.message);
         } finally {
-            // Clear local storage regardless of API call result
             this.clearAuthData();
-            console.log('🧹 Auth data cleared');
+            window.location.href = 'login.html';
         }
     }
 
-    // === TOKEN VALIDATION ===
+    // === TOKEN VALIDATION AND REFRESH ===
     
     async validateToken() {
         try {
             const token = this.getToken();
             if (!token) {
-                console.log('❌ No token found');
                 return false;
             }
 
-            console.log('🔍 Validating token with session service...');
             const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ token: token })
+                body: JSON.stringify({ token })
             });
 
-            if (!response.ok) {
-                console.log('❌ Token validation failed:', response.status);
-                
-                // Get detailed error information
-                const errorData = await response.json().catch(() => ({}));
-                console.log('❌ Validation error details:', errorData);
-                
-                this.clearAuthData();
-                return false;
+            if (response.ok) {
+                const data = await response.json();
+                if (data.is_valid && data.new_token) {
+                    // Update token if a new one is provided
+                    this.setToken(data.new_token, this.isRememberMe());
+                    console.log('🔄 Token refreshed successfully');
+                }
+                return data.is_valid;
             }
-
-            const data = await response.json();
-            console.log('✅ Token validation response:', data);
             
-            // Check if the session is actually valid
-            if (data.is_valid === true) {
-                console.log('✅ Session is valid for user:', data.session?.username);
-                return true;
-            } else {
-                console.log('❌ Session is not valid:', data.error_code, data.error_message);
-                this.clearAuthData();
-                return false;
-            }
+            return false;
         } catch (error) {
-            console.error('❌ Token validation error:', error.message);
-            this.clearAuthData();
+            console.error('❌ Token validation error:', error);
             return false;
         }
     }
 
-    // === LOCAL STORAGE METHODS ===
+    // === TOKEN REFRESH METHOD ===
+    
+    async refreshToken() {
+        try {
+            const token = this.getToken();
+            if (!token) {
+                throw new Error('No token available for refresh');
+            }
+
+            const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ token })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.is_valid && data.new_token) {
+                    this.setToken(data.new_token, this.isRememberMe());
+                    console.log('🔄 Token refreshed successfully');
+                    return true;
+                }
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('❌ Token refresh error:', error);
+            return false;
+        }
+    }
+
+    // === TOKEN MANAGEMENT ===
     
     setToken(token, rememberMe = false) {
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem(this.tokenKey, token);
-        localStorage.setItem(this.rememberKey, rememberMe.toString());
-        console.log('💾 Token stored in:', rememberMe ? 'localStorage' : 'sessionStorage');
+        if (rememberMe) {
+            localStorage.setItem(this.tokenKey, token);
+            localStorage.setItem(this.rememberKey, 'true');
+        } else {
+            sessionStorage.setItem(this.tokenKey, token);
+            localStorage.removeItem(this.rememberKey);
+        }
     }
 
     getToken() {
-        // Check localStorage first (remember me), then sessionStorage
         return localStorage.getItem(this.tokenKey) || sessionStorage.getItem(this.tokenKey);
     }
 
     setUserData(user, role, permissions) {
-        const userData = {
-            user,
-            role,
-            permissions,
-            loginTime: new Date().toISOString()
-        };
-        
+        const userData = { user, role, permissions };
         const storage = this.isRememberMe() ? localStorage : sessionStorage;
         storage.setItem(this.userKey, JSON.stringify(userData));
-        console.log('💾 User data stored:', { username: user?.username, role });
     }
 
     getUserData() {
-        const data = localStorage.getItem(this.userKey) || sessionStorage.getItem(this.userKey);
+        const storage = this.isRememberMe() ? localStorage : sessionStorage;
+        const data = storage.getItem(this.userKey);
         return data ? JSON.parse(data) : null;
     }
 
@@ -191,16 +204,13 @@ class AuthService {
     }
 
     clearAuthData() {
-        // Clear from both storages
         localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
-        localStorage.removeItem(this.rememberKey);
         sessionStorage.removeItem(this.tokenKey);
+        localStorage.removeItem(this.userKey);
         sessionStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.rememberKey);
     }
 
-    // === AUTHENTICATION STATE ===
-    
     isAuthenticated() {
         return !!this.getToken();
     }
@@ -258,13 +268,15 @@ initializeAuthService();
 
 // === UTILITY FUNCTIONS ===
 
-// Make authenticated API request
+// Make authenticated API request with automatic token refresh
 async function makeAuthenticatedRequest(url, options = {}) {
     try {
         // Get authentication token
         const token = window.authService ? window.authService.getToken() : null;
         
         if (!token) {
+            console.warn('No authentication token available, redirecting to login');
+            redirectToLogin();
             throw new Error('No authentication token available. Please log in again.');
         }
         
@@ -283,10 +295,21 @@ async function makeAuthenticatedRequest(url, options = {}) {
         
         // Handle authentication errors
         if (response.status === 401) {
-            // Token might be expired, try to refresh or redirect to login
-            console.warn('Authentication failed, redirecting to login');
-            window.authService.clearAuthData();
-            window.location.href = 'login.html';
+            console.warn('Authentication failed (401), attempting token refresh...');
+            
+            // Try to refresh the token
+            if (window.authService) {
+                const refreshSuccess = await window.authService.refreshToken();
+                if (refreshSuccess) {
+                    // Retry the original request with the new token
+                    console.log('Token refreshed, retrying request...');
+                    return makeAuthenticatedRequest(url, options);
+                }
+            }
+            
+            // If refresh failed, redirect to login
+            console.warn('Token refresh failed, redirecting to login');
+            redirectToLogin();
             throw new Error('Authentication failed. Please log in again.');
         }
         
@@ -296,6 +319,14 @@ async function makeAuthenticatedRequest(url, options = {}) {
         console.error('Authenticated request failed:', error);
         throw error;
     }
+}
+
+// Helper function to redirect to login
+function redirectToLogin() {
+    if (window.authService) {
+        window.authService.clearAuthData();
+    }
+    window.location.href = 'login.html';
 }
 
 // Make authenticated GET request

@@ -6,17 +6,17 @@ import (
 
 // Invoice represents an invoice in the database
 type Invoice struct {
-	ID                string     `json:"id" db:"id"`
-	InvoiceNumber     string     `json:"invoice_number" db:"invoice_number"`
-	TransactionDate   time.Time  `json:"transaction_date" db:"transaction_date"`
-	TransactionType   string     `json:"transaction_type" db:"transaction_type"`
-	SupplierID        *string    `json:"supplier_id" db:"supplier_id"`
-	ExpenseCategoryID string     `json:"expense_category_id" db:"expense_category_id"`
-	TotalAmount       *float64   `json:"total_amount" db:"total_amount"`
-	ImageURL          string     `json:"image_url" db:"image_url"`
-	Notes             *string    `json:"notes" db:"notes"`
-	CreatedAt         time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time  `json:"updated_at" db:"updated_at"`
+	ID                string    `json:"id" db:"id"`
+	InvoiceNumber     string    `json:"invoice_number" db:"invoice_number"`
+	TransactionDate   time.Time `json:"transaction_date" db:"transaction_date"`
+	TransactionType   string    `json:"transaction_type" db:"transaction_type"`
+	SupplierID        *string   `json:"supplier_id" db:"supplier_id"`
+	ExpenseCategoryID string    `json:"expense_category_id" db:"expense_category_id"`
+	TotalAmount       *float64  `json:"total_amount" db:"total_amount"`
+	ImageURL          string    `json:"image_url" db:"image_url"`
+	Notes             *string   `json:"notes" db:"notes"`
+	CreatedAt         time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // InvoiceDetail represents a line item within an invoice
@@ -48,7 +48,7 @@ type CreateInvoiceDetailRequest struct {
 // CreateInvoiceRequest represents the request to create a new invoice with details
 type CreateInvoiceRequest struct {
 	InvoiceNumber     string                       `json:"invoice_number" validate:"required"`
-	TransactionDate   time.Time                    `json:"transaction_date" validate:"required"`
+	TransactionDate   *time.Time                   `json:"transaction_date,omitempty"`
 	TransactionType   string                       `json:"transaction_type" validate:"required,oneof=income outcome"`
 	SupplierID        *string                      `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 	ExpenseCategoryID string                       `json:"expense_category_id" validate:"required,uuid"`
@@ -163,4 +163,4 @@ type ErrorResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
-} 
+}

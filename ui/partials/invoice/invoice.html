@@ -739,13 +739,18 @@
 
             const invoiceData = {
                 invoice_number: document.getElementById('invoiceNumber').value,
-                transaction_date: new Date(document.getElementById('transactionDate').value).toISOString(),
                 transaction_type: document.getElementById('transactionType').value,
                 expense_category_id: document.getElementById('expenseCategory').value,
                 image_url: document.getElementById('imageUrl').value,
                 notes: document.getElementById('notes').value || null,
                 items: items
             };
+
+            // Only include transaction_date if user provided one
+            const transactionDate = document.getElementById('transactionDate').value;
+            if (transactionDate) {
+                invoiceData.transaction_date = new Date(transactionDate).toISOString();
+            }
 
             const supplierId = document.getElementById('supplierId').value;
             if (supplierId) {

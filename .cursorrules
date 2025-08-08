@@ -39,6 +39,35 @@ This is the identity-api service working on robust database migration and SQL qu
 - Test files: *_test.go
 - Functions: camelCase with clear purpose indication
 
+## Compilation and Code Quality Rules
+- ALWAYS verify there are no compilation errors before proceeding with any changes
+- Run `go build .` in each service directory to ensure clean compilation
+- Check for any syntax errors, missing imports, or undefined references
+- If compilation fails, fix the errors before making any other changes
+- Verify that all Go files compile successfully in the target service directory
+
+## Service Consistency Rules
+- ALWAYS compare with existing working services when implementing new APIs or UI components
+- Study the patterns used in working services (gateway, session, inventory, orders, invoice)
+- Follow the same architectural patterns, naming conventions, and code structure
+- Ensure new implementations match the existing service patterns exactly
+- Use the same middleware, error handling, and response formats as existing services
+- Maintain consistency in API endpoints, HTTP methods, and request/response structures
+
+## API Access Rules
+- NEVER make direct API calls to individual services (session, orders, inventory, invoice)
+- ALL API calls MUST go through the gateway service (port 8082)
+- Direct service access is PROHIBITED and will be blocked by the services
+- Use gateway endpoints for all testing, debugging, and API interactions
+- Gateway is the single point of entry for all external API requests
+
+## Data Integrity and Security Rules
+- ALL date/timestamp fields (created_at, updated_at, transaction_date, expiration_date, etc.) MUST be set server-side
+- NEVER trust client-provided dates for audit trails, creation timestamps, or security-sensitive operations
+- Server should set current timestamp as default when no date is provided
+- Client-side date setting is PROHIBITED for security and data integrity
+- All timestamps should be in UTC and handled consistently across services
+
 ## Authentication Rules
 - All business endpoints MUST require authentication except:
   - Health check endpoints (`/health`, `/p/health`)

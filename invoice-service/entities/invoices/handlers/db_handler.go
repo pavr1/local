@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"invoice-service/entities/invoices/models"
 	invoiceSQL "invoice-service/entities/invoices/sql"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -33,9 +34,15 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 	var invoice models.Invoice
 
+	// Use provided transaction date or current time
+	transactionDate := time.Now()
+	if req.TransactionDate != nil {
+		transactionDate = *req.TransactionDate
+	}
+
 	// Create the invoice
 	err = tx.QueryRow(invoiceSQL.CreateInvoiceQuery,
-		req.InvoiceNumber, req.TransactionDate, req.TransactionType, req.SupplierID, req.ExpenseCategoryID, req.ImageURL, req.Notes).
+		req.InvoiceNumber, transactionDate, req.TransactionType, req.SupplierID, req.ExpenseCategoryID, req.ImageURL, req.Notes).
 		Scan(&invoice.ID, &invoice.InvoiceNumber, &invoice.TransactionDate, &invoice.TransactionType, &invoice.SupplierID, &invoice.ExpenseCategoryID, &invoice.TotalAmount, &invoice.ImageURL, &invoice.Notes, &invoice.CreatedAt, &invoice.UpdatedAt)
 
 	if err != nil {
@@ -216,7 +223,7 @@ func (h *DBHandler) DeleteInvoice(id string) error {
 	}
 
 	h.logger.WithFields(logrus.Fields{
-		"invoice_id":   id,
+		"invoice_id":    id,
 		"rows_affected": rowsAffected,
 	}).Info("Invoice deleted successfully")
 
@@ -329,7 +336,7 @@ func (h *DBHandler) GetInvoiceDetailsByInvoiceID(invoiceID string) ([]models.Inv
 	}
 
 	h.logger.WithFields(logrus.Fields{
-		"invoice_id":        invoiceID,
+		"invoice_id":            invoiceID,
 		"invoice_details_count": len(details),
 	}).Info("Listed invoice details successfully")
 
@@ -505,4 +512,4 @@ func (h *DBHandler) DeleteInvoiceDetail(id string) error {
 	}).Info("Invoice detail deleted successfully")
 
 	return nil
-} 
+}
