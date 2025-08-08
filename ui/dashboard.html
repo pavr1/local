@@ -1097,9 +1097,11 @@
                 const headerTimeElement = document.getElementById('header-time');
                 
                 const updateHeaderTime = () => {
-                    const currentTime = new Date().toLocaleTimeString();
+                    const now = new Date();
+                    const localTime = now.toLocaleTimeString();
+                    const utcTime = now.toISOString();
                     if (headerTimeElement) {
-                        headerTimeElement.textContent = currentTime;
+                        headerTimeElement.textContent = `${localTime} (UTC: ${utcTime.slice(11, 19)})`;
                     }
                 };
                 

@@ -10,6 +10,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+/*
+TIMEZONE HANDLING POLICY
+
+All timestamps in this application are handled in UTC to ensure consistency:
+
+1. STORAGE: All database timestamps are stored in UTC
+2. COMPARISONS: All time comparisons use UTC to avoid timezone issues
+3. LOGGING: Logs show both local time (for readability) and UTC (for debugging)
+4. API: All API responses use UTC timestamps
+5. UI: Frontend converts UTC to local time for display
+
+This prevents issues with:
+- Daylight saving time changes
+- Server/client timezone mismatches
+- Database timezone inconsistencies
+- Session expiration calculation errors
+
+When displaying times to users, always convert from UTC to local timezone.
+When storing times, always use UTC.
+When comparing times, always use UTC.
+*/
+
 // JWTManager handles JWT token operations
 type JWTManager struct {
 	secret     []byte
@@ -28,7 +50,7 @@ func NewJWTManager(secret string, expiration time.Duration, logger *logrus.Logge
 
 // GenerateToken generates a JWT token for a user with their profile
 func (j *JWTManager) GenerateToken(profile *models.UserProfile, sessionID string) (string, time.Time, error) {
-	now := time.Now()
+	now := time.Now().UTC() // Use UTC to avoid timezone issues
 	expiresAt := now.Add(j.expiration)
 
 	// Convert permissions to string slice
@@ -64,10 +86,11 @@ func (j *JWTManager) GenerateToken(profile *models.UserProfile, sessionID string
 	}
 
 	j.logger.WithFields(logrus.Fields{
-		"user_id":    profile.User.ID,
-		"username":   profile.User.Username,
-		"role":       profile.Role.RoleName,
-		"expires_at": expiresAt,
+		"user_id":        profile.User.ID,
+		"username":       profile.User.Username,
+		"role":           profile.Role.RoleName,
+		"expires_at":     expiresAt.Format("2006-01-02 15:04:05 MST"),
+		"expires_at_utc": expiresAt.UTC().Format("2006-01-02 15:04:05 UTC"),
 	}).Info("JWT token generated successfully")
 
 	return tokenString, expiresAt, nil
@@ -95,10 +118,11 @@ func (j *JWTManager) ValidateToken(tokenString string) (*models.JWTClaims, error
 	}
 
 	// Check if token is expired
-	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now().UTC()) {
 		j.logger.WithFields(logrus.Fields{
-			"user_id":    claims.UserID,
-			"expires_at": claims.ExpiresAt.Time,
+			"user_id":        claims.UserID,
+			"expires_at":     claims.ExpiresAt.Time.Format("2006-01-02 15:04:05 MST"),
+			"expires_at_utc": claims.ExpiresAt.Time.UTC().Format("2006-01-02 15:04:05 UTC"),
 		}).Warn("JWT token has expired")
 		return nil, fmt.Errorf("token has expired")
 	}

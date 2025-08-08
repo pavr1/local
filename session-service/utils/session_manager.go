@@ -13,6 +13,27 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+/*
+TIMEZONE HANDLING POLICY
+
+All timestamps in this application are handled in UTC to ensure consistency:
+
+1. STORAGE: All database timestamps are stored in UTC
+2. COMPARISONS: All time comparisons use UTC to avoid timezone issues
+3. LOGGING: Logs show both local time (for readability) and UTC (for debugging)
+4. API: All API responses use UTC timestamps
+5. UI: Frontend converts UTC to local time for display
+
+This prevents issues with:
+- Daylight saving time changes
+- Server/client timezone mismatches
+- Database timezone inconsistencies
+- Session expiration calculation errors
+
+When displaying times to users, always convert from UTC to local timezone.
+When storing times, always use UTC.
+When comparing times, always use UTC.
+*/
 // SessionManager handles basic session management
 type SessionManager struct {
 	// Core dependencies
@@ -112,7 +133,7 @@ func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*mode
 	}
 
 	// Create session data
-	now := time.Now()
+	now := time.Now().UTC() // Use UTC to avoid timezone issues
 	expiresAt := req.ExpiresAt
 	if expiresAt.IsZero() {
 		if req.RememberMe {
@@ -146,12 +167,13 @@ func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*mode
 		m.ActiveSessions++
 	})
 
-	// Log session creation
+	// Log session creation (convert UTC to local for visibility)
 	sm.logger.WithFields(logrus.Fields{
-		"session_id": sessionID,
-		"user_id":    req.UserID,
-		"username":   req.Username,
-		"expires_at": expiresAt,
+		"session_id":     sessionID,
+		"user_id":        req.UserID,
+		"username":       req.Username,
+		"expires_at":     expiresAt.Format("2006-01-02 15:04:05 MST"),
+		"expires_at_utc": expiresAt.UTC().Format("2006-01-02 15:04:05 UTC"),
 	}).Info("Session created successfully")
 
 	return session, token, nil
@@ -202,7 +224,7 @@ func (sm *SessionManager) ValidateSession(req *models.SessionValidationRequest) 
 	}
 
 	// Update session activity
-	now := time.Now()
+	now := time.Now().UTC() // Use UTC to avoid timezone issues
 	session.LastActivity = now
 	sm.storage.Update(session.SessionID, session)
 
@@ -409,7 +431,10 @@ func (sm *SessionManager) performCleanup() {
 		m.LastCleanup = time.Now()
 	})
 
-	sm.logger.Debug("Session cleanup completed")
+	sm.logger.WithFields(logrus.Fields{
+		"cleanup_time":     time.Now().Format("2006-01-02 15:04:05 MST"),
+		"cleanup_time_utc": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
+	}).Debug("Session cleanup completed")
 }
 
 // cleanupUserExpiredSessions performs user-specific cleanup in background

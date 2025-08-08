@@ -89,10 +89,10 @@ type SessionConfig struct {
 // Default configuration with simple settings
 func DefaultSessionConfig() *SessionConfig {
 	return &SessionConfig{
-		DefaultExpiration:     30 * time.Minute,
+		DefaultExpiration:     2 * time.Hour,      // Increased from 30 minutes to 2 hours for development
 		RememberMeExpiration:  7 * 24 * time.Hour, // 7 days
-		RefreshThreshold:      5 * time.Minute,
-		CleanupInterval:       10 * time.Minute,
+		RefreshThreshold:      15 * time.Minute,   // Increased from 5 minutes to 15 minutes
+		CleanupInterval:       30 * time.Minute,   // Increased from 10 minutes to 30 minutes
 		MaxConcurrentSessions: 5,
 	}
 }

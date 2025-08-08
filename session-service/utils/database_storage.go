@@ -3,6 +3,7 @@ package utils
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"session-service/models"
 	sessionSQL "session-service/sql"
@@ -60,8 +61,12 @@ func (s *DatabaseSessionStorage) Store(sessionID string, session *models.Session
 	}
 
 	s.logger.WithFields(logrus.Fields{
-		"session_id": sessionID,
-		"user_id":    session.UserID,
+		"session_id":     sessionID,
+		"user_id":        session.UserID,
+		"created_at":     session.CreatedAt.Format("2006-01-02 15:04:05 MST"),
+		"expires_at":     session.ExpiresAt.Format("2006-01-02 15:04:05 MST"),
+		"created_at_utc": session.CreatedAt.UTC().Format("2006-01-02 15:04:05 UTC"),
+		"expires_at_utc": session.ExpiresAt.UTC().Format("2006-01-02 15:04:05 UTC"),
 	}).Debug("Session stored in database")
 
 	return nil
@@ -286,6 +291,8 @@ func (s *DatabaseSessionStorage) Cleanup() error {
 	} else {
 		s.logger.WithFields(logrus.Fields{
 			"expired_sessions": rowsAffected,
+			"cleanup_time":     time.Now().Format("2006-01-02 15:04:05 MST"),
+			"cleanup_time_utc": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
 		}).Info("Expired sessions cleaned up")
 	}
 
@@ -327,6 +334,8 @@ func (s *DatabaseSessionStorage) CleanupUserExpiredSessions(userID string) error
 		s.logger.WithFields(logrus.Fields{
 			"user_id":          userID,
 			"expired_sessions": rowsAffected,
+			"cleanup_time":     time.Now().Format("2006-01-02 15:04:05 MST"),
+			"cleanup_time_utc": time.Now().UTC().Format("2006-01-02 15:04:05 UTC"),
 		}).Info("User expired sessions cleaned up")
 	}
 

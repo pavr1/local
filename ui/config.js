@@ -40,7 +40,8 @@ const CONFIG = {
         session: SERVICE_URLS.session + '/api/v1/session',
         LOGIN: '/api/v1/sessions/p/login',
         LOGOUT: '/api/v1/sessions/logout',
-        VALIDATE: '/api/v1/sessions/p/validate'
+        VALIDATE: '/api/v1/sessions/p/validate',
+        REFRESH: '/api/v1/sessions/refresh'
     },
     SERVICES: {
         session: SERVICE_URLS.session + '/health',
@@ -52,6 +53,7 @@ const CONFIG = {
         login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
         logout: SERVICE_URLS.gateway + '/api/v1/sessions/logout',
         validate: SERVICE_URLS.gateway + '/api/v1/sessions/p/validate',
+        refresh: SERVICE_URLS.gateway + '/api/v1/sessions/refresh',
         tokenKey: 'icecream_auth_token',
         userKey: 'icecream_user_data',
         rememberKey: 'icecream_remember_me',

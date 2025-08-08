@@ -1,5 +1,33 @@
 // === ICE CREAM STORE AUTHENTICATION SERVICE ===
 
+// Utility functions for UTC time handling
+const TimeUtils = {
+    // Get current time in UTC
+    nowUTC() {
+        return new Date().toISOString();
+    },
+    
+    // Convert UTC timestamp to local time for display
+    utcToLocal(utcString) {
+        return new Date(utcString).toLocaleString();
+    },
+    
+    // Convert local time to UTC for API calls
+    localToUTC(localDate) {
+        return localDate.toISOString();
+    },
+    
+    // Format UTC timestamp for display with timezone info
+    formatUTCForDisplay(utcString) {
+        const date = new Date(utcString);
+        return {
+            local: date.toLocaleString(),
+            utc: date.toISOString(),
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        };
+    }
+};
+
 class AuthService {
     constructor() {
         // Ensure CONFIG is available
@@ -100,78 +128,87 @@ class AuthService {
             console.warn('⚠️ Logout API call failed:', error.message);
         } finally {
             this.clearAuthData();
-            window.location.href = 'login.html';
         }
     }
 
-    // === TOKEN VALIDATION AND REFRESH ===
+    // === TOKEN VALIDATION ===
     
     async validateToken() {
         try {
             const token = this.getToken();
             if (!token) {
+                console.log('❌ No token found for validation');
                 return false;
             }
 
+            console.log('🔍 Validating token...');
+            
             const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token })
+                }
             });
+
+            console.log('📡 Token validation response status:', response.status);
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.is_valid && data.new_token) {
-                    // Update token if a new one is provided
-                    this.setToken(data.new_token, this.isRememberMe());
-                    console.log('🔄 Token refreshed successfully');
-                }
-                return data.is_valid;
+                console.log('✅ Token is valid:', { user: data.user?.username });
+                return true;
+            } else {
+                console.log('❌ Token validation failed:', response.status);
+                return false;
             }
             
-            return false;
         } catch (error) {
-            console.error('❌ Token validation error:', error);
+            console.error('❌ Token validation error:', error.message);
             return false;
         }
     }
 
-    // === TOKEN REFRESH METHOD ===
+    // === TOKEN REFRESH ===
     
     async refreshToken() {
         try {
             const token = this.getToken();
             if (!token) {
-                throw new Error('No token available for refresh');
+                console.log('❌ No token found for refresh');
+                return false;
             }
 
-            const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
+            console.log('🔄 Attempting token refresh...');
+            
+            const response = await fetch(`${this.baseURL}${CONFIG.API.REFRESH}`, {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ token })
+                }
             });
+
+            console.log('📡 Token refresh response status:', response.status);
 
             if (response.ok) {
                 const data = await response.json();
-                if (data.is_valid && data.new_token) {
-                    this.setToken(data.new_token, this.isRememberMe());
-                    console.log('🔄 Token refreshed successfully');
-                    return true;
-                }
+                console.log('✅ Token refreshed successfully');
+                
+                // Update stored token
+                this.setToken(data.token, this.isRememberMe());
+                return true;
+            } else {
+                console.log('❌ Token refresh failed:', response.status);
+                return false;
             }
             
-            return false;
         } catch (error) {
-            console.error('❌ Token refresh error:', error);
+            console.error('❌ Token refresh error:', error.message);
             return false;
         }
     }
 
-    // === TOKEN MANAGEMENT ===
+    // === TOKEN STORAGE ===
     
     setToken(token, rememberMe = false) {
         if (rememberMe) {
@@ -179,24 +216,32 @@ class AuthService {
             localStorage.setItem(this.rememberKey, 'true');
         } else {
             sessionStorage.setItem(this.tokenKey, token);
-            localStorage.removeItem(this.rememberKey);
+            sessionStorage.setItem(this.rememberKey, 'false');
         }
+        console.log('💾 Token stored:', { rememberMe, hasToken: !!token });
     }
 
     getToken() {
-        return localStorage.getItem(this.tokenKey) || sessionStorage.getItem(this.tokenKey);
+        const rememberMe = this.isRememberMe();
+        const storage = rememberMe ? localStorage : sessionStorage;
+        const token = storage.getItem(this.tokenKey);
+        console.log('🔑 Token retrieved:', { rememberMe, hasToken: !!token });
+        return token;
     }
 
     setUserData(user, role, permissions) {
         const userData = { user, role, permissions };
-        const storage = this.isRememberMe() ? localStorage : sessionStorage;
+        const rememberMe = this.isRememberMe();
+        const storage = rememberMe ? localStorage : sessionStorage;
         storage.setItem(this.userKey, JSON.stringify(userData));
+        console.log('👤 User data stored:', { user: user?.username, role, permissionsCount: permissions?.length });
     }
 
     getUserData() {
-        const storage = this.isRememberMe() ? localStorage : sessionStorage;
-        const data = storage.getItem(this.userKey);
-        return data ? JSON.parse(data) : null;
+        const rememberMe = this.isRememberMe();
+        const storage = rememberMe ? localStorage : sessionStorage;
+        const userData = storage.getItem(this.userKey);
+        return userData ? JSON.parse(userData) : null;
     }
 
     isRememberMe() {
@@ -205,10 +250,12 @@ class AuthService {
 
     clearAuthData() {
         localStorage.removeItem(this.tokenKey);
-        sessionStorage.removeItem(this.tokenKey);
         localStorage.removeItem(this.userKey);
-        sessionStorage.removeItem(this.userKey);
         localStorage.removeItem(this.rememberKey);
+        sessionStorage.removeItem(this.tokenKey);
+        sessionStorage.removeItem(this.userKey);
+        sessionStorage.removeItem(this.rememberKey);
+        console.log('🧹 Auth data cleared');
     }
 
     isAuthenticated() {
@@ -329,12 +376,12 @@ function redirectToLogin() {
     window.location.href = 'login.html';
 }
 
-// Make authenticated GET request
+// === CONVENIENCE FUNCTIONS ===
+
 async function authenticatedGet(url) {
     return makeAuthenticatedRequest(url, { method: 'GET' });
 }
 
-// Make authenticated POST request
 async function authenticatedPost(url, data) {
     return makeAuthenticatedRequest(url, {
         method: 'POST',
@@ -342,7 +389,6 @@ async function authenticatedPost(url, data) {
     });
 }
 
-// Make authenticated PUT request
 async function authenticatedPut(url, data) {
     return makeAuthenticatedRequest(url, {
         method: 'PUT',
@@ -350,7 +396,6 @@ async function authenticatedPut(url, data) {
     });
 }
 
-// Make authenticated DELETE request
 async function authenticatedDelete(url) {
     return makeAuthenticatedRequest(url, { method: 'DELETE' });
 } 
