@@ -849,6 +849,9 @@
                                     Invoice Management
                                 </button>
                             </li>
+                            <li><a class="nav-link nav-sub" href="#" onclick="loadContent('invoice-expense-categories')" data-page="invoice-expense-categories">
+                                <i class="fas fa-tags me-2"></i>Expense Categories</a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
@@ -1060,7 +1063,8 @@
                 'inventory-recipe-categories': 'initRecipeCategoriesContent',
                 'inventory-recipes': 'initRecipesContent',
                 'invoice': 'initInvoiceContent',
-                'invoice-details': 'initInvoiceContent'
+                'invoice-details': 'initInvoiceContent',
+                'invoice-expense-categories': 'initExpenseCategoriesContent'
             };
             
             // Setup header time (always visible in top panel)
@@ -1164,6 +1168,11 @@
                     title: 'Invoice Details', 
                     subtitle: 'View and manage detailed invoice information',
                     icon: 'fas fa-receipt'
+                },
+                'invoice-expense-categories': { 
+                    title: 'Expense Categories', 
+                    subtitle: 'Manage expense categories for invoice classification',
+                    icon: 'fas fa-tags'
                 }
             };
             
@@ -2838,6 +2847,151 @@
         window.loadCategoriesData = loadCategoriesData;
 
         console.log('✅ Categories functionality initialized and exposed globally');
+
+        // ===== EXPENSE CATEGORIES FUNCTIONALITY =====
+        let expenseCategories = [];
+        let currentExpenseCategory = null;
+
+        // Initialize expense categories content
+        async function initExpenseCategoriesContent() {
+            console.log('🏷️ Initializing Expense Categories content...');
+            await loadExpenseCategoriesData();
+        }
+
+        // Load expense categories data
+        async function loadExpenseCategoriesData() {
+            try {
+                console.log('📥 Loading expense categories...');
+                showExpenseCategoriesLoading();
+
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    expenseCategories = result.data;
+                    console.log(`✅ Loaded ${expenseCategories.length} expense categories`);
+                    displayExpenseCategories();
+                } else {
+                    throw new Error(result.message || 'Failed to load expense categories');
+                }
+            } catch (error) {
+                console.error('❌ Error loading expense categories:', error);
+                displayExpenseCategoriesError('Failed to load expense categories. Please check your connection and try again.');
+            }
+        }
+
+        // Show expense categories loading state
+        function showExpenseCategoriesLoading() {
+            const container = document.getElementById('expenseCategoriesTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="loading-table text-center py-5">
+                        <div class="loading-spinner"></div>
+                        <p>Loading expense categories...</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Display expense categories error state
+        function displayExpenseCategoriesError(message) {
+            const container = document.getElementById('expenseCategoriesTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="error-state-icon fas fa-exclamation-triangle"></i>
+                        <h4>Error Loading Expense Categories</h4>
+                        <p class="text-muted">${message}</p>
+                        <button class="btn btn-primary" onclick="loadExpenseCategoriesData()">
+                            <i class="fas fa-sync-alt me-2"></i>Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Display expense categories
+        function displayExpenseCategories() {
+            const container = document.getElementById('expenseCategoriesTableContainer');
+            if (!container) return;
+
+            if (!expenseCategories || expenseCategories.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="empty-state-icon fas fa-tags"></i>
+                        <h4>No Expense Categories Found</h4>
+                        <p class="text-muted">Start by adding your first expense category.</p>
+                        <button class="btn btn-primary" onclick="openAddExpenseCategoryModal()">
+                            <i class="fas fa-plus me-2"></i>Add First Category
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const categoriesHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${expenseCategories.map(category => createExpenseCategoryRow(category)).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            container.innerHTML = categoriesHTML;
+        }
+
+        // Create expense category row HTML
+        function createExpenseCategoryRow(category) {
+            const statusBadge = category.is_active 
+                ? '<span class="status-badge status-active">Active</span>'
+                : '<span class="status-badge status-inactive">Inactive</span>';
+
+            const createdDate = new Date(category.created_at).toLocaleDateString();
+
+            return `
+                <tr>
+                    <td class="fw-bold">${category.category_name}</td>
+                    <td class="text-muted">${category.description || 'No description'}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-muted">${createdDate}</td>
+                    <td class="text-end">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewExpenseCategory('${category.id}')" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="editExpenseCategory('${category.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteExpenseCategory('${category.id}')" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // Expose expense categories functions globally
+        window.loadExpenseCategoriesData = loadExpenseCategoriesData;
+        window.initExpenseCategoriesContent = initExpenseCategoriesContent;
+
+        console.log('✅ Expense Categories functionality initialized and exposed globally');
 
         // ===== INGREDIENTS FUNCTIONALITY =====
         let ingredients = [];
