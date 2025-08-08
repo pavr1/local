@@ -442,25 +442,7 @@
     // Load expense categories
     async function loadExpenseCategories() {
         try {
-            // Get auth token with fallback
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            
-            if (!authToken) {
-                console.warn('No auth token available for expense categories');
-                return;
-            }
-            
-            const response = await fetch('/api/v1/expense-categories', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/expense-categories`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -503,27 +485,7 @@
             console.log('Loading invoices...');
             showLoading();
             
-            // Check if authService is available and get token
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                console.warn('⚠️ authService not available, trying fallback...');
-                // Fallback: try to get token from localStorage/sessionStorage
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            console.log('Auth token available:', !!authToken);
-            
-            if (!authToken) {
-                throw new Error('No authentication token available');
-            }
-            
-            const response = await fetch('/api/v1/invoices', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices`);
 
             console.log('Response status:', response.status);
             
@@ -790,27 +752,7 @@
                 invoiceData.supplier_id = supplierId;
             }
 
-            // Get auth token with fallback
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            
-            if (!authToken) {
-                Alert.error('No authentication token available');
-                return;
-            }
-            
-            const response = await fetch('/api/v1/invoices', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(invoiceData)
-            });
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/invoices`, invoiceData);
 
             if (response.ok) {
                 const data = await response.json();
@@ -833,25 +775,7 @@
     // Edit invoice
     window.editInvoice = async function(invoiceId) {
         try {
-            // Get auth token with fallback
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            
-            if (!authToken) {
-                Alert.error('No authentication token available');
-                return;
-            }
-            
-            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/${invoiceId}`);
 
             if (response.ok) {
                 const data = await response.json();
@@ -907,27 +831,7 @@
                 invoiceData.supplier_id = supplierId;
             }
 
-            // Get auth token with fallback
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            
-            if (!authToken) {
-                Alert.error('No authentication token available');
-                return;
-            }
-            
-            const response = await fetch(`/api/v1/invoices/${currentInvoiceId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(invoiceData)
-            });
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/invoices/${currentInvoiceId}`, invoiceData);
 
             if (response.ok) {
                 const data = await response.json();
@@ -953,26 +857,7 @@
         if (!result) return;
 
         try {
-            // Get auth token with fallback
-            let authToken = '';
-            if (window.authService) {
-                authToken = window.authService.getToken();
-            } else {
-                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
-            }
-            
-            if (!authToken) {
-                Alert.error('No authentication token available');
-                return;
-            }
-            
-            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/invoices/${invoiceId}`);
 
             if (response.ok) {
                 const data = await response.json();
