@@ -1952,7 +1952,7 @@
             
             try {
                 // Use CONFIG object instead of undefined getServiceUrls function
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -2474,12 +2474,7 @@
                 console.log('📥 Loading categories...');
                 showCategoriesLoading();
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -2633,13 +2628,7 @@
             };
 
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(categoryData)
-                });
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`, categoryData);
 
                 const result = await response.json();
 
@@ -2892,12 +2881,7 @@
                 console.log('📥 Loading ingredients...');
                 showIngredientsLoading();
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -4281,7 +4265,7 @@
         async function loadRecipeCategoriesData() {
             
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4374,7 +4358,7 @@
         async function loadRecipesData() {
             
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4625,13 +4609,7 @@
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
             
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(ingredientData)
-                });
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`, ingredientData);
                 
                 const result = await response.json();
                 
@@ -4690,9 +4668,7 @@
             
             if (confirmed.isConfirmed) {
                 try {
-                    const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients/${ingredientId}`, {
-                        method: 'DELETE'
-                    });
+                    const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients/${ingredientId}`);
                     
                     if (response.ok) {
                         Alert.success('Ingredient deleted successfully!');

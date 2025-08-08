@@ -37,4 +37,24 @@ This is the identity-api service working on robust database migration and SQL qu
 ## Naming Conventions
 - Do not add unit tests until requested. They would give some noise and might have to be changed if code changes, so let's leave them at the end.
 - Test files: *_test.go
-- Functions: camelCase with clear purpose indication 
+- Functions: camelCase with clear purpose indication
+
+## Authentication Rules
+- All business endpoints MUST require authentication except:
+  - Health check endpoints (`/health`, `/p/health`)
+  - Authentication endpoints (`/login`, `/validate`, `/logout`)
+  - Public session endpoints (`/p/login`, `/p/validate`)
+- Gateway handles all authentication validation using session middleware
+- Individual services (orders, inventory, invoice) do NOT implement authentication middleware
+- Gateway forwards user context headers (X-User-ID, X-Username, X-User-Role, X-User-Permissions) to downstream services
+- UI must include proper authentication headers in all API calls
+- Services should trust user context headers from gateway
+
+## Service Access Rules
+- ALL service access MUST go through the gateway service
+- Direct access to individual services (session, orders, inventory, invoice) is PROHIBITED
+- Services should block direct access and require gateway headers
+- Gateway is the single point of entry for all API requests
+- Health checks and monitoring should go through gateway endpoints
+- Internal service-to-service communication is ALLOWED when proper gateway headers are included
+- Services should include gateway headers (X-Gateway-Service, X-Gateway-Session-Managed) for internal calls 

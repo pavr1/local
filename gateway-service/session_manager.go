@@ -92,16 +92,30 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 		}, nil
 	}
 
-	req := SessionValidationRequest{
+	// For now, we'll continue using token validation
+	// In the future, we can enhance this to extract session ID from JWT or store it separately
+	validationReq := SessionValidationRequest{
 		Token: token,
 	}
 
-	reqBody, err := json.Marshal(req)
+	reqBody, err := json.Marshal(validationReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := sm.client.Post(sm.baseURL+"/validate", "application/json", bytes.NewBuffer(reqBody))
+	// Debug: log the URL being called
+	fmt.Printf("Gateway calling session service at: %s\n", sm.baseURL+"/validate")
+
+	httpReq, err := http.NewRequest("POST", sm.baseURL+"/validate", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
+
+	resp, err := sm.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate session: %w", err)
 	}
@@ -111,6 +125,9 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+
+	// Debug: log the response body
+	fmt.Printf("Session service response: %s\n", string(body))
 
 	var validationResp SessionValidationResponse
 	if err := json.Unmarshal(body, &validationResp); err != nil {
@@ -127,7 +144,16 @@ func (sm *SessionManager) CreateSession(req *SessionCreateRequest) (*SessionCrea
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := sm.client.Post(sm.baseURL, "application/json", bytes.NewBuffer(reqBody))
+	httpReq, err := http.NewRequest("POST", sm.baseURL, bytes.NewBuffer(reqBody))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
+
+	resp, err := sm.client.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
@@ -161,7 +187,16 @@ func (sm *SessionManager) LogoutSession(token string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := sm.client.Post(sm.baseURL+"/logout", "application/json", bytes.NewBuffer(reqBody))
+	httpReq, err := http.NewRequest("POST", sm.baseURL+"/logout", bytes.NewBuffer(reqBody))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
+
+	resp, err := sm.client.Do(httpReq)
 	if err != nil {
 		return fmt.Errorf("failed to logout session: %w", err)
 	}

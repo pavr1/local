@@ -254,4 +254,72 @@ function initializeAuthService() {
 }
 
 // Start initialization
-initializeAuthService(); 
+initializeAuthService();
+
+// === UTILITY FUNCTIONS ===
+
+// Make authenticated API request
+async function makeAuthenticatedRequest(url, options = {}) {
+    try {
+        // Get authentication token
+        const token = window.authService ? window.authService.getToken() : null;
+        
+        if (!token) {
+            throw new Error('No authentication token available. Please log in again.');
+        }
+        
+        // Set up headers
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...options.headers
+        };
+        
+        // Make the request
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+        
+        // Handle authentication errors
+        if (response.status === 401) {
+            // Token might be expired, try to refresh or redirect to login
+            console.warn('Authentication failed, redirecting to login');
+            window.authService.clearAuthData();
+            window.location.href = 'login.html';
+            throw new Error('Authentication failed. Please log in again.');
+        }
+        
+        return response;
+        
+    } catch (error) {
+        console.error('Authenticated request failed:', error);
+        throw error;
+    }
+}
+
+// Make authenticated GET request
+async function authenticatedGet(url) {
+    return makeAuthenticatedRequest(url, { method: 'GET' });
+}
+
+// Make authenticated POST request
+async function authenticatedPost(url, data) {
+    return makeAuthenticatedRequest(url, {
+        method: 'POST',
+        body: JSON.stringify(data)
+    });
+}
+
+// Make authenticated PUT request
+async function authenticatedPut(url, data) {
+    return makeAuthenticatedRequest(url, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    });
+}
+
+// Make authenticated DELETE request
+async function authenticatedDelete(url) {
+    return makeAuthenticatedRequest(url, { method: 'DELETE' });
+} 

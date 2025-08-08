@@ -41,16 +41,15 @@ type SessionStats struct {
 	ExpiredSessions int `json:"expired_sessions"`
 }
 
-// SessionValidationRequest represents a token or session validation request
+// SessionValidationRequest represents a token validation request
 type SessionValidationRequest struct {
-	Token     string `json:"token,omitempty"`
-	SessionID string `json:"session_id,omitempty"`
+	Token string `json:"token"`
 }
 
 // SessionValidationResponse represents the result of session validation
 type SessionValidationResponse struct {
 	IsValid       bool         `json:"is_valid"`
-	SessionData   *SessionData `json:"session_data,omitempty"`
+	SessionData   *SessionData `json:"session,omitempty"`
 	ErrorCode     string       `json:"error_code,omitempty"`
 	ErrorMessage  string       `json:"error_message,omitempty"`
 	ShouldRefresh bool         `json:"should_refresh"`

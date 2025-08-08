@@ -106,7 +106,7 @@ func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*mode
 			RoleName: req.RoleName,
 		},
 		Permissions: make([]models.Permission, 0), // Convert from strings if needed
-	})
+	}, sessionID)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -163,21 +163,26 @@ func (sm *SessionManager) ValidateSession(req *models.SessionValidationRequest) 
 	var err error
 
 	// Validate input parameters
-	if req.Token == "" && req.SessionID == "" {
+	if req.Token == "" {
 		return &models.SessionValidationResponse{
 			IsValid:      false,
-			ErrorCode:    "missing_parameter",
-			ErrorMessage: "Either token or session_id must be provided",
+			ErrorCode:    "missing_token",
+			ErrorMessage: "Token is required",
 		}, nil
 	}
 
-	// Get session from storage - prefer session ID for better performance
-	if req.SessionID != "" {
-		session, err = sm.storage.Get(req.SessionID)
-	} else {
-		tokenHash := sm.hashToken(req.Token)
-		session, err = sm.storage.GetByTokenHash(tokenHash)
+	// Extract session ID from JWT token
+	claims, err := sm.jwtManager.ValidateToken(req.Token)
+	if err != nil {
+		return &models.SessionValidationResponse{
+			IsValid:      false,
+			ErrorCode:    "invalid_token",
+			ErrorMessage: "Invalid token format",
+		}, nil
 	}
+
+	// Use session ID from JWT claims to retrieve session from database
+	session, err = sm.storage.Get(claims.SessionID)
 
 	if err != nil {
 		return &models.SessionValidationResponse{
@@ -365,7 +370,7 @@ func (sm *SessionManager) refreshSessionToken(session *models.SessionData) (stri
 		},
 	}
 
-	newToken, newExp, err := sm.jwtManager.GenerateToken(profile)
+	newToken, newExp, err := sm.jwtManager.GenerateToken(profile, session.SessionID)
 	if err != nil {
 		return "", time.Time{}, err
 	}

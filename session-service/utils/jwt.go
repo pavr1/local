@@ -27,7 +27,7 @@ func NewJWTManager(secret string, expiration time.Duration, logger *logrus.Logge
 }
 
 // GenerateToken generates a JWT token for a user with their profile
-func (j *JWTManager) GenerateToken(profile *models.UserProfile) (string, time.Time, error) {
+func (j *JWTManager) GenerateToken(profile *models.UserProfile, sessionID string) (string, time.Time, error) {
 	now := time.Now()
 	expiresAt := now.Add(j.expiration)
 
@@ -45,6 +45,7 @@ func (j *JWTManager) GenerateToken(profile *models.UserProfile) (string, time.Ti
 		RoleID:      profile.User.RoleID,
 		RoleName:    profile.Role.RoleName,
 		Permissions: permissions,
+		SessionID:   sessionID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(expiresAt),

@@ -401,6 +401,15 @@
         console.log('💰 Initializing Invoice List Content...');
         
         try {
+            // Check if authService is available
+            if (window.authService) {
+                console.log('✅ AuthService available');
+                const token = window.authService.getToken();
+                console.log('Token available:', !!token);
+            } else {
+                console.warn('⚠️ AuthService not available, using fallback');
+            }
+            
             // Add event listener for modal opening
             document.addEventListener('openCreateInvoiceModal', function() {
                 console.log('Opening create invoice modal via event...');
@@ -509,7 +518,7 @@
                 throw new Error('No authentication token available');
             }
             
-            const response = await fetch('/api/v1/invoice/invoices', {
+            const response = await fetch('/api/v1/invoices', {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
@@ -794,7 +803,7 @@
                 return;
             }
             
-            const response = await fetch('/api/v1/invoice/invoices', {
+            const response = await fetch('/api/v1/invoices', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -837,7 +846,7 @@
                 return;
             }
             
-            const response = await fetch(`/api/v1/invoice/invoices/${invoiceId}`, {
+            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
@@ -911,7 +920,7 @@
                 return;
             }
             
-            const response = await fetch(`/api/v1/invoice/invoices/${currentInvoiceId}`, {
+            const response = await fetch(`/api/v1/invoices/${currentInvoiceId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
@@ -957,7 +966,7 @@
                 return;
             }
             
-            const response = await fetch(`/api/v1/invoice/invoices/${invoiceId}`, {
+            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,

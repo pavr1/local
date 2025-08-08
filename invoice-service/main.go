@@ -238,3 +238,11 @@ func (rw *responseWriter) WriteHeader(code int) {
 }
 
 // corsMiddleware removed - gateway handles all CORS headers
+
+// getEnv returns the environment variable value or default if not set
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}

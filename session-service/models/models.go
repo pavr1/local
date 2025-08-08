@@ -53,10 +53,9 @@ type LoginRequest struct {
 
 // LoginResponse represents a successful login response
 type LoginResponse struct {
-	User      User   `json:"user"`
-	Role      Role   `json:"role"`
-	Token     string `json:"token"`
-	SessionID string `json:"session_id"`
+	User  User   `json:"user"`
+	Role  Role   `json:"role"`
+	Token string `json:"token"`
 }
 
 // RefreshTokenRequest represents a token refresh request
@@ -84,6 +83,7 @@ type JWTClaims struct {
 	RoleID      string   `json:"role_id"`
 	RoleName    string   `json:"role_name"`
 	Permissions []string `json:"permissions"`
+	SessionID   string   `json:"session_id"`
 	jwt.RegisteredClaims
 }
 

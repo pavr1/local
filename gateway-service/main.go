@@ -71,7 +71,9 @@ func main() {
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
 
-	// Gateway is pure routing - no session management logic
+	// Create session manager for authentication
+	sessionManager := NewSessionManager(config.SessionServiceURL)
+	sessionMiddleware := NewSessionMiddleware(sessionManager)
 
 	r := mux.NewRouter()
 
@@ -105,24 +107,23 @@ func main() {
 	sessionRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
 	sessionRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
 
-	// Orders service endpoints - pure proxy routing
+	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
 	ordersRouter.HandleFunc("/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
 	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
+	ordersRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
-	// Inventory service endpoints - pure proxy routing
+	// Inventory service endpoints - with authentication middleware
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
 	inventoryRouter.HandleFunc("/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
+	inventoryRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
-	// Invoice service routes
+	// Invoice service routes - with authentication middleware
 	invoiceRouter := api.PathPrefix("/v1/invoice").Subrouter()
 	invoiceRouter.HandleFunc("/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
-
-	// Expense Categories routes
-	expenseCategoriesRouter := api.PathPrefix("/v1/expense-categories").Subrouter()
-	expenseCategoriesRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/expense-categories"))
+	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
