@@ -2142,13 +2142,7 @@
             
             try {
                 // Use CONFIG object instead of undefined getServiceUrls function
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(supplierData)
-                });
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, supplierData);
                 
                 const result = await response.json();
                 
@@ -2220,7 +2214,7 @@
 
         async function loadSupplierForView(supplierId) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -2257,7 +2251,7 @@
 
         async function loadSupplierForEdit(supplierId) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${supplierId}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -3011,10 +3005,7 @@
         async function loadDropdownData() {
             try {
                 // Load categories
-                const categoriesResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                const categoriesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`);
                 if (categoriesResponse.ok) {
                     const categoriesResult = await categoriesResponse.json();
                     if (categoriesResult.success && categoriesResult.data) {
@@ -3023,10 +3014,7 @@
                 }
 
                 // Load suppliers
-                const suppliersResponse = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                const suppliersResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
                 if (suppliersResponse.ok) {
                     const suppliersResult = await suppliersResponse.json();
                     if (suppliersResult.success && suppliersResult.data) {
@@ -3221,7 +3209,7 @@
                 const queryString = params.toString();
                 const url = `${CONFIG.GATEWAY_URL}/api/v1/inventory/existences${queryString ? '?' + queryString : ''}`;
                 
-                const response = await fetch(url);
+                const response = await authenticatedGet(url);
                 
                 if (!response.ok) {
                     throw new Error(`Failed to fetch existences: ${response.status}`);
@@ -3716,7 +3704,7 @@
         // Load ingredients for filter dropdown
         async function loadFilterIngredients() {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/ingredients`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -3736,7 +3724,7 @@
         // Load ingredients for picker modal
         async function loadIngredientDropdown() {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/inventory/ingredients`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -3998,7 +3986,7 @@
         async function loadRunoutIngredientsData() {
             
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4124,7 +4112,7 @@
 
         async function loadExistencesForPicker() {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -4823,13 +4811,7 @@
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
             
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(supplierData)
-                });
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, supplierData);
                 
                 const result = await response.json();
                 
@@ -4909,7 +4891,7 @@
 
         async function loadRecipeCategoriesForPicker() {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -5044,7 +5026,7 @@
 
         async function loadIngredientsForRecipe() {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
