@@ -53,6 +53,8 @@ This is the identity-api service working on robust database migration and SQL qu
 - Ensure new implementations match the existing service patterns exactly
 - Use the same middleware, error handling, and response formats as existing services
 - Maintain consistency in API endpoints, HTTP methods, and request/response structures
+- ALWAYS look at existing working services or UI pages to follow the same pattern in new ones or the ones not working
+- Copy the exact working patterns from functional components instead of reinventing solutions
 
 ## API Access Rules
 - NEVER make direct API calls to individual services (session, orders, inventory, invoice)

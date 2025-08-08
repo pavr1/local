@@ -844,8 +844,9 @@
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link nav-sub" onclick="loadContent('invoice')" data-page="invoice-details">
-                                    <i class="fas fa-file-invoice me-2"></i>Invoices
+                                <button class="nav-link nav-sub" onclick="loadContent('invoice-details')" data-page="invoice-details">
+                                    <i class="fas fa-receipt me-2"></i>
+                                    Invoice Management
                                 </button>
                             </li>
                         </ul>
@@ -1059,7 +1060,7 @@
                 'inventory-recipe-categories': 'initRecipeCategoriesContent',
                 'inventory-recipes': 'initRecipesContent',
                 'invoice': 'initInvoiceContent',
-                'invoice-details': 'initInvoiceDetailsContent'
+                'invoice-details': 'initInvoiceContent'
             };
             
             // Setup header time (always visible in top panel)
@@ -5431,7 +5432,115 @@
             startTokenValidation();
         }
 
+        // Invoice modal and form functions
+        window.openCreateInvoiceModal = function() {
+            console.log('Opening create invoice modal...');
+            
+            try {
+                // Check if Bootstrap is available
+                if (typeof bootstrap === 'undefined') {
+                    console.error('Bootstrap is not available');
+                    alert('Bootstrap is not loaded. Modal cannot be opened.');
+                    return;
+                }
+                
+                const modal = document.getElementById('createInvoiceModal');
+                if (!modal) {
+                    console.error('Modal element not found');
+                    alert('Modal element not found');
+                    return;
+                }
+                
+                // Reset form
+                const form = document.getElementById('createInvoiceForm');
+                if (form) {
+                    form.reset();
+                }
+                
+                // Reset items container
+                const itemsContainer = document.getElementById('itemsContainer');
+                if (itemsContainer) {
+                    itemsContainer.innerHTML = '';
+                    // Add first item row
+                    if (typeof addItemRow === 'function') {
+                        addItemRow();
+                    }
+                }
+                
+                // Create and show the modal
+                const bootstrapModal = new bootstrap.Modal(modal);
+                bootstrapModal.show();
+                console.log('Modal opened successfully');
+                
+            } catch (error) {
+                console.error('Error opening modal:', error);
+                alert('Failed to open create invoice modal: ' + error.message);
+            }
+        };
 
+        // Add item row function for invoice modal
+        window.addItemRow = function() {
+            const container = document.getElementById('itemsContainer');
+            if (!container) return;
+            
+            const itemIndex = container.children.length;
+            
+            const itemHTML = `
+                <div class="item-row" data-index="${itemIndex}">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label>Detail *</label>
+                            <input type="text" class="form-control" name="detail" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Count *</label>
+                            <input type="number" class="form-control" name="count" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Unit Type *</label>
+                            <select class="form-select" name="unitType" required>
+                                <option value="">Select</option>
+                                <option value="Liters">Liters</option>
+                                <option value="Gallons">Gallons</option>
+                                <option value="Units">Units</option>
+                                <option value="Bag">Bag</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Price *</label>
+                            <input type="number" class="form-control" name="price" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Expiration Date</label>
+                            <input type="date" class="form-control" name="expirationDate">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="remove-item-btn" onclick="removeItemRow(${itemIndex})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', itemHTML);
+        };
+
+        // Remove item row function for invoice modal
+        window.removeItemRow = function(index) {
+            const container = document.getElementById('itemsContainer');
+            if (!container) return;
+            
+            const rows = container.querySelectorAll('.item-row');
+            if (rows.length > 1) {
+                rows[index].remove();
+                // Reindex remaining rows
+                container.querySelectorAll('.item-row').forEach((row, newIndex) => {
+                    row.dataset.index = newIndex;
+                    row.querySelector('.remove-item-btn').onclick = () => removeItemRow(newIndex);
+                });
+            }
+        };
     </script>
 </body>
 </html> 

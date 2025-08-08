@@ -162,14 +162,14 @@
             <label class="form-label">Search Invoices</label>
             <div class="input-group">
                 <input type="text" class="form-control" id="invoiceSearch" placeholder="Search by number, amount...">
-                <button class="btn btn-outline-primary" type="button" onclick="document.dispatchEvent(new CustomEvent('searchInvoices'))">
+                <button class="btn btn-outline-primary" type="button" onclick="searchInvoices()">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Transaction Type</label>
-            <select class="form-select" id="transactionTypeFilter" onchange="document.dispatchEvent(new CustomEvent('filterInvoices'))">
+            <select class="form-select" id="transactionTypeFilter" onchange="filterInvoices()">
                 <option value="">All Types</option>
                 <option value="income">Income</option>
                 <option value="outcome">Outcome</option>
@@ -177,7 +177,7 @@
         </div>
         <div class="col-md-3">
             <label class="form-label">Expense Category</label>
-            <select class="form-select" id="expenseCategoryFilter" onchange="document.dispatchEvent(new CustomEvent('filterInvoices'))">
+            <select class="form-select" id="expenseCategoryFilter" onchange="filterInvoices()">
                 <option value="">All Categories</option>
             </select>
         </div>
@@ -194,7 +194,7 @@
 <!-- Invoices Table -->
 <div class="invoices-table">
     <div class="table-header">
-        <button class="btn-add-invoice" onclick="document.dispatchEvent(new CustomEvent('openCreateInvoiceModal'))">
+        <button class="btn-add-invoice" onclick="openCreateInvoiceModal()">
             <i class="fas fa-plus me-2"></i>Create Invoice
         </button>
         <div></div>
@@ -391,6 +391,9 @@
 </div>
 
 <script>
+    // Test if this content is loading
+    console.log('📄 Invoice content loaded!');
+    
     // Invoice list functionality
     let invoices = [];
     let expenseCategories = [];
@@ -410,24 +413,6 @@
                 console.warn('⚠️ AuthService not available, using fallback');
             }
             
-            // Add event listener for modal opening
-            document.addEventListener('openCreateInvoiceModal', function() {
-                console.log('Opening create invoice modal via event...');
-                openCreateInvoiceModal();
-            });
-            
-            // Add event listener for search
-            document.addEventListener('searchInvoices', function() {
-                console.log('Searching invoices via event...');
-                searchInvoices();
-            });
-            
-            // Add event listener for filter
-            document.addEventListener('filterInvoices', function() {
-                console.log('Filtering invoices via event...');
-                filterInvoices();
-            });
-            
             console.log('Loading expense categories...');
             await loadExpenseCategories();
             console.log('Loading invoices...');
@@ -435,7 +420,7 @@
             console.log('✅ Invoice List Content initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing invoice list content:', error);
-            Alert.error('Failed to initialize invoice content');
+            alert('Failed to initialize invoice content: ' + error.message);
         }
     };
 
@@ -599,7 +584,7 @@
             // Check if Bootstrap is available
             if (typeof bootstrap === 'undefined') {
                 console.error('Bootstrap is not available');
-                Alert.error('Bootstrap is not loaded. Modal cannot be opened.');
+                alert('Bootstrap is not loaded. Modal cannot be opened.');
                 return;
             }
             
@@ -613,7 +598,7 @@
             
             if (!modal) {
                 console.error('Modal element not found');
-                Alert.error('Modal element not found');
+                alert('Modal element not found');
                 return;
             }
             
@@ -633,7 +618,7 @@
             
         } catch (error) {
             console.error('Error opening modal:', error);
-            Alert.error('Failed to open create invoice modal: ' + error.message);
+            alert('Failed to open create invoice modal: ' + error.message);
         }
     }
 
