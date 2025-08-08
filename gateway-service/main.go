@@ -122,7 +122,7 @@ func main() {
 	// Invoice service routes - with authentication middleware
 	invoiceRouter := api.PathPrefix("/v1/invoice").Subrouter()
 	invoiceRouter.HandleFunc("/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
-	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1/invoices"))
+	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1"))
 	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Apply CORS middleware to main router - gateway is single source of CORS

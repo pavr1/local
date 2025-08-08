@@ -185,8 +185,8 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 
 	// Invoice details are managed through the main invoice APIs
 
-	// Expense Categories routes
-	expenseCategoriesRouter := api.PathPrefix("/expense-categories").Subrouter()
+	// Expense Categories routes - under invoices
+	expenseCategoriesRouter := invoicesRouter.PathPrefix("/expense-categories").Subrouter()
 	expenseCategoriesHandler := mainHandler.GetExpenseCategoriesHandler()
 
 	// Main expense category operations

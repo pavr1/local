@@ -109,4 +109,11 @@ This is the identity-api service working on robust database migration and SQL qu
 - Provide clear feedback for upload progress and success/error states
 - Use consistent naming: `openImagePicker()`, `uploadImage()`, `previewImage()`
 - Validate file size and format on client-side before upload
-- Show image preview with option to remove/replace 
+- Show image preview with option to remove/replace
+
+## UI Navigation Rules
+- ALL navigation menus (sidebar, top panels) MUST be handled ONLY in dashboard.html
+- NEVER create separate layout files for navigation (layout-sidebar, layout-header, etc.)
+- NEVER create repeated code for menus across different pages
+- All navigation logic and structure should be centralized in dashboard.html
+- Use dashboard.html as the single source of truth for all navigation elements 

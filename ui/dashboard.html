@@ -849,8 +849,10 @@
                                     Invoice Management
                                 </button>
                             </li>
-                            <li><a class="nav-link nav-sub" href="#" onclick="loadContent('invoice-expense-categories')" data-page="invoice-expense-categories">
-                                <i class="fas fa-tags me-2"></i>Expense Categories</a>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('invoice-expense-categories')" data-page="invoice-expense-categories">
+                                    <i class="fas fa-tags me-2"></i>Expense Categories
+                                </button>
                             </li>
                         </ul>
                     </li>
@@ -1043,7 +1045,8 @@
             'inventory-recipe-categories': 'partials/inventory/recipe-categories.html',
             'inventory-recipes': 'partials/inventory/recipes.html',
             'invoice': 'partials/invoice/index.html',
-            'invoice-details': 'partials/invoice/invoice.html'
+            'invoice-details': 'partials/invoice/invoice.html',
+            'invoice-expense-categories': 'partials/invoice/expense-categories.html'
         };
         
         return contentMap[page] || 'partials/dashboard/index.html';
