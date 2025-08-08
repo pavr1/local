@@ -237,9 +237,22 @@
     // Load invoice statistics
     async function loadInvoiceStatistics() {
         try {
-            const response = await fetch('/api/v1/invoices', {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                console.warn('No auth token available for invoice statistics');
+                return;
+            }
+            
+            const response = await fetch('/api/v1/invoice/invoices', {
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });

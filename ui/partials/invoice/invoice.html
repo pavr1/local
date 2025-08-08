@@ -162,14 +162,14 @@
             <label class="form-label">Search Invoices</label>
             <div class="input-group">
                 <input type="text" class="form-control" id="invoiceSearch" placeholder="Search by number, amount...">
-                <button class="btn btn-outline-primary" type="button" onclick="searchInvoices()">
+                <button class="btn btn-outline-primary" type="button" onclick="document.dispatchEvent(new CustomEvent('searchInvoices'))">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
         </div>
         <div class="col-md-3">
             <label class="form-label">Transaction Type</label>
-            <select class="form-select" id="transactionTypeFilter" onchange="filterInvoices()">
+            <select class="form-select" id="transactionTypeFilter" onchange="document.dispatchEvent(new CustomEvent('filterInvoices'))">
                 <option value="">All Types</option>
                 <option value="income">Income</option>
                 <option value="outcome">Outcome</option>
@@ -177,7 +177,7 @@
         </div>
         <div class="col-md-3">
             <label class="form-label">Expense Category</label>
-            <select class="form-select" id="expenseCategoryFilter" onchange="filterInvoices()">
+            <select class="form-select" id="expenseCategoryFilter" onchange="document.dispatchEvent(new CustomEvent('filterInvoices'))">
                 <option value="">All Categories</option>
             </select>
         </div>
@@ -194,7 +194,7 @@
 <!-- Invoices Table -->
 <div class="invoices-table">
     <div class="table-header">
-        <button class="btn-add-invoice" onclick="openCreateInvoiceModal()">
+        <button class="btn-add-invoice" onclick="document.dispatchEvent(new CustomEvent('openCreateInvoiceModal'))">
             <i class="fas fa-plus me-2"></i>Create Invoice
         </button>
         <div></div>
@@ -401,6 +401,24 @@
         console.log('💰 Initializing Invoice List Content...');
         
         try {
+            // Add event listener for modal opening
+            document.addEventListener('openCreateInvoiceModal', function() {
+                console.log('Opening create invoice modal via event...');
+                openCreateInvoiceModal();
+            });
+            
+            // Add event listener for search
+            document.addEventListener('searchInvoices', function() {
+                console.log('Searching invoices via event...');
+                searchInvoices();
+            });
+            
+            // Add event listener for filter
+            document.addEventListener('filterInvoices', function() {
+                console.log('Filtering invoices via event...');
+                filterInvoices();
+            });
+            
             console.log('Loading expense categories...');
             await loadExpenseCategories();
             console.log('Loading invoices...');
@@ -415,9 +433,22 @@
     // Load expense categories
     async function loadExpenseCategories() {
         try {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                console.warn('No auth token available for expense categories');
+                return;
+            }
+            
             const response = await fetch('/api/v1/expense-categories', {
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -463,11 +494,22 @@
             console.log('Loading invoices...');
             showLoading();
             
-            // Check if getAuthToken function exists
-            const authToken = typeof getAuthToken === 'function' ? getAuthToken() : '';
+            // Check if authService is available and get token
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                console.warn('⚠️ authService not available, trying fallback...');
+                // Fallback: try to get token from localStorage/sessionStorage
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
             console.log('Auth token available:', !!authToken);
             
-            const response = await fetch('/api/v1/invoices', {
+            if (!authToken) {
+                throw new Error('No authentication token available');
+            }
+            
+            const response = await fetch('/api/v1/invoice/invoices', {
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
@@ -551,7 +593,7 @@
     }
 
     // Search invoices
-    function searchInvoices() {
+    window.searchInvoices = function() {
         const searchTerm = document.getElementById('invoiceSearch').value.toLowerCase();
         const filtered = invoices.filter(invoice => 
             invoice.invoice_number.toLowerCase().includes(searchTerm) ||
@@ -561,7 +603,7 @@
     }
 
     // Filter invoices
-    function filterInvoices() {
+    window.filterInvoices = function() {
         const typeFilter = document.getElementById('transactionTypeFilter').value;
         const categoryFilter = document.getElementById('expenseCategoryFilter').value;
         
@@ -583,6 +625,13 @@
         console.log('Opening create invoice modal...');
         
         try {
+            // Check if Bootstrap is available
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap is not available');
+                Alert.error('Bootstrap is not loaded. Modal cannot be opened.');
+                return;
+            }
+            
             const form = document.getElementById('createInvoiceForm');
             const itemsContainer = document.getElementById('itemsContainer');
             const modal = document.getElementById('createInvoiceModal');
@@ -590,6 +639,12 @@
             console.log('Form found:', !!form);
             console.log('Items container found:', !!itemsContainer);
             console.log('Modal found:', !!modal);
+            
+            if (!modal) {
+                console.error('Modal element not found');
+                Alert.error('Modal element not found');
+                return;
+            }
             
             if (form) {
                 form.reset();
@@ -600,21 +655,19 @@
                 addItemRow(); // Add first item row
             }
             
-            if (modal && typeof bootstrap !== 'undefined') {
-                new bootstrap.Modal(modal).show();
-                console.log('Modal opened successfully');
-            } else {
-                console.error('Modal or Bootstrap not found');
-                Alert.error('Modal could not be opened');
-            }
+            // Create and show the modal
+            const bootstrapModal = new bootstrap.Modal(modal);
+            bootstrapModal.show();
+            console.log('Modal opened successfully');
+            
         } catch (error) {
             console.error('Error opening modal:', error);
-            Alert.error('Failed to open create invoice modal');
+            Alert.error('Failed to open create invoice modal: ' + error.message);
         }
     }
 
     // Add item row
-    function addItemRow() {
+    window.addItemRow = function() {
         const container = document.getElementById('itemsContainer');
         const itemIndex = container.children.length;
         
@@ -660,7 +713,7 @@
     }
 
     // Remove item row
-    function removeItemRow(index) {
+    window.removeItemRow = function(index) {
         const container = document.getElementById('itemsContainer');
         const rows = container.querySelectorAll('.item-row');
         if (rows.length > 1) {
@@ -674,7 +727,7 @@
     }
 
     // Create invoice
-    async function createInvoice() {
+    window.createInvoice = async function() {
         try {
             const form = document.getElementById('createInvoiceForm');
             if (!form.checkValidity()) {
@@ -728,10 +781,23 @@
                 invoiceData.supplier_id = supplierId;
             }
 
-            const response = await fetch('/api/v1/invoices', {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                Alert.error('No authentication token available');
+                return;
+            }
+            
+            const response = await fetch('/api/v1/invoice/invoices', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(invoiceData)
@@ -756,11 +822,24 @@
     }
 
     // Edit invoice
-    async function editInvoice(invoiceId) {
+    window.editInvoice = async function(invoiceId) {
         try {
-            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                Alert.error('No authentication token available');
+                return;
+            }
+            
+            const response = await fetch(`/api/v1/invoice/invoices/${invoiceId}`, {
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -819,10 +898,23 @@
                 invoiceData.supplier_id = supplierId;
             }
 
-            const response = await fetch(`/api/v1/invoices/${currentInvoiceId}`, {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                Alert.error('No authentication token available');
+                return;
+            }
+            
+            const response = await fetch(`/api/v1/invoice/invoices/${currentInvoiceId}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(invoiceData)
@@ -847,15 +939,28 @@
     }
 
     // Delete invoice
-    async function deleteInvoice(invoiceId) {
+    window.deleteInvoice = async function(invoiceId) {
         const result = await Alert.confirm('Are you sure you want to delete this invoice?');
         if (!result) return;
 
         try {
-            const response = await fetch(`/api/v1/invoices/${invoiceId}`, {
+            // Get auth token with fallback
+            let authToken = '';
+            if (window.authService) {
+                authToken = window.authService.getToken();
+            } else {
+                authToken = localStorage.getItem('icecream_auth_token') || sessionStorage.getItem('icecream_auth_token');
+            }
+            
+            if (!authToken) {
+                Alert.error('No authentication token available');
+                return;
+            }
+            
+            const response = await fetch(`/api/v1/invoice/invoices/${invoiceId}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 }
             });
