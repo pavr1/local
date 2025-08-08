@@ -1027,7 +1027,7 @@
     // Load expense categories for invoice dropdown
     async function loadInvoiceExpenseCategoryData() {
         try {
-            const categoriesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories`);
+            const categoriesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
             if (categoriesResponse.ok) {
                 const categoriesResult = await categoriesResponse.json();
                 if (categoriesResult.success && categoriesResult.data) {

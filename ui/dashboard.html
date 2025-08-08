@@ -2867,7 +2867,7 @@
                 console.log('📥 Loading expense categories...');
                 showExpenseCategoriesLoading();
 
-                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories`);
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);

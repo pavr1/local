@@ -324,7 +324,7 @@
             console.log('📥 Loading expense categories...');
             showExpenseCategoriesLoading();
 
-            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -479,7 +479,7 @@
         };
 
         try {
-            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories`, categoryData);
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`, categoryData);
 
             if (response.ok) {
                 const result = await response.json();
@@ -502,7 +502,7 @@
     // View expense category
     window.viewExpenseCategory = async function(categoryId) {
         try {
-            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories/${categoryId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories/${categoryId}`);
 
             if (response.ok) {
                 const result = await response.json();
@@ -573,7 +573,7 @@
         currentExpenseCategoryId = categoryId;
         
         try {
-            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories/${categoryId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories/${categoryId}`);
 
             if (response.ok) {
                 const result = await response.json();
@@ -618,7 +618,7 @@
         };
 
         try {
-            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories/${categoryId}`, categoryData);
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories/${categoryId}`, categoryData);
 
             if (response.ok) {
                 const result = await response.json();
@@ -644,7 +644,7 @@
         if (!result) return;
 
         try {
-            const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/invoice/expense-categories/${categoryId}`);
+            const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories/${categoryId}`);
 
             if (response.ok) {
                 const result = await response.json();
