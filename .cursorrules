@@ -98,4 +98,15 @@ This is the identity-api service working on robust database migration and SQL qu
 - Include search functionality in picker modals
 - Use consistent naming: `open[Entity]Picker()`, `select[Entity]()`, `filter[Entity]()`
 - Load active/valid records only in picker modals
-- Provide clear visual feedback for selected items 
+- Provide clear visual feedback for selected items
+
+## UI Image Control Rules
+- ALL image fields in UI forms MUST include image upload/selection controls
+- Replace direct URL inputs with file input + preview + upload functionality
+- Implement image preview before upload
+- Include drag-and-drop functionality for better UX
+- Support common image formats (JPG, PNG, GIF, WebP)
+- Provide clear feedback for upload progress and success/error states
+- Use consistent naming: `openImagePicker()`, `uploadImage()`, `previewImage()`
+- Validate file size and format on client-side before upload
+- Show image preview with option to remove/replace 
