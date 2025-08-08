@@ -103,10 +103,7 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	// Debug: log the URL being called
-	fmt.Printf("Gateway calling session service at: %s\n", sm.baseURL+"/validate")
-
-	httpReq, err := http.NewRequest("POST", sm.baseURL+"/validate", bytes.NewBuffer(reqBody))
+	httpReq, err := http.NewRequest("POST", sm.baseURL+"/p/validate", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -125,9 +122,6 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
-
-	// Debug: log the response body
-	fmt.Printf("Session service response: %s\n", string(body))
 
 	var validationResp SessionValidationResponse
 	if err := json.Unmarshal(body, &validationResp); err != nil {
