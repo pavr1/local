@@ -88,4 +88,14 @@ This is the identity-api service working on robust database migration and SQL qu
 - Gateway is the single point of entry for all API requests
 - Health checks and monitoring should go through gateway endpoints
 - Internal service-to-service communication is ALLOWED when proper gateway headers are included
-- Services should include gateway headers (X-Gateway-Service, X-Gateway-Session-Managed) for internal calls 
+- Services should include gateway headers (X-Gateway-Service, X-Gateway-Session-Managed) for internal calls
+
+## UI Foreign Key Selection Rules
+- ALL foreign key fields in UI forms MUST use "Select..." pattern with search functionality
+- Replace direct ID inputs with display field + hidden ID field + search button
+- Implement picker modals for all FK selections (suppliers, categories, etc.)
+- Follow the exact pattern from working pages (suppliers, ingredients)
+- Include search functionality in picker modals
+- Use consistent naming: `open[Entity]Picker()`, `select[Entity]()`, `filter[Entity]()`
+- Load active/valid records only in picker modals
+- Provide clear visual feedback for selected items 

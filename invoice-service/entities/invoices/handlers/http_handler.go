@@ -63,8 +63,9 @@ func (h *HttpHandler) CreateInvoiceWithDetails(w http.ResponseWriter, r *http.Re
 	}
 
 	// Set current timestamp as default if no transaction date is provided
-	if req.TransactionDate.IsZero() {
-		req.TransactionDate = time.Now()
+	if req.TransactionDate == nil {
+		now := time.Now()
+		req.TransactionDate = &now
 		h.logger.WithField("invoice_number", req.InvoiceNumber).Info("Setting default transaction date to current timestamp")
 	}
 
