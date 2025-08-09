@@ -579,6 +579,19 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	// Round up to nearest 100
 	finalPrice := math.Ceil(calculatedPrice/100) * 100
 
+	// Log calculations for debugging
+	h.logger.WithFields(logrus.Fields{
+		"cost_per_item":            costPerItem,
+		"income_margin_percentage": req.IncomeMarginPercentage,
+		"income_margin_amount":     incomeMarginAmount,
+		"iva_percentage":           req.IvaPercentage,
+		"iva_amount":               ivaAmount,
+		"service_tax_percentage":   req.ServiceTaxPercentage,
+		"service_tax_amount":       serviceTaxAmount,
+		"calculated_price":         calculatedPrice,
+		"final_price":              finalPrice,
+	}).Debug("Existence calculations completed")
+
 	_, err := tx.Exec(invoiceSQL.CreateExistenceQuery,
 		req.IngredientID,
 		req.InvoiceDetailID,
@@ -587,9 +600,13 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		req.CostPerUnit,
 		req.ExpirationDate,
 		req.IncomeMarginPercentage,
+		incomeMarginAmount,
 		req.IvaPercentage,
+		ivaAmount,
 		req.ServiceTaxPercentage,
-		&finalPrice,
+		serviceTaxAmount,
+		calculatedPrice,
+		finalPrice,
 	)
 
 	if err != nil {

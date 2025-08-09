@@ -8,8 +8,12 @@ INSERT INTO existences (
     cost_per_unit,
     expiration_date,
     income_margin_percentage,
+    income_margin_amount,
     iva_percentage,
+    iva_amount,
     service_tax_percentage,
+    service_tax_amount,
+    calculated_price,
     final_price
 ) VALUES (
     $1,  -- ingredient_id
@@ -21,7 +25,11 @@ INSERT INTO existences (
     $5,  -- cost_per_unit
     $6,  -- expiration_date
     $7,  -- income_margin_percentage
-    $8,  -- iva_percentage
-    $9,  -- service_tax_percentage
-    $10  -- final_price
+    $8,  -- income_margin_amount
+    $9,  -- iva_percentage
+    $10, -- iva_amount
+    $11, -- service_tax_percentage
+    $12, -- service_tax_amount
+    $13, -- calculated_price
+    $14  -- final_price
 ); 

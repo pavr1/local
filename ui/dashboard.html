@@ -3668,7 +3668,7 @@
 
         // Create existence table row
         function createExistenceRow(existence, status, statusBadge, expirationDate) {
-            // Format currency values
+            // Format currency values from database
             const costPerItem = Number(existence.cost_per_item || 0).toLocaleString();
             const incomeMarginAmount = Number(existence.income_margin_amount || 0).toLocaleString();
             const ivaAmount = Number(existence.iva_amount || 0).toLocaleString();
@@ -3710,6 +3710,9 @@
                     </td>
                     <td class="align-middle">
                         <div class="action-buttons">
+                            <button class="btn btn-action btn-toggle" onclick="toggleExistenceDetails('${existence.id}')" title="Toggle Details" data-existence-id="${existence.id}">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
                             <button class="btn btn-action btn-view" onclick="viewExistence('${existence.id}')" title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -3722,7 +3725,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr class="existence-details-row">
+                <tr class="existence-details-row" id="existence-details-${existence.id}" style="display: none;">
                     <td colspan="9" class="p-0">
                         <div class="existence-details-content">
                             <div class="row g-2">
@@ -3773,6 +3776,82 @@
                     </td>
                 </tr>
             `;
+        }
+
+        // Toggle existence details row
+        function toggleExistenceDetails(existenceId) {
+            const detailsRow = document.getElementById(`existence-details-${existenceId}`);
+            const toggleButton = document.querySelector(`[data-existence-id="${existenceId}"]`);
+            const toggleIcon = toggleButton.querySelector('i');
+            
+            if (detailsRow.classList.contains('show')) {
+                // Hide with animation
+                detailsRow.classList.remove('show');
+                toggleIcon.className = 'fas fa-chevron-down';
+                toggleButton.classList.remove('btn-toggle-active');
+                
+                // Set display to none after animation completes
+                setTimeout(() => {
+                    if (!detailsRow.classList.contains('show')) {
+                        detailsRow.style.display = 'none';
+                    }
+                }, 400);
+            } else {
+                // Show with animation
+                detailsRow.style.display = 'table-row';
+                // Force reflow to ensure display change takes effect
+                detailsRow.offsetHeight;
+                detailsRow.classList.add('show');
+                toggleIcon.className = 'fas fa-chevron-up';
+                toggleButton.classList.add('btn-toggle-active');
+            }
+        }
+
+        // Toggle all existence details
+        function toggleAllExistenceDetails() {
+            const allDetailsRows = document.querySelectorAll('.existence-details-row');
+            const allToggleButtons = document.querySelectorAll('.btn-toggle');
+            const toggleAllButton = document.querySelector('[onclick="toggleAllExistenceDetails()"]');
+            const toggleAllIcon = toggleAllButton.querySelector('i');
+            
+            // Check if any details are currently shown
+            const anyShown = Array.from(allDetailsRows).some(row => row.classList.contains('show'));
+            
+            allDetailsRows.forEach((row, index) => {
+                const toggleButton = allToggleButtons[index];
+                const toggleIcon = toggleButton.querySelector('i');
+                
+                if (anyShown) {
+                    // Hide all with animation
+                    row.classList.remove('show');
+                    toggleIcon.className = 'fas fa-chevron-down';
+                    toggleButton.classList.remove('btn-toggle-active');
+                    
+                    // Set display to none after animation completes
+                    setTimeout(() => {
+                        if (!row.classList.contains('show')) {
+                            row.style.display = 'none';
+                        }
+                    }, 400);
+                } else {
+                    // Show all with animation
+                    row.style.display = 'table-row';
+                    // Force reflow to ensure display change takes effect
+                    row.offsetHeight;
+                    row.classList.add('show');
+                    toggleIcon.className = 'fas fa-chevron-up';
+                    toggleButton.classList.add('btn-toggle-active');
+                }
+            });
+            
+            // Update toggle all button
+            if (anyShown) {
+                toggleAllIcon.className = 'fas fa-chevron-down me-1';
+                toggleAllButton.title = 'Show All Details';
+            } else {
+                toggleAllIcon.className = 'fas fa-chevron-up me-1';
+                toggleAllButton.title = 'Hide All Details';
+            }
         }
 
         // Get existence status

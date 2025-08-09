@@ -69,6 +69,17 @@
     .existence-details-row {
         background-color: #f8f9fa;
         border-bottom: 2px solid #dee2e6;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    .existence-details-row.show {
+        max-height: 500px;
+        opacity: 1;
+        transform: translateY(0);
     }
 
     .existence-details-content {
@@ -81,8 +92,20 @@
         border-radius: 8px;
         padding: 0.75rem;
         text-align: center;
-        transition: all 0.2s ease;
+        transition: all 0.3s ease;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        animation: cardSlideIn 0.5s ease-out;
+    }
+
+    @keyframes cardSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
     }
 
     .detail-card:hover {
@@ -287,6 +310,28 @@
     .btn-delete:hover {
         background: var(--danger-dark);
         transform: translateY(-1px);
+    }
+
+    .btn-toggle {
+        background: var(--info-color);
+        color: var(--white);
+        transition: all 0.3s ease;
+    }
+
+    .btn-toggle:hover {
+        background: var(--info-dark);
+        transform: translateY(-1px);
+    }
+
+    .btn-toggle-active {
+        background: var(--primary-color) !important;
+        transform: rotate(180deg);
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+    }
+
+    .btn-toggle-active:hover {
+        background: var(--primary-dark) !important;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
     }
 
     .status-badge {
@@ -553,7 +598,17 @@
 <!-- Existences Table -->
 <div class="existences-table">
     <div class="table-header">
-        <!-- Add New Existence button removed - existences are created automatically from invoices -->
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <div>
+                <h5 class="mb-0"><i class="fas fa-warehouse me-2"></i>Inventory Existences</h5>
+                <small class="opacity-75">Manage ingredient stock and pricing</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-light btn-sm" onclick="toggleAllExistenceDetails()" title="Toggle All Details">
+                    <i class="fas fa-chevron-down me-1"></i>Toggle All
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="existencesTableContainer">
