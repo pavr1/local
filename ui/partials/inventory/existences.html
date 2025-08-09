@@ -136,6 +136,17 @@
         border-color: #117a8b;
     }
 
+    .detail-card-warning {
+        background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+        border-color: #ffc107;
+        color: #856404;
+    }
+
+    .detail-card-warning:hover {
+        background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+        border-color: #e0a800;
+    }
+
     .detail-label {
         font-size: 0.75rem;
         font-weight: 600;
@@ -180,6 +191,36 @@
 
     .detail-card-info .detail-percentage {
         color: #0c5460;
+    }
+
+    .detail-card-warning .detail-label {
+        color: #856404;
+    }
+
+    .detail-card-warning .detail-value {
+        color: #856404;
+    }
+
+    .detail-card-warning .detail-percentage {
+        color: #856404;
+    }
+
+    .final-price-cell {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #28a745;
+        border-radius: 8px;
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 1px 3px rgba(25, 135, 84, 0.2);
+        color: #155724;
+    }
+
+    .final-price-cell:hover {
+        background: linear-gradient(135deg, #c3e6cb 0%, #b1dfbb 100%);
+        border-color: #1e7e34;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
     }
 
     /* Responsive adjustments */

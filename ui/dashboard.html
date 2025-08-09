@@ -3636,12 +3636,12 @@
                             <tr>
                                 <th style="width: 10%;">Reference</th>
                                 <th style="width: 15%;">Ingredient</th>
-                                <th style="width: 10%;">Invoice</th>
+                                <th style="width: 10%;">Status</th>
                                 <th style="width: 10%;">Units</th>
                                 <th style="width: 8%;">Type</th>
                                 <th style="width: 8%;">Items/Unit</th>
                                 <th style="width: 10%;">Cost/Item</th>
-                                <th style="width: 10%;">Expiration</th>
+                                <th style="width: 10%;">Final Price</th>
                                 <th style="width: 9%;">Actions</th>
                             </tr>
                         </thead>
@@ -3690,7 +3690,7 @@
                         <div class="fw-bold">${existence.ingredient_name || 'Unknown'}</div>
                         <small class="text-muted">${existence.ingredient_category || ''}</small>
                     </td>
-                    <td class="align-middle">${invoiceLink}</td>
+                    <td class="align-middle">${statusBadge}</td>
                     <td class="align-middle">
                         <div class="fw-bold">${existence.units_available}</div>
                         <small class="text-muted">/ ${existence.units_purchased}</small>
@@ -3705,8 +3705,9 @@
                         <div class="fw-bold">₡${costPerItem}</div>
                     </td>
                     <td class="align-middle">
-                        <div class="fw-bold">${expirationDate}</div>
-                        ${existence.expiration_date ? `<small class="text-muted">${getDaysUntilExpiration(existence.expiration_date)}</small>` : ''}
+                        <div class="final-price-cell">
+                            <div class="fw-bold">₡${finalPrice}</div>
+                        </div>
                     </td>
                     <td class="align-middle">
                         <div class="action-buttons">
@@ -3751,18 +3752,18 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <div class="detail-card detail-card-success">
-                                        <div class="detail-label">Final Price</div>
-                                        <div class="detail-value">₡${finalPrice}</div>
-                                        <div class="detail-percentage">Total</div>
+                                    <div class="detail-card detail-card-warning">
+                                        <div class="detail-label">Expiration</div>
+                                        <div class="detail-value">${expirationDate}</div>
+                                        <div class="detail-percentage">${existence.expiration_date ? getDaysUntilExpiration(existence.expiration_date) : 'No expiration'}</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="row g-2 mt-2">
                                 <div class="col-md-6">
                                     <div class="detail-card detail-card-info">
-                                        <div class="detail-label">Status</div>
-                                        <div class="detail-value">${statusBadge}</div>
+                                        <div class="detail-label">Invoice</div>
+                                        <div class="detail-value">${invoiceLink}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
