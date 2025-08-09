@@ -20,6 +20,7 @@ type DBHandlerInterface interface {
 	ListInvoices() ([]models.Invoice, error)
 	UpdateInvoice(id string, req models.UpdateInvoiceRequest) (*models.Invoice, error)
 	DeleteInvoice(id string) error
+	//pvillalobos - delete invoice details features if needed.
 	CreateInvoiceDetail(req models.CreateInvoiceDetailRequest) (*models.InvoiceDetail, error)
 	GetInvoiceDetailByID(id string) (*models.InvoiceDetail, error)
 	GetInvoiceDetailsByInvoiceID(invoiceID string) ([]models.InvoiceDetail, error)
