@@ -1,102 +1,20 @@
 {
 	"info": {
 		"_postman_id": "ice-cream-store-api",
-		"name": "🍦 Ice Cream Store API Collection",
-		"description": "Complete API collection for the Ice Cream Store microservices system. This collection includes all endpoints across Gateway, Session, Orders, Inventory, and Invoice services. The session service uses database-backed session storage for improved persistence and performance.",
+		"name": "Ice Cream Store API",
+		"description": "Complete API collection for Ice Cream Store microservices",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "ice-cream-store"
+		"_exporter_id": "12345678"
 	},
-	"variable": [
-		{
-			"key": "gateway_url",
-			"value": "http://localhost:8082",
-			"type": "string"
-		},
-		{
-			"key": "session_service_url",
-			"value": "http://localhost:8081",
-			"type": "string"
-		},
-		{
-			"key": "orders_service_url",
-			"value": "http://localhost:8083",
-			"type": "string"
-		},
-		{
-			"key": "inventory_service_url",
-			"value": "http://localhost:8084",
-			"type": "string"
-		},
-		{
-			"key": "invoice_service_url",
-			"value": "http://localhost:8085",
-			"type": "string"
-		},
-		{
-			"key": "auth_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "session_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-								"key": "invoice_id",
-			"value": "",
-			"type": "string"
-		}
-	],
 	"item": [
 		{
-			"name": "🌐 Gateway Service (Port 8082)",
-			"item": [
-				{
-					"name": "Gateway Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/health",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "health"]
-						},
-						"description": "Check gateway service health status"
-					}
-				}
-			],
-			"description": "Gateway service endpoints - main entry point for all API requests"
-		},
-		{
-			"name": "🔐 Session Service (via Gateway)",
+			"name": "🔐 Session Management",
 			"item": [
 				{
 					"name": "Public Endpoints",
 					"item": [
 						{
 							"name": "Login",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"if (pm.response.code === 200) {",
-											"    const response = pm.response.json();",
-											"    if (response.token) {",
-											"        pm.collectionVariables.set('auth_token', response.token);",
-											"        console.log('Auth token saved:', response.token);",
-											"    }",
-											"    if (response.session_id) {",
-											"        pm.collectionVariables.set('session_id', response.session_id);",
-											"        console.log('Session ID saved:', response.session_id);",
-											"    }",
-											"}"
-										],
-										"type": "text/javascript"
-									}
-								}
-							],
 							"request": {
 								"method": "POST",
 								"header": [
@@ -113,71 +31,11 @@
 									"raw": "{{gateway_url}}/api/v1/sessions/p/login",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "p", "login"]
-								},
-								"description": "Login with username and password. Creates a database-backed session and automatically saves auth token and session ID to collection variables."
+								}
 							}
 						},
 						{
-							"name": "Auth Health Check",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/p/health",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "p", "health"]
-								},
-								"description": "Check session service health status"
-							}
-						}
-					],
-					"description": "Public session endpoints (no token required) - creates database-backed sessions"
-				},
-				{
-					"name": "Protected Endpoints",
-					"item": [
-						{
-							"name": "Logout",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-											"url": {
-				"raw": "{{gateway_url}}/api/v1/sessions/logout",
-				"host": ["{{gateway_url}}"],
-				"path": ["api", "v1", "sessions", "logout"]
-			},
-								"description": "Logout and revoke current session from database"
-							}
-						},
-						{
-							"name": "Refresh Token",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "refresh"]
-								},
-								"description": "Refresh JWT token if within refresh threshold"
-							}
-						},
-						{
-							"name": "Validate Session (by Token)",
+							"name": "Validate Session",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -194,100 +52,40 @@
 									"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "p", "validate"]
-								},
-								"description": "Validate a JWT token against database-stored sessions"
+								}
 							}
 						},
 						{
-							"name": "Validate Session (by Session ID)",
-							"event": [
-								{
-									"listen": "test",
-									"script": {
-										"exec": [
-											"pm.test('Session validation successful', function () {",
-											"    pm.response.to.have.status(200);",
-											"    const response = pm.response.json();",
-											"    pm.expect(response.is_valid).to.be.true;",
-											"    console.log('Session validation result:', response);",
-											"});"
-										],
-										"type": "text/javascript"
-									}
+							"name": "Health Check",
+							"request": {
+								"method": "GET",
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/sessions/p/health",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "sessions", "p", "health"]
 								}
-							],
+							}
+						}
+					]
+				},
+				{
+					"name": "Protected Endpoints",
+					"item": [
+						{
+							"name": "Refresh Session",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"session_id\": \"{{session_id}}\"\n}"
-								},
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "p", "validate"]
-								},
-								"description": "Validate a session using session ID (more efficient than token validation). Requires session_id to be set from a previous login."
-							}
-						},
-						{
-							"name": "User Profile",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
 										"key": "Authorization",
 										"value": "Bearer {{auth_token}}"
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/profile",
+									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "profile"]
-								},
-								"description": "Get current user profile information"
-							}
-						},
-						{
-							"name": "Token Info",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/token-info",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "token-info"]
-								},
-								"description": "Get detailed token information and metadata"
-							}
-						},
-						{
-							"name": "Get Session Statistics",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/stats",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "stats"]
-								},
-								"description": "Get session statistics and analytics"
+									"path": ["api", "v1", "sessions", "refresh"]
+								}
 							}
 						},
 						{
@@ -301,22 +99,14 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/user/:userId",
+									"raw": "{{gateway_url}}/api/v1/sessions/user/{{user_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "user", ":userId"],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "user-uuid",
-											"description": "UUID of the user"
-										}
-									]
-								},
-								"description": "Get all active sessions for a specific user"
+									"path": ["api", "v1", "sessions", "user", "{{user_id}}"]
+								}
 							}
 						},
 						{
-							"name": "Revoke Specific Session",
+							"name": "Revoke Session",
 							"request": {
 								"method": "DELETE",
 								"header": [
@@ -326,278 +116,35 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/:sessionId",
+									"raw": "{{gateway_url}}/api/v1/sessions/{{session_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", ":sessionId"],
-									"variable": [
-										{
-											"key": "sessionId",
-											"value": "session-uuid",
-											"description": "UUID of the session to revoke"
-										}
-									]
-								},
-								"description": "Revoke a specific session by ID"
-							}
-						},
-						{
-							"name": "Revoke All User Sessions",
-							"request": {
-								"method": "DELETE",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/user/:userId?exclude_current=true",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "user", ":userId"],
-									"query": [
-										{
-											"key": "exclude_current",
-											"value": "true",
-											"description": "Whether to exclude the current session from revocation"
-										}
-									],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "user-uuid",
-											"description": "UUID of the user"
-										}
-									]
-								},
-								"description": "Revoke all sessions for a user (optionally excluding current session)"
+									"path": ["api", "v1", "sessions", "{{session_id}}"]
+								}
 							}
 						}
-					],
-					"description": "Protected session endpoints (token required) - manages database-stored sessions"
+					]
 				}
-			],
-			"description": "Session service endpoints for authentication and database-backed session management. All sessions are stored in PostgreSQL for persistence and better performance."
+			]
 		},
 		{
-			"name": "📦 Orders Management (via Gateway)",
+			"name": "📦 Inventory Management",
 			"item": [
 				{
-					"name": "Orders Health Check",
+					"name": "Health Check",
 					"request": {
 						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/p/health",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", "p", "health"]
-						},
-						"description": "Check orders service health (public endpoint)"
-					}
-				},
-				{
-					"name": "Create Order",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"payment_method\": \"card\",\n  \"items\": [\n    {\n      \"recipe_id\": \"vanilla-cone\",\n      \"recipe_name\": \"Vanilla Ice Cream Cone\",\n      \"quantity\": 2,\n      \"unit_price\": 3.50,\n      \"discount\": 0.00\n    },\n    {\n      \"recipe_id\": \"chocolate-sundae\",\n      \"recipe_name\": \"Chocolate Sundae\",\n      \"quantity\": 1,\n      \"unit_price\": 5.99,\n      \"discount\": 0.50\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders"]
-						},
-						"description": "Create a new ice cream order with items"
-					}
-				},
-				{
-					"name": "Get Order by ID",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/:orderId",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", ":orderId"],
-							"variable": [
-								{
-									"key": "orderId",
-									"value": "123e4567-e89b-12d3-a456-426614174000",
-									"description": "UUID of the order"
-								}
-							]
-						},
-						"description": "Retrieve a specific order by its ID"
-					}
-				},
-				{
-					"name": "Update Order",
-					"request": {
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"payment_method\": \"cash\",\n  \"status\": \"completed\"\n}"
-						},
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/:orderId",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", ":orderId"],
-							"variable": [
-								{
-									"key": "orderId",
-									"value": "123e4567-e89b-12d3-a456-426614174000",
-									"description": "UUID of the order"
-								}
-							]
-						},
-						"description": "Update an existing order"
-					}
-				},
-				{
-					"name": "Cancel Order",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/:orderId/cancel",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", ":orderId", "cancel"],
-							"variable": [
-								{
-									"key": "orderId",
-									"value": "123e4567-e89b-12d3-a456-426614174000",
-									"description": "UUID of the order"
-								}
-							]
-						},
-						"description": "Cancel a specific order"
-					}
-				},
-				{
-					"name": "List Orders",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders?status=pending&limit=10&offset=0",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders"],
-							"query": [
-								{
-									"key": "status",
-									"value": "pending",
-									"description": "Filter by order status (pending, completed, cancelled)"
-								},
-								{
-									"key": "limit",
-									"value": "10",
-									"description": "Number of orders to return"
-								},
-								{
-									"key": "offset",
-									"value": "0",
-									"description": "Number of orders to skip"
-								}
-							]
-						},
-						"description": "List orders with optional filtering"
-					}
-				},
-				{
-					"name": "Get Order Summary (Admin)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/summary",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", "summary"]
-						},
-						"description": "Get order statistics and summary (admin only)"
-					}
-				},
-				{
-					"name": "Get Payment Method Stats (Admin)",
-					"request": {
-						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{auth_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/orders/stats/payment-methods",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "orders", "stats", "payment-methods"]
-						},
-						"description": "Get payment method usage statistics (admin only)"
-					}
-				}
-			],
-			"description": "Orders management endpoints for ice cream orders"
-		},
-		{
-			"name": "📦 Inventory Management (via Gateway)",
-			"item": [
-				{
-					"name": "Inventory Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
 						"url": {
 							"raw": "{{gateway_url}}/api/v1/inventory/p/health",
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "inventory", "p", "health"]
-						},
-						"description": "Check inventory service health"
+						}
 					}
 				},
 				{
 					"name": "Suppliers",
 					"item": [
 						{
-							"name": "List All Suppliers",
+							"name": "List Suppliers",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -610,8 +157,7 @@
 									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "suppliers"]
-								},
-								"description": "Get list of all suppliers"
+								}
 							}
 						},
 						{
@@ -630,18 +176,17 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"name\": \"Premium Dairy Co.\",\n  \"contact_info\": {\n    \"email\": \"orders@premiumdairy.com\",\n    \"phone\": \"+1-555-0123\",\n    \"address\": \"123 Dairy Lane, Farm Valley, CA 95432\"\n  },\n  \"products_supplied\": [\"milk\", \"cream\", \"cheese\"],\n  \"is_active\": true\n}"
+									"raw": "{\n  \"name\": \"Test Supplier\",\n  \"contact_person\": \"John Doe\",\n  \"phone\": \"+1234567890\",\n  \"email\": \"john@supplier.com\",\n  \"address\": \"123 Supplier St\",\n  \"is_active\": true\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "suppliers"]
-								},
-								"description": "Create a new supplier"
+								}
 							}
 						},
 						{
-							"name": "Get Supplier by ID",
+							"name": "Get Supplier",
 							"request": {
 								"method": "GET",
 								"header": [
@@ -651,18 +196,10 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
-									"variable": [
-										{
-											"key": "supplierId",
-											"value": "1",
-											"description": "ID of the supplier"
-										}
-									]
-								},
-								"description": "Get details of a specific supplier"
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
 							}
 						},
 						{
@@ -681,21 +218,13 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"name\": \"Premium Dairy Co. Ltd.\",\n  \"contact_info\": {\n    \"email\": \"orders@premiumdairy.com\",\n    \"phone\": \"+1-555-0123\",\n    \"address\": \"456 Updated Address, Farm Valley, CA 95432\"\n  },\n  \"products_supplied\": [\"milk\", \"cream\", \"cheese\", \"butter\"],\n  \"is_active\": true\n}"
+									"raw": "{\n  \"name\": \"Updated Supplier\",\n  \"contact_person\": \"Jane Doe\",\n  \"phone\": \"+0987654321\",\n  \"email\": \"jane@supplier.com\",\n  \"address\": \"456 Updated St\",\n  \"is_active\": true\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
-									"variable": [
-										{
-											"key": "supplierId",
-											"value": "1",
-											"description": "ID of the supplier"
-										}
-									]
-								},
-								"description": "Update an existing supplier"
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
 							}
 						},
 						{
@@ -709,47 +238,36 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/:supplierId",
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "inventory", "suppliers", ":supplierId"],
-									"variable": [
-										{
-											"key": "supplierId",
-											"value": "1",
-											"description": "ID of the supplier"
-										}
-									]
-								},
-								"description": "Delete a supplier"
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
 							}
 						}
-					],
-					"description": "Supplier management endpoints"
-				}
-			],
-			"description": "Inventory management endpoints for suppliers and stock"
-		},
-		{
-								"name": "🧾 Invoice Management (via Gateway)",
-			"item": [
-				{
-					"name": "Invoice Service Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{gateway_url}}/api/v1/invoices/p/health",
-							"host": ["{{gateway_url}}"],
-							"path": ["api", "v1", "invoices", "p", "health"]
-						},
-						"description": "Check invoice service health via gateway"
-					}
+					]
 				},
 				{
-					"name": "📄 Invoice Management",
+					"name": "Ingredient Categories",
 					"item": [
 						{
-							"name": "Create Invoice with Details",
+							"name": "List Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories"]
+								}
+							}
+						},
+						{
+							"name": "Create Category",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -764,16 +282,152 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"invoice_number\": \"INV-2024-001\",\n  \"transaction_date\": \"2024-01-15T10:30:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"supplier_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"expense_category_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"image_url\": \"https://example.com/invoices/invoice001.jpg\",\n  \"notes\": \"Monthly ingredient purchase via gateway\",\n  \"items\": [\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"detail\": \"Premium Vanilla Extract - 4oz\",\n      \"count\": 2.0,\n      \"unit_type\": \"Units\",\n      \"price\": 12.99,\n      \"expiration_date\": \"2026-01-15T00:00:00Z\"\n    },\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440004\",\n      \"detail\": \"Organic Sugar - 5lb\",\n      \"count\": 1.0,\n      \"unit_type\": \"Bag\",\n      \"price\": 8.50\n    }\n  ]\n}"
+									"raw": "{\n  \"name\": \"Test Category\",\n  \"description\": \"Test category description\",\n  \"is_active\": true\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices",
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices"]
-								},
-								"description": "Create a new invoice with multiple details in a single transaction via gateway"
+									"path": ["api", "v1", "inventory", "ingredient-categories"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Ingredients",
+					"item": [
+						{
+							"name": "List Ingredients",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients"]
+								}
 							}
 						},
+						{
+							"name": "Create Ingredient",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Ingredient\",\n  \"description\": \"Test ingredient description\",\n  \"ingredient_category_id\": \"{{category_id}}\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"unit_type\": \"Liters\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Existences",
+					"item": [
+						{
+							"name": "List Existences",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📄 Invoice Management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/invoices/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "invoices", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Expense Categories",
+					"item": [
+						{
+							"name": "List Expense Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories"]
+								}
+							}
+						},
+						{
+							"name": "Create Expense Category",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"category_name\": \"Test Category\",\n  \"description\": \"Test expense category\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Invoices",
+					"item": [
 						{
 							"name": "List Invoices",
 							"request": {
@@ -785,143 +439,14 @@
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices?limit=10&offset=0",
+									"raw": "{{gateway_url}}/api/v1/invoices",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices"],
-									"query": [
-										{
-											"key": "limit",
-											"value": "10",
-											"description": "Number of invoices to return"
-										},
-										{
-											"key": "offset",
-											"value": "0",
-											"description": "Number of invoices to skip"
-										},
-										{
-											"key": "expense_category_id",
-											"value": "",
-											"description": "Filter by expense category",
-											"disabled": true
-										},
-										{
-											"key": "supplier_id",
-											"value": "",
-											"description": "Filter by supplier",
-											"disabled": true
-										}
-									]
-								},
-								"description": "Get a list of invoices with optional filtering via gateway"
+									"path": ["api", "v1", "invoices"]
+								}
 							}
 						},
 						{
-							"name": "Get Invoice by ID",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-								},
-								"description": "Get a specific invoice by ID via gateway"
-							}
-						},
-						{
-							"name": "Get Invoice by Number",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/number/INV-2024-001",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "number", "INV-2024-001"]
-								},
-								"description": "Get a specific invoice by invoice number via gateway"
-							}
-						},
-						{
-							"name": "Get Invoice with Details",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}/items",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "{{invoice_id}}", "items"]
-								},
-								"description": "Get a invoice with all its line items via gateway"
-							}
-						},
-						{
-							"name": "Update Invoice",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"invoice_number\": \"INV-2024-001-UPDATED\",\n  \"notes\": \"Updated invoice with new notes via gateway\",\n  \"image_url\": \"https://example.com/invoices/invoice001-updated.jpg\"\n}"
-								},
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-								},
-								"description": "Update invoice information (partial updates supported) via gateway"
-							}
-						},
-						{
-							"name": "Delete Invoice",
-							"request": {
-								"method": "DELETE",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-								},
-								"description": "Delete a invoice (this will also delete all associated invoice details) via gateway"
-							}
-						}
-					],
-					"description": "Manage invoices and their line items for invoice tracking via gateway"
-				},
-				{
-					"name": "📝 Invoice Details Management",
-					"item": [
-						{
-							"name": "Add Item to Invoice",
+							"name": "Create Invoice",
 							"request": {
 								"method": "POST",
 								"header": [
@@ -936,303 +461,252 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440005\",\n  \"detail\": \"Chocolate Chips - 2lb bag\",\n  \"count\": 1.0,\n  \"unit_type\": \"Bag\",\n  \"price\": 6.99,\n  \"expiration_date\": \"2025-06-15T00:00:00Z\"\n}"
+									"raw": "{\n  \"invoice_number\": \"INV-001\",\n  \"transaction_date\": \"2024-01-15T00:00:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"expense_category_id\": \"{{expense_category_id}}\",\n  \"image_url\": \"https://example.com/invoice.jpg\",\n  \"notes\": \"Test invoice\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"items\": [\n    {\n      \"detail\": \"Test Item\",\n      \"count\": 10,\n      \"unit_type\": \"Units\",\n      \"price\": 5.50,\n      \"ingredient_id\": \"{{ingredient_id}}\"\n    }\n  ]\n}"
 								},
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}/items",
+									"raw": "{{gateway_url}}/api/v1/invoices",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "invoices", "{{invoice_id}}", "items"]
-								},
-								"description": "Add a new line item to an existing invoice via gateway"
+									"path": ["api", "v1", "invoices"]
+								}
+							}
+						},
+						{
+							"name": "Get Invoice",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+								}
 							}
 						}
-					],
-					"description": "Manage individual line items within invoices via gateway"
+					]
 				}
-			],
-			"description": "Invoice management endpoints for invoices and invoice details via gateway (requires authentication)"
+			]
 		},
 		{
-			"name": "🔧 Direct Service Access (Dev/Debug)",
+			"name": "🛒 Orders Management",
 			"item": [
 				{
-					"name": "Session Service Direct",
-					"item": [
-						{
-							"name": "Session Service Health",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{session_service_url}}/api/v1/sessions/p/health",
-									"host": ["{{session_service_url}}"],
-									"path": ["api", "v1", "sessions", "p", "health"]
-								},
-								"description": "Direct access to session service health check"
-							}
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", "p", "health"]
 						}
-					],
-					"description": "Direct access to session service (port 8081)"
+					}
 				},
 				{
-					"name": "Orders Service Direct",
+					"name": "Orders",
 					"item": [
 						{
-							"name": "Orders Service Health",
+							"name": "List Orders",
 							"request": {
 								"method": "GET",
-								"header": [],
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
 								"url": {
-									"raw": "{{orders_service_url}}/api/v1/orders/p/health",
-									"host": ["{{orders_service_url}}"],
-									"path": ["api", "v1", "orders", "p", "health"]
-								},
-								"description": "Direct access to orders service health check"
-							}
-						},
-						{
-							"name": "Orders Service Root",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{orders_service_url}}/",
-									"host": ["{{orders_service_url}}"],
-									"path": [""]
-								},
-								"description": "Orders service root endpoint with service info"
-							}
-						}
-					],
-					"description": "Direct access to orders service (port 8083)"
-				},
-				{
-					"name": "Inventory Service Direct",
-					"item": [
-						{
-							"name": "Inventory Service Health",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{inventory_service_url}}/api/v1/inventory/p/health",
-									"host": ["{{inventory_service_url}}"],
-									"path": ["api", "v1", "inventory", "p", "health"]
-								},
-								"description": "Direct access to inventory service health check"
-							}
-						}
-					],
-					"description": "Direct access to inventory service (port 8084)"
-				},
-				{
-					"name": "🧾 Invoice Service (Port 8085)",
-					"item": [
-						{
-							"name": "Invoice Service Health",
-							"request": {
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{invoice_service_url}}/health",
-									"host": ["{{invoice_service_url}}"],
-									"path": ["health"]
-								},
-								"description": "Check invoice service health status"
-							}
-						},
-						{
-							"name": "📄 Invoice Management",
-							"item": [
-								{
-									"name": "Create Invoice with Items",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"invoice_number\": \"INV-2024-001\",\n  \"transaction_date\": \"2024-01-15T10:30:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"supplier_id\": \"550e8400-e29b-41d4-a716-446655440001\",\n  \"expense_category_id\": \"550e8400-e29b-41d4-a716-446655440002\",\n  \"image_url\": \"https://example.com/invoices/invoice001.jpg\",\n  \"notes\": \"Monthly ingredient purchase\",\n  \"items\": [\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440003\",\n      \"detail\": \"Premium Vanilla Extract - 4oz\",\n      \"count\": 2.0,\n      \"unit_type\": \"Units\",\n      \"price\": 12.99,\n      \"expiration_date\": \"2026-01-15T00:00:00Z\"\n    },\n    {\n      \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440004\",\n      \"detail\": \"Organic Sugar - 5lb\",\n      \"count\": 1.0,\n      \"unit_type\": \"Bag\",\n      \"price\": 8.50\n    }\n  ]\n}"
-										},
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices"]
-										},
-										"description": "Create a new invoice with multiple items in a single transaction"
-									}
-								},
-								{
-									"name": "List Invoices",
-									"request": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices?limit=10&offset=0",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices"],
-											"query": [
-												{
-													"key": "limit",
-													"value": "10",
-													"description": "Number of invoices to return"
-												},
-												{
-													"key": "offset",
-													"value": "0",
-													"description": "Number of invoices to skip"
-												},
-												{
-													"key": "expense_category_id",
-													"value": "",
-													"description": "Filter by expense category",
-													"disabled": true
-												},
-												{
-													"key": "supplier_id",
-													"value": "",
-													"description": "Filter by supplier",
-													"disabled": true
-												}
-											]
-										},
-										"description": "Get a list of invoices with optional filtering"
-									}
-								},
-								{
-									"name": "Get Invoice by ID",
-									"request": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/{{invoice_id}}",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-										},
-										"description": "Get a specific invoice by ID"
-									}
-								},
-								{
-									"name": "Get Invoice by Number",
-									"request": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/number/INV-2024-001",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "number", "INV-2024-001"]
-										},
-										"description": "Get a specific invoice by invoice number"
-									}
-								},
-								{
-									"name": "Get Invoice with Details",
-									"request": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/{{invoice_id}}/items",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "{{invoice_id}}", "items"]
-										},
-										"description": "Get a invoice with all its line items"
-									}
-								},
-								{
-									"name": "Update Invoice",
-									"request": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"invoice_number\": \"INV-2024-001-UPDATED\",\n  \"notes\": \"Updated invoice with new notes\",\n  \"image_url\": \"https://example.com/invoices/invoice001-updated.jpg\"\n}"
-										},
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/{{invoice_id}}",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-										},
-										"description": "Update invoice information (partial updates supported)"
-									}
-								},
-								{
-									"name": "Delete Invoice",
-									"request": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/{{invoice_id}}",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "{{invoice_id}}"]
-										},
-										"description": "Delete an invoice (this will also delete all associated invoice details)"
-									}
+									"raw": "{{gateway_url}}/api/v1/orders",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders"]
 								}
-							],
-							"description": "Manage invoices and their line items for invoice tracking"
+							}
 						},
 						{
-							"name": "📝 Invoice Details Management",
-							"item": [
-								{
-									"name": "Add Item to Invoice",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"ingredient_id\": \"550e8400-e29b-41d4-a716-446655440005\",\n  \"detail\": \"Chocolate Chips - 2lb bag\",\n  \"count\": 1.0,\n  \"unit_type\": \"Bag\",\n  \"price\": 6.99,\n  \"expiration_date\": \"2025-06-15T00:00:00Z\"\n}"
-										},
-										"url": {
-											"raw": "{{invoice_service_url}}/api/v1/invoices/{{invoice_id}}/items",
-											"host": ["{{invoice_service_url}}"],
-											"path": ["api", "v1", "invoices", "{{invoice_id}}", "items"]
-										},
-										"description": "Add a new line item to an existing invoice"
+							"name": "Create Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
 									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_id\": \"{{customer_id}}\",\n  \"total_amount\": 25.50,\n  \"discount_amount\": 2.50,\n  \"order_status\": \"pending\"\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders"]
 								}
-							],
-							"description": "Manage individual line items within invoices"
+							}
+						},
+						{
+							"name": "Get Order",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "{{order_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Cancel Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}/cancel",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "{{order_id}}", "cancel"]
+								}
+							}
 						}
-					],
-					"description": "Invoice management endpoints for invoices and invoice details (port 8085)"
+					]
+				},
+				{
+					"name": "Statistics",
+					"item": [
+						{
+							"name": "Order Summary",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/summary",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "summary"]
+								}
+							}
+						},
+						{
+							"name": "Payment Method Stats",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/stats/payment-methods",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "stats", "payment-methods"]
+								}
+							}
+						}
+					]
 				}
-			],
-			"description": "Direct service access endpoints for development and debugging (bypasses gateway)"
+			]
+		},
+		{
+			"name": "🔧 Gateway Management",
+			"item": [
+				{
+					"name": "Gateway Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "health"]
+						}
+					}
+				},
+				{
+					"name": "Service Management",
+					"item": [
+						{
+							"name": "Start Service",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/management/services/{{service_name}}/start",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "management", "services", "{{service_name}}", "start"]
+								}
+							}
+						},
+						{
+							"name": "Stop Service",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/management/services/{{service_name}}/stop",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "management", "services", "{{service_name}}", "stop"]
+								}
+							}
+						},
+						{
+							"name": "Restart Service",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{auth_token}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/management/services/{{service_name}}/restart",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "management", "services", "{{service_name}}", "restart"]
+								}
+							}
+						}
+					]
+				}
+			]
 		}
 	],
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "{{auth_token}}",
-				"type": "string"
-			}
-		]
-	},
 	"event": [
 		{
 			"listen": "prerequest",
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// Global pre-request script for the Ice Cream Store API",
-					"console.log('🍦 Ice Cream Store API Request:', pm.request.name);"
+					""
 				]
 			}
 		},
@@ -1241,15 +715,71 @@
 			"script": {
 				"type": "text/javascript",
 				"exec": [
-					"// Global test script for the Ice Cream Store API",
-					"if (pm.response.code >= 400) {",
-					"    console.log('❌ Request failed:', pm.response.code, pm.response.status);",
-					"    console.log('Response:', pm.response.text());",
-					"} else {",
-					"    console.log('✅ Request successful:', pm.response.code, pm.response.status);",
-					"}"
+					""
 				]
 			}
+		}
+	],
+	"variable": [
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "supplier_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "ingredient_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "expense_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "invoice_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "order_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "customer_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "service_name",
+			"value": "session",
+			"type": "string"
 		}
 	]
 } 
