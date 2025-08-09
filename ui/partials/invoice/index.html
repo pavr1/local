@@ -1119,9 +1119,132 @@
     };
 
     // Create invoice function
-    window.createInvoice = function() {
-        // Create invoice functionality will be implemented here
-        console.log('Create invoice functionality will be implemented');
-        alert('Create invoice functionality will be implemented');
+    window.createInvoice = async function() {
+        try {
+            console.log('🔄 Creating invoice...');
+            
+            // Get form data
+            const form = document.getElementById('createInvoiceForm');
+            if (!form) {
+                alert('Invoice form not found');
+                return;
+            }
+
+            // Validate required fields
+            const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+            const transactionDate = document.getElementById('transactionDate').value;
+            const transactionType = document.getElementById('transactionType').value;
+            const expenseCategoryId = document.getElementById('expenseCategory').value;
+            const imageUrl = document.getElementById('imageUrl').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+            const supplierId = document.getElementById('supplierId').value || null;
+
+            // Validate required fields
+            if (!invoiceNumber || !transactionDate || !transactionType || !expenseCategoryId || !imageUrl) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            // Collect invoice items
+            const items = [];
+            const itemRows = document.querySelectorAll('.item-row');
+            const expenseCategoryDisplay = document.getElementById('expenseCategoryDisplay').value;
+            const isIngredients = expenseCategoryDisplay.toLowerCase().includes('ingredient');
+            
+            itemRows.forEach((row, index) => {
+                const detail = row.querySelector('input[name="detail"]').value.trim();
+                const count = parseFloat(row.querySelector('input[name="count"]').value);
+                const unitType = row.querySelector('select[name="unitType"]').value;
+                const price = parseFloat(row.querySelector('input[name="price"]').value);
+                const expirationDate = row.querySelector('input[name="expirationDate"]').value || null;
+                const ingredientId = row.querySelector('input[name="ingredientId"]')?.value || null;
+
+                if (detail && count && unitType && price) {
+                    const itemData = {
+                        detail,
+                        count,
+                        unit_type: unitType,
+                        price
+                    };
+
+                    // Only include expiration_date if it has a value
+                    if (expirationDate && expirationDate.trim() !== '') {
+                        itemData.expiration_date = expirationDate;
+                    }
+
+                    // Only include ingredient_id if expense category is ingredients
+                    if (isIngredients && ingredientId && ingredientId.trim() !== '') {
+                        itemData.ingredient_id = ingredientId;
+                    }
+
+                    items.push(itemData);
+                }
+            });
+
+            if (items.length === 0) {
+                alert('Please add at least one invoice item');
+                return;
+            }
+
+            // Calculate total amount
+            const totalAmount = items.reduce((sum, item) => sum + (item.price * item.count), 0);
+
+            // Prepare invoice data
+            const invoiceData = {
+                invoice_number: invoiceNumber,
+                transaction_date: transactionDate,
+                transaction_type: transactionType,
+                expense_category_id: expenseCategoryId,
+                image_url: imageUrl,
+                notes: notes || '',
+                total_amount: totalAmount,
+                items: items
+            };
+
+            // Only include supplier_id if it has a value
+            if (supplierId && supplierId.trim() !== '') {
+                invoiceData.supplier_id = supplierId;
+            }
+
+            console.log('📊 Invoice data:', invoiceData);
+            console.log('📊 JSON string:', JSON.stringify(invoiceData, null, 2));
+
+            // Send request to create invoice
+            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/invoices`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify(invoiceData)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Invoice created successfully:', result.data);
+                    alert('Invoice created successfully!');
+                    
+                    // Close modal and refresh invoice list
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createInvoiceModal'));
+                    modal.hide();
+                    
+                    // Reset form
+                    form.reset();
+                    document.getElementById('itemsContainer').innerHTML = '';
+                    
+                    // Refresh invoice list
+                    await loadInvoices();
+                } else {
+                    throw new Error(result.message || 'Failed to create invoice');
+                }
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+        } catch (error) {
+            console.error('❌ Error creating invoice:', error);
+            alert('Failed to create invoice: ' + error.message);
+        }
     }
 </script> 
