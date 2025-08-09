@@ -94,43 +94,20 @@
         <div></div>
     </div>
     
-    <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr>
-                    <th>Invoice #</th>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Category</th>
-                    <th>Total Amount</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="invoicesTableBody">
-                <tr>
-                    <td colspan="7" class="text-center py-5">
-                        <div class="loading-spinner"></div>
-                        <p>Loading invoices...</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+    <div id="invoicesTableBody">
+        <div class="text-center py-5">
+            <div class="loading-spinner"></div>
+            <p>Loading invoices...</p>
+        </div>
     </div>
 </div>
 
 <script>
-    console.log('📄 Simplified Invoice content loaded!');
-    
     let invoices = [];
 
     window.initInvoiceContent = async function() {
-        console.log('💰 Initializing Simplified Invoice Content...');
-        
         try {
-            console.log('Loading invoices...');
             await loadInvoices();
-            console.log('✅ Simplified Invoice Content initialized successfully');
         } catch (error) {
             console.error('❌ Error initializing invoice content:', error);
             alert('Failed to initialize invoice content: ' + error.message);
@@ -139,29 +116,31 @@
 
     async function loadInvoices() {
         try {
-            console.log('Loading invoices...');
+            console.log('🔄 Starting loadInvoices function...');
             showLoading();
+            console.log('📡 Making API request to:', `${CONFIG.GATEWAY_URL}/api/v1/invoices`);
             
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices`);
 
-            console.log('Response status:', response.status);
+            console.log('📊 Response status:', response.status);
+            console.log('📊 Response ok:', response.ok);
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log('Response data:', data);
+            console.log('📊 Response data:', data);
             
             if (data.success) {
                 invoices = data.data;
-                console.log('Invoices loaded:', invoices.length);
+                console.log('✅ Invoices loaded:', invoices.length);
                 displayInvoices(invoices);
             } else {
                 throw new Error(data.message || 'Failed to load invoices');
             }
         } catch (error) {
-            console.error('Error loading invoices:', error);
+            console.error('❌ Error loading invoices:', error);
             showError('Failed to load invoices: ' + error.message);
         }
     }
@@ -171,71 +150,87 @@
         
         if (invoicesToShow.length === 0) {
             container.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-5">
-                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                        <h5>No invoices found</h5>
-                        <p class="text-muted">Create your first invoice to get started</p>
-                    </td>
-                </tr>
+                <div class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h4>No Invoices Found</h4>
+                    <p class="text-muted">Start by adding your first invoice.</p>
+                    <button class="btn btn-primary" onclick="openCreateInvoiceModal()">
+                        <i class="fas fa-plus me-2"></i>Add First Invoice
+                    </button>
+                </div>
             `;
             return;
         }
 
-        const invoicesHTML = invoicesToShow.map(invoice => `
-            <tr>
-                <td>${invoice.invoice_number}</td>
-                <td>${formatDate(invoice.transaction_date)}</td>
-                <td>
-                    <span class="transaction-type-badge ${invoice.transaction_type === 'income' ? 'transaction-income' : 'transaction-outcome'}">
-                        ${invoice.transaction_type}
-                    </span>
-                </td>
-                <td>${invoice.expense_category ? invoice.expense_category.category_name : 'N/A'}</td>
-                <td>$${invoice.total_amount || 0}</td>
-                <td>
-                    <span class="badge bg-success">Paid</span>
-                </td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-sm btn-outline-primary" onclick="editInvoice('${invoice.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${invoice.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        const invoicesHTML = `
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Category</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${invoicesToShow.map(invoice => `
+                            <tr>
+                                <td><strong>${invoice.invoice_number}</strong></td>
+                                <td>${formatDate(invoice.transaction_date)}</td>
+                                <td>
+                                    <span class="transaction-type-badge ${invoice.transaction_type === 'income' ? 'transaction-income' : 'transaction-outcome'}">
+                                        ${invoice.transaction_type}
+                                    </span>
+                                </td>
+                                <td>${invoice.expense_category ? invoice.expense_category.category_name : 'N/A'}</td>
+                                <td>$${invoice.total_amount || 0}</td>
+                                <td>
+                                    <span class="badge bg-success">Paid</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editInvoice('${invoice.id}')" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInvoice('${invoice.id}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
 
         container.innerHTML = invoicesHTML;
     }
 
     function showLoading() {
         document.getElementById('invoicesTableBody').innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-5">
-                    <div class="loading-spinner"></div>
-                    <p>Loading invoices...</p>
-                </td>
-            </tr>
+            <div class="text-center py-5">
+                <div class="loading-spinner"></div>
+                <p>Loading invoices...</p>
+            </div>
         `;
     }
 
     function showError(message) {
         const container = document.getElementById('invoicesTableBody');
         container.innerHTML = `
-            <tr>
-                <td colspan="7" class="text-center py-5">
-                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                    <h5>Error Loading Invoices</h5>
-                    <p class="text-muted">${message}</p>
-                    <button class="btn btn-primary" onclick="loadInvoices()">
-                        <i class="fas fa-refresh me-2"></i>Retry
-                    </button>
-                </td>
-            </tr>
+            <div class="text-center py-5">
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h4>Error Loading Invoices</h4>
+                <p class="text-muted">${message}</p>
+                <button class="btn btn-primary" onclick="loadInvoices()">
+                    <i class="fas fa-refresh me-2"></i>Try Again
+                </button>
+            </div>
         `;
     }
 
@@ -254,4 +249,7 @@
     window.deleteInvoice = function(invoiceId) {
         alert('Delete invoice functionality removed for debugging');
     }
+    
+    // Test if function is available
+    console.log('🔧 initInvoiceContent function available:', typeof window.initInvoiceContent);
 </script> 

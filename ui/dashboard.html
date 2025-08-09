@@ -1081,6 +1081,14 @@
                 // Load content into body panel
                 document.getElementById('main-content').innerHTML = html;
                 
+                // Execute any scripts in the loaded content
+                const scripts = document.getElementById('main-content').getElementsByTagName('script');
+                for (let script of scripts) {
+                    if (script.textContent) {
+                        eval(script.textContent);
+                    }
+                }
+                
                 // Initialize page-specific functionality
                 await initializePageContent(page);
                 
@@ -1154,6 +1162,8 @@
             const initFunction = initMap[page];
             if (initFunction && typeof window[initFunction] === 'function') {
                 await window[initFunction]();
+            } else {
+                console.log('❌ Init function not found or not a function');
             }
             
             // Always update system status in top panel (on all pages)
