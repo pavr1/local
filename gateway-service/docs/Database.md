@@ -202,12 +202,12 @@ CREATE TABLE existences (
     expiration_date DATE, -- get from invoice detail
     --incomes & taxes
     income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
-    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost * income_margin_percentage / 100) STORED,
+    income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_item * income_margin_percentage / 100) STORED,
     iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
-    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * iva_percentage / 100) STORED,
+    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * iva_percentage / 100) STORED,
     service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
-    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((total_recipe_cost + income_margin_amount) * service_tax_percentage / 100) STORED,
-    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (total_recipe_cost + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
+    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * service_tax_percentage / 100) STORED, -- grabbed from config
+    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_item + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
     final_price DECIMAL(10,2),
     --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

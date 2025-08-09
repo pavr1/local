@@ -3634,14 +3634,15 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-primary">
                             <tr>
-                                <th>Reference</th>
-                                <th>Ingredient</th>
-                                <th>Units Available</th>
-                                <th>Unit Type</th>
-                                <th>Cost/Unit</th>
-                                <th>Status</th>
-                                <th>Expiration</th>
-                                <th>Actions</th>
+                                <th style="width: 10%;">Reference</th>
+                                <th style="width: 15%;">Ingredient</th>
+                                <th style="width: 10%;">Invoice</th>
+                                <th style="width: 10%;">Units</th>
+                                <th style="width: 8%;">Type</th>
+                                <th style="width: 8%;">Items/Unit</th>
+                                <th style="width: 10%;">Cost/Item</th>
+                                <th style="width: 10%;">Expiration</th>
+                                <th style="width: 9%;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3667,18 +3668,49 @@
 
         // Create existence table row
         function createExistenceRow(existence, status, statusBadge, expirationDate) {
+            // Format currency values
+            const costPerItem = Number(existence.cost_per_item || 0).toLocaleString();
+            const incomeMarginAmount = Number(existence.income_margin_amount || 0).toLocaleString();
+            const ivaAmount = Number(existence.iva_amount || 0).toLocaleString();
+            const serviceTaxAmount = Number(existence.service_tax_amount || 0).toLocaleString();
+            const finalPrice = Number(existence.final_price || 0).toLocaleString();
+            
+            // Create invoice link
+            const invoiceLink = existence.invoice_detail_id ? 
+                `<a href="#" onclick="viewInvoiceFromExistence('${existence.invoice_detail_id}')" class="text-primary text-decoration-none">
+                    <i class="fas fa-file-invoice me-1"></i>View
+                </a>` : 'N/A';
+            
             return `
-                <tr>
-                    <td><strong>#${existence.existence_reference_code || 'N/A'}</strong></td>
-                    <td>${existence.ingredient_name || 'Unknown'}</td>
-                    <td>${existence.units_available}/${existence.units_purchased}</td>
-                    <td><span class="badge bg-secondary">${existence.unit_type}</span></td>
-                    <td>₡${Number(existence.cost_per_unit || 0).toLocaleString()}</td>
-                    <td>${statusBadge}</td>
-                    <td>${expirationDate}</td>
-                    <td>
+                <tr class="existence-main-row">
+                    <td class="align-middle">
+                        <strong>#${existence.existence_reference_code || 'N/A'}</strong>
+                    </td>
+                    <td class="align-middle">
+                        <div class="fw-bold">${existence.ingredient_name || 'Unknown'}</div>
+                        <small class="text-muted">${existence.ingredient_category || ''}</small>
+                    </td>
+                    <td class="align-middle">${invoiceLink}</td>
+                    <td class="align-middle">
+                        <div class="fw-bold">${existence.units_available}</div>
+                        <small class="text-muted">/ ${existence.units_purchased}</small>
+                    </td>
+                    <td class="align-middle">
+                        <span class="badge bg-secondary">${existence.unit_type}</span>
+                    </td>
+                    <td class="align-middle">
+                        <span class="badge bg-info">${existence.items_per_unit}</span>
+                    </td>
+                    <td class="align-middle">
+                        <div class="fw-bold">₡${costPerItem}</div>
+                    </td>
+                    <td class="align-middle">
+                        <div class="fw-bold">${expirationDate}</div>
+                        ${existence.expiration_date ? `<small class="text-muted">${getDaysUntilExpiration(existence.expiration_date)}</small>` : ''}
+                    </td>
+                    <td class="align-middle">
                         <div class="action-buttons">
-                            <button class="btn btn-action btn-view" onclick="viewExistence('${existence.id}')" title="View">
+                            <button class="btn btn-action btn-view" onclick="viewExistence('${existence.id}')" title="View Details">
                                 <i class="fas fa-eye"></i>
                             </button>
                             <button class="btn btn-action btn-edit" onclick="editExistence('${existence.id}')" title="Edit">
@@ -3687,6 +3719,56 @@
                             <button class="btn btn-action btn-delete" onclick="deleteExistence('${existence.id}')" title="Delete">
                                 <i class="fas fa-trash"></i>
                             </button>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="existence-details-row">
+                    <td colspan="9" class="p-0">
+                        <div class="existence-details-content">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <div class="detail-card">
+                                        <div class="detail-label">Income Margin</div>
+                                        <div class="detail-value">₡${incomeMarginAmount}</div>
+                                        <div class="detail-percentage">${existence.income_margin_percentage || 0}%</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="detail-card">
+                                        <div class="detail-label">IVA</div>
+                                        <div class="detail-value">₡${ivaAmount}</div>
+                                        <div class="detail-percentage">${existence.iva_percentage || 0}%</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="detail-card">
+                                        <div class="detail-label">Service Tax</div>
+                                        <div class="detail-value">₡${serviceTaxAmount}</div>
+                                        <div class="detail-percentage">${existence.service_tax_percentage || 0}%</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="detail-card detail-card-success">
+                                        <div class="detail-label">Final Price</div>
+                                        <div class="detail-value">₡${finalPrice}</div>
+                                        <div class="detail-percentage">Total</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-2">
+                                <div class="col-md-6">
+                                    <div class="detail-card detail-card-info">
+                                        <div class="detail-label">Status</div>
+                                        <div class="detail-value">${statusBadge}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="detail-card detail-card-info">
+                                        <div class="detail-label">Created</div>
+                                        <div class="detail-value">${new Date(existence.created_at).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </td>
                 </tr>
@@ -3703,6 +3785,31 @@
             if (expiration && expiration < now) return 'expired';
             if (existence.units_available <= lowStockThreshold) return 'low';
             return 'available';
+        }
+
+        // Get days until expiration
+        function getDaysUntilExpiration(expirationDate) {
+            const now = new Date();
+            const expiration = new Date(expirationDate);
+            const diffTime = expiration - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) {
+                return `<span class="text-danger">Expired ${Math.abs(diffDays)} days ago</span>`;
+            } else if (diffDays === 0) {
+                return `<span class="text-warning">Expires today</span>`;
+            } else if (diffDays <= 7) {
+                return `<span class="text-warning">${diffDays} days left</span>`;
+            } else {
+                return `<span class="text-success">${diffDays} days left</span>`;
+            }
+        }
+
+        // View invoice from existence
+        function viewInvoiceFromExistence(invoiceDetailId) {
+            // This would open the invoice details modal or navigate to invoice page
+            // For now, we'll show an alert with the invoice detail ID
+            showInfo(`Invoice Detail ID: ${invoiceDetailId}\n\nThis would open the invoice details for this existence.`);
         }
 
         // Get status badge HTML

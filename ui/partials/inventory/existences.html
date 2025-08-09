@@ -9,6 +9,198 @@
         overflow: hidden;
     }
 
+    /* Enhanced table styles for comprehensive existence data */
+    .existences-table .table {
+        font-size: 0.875rem;
+        margin-bottom: 0;
+    }
+
+    .existences-table .table th {
+        background: var(--primary-color);
+        color: var(--white);
+        font-weight: 600;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 0.75rem 0.5rem;
+        border: none;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .existences-table .table td {
+        padding: 0.75rem 0.5rem;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .existences-table .table tbody tr:hover {
+        background-color: var(--primary-light);
+        transition: background-color 0.2s ease;
+    }
+
+    /* Compact badges for better space usage */
+    .existences-table .badge {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Currency formatting */
+    .existences-table .currency {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+    }
+
+    /* Status indicators */
+    .existences-table .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+
+    /* Two-row layout styles */
+    .existence-main-row {
+        background-color: var(--white);
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .existence-details-row {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .existence-details-content {
+        padding: 1rem;
+    }
+
+    .detail-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 0.75rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .detail-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        border-color: var(--primary-color);
+    }
+
+    .detail-card-success {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-color: #28a745;
+        color: #155724;
+    }
+
+    .detail-card-success:hover {
+        background: linear-gradient(135deg, #c3e6cb 0%, #b1dfbb 100%);
+        border-color: #1e7e34;
+    }
+
+    .detail-card-info {
+        background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+        border-color: #17a2b8;
+        color: #0c5460;
+    }
+
+    .detail-card-info:hover {
+        background: linear-gradient(135deg, #bee5eb 0%, #abdde5 100%);
+        border-color: #117a8b;
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-percentage {
+        font-size: 0.8rem;
+        color: #6c757d;
+        font-weight: 500;
+    }
+
+    .detail-card-success .detail-label {
+        color: #155724;
+    }
+
+    .detail-card-success .detail-value {
+        color: #155724;
+    }
+
+    .detail-card-success .detail-percentage {
+        color: #155724;
+    }
+
+    .detail-card-info .detail-label {
+        color: #0c5460;
+    }
+
+    .detail-card-info .detail-value {
+        color: #0c5460;
+    }
+
+    .detail-card-info .detail-percentage {
+        color: #0c5460;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+        .existences-table .table {
+            font-size: 0.8rem;
+        }
+        
+        .existences-table .table th,
+        .existences-table .table td {
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+    @media (max-width: 1200px) {
+        .existences-table .table {
+            font-size: 0.75rem;
+        }
+        
+        .detail-card {
+            padding: 0.5rem;
+        }
+        
+        .detail-value {
+            font-size: 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .existence-details-content .row {
+            flex-direction: column;
+        }
+        
+        .existence-details-content .col-md-3,
+        .existence-details-content .col-md-6 {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .detail-card {
+            padding: 0.75rem;
+        }
+    }
+
     .table-header {
         background: var(--primary-color);
         color: var(--white);
