@@ -214,16 +214,16 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group mb-3">
-                                <label for="transactionType">Transaction Type *</label>
-                                <select class="form-select" id="transactionType" required>
-                                    <option value="">Select Type</option>
-                                    <option value="income">Income</option>
-                                    <option value="outcome">Outcome</option>
-                                </select>
-                            </div>
-                        </div>
+                                                        <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="transactionType">Transaction Type *</label>
+                                        <select class="form-select" id="transactionType" required>
+                                            <option value="">Select Type</option>
+                                            <option value="income">Income</option>
+                                            <option value="outcome">Outcome</option>
+                                        </select>
+                                    </div>
+                                </div>
                         <div class="col-md-6">
                             <div class="form-group mb-3">
                                 <label for="expenseCategorySelection">Expense Category *</label>
@@ -413,7 +413,49 @@
     </div>
 </div>
 
-
+<!-- Ingredient Picker Modal -->
+<div class="modal fade" id="ingredientPickerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-leaf me-2"></i>Select Ingredient
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <input type="text" class="form-control" id="ingredientSearchInput" placeholder="Search ingredients..." onkeyup="filterIngredients()">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover" id="ingredientPickerTable">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th>Ingredient</th>
+                                        <th>Category</th>
+                                        <th>Unit Type</th>
+                                        <th>Status</th>
+                                        <th width="80">Select</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ingredientPickerTableBody">
+                                    <!-- Ingredients will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 
@@ -532,6 +574,9 @@
     window.selectExpenseCategory = function(categoryId, categoryName) {
         document.getElementById('expenseCategory').value = categoryId;
         document.getElementById('expenseCategoryDisplay').value = categoryName;
+
+        // Trigger item row updates when expense category changes
+        handleExpenseCategoryChange();
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('expenseCategoryPickerModal'));
         modal.hide();
@@ -707,7 +752,100 @@
         modal.hide();
     };
 
+    // Ingredient Picker Functions
+    let availableIngredients = [];
+    let currentItemIndex = null;
 
+    window.openIngredientPicker = async function(itemIndex) {
+        currentItemIndex = itemIndex;
+        await loadIngredientData();
+        populateIngredientPicker();
+        
+        const modal = new bootstrap.Modal(document.getElementById('ingredientPickerModal'));
+        modal.show();
+    };
+
+    async function loadIngredientData() {
+        try {
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    availableIngredients = result.data.filter(i => i.is_active);
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading ingredient data:', error);
+        }
+    }
+
+    function populateIngredientPicker() {
+        const tbody = document.getElementById('ingredientPickerTableBody');
+        if (!tbody) return;
+
+        if (!availableIngredients || availableIngredients.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">
+                        <i class="fas fa-leaf me-2"></i>No ingredients available
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = availableIngredients.map(ingredient => `
+            <tr class="ingredient-row" data-ingredient-id="${ingredient.id}" data-ingredient-name="${ingredient.ingredient_name.toLowerCase()}" data-category-name="${(ingredient.category_name || '').toLowerCase()}">
+                <td class="fw-bold">${ingredient.ingredient_name}</td>
+                <td class="text-muted">${ingredient.category_name || 'No category'}</td>
+                <td>${ingredient.unit_type || 'N/A'}</td>
+                <td>
+                    <span class="status-badge status-active">
+                        Active
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="selectIngredient('${ingredient.id}', '${ingredient.ingredient_name.replace(/'/g, "\\'")}', '${ingredient.unit_type || ''}')">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    window.filterIngredients = function() {
+        const searchTerm = document.getElementById('ingredientSearchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('.ingredient-row');
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-ingredient-name');
+            const category = row.getAttribute('data-category-name');
+            
+            if (name.includes(searchTerm) || category.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    };
+
+    window.selectIngredient = function(ingredientId, ingredientName, unitType) {
+        if (currentItemIndex !== null) {
+            const itemRow = document.querySelector(`[data-index="${currentItemIndex}"]`);
+            if (itemRow) {
+                const detailInput = itemRow.querySelector('input[name="detail"]');
+                const ingredientIdInput = itemRow.querySelector('input[name="ingredientId"]');
+                const unitTypeSelect = itemRow.querySelector('select[name="unitType"]');
+                
+                if (detailInput) detailInput.value = ingredientName;
+                if (ingredientIdInput) ingredientIdInput.value = ingredientId;
+                if (unitTypeSelect && unitType) unitTypeSelect.value = unitType;
+            }
+        }
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('ingredientPickerModal'));
+        modal.hide();
+    };
 
     function displayInvoices(invoicesToShow) {
         const container = document.getElementById('invoicesTableBody');
@@ -829,13 +967,27 @@
         if (!container) return;
         
         const itemIndex = container.children.length;
+        const expenseCategoryDisplay = document.getElementById('expenseCategoryDisplay').value;
+        
+        // Check if expense category is "Ingredients"
+        const isIngredients = expenseCategoryDisplay.toLowerCase().includes('ingredient');
         
         const itemHTML = `
             <div class="item-row" data-index="${itemIndex}">
                 <div class="row">
                     <div class="col-md-3">
-                        <label>Detail *</label>
-                        <input type="text" class="form-control" name="detail" required>
+                        <label>${isIngredients ? 'Ingredient *' : 'Detail *'}</label>
+                        ${isIngredients ? `
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="detail" readonly placeholder="Select an ingredient" style="background: white;" required>
+                                <input type="hidden" name="ingredientId">
+                                <button type="button" class="btn btn-outline-primary" onclick="openIngredientPicker(${itemIndex})" title="Select Ingredient">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        ` : `
+                            <input type="text" class="form-control" name="detail" required>
+                        `}
                     </div>
                     <div class="col-md-2">
                         <label>Count *</label>
@@ -883,6 +1035,70 @@
                 row.querySelector('.remove-item-btn').onclick = () => removeItemRow(newIndex);
             });
         }
+    };
+
+    // Handle expense category change
+    window.handleExpenseCategoryChange = function() {
+        const expenseCategoryDisplay = document.getElementById('expenseCategoryDisplay').value;
+        const isIngredients = expenseCategoryDisplay.toLowerCase().includes('ingredient');
+        
+        // Update existing item rows
+        const itemRows = document.querySelectorAll('.item-row');
+        itemRows.forEach((row, index) => {
+            const detailCell = row.querySelector('.col-md-3');
+            if (detailCell) {
+                const currentLabel = detailCell.querySelector('label');
+                const currentInput = detailCell.querySelector('input[name="detail"]');
+                
+                if (isIngredients) {
+                    // Change to ingredient picker
+                    if (currentLabel) currentLabel.textContent = 'Ingredient *';
+                    if (currentInput) {
+                        currentInput.readOnly = true;
+                        currentInput.placeholder = 'Select an ingredient';
+                        currentInput.style.background = 'white';
+                        
+                        // Add ingredient picker button if not exists
+                        if (!detailCell.querySelector('.input-group')) {
+                            const inputGroup = document.createElement('div');
+                            inputGroup.className = 'input-group';
+                            
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = 'ingredientId';
+                            
+                            const button = document.createElement('button');
+                            button.type = 'button';
+                            button.className = 'btn btn-outline-primary';
+                            button.onclick = () => openIngredientPicker(index);
+                            button.title = 'Select Ingredient';
+                            button.innerHTML = '<i class="fas fa-search"></i>';
+                            
+                            inputGroup.appendChild(currentInput);
+                            inputGroup.appendChild(hiddenInput);
+                            inputGroup.appendChild(button);
+                            
+                            detailCell.innerHTML = '';
+                            detailCell.appendChild(inputGroup);
+                        }
+                    }
+                } else {
+                    // Change back to regular detail input
+                    if (currentLabel) currentLabel.textContent = 'Detail *';
+                    if (currentInput) {
+                        currentInput.readOnly = false;
+                        currentInput.placeholder = '';
+                        currentInput.style.background = '';
+                        
+                        // Remove ingredient picker if exists
+                        if (detailCell.querySelector('.input-group')) {
+                            detailCell.innerHTML = '';
+                            detailCell.appendChild(currentInput);
+                        }
+                    }
+                }
+            }
+        });
     };
 
     // Create invoice function
