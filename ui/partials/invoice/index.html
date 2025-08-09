@@ -426,7 +426,7 @@
             <div class="modal-body">
                 <div class="row mb-3">
                     <div class="col-12">
-                        <input type="text" class="form-control" id="ingredientSearchInput" placeholder="Search ingredients..." onkeyup="filterIngredients()">
+                        <input type="text" class="form-control" id="ingredientSearchInput" placeholder="Search ingredients..." onkeyup="filterInvoiceIngredients()">
                     </div>
                 </div>
                 <div class="row">
@@ -756,7 +756,7 @@
     let availableIngredients = [];
     let currentItemIndex = null;
 
-    window.openIngredientPicker = async function(itemIndex) {
+    window.openInvoiceIngredientPicker = async function(itemIndex) {
         currentItemIndex = itemIndex;
         await loadIngredientData();
         populateIngredientPicker();
@@ -767,11 +767,16 @@
 
     async function loadIngredientData() {
         try {
+            console.log('🔄 Loading ingredients from:', `${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
+            console.log('📊 Ingredients response status:', response.status);
+            
             if (response.ok) {
                 const result = await response.json();
+                console.log('📊 Ingredients result:', result);
                 if (result.success && result.data) {
-                    availableIngredients = result.data.filter(i => i.is_active);
+                    availableIngredients = result.data;
+                    console.log('✅ Loaded ingredients:', availableIngredients.length);
                 }
             }
         } catch (error) {
@@ -780,10 +785,15 @@
     }
 
     function populateIngredientPicker() {
+        console.log('🔄 Populating ingredient picker with:', availableIngredients);
         const tbody = document.getElementById('ingredientPickerTableBody');
-        if (!tbody) return;
+        if (!tbody) {
+            console.error('❌ Ingredient picker table body not found');
+            return;
+        }
 
         if (!availableIngredients || availableIngredients.length === 0) {
+            console.log('⚠️ No ingredients available to display');
             tbody.innerHTML = `
                 <tr>
                     <td colspan="5" class="text-center text-muted py-4">
@@ -794,26 +804,33 @@
             return;
         }
 
-        tbody.innerHTML = availableIngredients.map(ingredient => `
-            <tr class="ingredient-row" data-ingredient-id="${ingredient.id}" data-ingredient-name="${ingredient.ingredient_name.toLowerCase()}" data-category-name="${(ingredient.category_name || '').toLowerCase()}">
-                <td class="fw-bold">${ingredient.ingredient_name}</td>
-                <td class="text-muted">${ingredient.category_name || 'No category'}</td>
-                <td>${ingredient.unit_type || 'N/A'}</td>
-                <td>
-                    <span class="status-badge status-active">
-                        Active
-                    </span>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-primary" onclick="selectIngredient('${ingredient.id}', '${ingredient.ingredient_name.replace(/'/g, "\\'")}', '${ingredient.unit_type || ''}')">
-                        <i class="fas fa-check"></i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = availableIngredients.map(ingredient => {
+            console.log('🔍 Processing ingredient:', ingredient);
+            const ingredientName = ingredient.ingredient_name || ingredient.name || 'Unknown';
+            const categoryName = ingredient.category_name || ingredient.category?.name || 'No category';
+            const unitType = ingredient.unit_type || ingredient.unitType || 'N/A';
+            
+            return `
+                <tr class="ingredient-row" data-ingredient-id="${ingredient.id}" data-ingredient-name="${ingredientName.toLowerCase()}" data-category-name="${categoryName.toLowerCase()}">
+                    <td class="fw-bold">${ingredientName}</td>
+                    <td class="text-muted">${categoryName}</td>
+                    <td>${unitType}</td>
+                    <td>
+                        <span class="status-badge status-active">
+                            Active
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="selectInvoiceIngredient('${ingredient.id}', '${ingredientName.replace(/'/g, "\\'")}', '${unitType}')">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    window.filterIngredients = function() {
+    window.filterInvoiceIngredients = function() {
         const searchTerm = document.getElementById('ingredientSearchInput').value.toLowerCase();
         const rows = document.querySelectorAll('.ingredient-row');
 
@@ -829,7 +846,7 @@
         });
     };
 
-    window.selectIngredient = function(ingredientId, ingredientName, unitType) {
+    window.selectInvoiceIngredient = function(ingredientId, ingredientName, unitType) {
         if (currentItemIndex !== null) {
             const itemRow = document.querySelector(`[data-index="${currentItemIndex}"]`);
             if (itemRow) {
@@ -981,7 +998,7 @@
                             <div class="input-group">
                                 <input type="text" class="form-control" name="detail" readonly placeholder="Select an ingredient" style="background: white;" required>
                                 <input type="hidden" name="ingredientId">
-                                <button type="button" class="btn btn-outline-primary" onclick="openIngredientPicker(${itemIndex})" title="Select Ingredient">
+                                <button type="button" class="btn btn-outline-primary" onclick="openInvoiceIngredientPicker(${itemIndex})" title="Select Ingredient">
                                     <i class="fas fa-search"></i>
                                 </button>
                             </div>
@@ -1070,7 +1087,7 @@
                             const button = document.createElement('button');
                             button.type = 'button';
                             button.className = 'btn btn-outline-primary';
-                            button.onclick = () => openIngredientPicker(index);
+                            button.onclick = () => openInvoiceIngredientPicker(index);
                             button.title = 'Select Ingredient';
                             button.innerHTML = '<i class="fas fa-search"></i>';
                             
