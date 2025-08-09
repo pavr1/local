@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"invoice-service/entities/invoices/models"
 	invoiceSQL "invoice-service/entities/invoices/sql"
+	"math"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -23,6 +24,19 @@ func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
 	}
 }
 
+// getExpenseCategoryName retrieves the expense category name by ID
+func (h *DBHandler) getExpenseCategoryName(tx *sql.Tx, categoryID string) (string, error) {
+	var categoryName string
+	err := tx.QueryRow("SELECT category_name FROM expense_categories WHERE id = $1", categoryID).Scan(&categoryName)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"expense_category_id": categoryID,
+		}).Error("Failed to get expense category name")
+		return "", err
+	}
+	return categoryName, nil
+}
+
 // CreateInvoice creates a new invoice in the database
 func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invoice, error) {
 	tx, err := h.db.Begin()
@@ -30,6 +44,7 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 		h.logger.WithError(err).Error("Failed to begin transaction for invoice creation")
 		return nil, err
 	}
+	//will rollback if no commit done
 	defer tx.Rollback()
 
 	var invoice models.Invoice
@@ -52,6 +67,15 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 		return nil, err
 	}
 
+	// Get expense category name to check if it's "Ingredients"
+	expenseCategoryName, err := h.getExpenseCategoryName(tx, req.ExpenseCategoryID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"expense_category_id": req.ExpenseCategoryID,
+		}).Error("Failed to get expense category name")
+		return nil, err
+	}
+
 	// Create invoice details
 	var totalAmount float64 = 0
 	for _, item := range req.Items {
@@ -69,6 +93,31 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 		}
 
 		totalAmount += detail.Total
+
+		// Create existence if this is an ingredient item AND expense category is "Ingredients"
+		//pvillalobos - get rid of hardcoded values
+		if item.IngredientID != nil && expenseCategoryName == "Ingredients" {
+			existenceReq := models.CreateExistenceRequest{
+				IngredientID:           *item.IngredientID,
+				InvoiceDetailID:        detail.ID,
+				UnitsPurchased:         item.Count,
+				UnitType:               item.UnitType,
+				CostPerUnit:            item.Price,
+				ExpirationDate:         item.ExpirationDate,
+				IncomeMarginPercentage: 30.0, // Default 30%
+				IvaPercentage:          13.0, // Default 13%
+				ServiceTaxPercentage:   10.0, // Default 10%
+			}
+
+			err = h.CreateInventoryExistence(tx, existenceReq)
+			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"invoice_detail_id": detail.ID,
+					"ingredient_id":     *item.IngredientID,
+				}).Error("Failed to create existence for ingredient")
+				return nil, err
+			}
+		}
 	}
 
 	// Update invoice total
@@ -510,6 +559,52 @@ func (h *DBHandler) DeleteInvoiceDetail(id string) error {
 		"invoice_id":        invoiceID,
 		"rows_affected":     rowsAffected,
 	}).Info("Invoice detail deleted successfully")
+
+	return nil
+}
+
+// CreateInventoryExistence creates an existence record from an invoice detail
+func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExistenceRequest) error {
+	// Calculate derived fields
+	itemsPerUnit := 1 //pvillalobos - we would have to request this in the invoice item
+	costPerItem := req.CostPerUnit / float64(itemsPerUnit)
+
+	// Calculate margins and taxes
+	incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
+	ivaAmount := (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
+	serviceTaxAmount := (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+
+	// Calculate final price
+	calculatedPrice := costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
+	// Round up to nearest 100
+	finalPrice := math.Ceil(calculatedPrice/100) * 100
+
+	_, err := tx.Exec(invoiceSQL.CreateExistenceQuery,
+		req.IngredientID,
+		req.InvoiceDetailID,
+		req.UnitsPurchased,
+		req.UnitType,
+		req.CostPerUnit,
+		req.ExpirationDate,
+		req.IncomeMarginPercentage,
+		req.IvaPercentage,
+		req.ServiceTaxPercentage,
+		&finalPrice,
+	)
+
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id":     req.IngredientID,
+			"invoice_detail_id": req.InvoiceDetailID,
+		}).Error("Failed to create existence in database")
+		return err
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id":     req.IngredientID,
+		"invoice_detail_id": req.InvoiceDetailID,
+		"units_purchased":   req.UnitsPurchased,
+	}).Info("Existence created successfully")
 
 	return nil
 }

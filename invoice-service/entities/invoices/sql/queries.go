@@ -49,4 +49,9 @@ var DeleteInvoiceDetailQuery string
 var GetInvoiceTotalFromDetailsQuery string
 
 //go:embed scripts/update_invoice_total.sql
-var UpdateInvoiceTotalQuery string 
+var UpdateInvoiceTotalQuery string
+
+// Existence SQL queries
+//
+//go:embed scripts/create_existence.sql
+var CreateExistenceQuery string

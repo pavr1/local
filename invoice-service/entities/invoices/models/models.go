@@ -164,3 +164,43 @@ type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message,omitempty"`
 }
+
+// Existence represents a specific ingredient purchase/acquisition batch
+type Existence struct {
+	ID                     string     `json:"id" db:"id"`
+	ExistenceReferenceCode int        `json:"existence_reference_code" db:"existence_reference_code"`
+	IngredientID           string     `json:"ingredient_id" db:"ingredient_id"`
+	InvoiceDetailID        string     `json:"invoice_detail_id" db:"invoice_detail_id"`
+	UnitsPurchased         float64    `json:"units_purchased" db:"units_purchased"`
+	UnitsAvailable         float64    `json:"units_available" db:"units_available"`
+	UnitType               string     `json:"unit_type" db:"unit_type"`
+	ItemsPerUnit           int        `json:"items_per_unit" db:"items_per_unit"`
+	CostPerItem            float64    `json:"cost_per_item" db:"cost_per_item"`
+	CostPerUnit            float64    `json:"cost_per_unit" db:"cost_per_unit"`
+	TotalPurchaseCost      float64    `json:"total_purchase_cost" db:"total_purchase_cost"`
+	RemainingValue         float64    `json:"remaining_value" db:"remaining_value"`
+	ExpirationDate         *time.Time `json:"expiration_date" db:"expiration_date"`
+	IncomeMarginPercentage float64    `json:"income_margin_percentage" db:"income_margin_percentage"`
+	IncomeMarginAmount     float64    `json:"income_margin_amount" db:"income_margin_amount"`
+	IvaPercentage          float64    `json:"iva_percentage" db:"iva_percentage"`
+	IvaAmount              float64    `json:"iva_amount" db:"iva_amount"`
+	ServiceTaxPercentage   float64    `json:"service_tax_percentage" db:"service_tax_percentage"`
+	ServiceTaxAmount       float64    `json:"service_tax_amount" db:"service_tax_amount"`
+	CalculatedPrice        float64    `json:"calculated_price" db:"calculated_price"`
+	FinalPrice             *float64   `json:"final_price" db:"final_price"`
+	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
+}
+
+// CreateExistenceRequest represents the request to create a new existence from invoice detail
+type CreateExistenceRequest struct {
+	IngredientID           string     `json:"ingredient_id" validate:"required,uuid"`
+	InvoiceDetailID        string     `json:"invoice_detail_id" validate:"required,uuid"`
+	UnitsPurchased         float64    `json:"units_purchased" validate:"required,min=0.01"`
+	UnitType               string     `json:"unit_type" validate:"required,oneof=Liters Gallons Units Bag"`
+	CostPerUnit            float64    `json:"cost_per_unit" validate:"required,min=0.01"`
+	ExpirationDate         *time.Time `json:"expiration_date,omitempty"`
+	IncomeMarginPercentage float64    `json:"income_margin_percentage" validate:"required,min=0,max=100"`
+	IvaPercentage          float64    `json:"iva_percentage" validate:"required,min=0,max=100"`
+	ServiceTaxPercentage   float64    `json:"service_tax_percentage" validate:"required,min=0,max=100"`
+}
