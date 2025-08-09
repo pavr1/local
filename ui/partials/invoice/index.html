@@ -1274,14 +1274,7 @@
             console.log('📊 JSON string:', JSON.stringify(invoiceData, null, 2));
 
             // Send request to create invoice
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/invoices`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                },
-                body: JSON.stringify(invoiceData)
-            });
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/invoices`, invoiceData);
             
             if (response.ok) {
                 const result = await response.json();
