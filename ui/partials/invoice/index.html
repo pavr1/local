@@ -338,16 +338,11 @@
 
     async function loadExpenseCategoryData() {
         try {
-            console.log('🔄 Loading expense categories from:', `${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
-            console.log('📊 Expense categories response status:', response.status);
-            
             if (response.ok) {
                 const result = await response.json();
-                console.log('📊 Expense categories result:', result);
                 if (result.success && result.data) {
                     availableExpenseCategories = result.data.filter(c => c.is_active);
-                    console.log('✅ Loaded expense categories:', availableExpenseCategories.length);
                 }
             }
         } catch (error) {
@@ -418,16 +413,11 @@
 
     async function loadSupplierData() {
         try {
-            console.log('🔄 Loading suppliers from:', `${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
-            console.log('📊 Suppliers response status:', response.status);
-            
             if (response.ok) {
                 const result = await response.json();
-                console.log('📊 Suppliers result:', result);
                 if (result.success && result.data) {
-                    availableSuppliers = result.data.filter(s => s.is_active);
-                    console.log('✅ Loaded suppliers:', availableSuppliers.length);
+                    availableSuppliers = result.data;
                 }
             }
         } catch (error) {
