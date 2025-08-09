@@ -3642,7 +3642,12 @@
                                 <th style="width: 8%;">Items/Unit</th>
                                 <th style="width: 10%;">Cost/Item</th>
                                 <th style="width: 10%;">Final Price</th>
-                                <th style="width: 9%;">Actions</th>
+                                <th style="width: 8%;">Actions</th>
+                                <th style="width: 1%;">
+                                    <button class="btn btn-action btn-toggle" onclick="toggleAllExistenceDetails()" title="Toggle All Details">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -3664,6 +3669,9 @@
             `;
 
             container.innerHTML = tableHTML;
+            
+            // Add group hover listeners after table is populated
+            addGroupHoverListeners();
         }
 
         // Create existence table row
@@ -3682,7 +3690,7 @@
                 </a>` : 'N/A';
             
             return `
-                <tr class="existence-main-row">
+                <tr class="existence-main-row existence-row-group" data-existence-group="${existence.id}">
                     <td class="align-middle">
                         <strong>#${existence.existence_reference_code || 'N/A'}</strong>
                     </td>
@@ -3726,7 +3734,7 @@
                         </div>
                     </td>
                 </tr>
-                <tr class="existence-details-row" id="existence-details-${existence.id}" style="display: none;">
+                <tr class="existence-details-row existence-row-group" id="existence-details-${existence.id}" data-existence-group="${existence.id}" style="display: none;">
                     <td colspan="9" class="p-0">
                         <div class="existence-details-content">
                             <div class="row g-2">
@@ -3806,6 +3814,54 @@
                 toggleIcon.className = 'fas fa-chevron-up';
                 toggleButton.classList.add('btn-toggle-active');
             }
+        }
+
+        // Add group hover functionality
+        function addGroupHoverListeners() {
+            const mainRows = document.querySelectorAll('.existence-main-row');
+            const detailsRows = document.querySelectorAll('.existence-details-row');
+            
+            // Add hover listeners to main rows
+            mainRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    const groupId = this.getAttribute('data-existence-group');
+                    const detailsRow = document.querySelector(`.existence-details-row[data-existence-group="${groupId}"]`);
+                    if (detailsRow) {
+                        this.classList.add('highlighted');
+                        detailsRow.classList.add('highlighted');
+                    }
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    const groupId = this.getAttribute('data-existence-group');
+                    const detailsRow = document.querySelector(`.existence-details-row[data-existence-group="${groupId}"]`);
+                    if (detailsRow) {
+                        this.classList.remove('highlighted');
+                        detailsRow.classList.remove('highlighted');
+                    }
+                });
+            });
+            
+            // Add hover listeners to details rows
+            detailsRows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    const groupId = this.getAttribute('data-existence-group');
+                    const mainRow = document.querySelector(`.existence-main-row[data-existence-group="${groupId}"]`);
+                    if (mainRow) {
+                        this.classList.add('highlighted');
+                        mainRow.classList.add('highlighted');
+                    }
+                });
+                
+                row.addEventListener('mouseleave', function() {
+                    const groupId = this.getAttribute('data-existence-group');
+                    const mainRow = document.querySelector(`.existence-main-row[data-existence-group="${groupId}"]`);
+                    if (mainRow) {
+                        this.classList.remove('highlighted');
+                        mainRow.classList.remove('highlighted');
+                    }
+                });
+            });
         }
 
         // Toggle all existence details
