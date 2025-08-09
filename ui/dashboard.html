@@ -493,6 +493,49 @@
             margin-left: 1rem;
         }
         
+        /* Smooth submenu animations */
+        .nav-submenu {
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        
+        .nav-submenu.show {
+            max-height: 500px; /* Adjust based on your content */
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Chevron rotation animation */
+        .nav-link .fa-chevron-down {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-link .fa-chevron-down.rotated {
+            transform: rotate(180deg);
+        }
+        
+        /* Staggered animation for submenu items */
+        .nav-submenu .nav-item {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-submenu.show .nav-item {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* Stagger the animations for submenu items */
+        .nav-submenu.show .nav-item:nth-child(1) { transition-delay: 0.05s; }
+        .nav-submenu.show .nav-item:nth-child(2) { transition-delay: 0.1s; }
+        .nav-submenu.show .nav-item:nth-child(3) { transition-delay: 0.15s; }
+        .nav-submenu.show .nav-item:nth-child(4) { transition-delay: 0.2s; }
+        .nav-submenu.show .nav-item:nth-child(5) { transition-delay: 0.25s; }
+        
         /* Content Loading */
         .content-loader {
             display: flex;
@@ -774,7 +817,7 @@
                             Orders
                             <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
-                        <ul class="nav flex-column ms-3" id="orders-submenu" style="display: none;">
+                        <ul class="nav flex-column ms-3 nav-submenu" id="orders-submenu">
                             <li class="nav-item">
                                 <button class="nav-link nav-sub" onclick="loadContent('orders')" data-page="orders">
                                     <i class="fas fa-th-large me-2"></i>Overview
@@ -789,7 +832,7 @@
                             Inventory
                             <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
-                        <ul class="nav flex-column ms-3" id="inventory-submenu" style="display: none;">
+                        <ul class="nav flex-column ms-3 nav-submenu" id="inventory-submenu">
                             <li class="nav-item">
                                 <button class="nav-link nav-sub" onclick="loadContent('inventory-overview')" data-page="inventory-overview">
                                     <i class="fas fa-th-large me-2"></i>Overview
@@ -801,7 +844,7 @@
                                         <i class="fas fa-seedling me-2"></i>Ingredients
                                         <i class="fas fa-chevron-down ms-auto"></i>
                                     </button>
-                                    <ul class="nav flex-column ms-3" id="ingredients-submenu" style="display: none;">
+                                    <ul class="nav flex-column ms-3 nav-submenu" id="ingredients-submenu">
                                         <li class="nav-item">
                                             <button class="nav-link nav-sub" onclick="loadContent('inventory-ingredients')" data-page="inventory-ingredients">
                                                 <i class="fas fa-seedling me-2"></i>All Ingredients
@@ -828,7 +871,7 @@
                                     <i class="fas fa-utensils me-2"></i>Recipes
                                     <i class="fas fa-chevron-down ms-auto"></i>
                                 </button>
-                                <ul class="nav flex-column ms-3" id="recipes-submenu" style="display: none;">
+                                <ul class="nav flex-column ms-3 nav-submenu" id="recipes-submenu">
                                     <li class="nav-item">
                                         <button class="nav-link nav-sub" onclick="loadContent('inventory-recipes')" data-page="inventory-recipes">
                                             <i class="fas fa-utensils me-2"></i>All Recipes
@@ -855,7 +898,7 @@
                             Invoice
                             <i class="fas fa-chevron-down ms-auto"></i>
                         </button>
-                        <ul class="nav flex-column ms-3" id="invoice-submenu" style="display: none;">
+                        <ul class="nav flex-column ms-3 nav-submenu" id="invoice-submenu">
                             <li class="nav-item">
                                 <button class="nav-link nav-sub" onclick="loadContent('invoice-overview')" data-page="invoice-overview">
                                     <i class="fas fa-th-large me-2"></i>Overview
@@ -1130,6 +1173,60 @@
             if (activeLink) {
                 activeLink.classList.add('active');
             }
+            
+            // Auto-open appropriate submenu based on the page
+            autoOpenSubmenuForPage(page);
+        }
+        
+        // Auto-open submenu based on the page being loaded
+        function autoOpenSubmenuForPage(page) {
+            // Define which submenu should be open for each page
+            const pageToSubmenuMap = {
+                'orders': 'orders',
+                'inventory': 'inventory',
+                'inventory-overview': 'inventory',
+                'inventory-suppliers': 'inventory',
+                'inventory-ingredients': 'inventory',
+                'inventory-categories': 'inventory',
+                'inventory-existences': 'inventory',
+                'inventory-runout-ingredients': 'inventory',
+                'inventory-recipes': 'inventory',
+                'inventory-recipe-categories': 'inventory',
+                'invoice': 'invoice',
+                'invoice-overview': 'invoice',
+                'invoice-details': 'invoice',
+                'invoice-expense-categories': 'invoice'
+            };
+            
+            const targetSubmenu = pageToSubmenuMap[page];
+            if (targetSubmenu) {
+                // Collapse submenus from other services only
+                collapseSubmenusFromOtherServices(targetSubmenu);
+                
+                // Open the target submenu
+                const submenu = document.getElementById(targetSubmenu + '-submenu');
+                if (submenu) {
+                    submenu.classList.add('show');
+                    updateChevronIcon(targetSubmenu, true);
+                }
+                
+                // For nested submenus, also open the parent submenu
+                if (page.includes('ingredients') || page.includes('categories') || page.includes('runout')) {
+                    const ingredientsSubmenu = document.getElementById('ingredients-submenu');
+                    if (ingredientsSubmenu) {
+                        ingredientsSubmenu.classList.add('show');
+                        updateChevronIcon('ingredients', true);
+                    }
+                }
+                
+                if (page.includes('recipes') || page.includes('recipe-categories')) {
+                    const recipesSubmenu = document.getElementById('recipes-submenu');
+                    if (recipesSubmenu) {
+                        recipesSubmenu.classList.add('show');
+                        updateChevronIcon('recipes', true);
+                    }
+                }
+            }
         }
 
         // Update page title and subtitle with icons
@@ -1230,11 +1327,75 @@
             document.title = `Ice Cream Store - ${info.title}`;
         }
 
-        // Toggle submenu
+        // Toggle submenu with smart collapsing (only collapse when switching services)
         function toggleSubmenu(menuId) {
             const submenu = document.getElementById(menuId + '-submenu');
             if (submenu) {
-                submenu.style.display = submenu.style.display === 'none' ? 'block' : 'none';
+                const isCurrentlyHidden = !submenu.classList.contains('show');
+                
+                // If we're opening this submenu, collapse submenus from OTHER services only
+                if (isCurrentlyHidden) {
+                    collapseSubmenusFromOtherServices(menuId);
+                }
+                
+                // Toggle the clicked submenu
+                if (isCurrentlyHidden) {
+                    submenu.classList.add('show');
+                    updateChevronIcon(menuId, true);
+                } else {
+                    submenu.classList.remove('show');
+                    updateChevronIcon(menuId, false);
+                }
+            }
+        }
+        
+        // Collapse submenus from other services only (keep same service open)
+        function collapseSubmenusFromOtherServices(exceptMenuId) {
+            // Define service groups
+            const serviceGroups = {
+                'orders': ['orders-submenu'],
+                'inventory': ['inventory-submenu', 'ingredients-submenu', 'recipes-submenu'],
+                'invoice': ['invoice-submenu']
+            };
+            
+            // Find which service the clicked menu belongs to
+            let clickedService = null;
+            for (const [service, submenus] of Object.entries(serviceGroups)) {
+                if (submenus.includes(exceptMenuId + '-submenu')) {
+                    clickedService = service;
+                    break;
+                }
+            }
+            
+            // Collapse submenus from other services only
+            Object.entries(serviceGroups).forEach(([service, submenus]) => {
+                if (service !== clickedService) {
+                    submenus.forEach(submenuId => {
+                        const submenu = document.getElementById(submenuId);
+                        if (submenu && submenu.classList.contains('show')) {
+                            submenu.classList.remove('show');
+                            
+                            // Update chevron icon for collapsed menu
+                            const menuId = submenuId.replace('-submenu', '');
+                            updateChevronIcon(menuId, false);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Update chevron icon based on submenu state
+        function updateChevronIcon(menuId, isOpen) {
+            const menuButton = document.querySelector(`[onclick*="toggleSubmenu('${menuId}')"]`);
+            if (menuButton) {
+                const chevron = menuButton.querySelector('.fa-chevron-down');
+                if (chevron) {
+                    if (isOpen) {
+                        chevron.classList.add('rotated');
+                    } else {
+                        chevron.classList.remove('rotated');
+                    }
+                }
             }
         }
 
