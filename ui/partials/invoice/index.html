@@ -190,7 +190,7 @@
 
 <!-- Create Invoice Modal -->
 <div class="modal fade" id="createInvoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
+    <div class="modal-dialog" style="max-width: 90%; width: 90%;">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Create New Invoice</h5>
@@ -864,6 +864,43 @@
         modal.hide();
     };
 
+    // Calculate item total (count * price)
+    window.calculateItemTotal = function(inputElement) {
+        const itemRow = inputElement.closest('.item-row');
+        if (!itemRow) return;
+
+        const countInput = itemRow.querySelector('input[name="count"]');
+        const priceInput = itemRow.querySelector('input[name="price"]');
+        const totalInput = itemRow.querySelector('input[name="total"]');
+
+        if (countInput && priceInput && totalInput) {
+            const count = parseFloat(countInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = count * price;
+            
+            totalInput.value = total.toFixed(2);
+        }
+    };
+
+    // Ensure all count and price fields have keyup events
+    window.ensureCalculationEvents = function() {
+        const itemRows = document.querySelectorAll('.item-row');
+        itemRows.forEach(row => {
+            const countInput = row.querySelector('input[name="count"]');
+            const priceInput = row.querySelector('input[name="price"]');
+            
+            if (countInput && !countInput.hasAttribute('data-has-keyup')) {
+                countInput.setAttribute('data-has-keyup', 'true');
+                countInput.addEventListener('keyup', () => calculateItemTotal(countInput));
+            }
+            
+            if (priceInput && !priceInput.hasAttribute('data-has-keyup')) {
+                priceInput.setAttribute('data-has-keyup', 'true');
+                priceInput.addEventListener('keyup', () => calculateItemTotal(priceInput));
+            }
+        });
+    };
+
     function displayInvoices(invoicesToShow) {
         const container = document.getElementById('invoicesTableBody');
         
@@ -1006,11 +1043,11 @@
                             <input type="text" class="form-control" name="detail" required>
                         `}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label>Count *</label>
-                        <input type="number" class="form-control" name="count" step="0.01" min="0" required>
+                        <input type="number" class="form-control" name="count" step="0.01" min="0" required onchange="calculateItemTotal(this)" onkeyup="calculateItemTotal(this)">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
                         <label>Unit Type *</label>
                         <select class="form-select" name="unitType" required>
                             <option value="">Select</option>
@@ -1022,7 +1059,11 @@
                     </div>
                     <div class="col-md-2">
                         <label>Price *</label>
-                        <input type="number" class="form-control" name="price" step="0.01" min="0" required>
+                        <input type="number" class="form-control" name="price" step="0.01" min="0" required onchange="calculateItemTotal(this)" onkeyup="calculateItemTotal(this)">
+                    </div>
+                    <div class="col-md-2">
+                        <label>Total</label>
+                        <input type="number" class="form-control" name="total" readonly style="background-color: #f8f9fa;">
                     </div>
                     <div class="col-md-2">
                         <label>Expiration Date</label>
@@ -1038,6 +1079,9 @@
         `;
         
         container.insertAdjacentHTML('beforeend', itemHTML);
+        
+        // Ensure calculation events are added to new items
+        ensureCalculationEvents();
     };
 
     // Remove item row function
@@ -1097,6 +1141,23 @@
                             
                             detailCell.innerHTML = '';
                             detailCell.appendChild(inputGroup);
+
+                            // Add total column if it doesn't exist
+                            const totalCell = itemRow.querySelector('.col-md-1');
+                            if (!totalCell || !totalCell.querySelector('input[name="total"]')) {
+                                const totalDiv = document.createElement('div');
+                                totalDiv.className = 'col-md-1';
+                                totalDiv.innerHTML = `
+                                    <label>Total</label>
+                                    <input type="number" class="form-control" name="total" readonly style="background-color: #f8f9fa;">
+                                `;
+                                
+                                // Insert before the delete button
+                                const deleteCell = itemRow.querySelector('.col-md-1.d-flex');
+                                if (deleteCell) {
+                                    deleteCell.parentNode.insertBefore(totalDiv, deleteCell);
+                                }
+                            }
                         }
                     }
                 } else {
@@ -1116,6 +1177,9 @@
                 }
             }
         });
+        
+        // Ensure calculation events are added to all items
+        ensureCalculationEvents();
     };
 
     // Create invoice function
@@ -1126,7 +1190,7 @@
             // Get form data
             const form = document.getElementById('createInvoiceForm');
             if (!form) {
-                alert('Invoice form not found');
+                showError('Invoice form not found');
                 return;
             }
 
@@ -1141,7 +1205,7 @@
 
             // Validate required fields
             if (!invoiceNumber || !transactionDate || !transactionType || !expenseCategoryId || !imageUrl) {
-                alert('Please fill in all required fields');
+                showError('Please fill in all required fields');
                 return;
             }
 
@@ -1182,7 +1246,7 @@
             });
 
             if (items.length === 0) {
-                alert('Please add at least one invoice item');
+                showError('Please add at least one invoice item');
                 return;
             }
 
@@ -1214,7 +1278,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 },
                 body: JSON.stringify(invoiceData)
             });
@@ -1223,7 +1287,7 @@
                 const result = await response.json();
                 if (result.success) {
                     console.log('✅ Invoice created successfully:', result.data);
-                    alert('Invoice created successfully!');
+                    showSuccess('Invoice created successfully!');
                     
                     // Close modal and refresh invoice list
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createInvoiceModal'));
@@ -1244,7 +1308,7 @@
             }
         } catch (error) {
             console.error('❌ Error creating invoice:', error);
-            alert('Failed to create invoice: ' + error.message);
+            showError('Failed to create invoice: ' + error.message);
         }
     }
 </script> 
