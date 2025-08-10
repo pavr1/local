@@ -63,8 +63,8 @@
 									"raw": "{{gateway_url}}/api/v1/sessions/p/health",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "p", "health"]
-								}
 							}
+						}
 						}
 					]
 				},
@@ -81,9 +81,9 @@
 										"value": "Bearer {{auth_token}}"
 									}
 								],
-								"url": {
+											"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
-									"host": ["{{gateway_url}}"],
+				"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "refresh"]
 								}
 							}
@@ -131,16 +131,16 @@
 			"item": [
 				{
 					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"url": {
+							"request": {
+								"method": "GET",
+								"url": {
 							"raw": "{{gateway_url}}/api/v1/inventory/p/health",
-							"host": ["{{gateway_url}}"],
+									"host": ["{{gateway_url}}"],
 							"path": ["api", "v1", "inventory", "p", "health"]
 						}
-					}
-				},
-				{
+							}
+						},
+						{
 					"name": "Suppliers",
 					"item": [
 						{
@@ -248,47 +248,47 @@
 				},
 				{
 					"name": "Ingredient Categories",
-					"item": [
-						{
+			"item": [
+				{
 							"name": "List Categories",
-							"request": {
-								"method": "GET",
+					"request": {
+						"method": "GET",
 								"header": [
 									{
 										"key": "Authorization",
 										"value": "Bearer {{auth_token}}"
 									}
 								],
-								"url": {
+						"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
-									"host": ["{{gateway_url}}"],
+							"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "ingredient-categories"]
 								}
-							}
-						},
-						{
+					}
+				},
+				{
 							"name": "Create Category",
-							"request": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
 									"raw": "{\n  \"name\": \"Test Category\",\n  \"description\": \"Test category description\",\n  \"is_active\": true\n}"
-								},
-								"url": {
+						},
+						"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
-									"host": ["{{gateway_url}}"],
+							"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "ingredient-categories"]
-								}
+					}
 							}
 						}
 					]
@@ -298,42 +298,42 @@
 					"item": [
 						{
 							"name": "List Ingredients",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
-									"host": ["{{gateway_url}}"],
+							"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "ingredients"]
 								}
 							}
 						},
 						{
 							"name": "Create Ingredient",
-							"request": {
+					"request": {
 								"method": "POST",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									},
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
 									"raw": "{\n  \"name\": \"Test Ingredient\",\n  \"description\": \"Test ingredient description\",\n  \"ingredient_category_id\": \"{{category_id}}\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"unit_type\": \"Liters\",\n  \"is_active\": true\n}"
-								},
-								"url": {
+						},
+						"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
-									"host": ["{{gateway_url}}"],
+							"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "ingredients"]
 								}
 							}
@@ -345,17 +345,17 @@
 					"item": [
 						{
 							"name": "List Existences",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
 									"raw": "{{gateway_url}}/api/v1/inventory/existences",
-									"host": ["{{gateway_url}}"],
+							"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "inventory", "existences"]
 								}
 							}
@@ -420,12 +420,12 @@
 									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "invoices", "expense-categories"]
-								}
+							}
 							}
 						}
 					]
-				},
-				{
+						},
+						{
 					"name": "Invoices",
 					"item": [
 						{
@@ -581,12 +581,12 @@
 									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}/cancel",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "orders", "{{order_id}}", "cancel"]
-								}
+							}
 							}
 						}
 					]
-				},
-				{
+						},
+						{
 					"name": "Statistics",
 					"item": [
 						{
@@ -675,10 +675,10 @@
 									"raw": "{{gateway_url}}/api/management/services/{{service_name}}/stop",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "management", "services", "{{service_name}}", "stop"]
-								}
 							}
-						},
-						{
+						}
+				},
+				{
 							"name": "Restart Service",
 							"request": {
 								"method": "POST",
@@ -738,12 +738,12 @@
 		},
 		{
 			"key": "session_id",
-			"value": "",
+													"value": "",
 			"type": "string"
-		},
-		{
-			"key": "supplier_id",
-			"value": "",
+												},
+												{
+													"key": "supplier_id",
+													"value": "",
 			"type": "string"
 		},
 		{
@@ -779,7 +779,7 @@
 		{
 			"key": "service_name",
 			"value": "session",
-			"type": "string"
+				"type": "string"
 		}
 	]
 } 

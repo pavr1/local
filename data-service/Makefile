@@ -15,7 +15,7 @@ RESET := \033[0m
 
 ## 🚀 Database Management Commands
 
-fresh: clean deps start init test status info ## Complete fresh installation: clean everything, install, setup, and test
+fresh: clean deps remove-volumes reset start init-manual test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
 	@echo "$(CYAN)📋 Quick verification:$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Fresh install verified!' as status, COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "$(RED)❌ Database verification failed$(RESET)"
@@ -104,6 +104,11 @@ reset: ## Reset database (⚠️  DELETES ALL DATA)
 	@echo "$(RED)⚠️  WARNING: This will delete ALL database data!$(RESET)"
 	@./scripts/reset.sh
 
+remove-volumes: ## Remove database volumes to force fresh initialization
+	@echo "$(YELLOW)🗑️  Removing database volumes...$(RESET)"
+	@docker volume rm docker_postgres_data docker_pgadmin_data 2>/dev/null || true
+	@echo "$(GREEN)✅ Database volumes removed$(RESET)"
+
 ## 📊 Monitoring & Debugging Commands
 
 logs: ## View logs from all containers
@@ -175,11 +180,19 @@ init: ## Initialize database with fresh schema (requires containers to be runnin
 		echo "$(GREEN)✅ Database schema reinitialized$(RESET)" || \
 		echo "$(RED)❌ Failed to reinitialize schema. Try 'make reset' instead.$(RESET)"
 
+init-manual: ## Manually initialize database schema (copy script and run it)
+	@echo "$(CYAN)🔄 Manually initializing database schema...$(RESET)"
+	@docker cp docker/init/01-init-database.sql icecream_postgres:/tmp/init.sql
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -f /tmp/init.sql > /dev/null 2>&1 && \
+		echo "$(GREEN)✅ Database schema initialized successfully$(RESET)" || \
+		(echo "$(RED)❌ Failed to initialize schema$(RESET)" && exit 1)
+
 ## 🧹 Cleanup Commands
 
 clean: ## Clean up containers, volumes, and built binaries
 	@echo "$(YELLOW)🧹 Cleaning up...$(RESET)"
 	@cd docker && docker-compose down -v --remove-orphans 2>/dev/null || true
+	@docker volume rm docker_postgres_data docker_pgadmin_data 2>/dev/null || true
 	@docker volume prune -f 2>/dev/null || true
 	@rm -rf bin/
 	@echo "$(GREEN)✅ Cleanup completed$(RESET)"

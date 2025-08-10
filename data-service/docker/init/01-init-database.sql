@@ -168,18 +168,6 @@ CREATE TABLE existences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Runout Ingredient Report Table
-CREATE TABLE runout_ingredient_report (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
-    employee_id UUID NOT NULL, -- References users table
-    quantity DECIMAL(10,2) NOT NULL CHECK (quantity >= 0),
-    unit_type VARCHAR(50) NOT NULL,
-    report_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- =============================================================================
 -- CUSTOMER MANAGEMENT ENTITIES
 -- =============================================================================
@@ -278,21 +266,6 @@ CREATE TABLE equipment (
 );
 
 -- =============================================================================
--- WASTE & LOSS TRACKING ENTITIES
--- =============================================================================
-
--- Waste Loss Table
-CREATE TABLE waste_loss (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
-    employee_id UUID NOT NULL, -- References users table
-    items_wasted DECIMAL(10,2) NOT NULL CHECK (items_wasted > 0), -- amount of items in a unit wasted
-    reason VARCHAR(255) NOT NULL,
-    financial_loss DECIMAL(10,2) NOT NULL, -- Calculated by application: items_wasted * existence.price_per_unit
-    waste_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- =============================================================================
 -- ADMINISTRATION PANEL ENTITIES
 -- =============================================================================
 
@@ -302,19 +275,6 @@ CREATE TABLE system_configuration (
     config_key VARCHAR(255) NOT NULL UNIQUE,
     config_value TEXT NOT NULL,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- User Salary Table
-CREATE TABLE user_salary (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL, -- References users table
-    expense_id UUID REFERENCES expenses(id) ON DELETE SET NULL,
-    salary DECIMAL(10,2) NOT NULL CHECK (salary >= 0),
-    additional_expenses DECIMAL(10,2) DEFAULT 0 CHECK (additional_expenses >= 0),
-    total DECIMAL(10,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
-    payment_date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -370,8 +330,44 @@ CREATE TABLE sessions (
 );
 
 -- =============================================================================
--- AUDIT & SECURITY ENTITIES
+-- USER-DEPENDENT ENTITIES (Moved after users table)
 -- =============================================================================
+
+-- Runout Ingredient Report Table
+CREATE TABLE runout_ingredient_report (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    quantity DECIMAL(10,2) NOT NULL CHECK (quantity >= 0),
+    unit_type VARCHAR(50) NOT NULL,
+    report_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Waste Loss Table
+CREATE TABLE waste_loss (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    existence_id UUID NOT NULL REFERENCES existences(id) ON DELETE CASCADE,
+    employee_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    items_wasted DECIMAL(10,2) NOT NULL CHECK (items_wasted > 0), -- amount of items in a unit wasted
+    reason VARCHAR(255) NOT NULL,
+    financial_loss DECIMAL(10,2) NOT NULL, -- Calculated by application: items_wasted * existence.price_per_unit
+    waste_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Salary Table
+CREATE TABLE user_salary (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expense_id UUID REFERENCES expenses(id) ON DELETE SET NULL,
+    salary DECIMAL(10,2) NOT NULL CHECK (salary >= 0),
+    additional_expenses DECIMAL(10,2) DEFAULT 0 CHECK (additional_expenses >= 0),
+    total DECIMAL(10,2) GENERATED ALWAYS AS (salary + additional_expenses) STORED,
+    payment_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Audit Logs Table
 CREATE TABLE audit_logs (
@@ -443,20 +439,6 @@ CREATE INDEX idx_invoice_details_ingredient ON invoice_details(ingredient_id);
 CREATE INDEX idx_invoice_details_total ON invoice_details(total);
 CREATE INDEX idx_invoice_details_unit_type ON invoice_details(unit_type);
 CREATE INDEX idx_invoice_details_expiration ON invoice_details(expiration_date);
-
--- =============================================================================
--- ADD FOREIGN KEY CONSTRAINTS THAT WERE DEFERRED
--- =============================================================================
-
--- Add foreign key constraints for user references
-ALTER TABLE runout_ingredient_report ADD CONSTRAINT fk_runout_employee_id 
-    FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE waste_loss ADD CONSTRAINT fk_waste_employee_id 
-    FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE;
-
-ALTER TABLE user_salary ADD CONSTRAINT fk_salary_user_id 
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 
 -- =============================================================================
 -- DEFAULT DATA
