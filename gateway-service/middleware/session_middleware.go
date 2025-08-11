@@ -1,7 +1,8 @@
-package main
+package middleware
 
 import (
 	"encoding/json"
+	sessionmanager "gateway-service/middleware/session-manager"
 	"io"
 	"log"
 	"net/http"
@@ -11,11 +12,11 @@ import (
 
 // SessionMiddleware handles session validation for protected routes
 type SessionMiddleware struct {
-	sessionManager *SessionManager
+	sessionManager *sessionmanager.SessionManager
 }
 
 // NewSessionMiddleware creates a new session middleware
-func NewSessionMiddleware(sessionManager *SessionManager) *SessionMiddleware {
+func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager) *SessionMiddleware {
 	return &SessionMiddleware{
 		sessionManager: sessionManager,
 	}
@@ -60,8 +61,8 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	})
 }
 
-// SessionAwareLoginHandler handles login and creates sessions
-func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) http.HandlerFunc {
+// LoginSession handles login and creates sessions
+func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
@@ -117,8 +118,8 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 	}
 }
 
-// SessionAwareLogoutHandler handles logout and revokes sessions
-func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string) http.HandlerFunc {
+// LogoutSession handles logout and revokes sessions
+func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract session ID from request
 		sessionId := extractSessionIdFromHeader(r)

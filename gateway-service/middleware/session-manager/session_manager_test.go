@@ -1,4 +1,4 @@
-package main
+package sessionmanager
 
 import (
 	"bytes"
@@ -266,8 +266,8 @@ func TestSessionManagerValidateSession(t *testing.T) {
 	})
 }
 
-// TestSessionManagerCreateSession tests session creation with mocked HTTP client
-func TestSessionManagerCreateSession(t *testing.T) {
+// TestSessionManagerLoginSession tests session creation with mocked HTTP client
+func TestSessionManagerLoginSession(t *testing.T) {
 	t.Run("successful session creation", func(t *testing.T) {
 		createResponse := models.SessionCreateResponse{
 			SessionID: "session123",
@@ -289,7 +289,7 @@ func TestSessionManagerCreateSession(t *testing.T) {
 			Password: "testpass",
 		}
 
-		result, err := sessionManager.CreateSession(&createRequest)
+		result, err := sessionManager.LoginSession(&createRequest)
 
 		require.NoError(t, err)
 		assert.Equal(t, "session123", result.SessionID)
@@ -311,7 +311,7 @@ func TestSessionManagerCreateSession(t *testing.T) {
 			Password: "wrongpass",
 		}
 
-		_, err := sessionManager.CreateSession(&createRequest)
+		_, err := sessionManager.LoginSession(&createRequest)
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "session creation failed with status 400")

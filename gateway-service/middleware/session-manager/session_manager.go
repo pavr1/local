@@ -1,4 +1,4 @@
-package main
+package sessionmanager
 
 import (
 	"bytes"
@@ -27,6 +27,21 @@ func NewSessionManager(sessionServiceURL string) *SessionManager {
 	}
 }
 
+// makeRequest makes a request to the session service with gateway headers
+func (sm *SessionManager) makeRequest(method, path string, body io.Reader) (*http.Response, error) {
+	httpReq, err := http.NewRequest(method, sm.baseURL+path, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add gateway headers (same as createProxyHandler)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
+
+	return sm.client.Do(httpReq)
+}
+
 // ValidateSession validates a session ID against the session service
 func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionValidationResponse, error) {
 	if sessionId == "" {
@@ -45,16 +60,7 @@ func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionVali
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", sm.baseURL+"/validate", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
-	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
-
-	resp, err := sm.client.Do(httpReq)
+	resp, err := sm.makeRequest("POST", "/validate", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate session: %w", err)
 	}
@@ -73,23 +79,14 @@ func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionVali
 	return &validationResp, nil
 }
 
-// CreateSession creates a new session after successful login
-func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*models.SessionCreateResponse, error) {
+// LoginSession creates a new session after successful login
+func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*models.SessionCreateResponse, error) {
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", sm.baseURL, bytes.NewBuffer(reqBody))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
-	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
-
-	resp, err := sm.client.Do(httpReq)
+	resp, err := sm.makeRequest("POST", "/p/login", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
@@ -123,16 +120,7 @@ func (sm *SessionManager) LogoutSession(sessionId string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", sm.baseURL+"/logout", bytes.NewBuffer(reqBody))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
-	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
-
-	resp, err := sm.client.Do(httpReq)
+	resp, err := sm.makeRequest("POST", "/logout", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return fmt.Errorf("failed to logout session: %w", err)
 	}

@@ -1,6 +1,7 @@
-package main
+package middleware
 
 import (
+	sessionmanager "gateway-service/middleware/session-manager"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -64,7 +65,7 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 
 // TestSessionMiddlewareStructure tests the SessionMiddleware struct creation
 func TestSessionMiddlewareStructure(t *testing.T) {
-	sessionManager := NewSessionManager("http://localhost:8081")
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
 	middleware := NewSessionMiddleware(sessionManager)
 
 	assert.NotNil(t, middleware)
@@ -73,7 +74,7 @@ func TestSessionMiddlewareStructure(t *testing.T) {
 
 // Test basic middleware functionality with real session manager (will fail gracefully)
 func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
-	sessionManager := NewSessionManager("http://localhost:8081")
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
 	middleware := NewSessionMiddleware(sessionManager)
 
 	// Create a test handler
@@ -132,7 +133,7 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 
 // Test edge cases with various header formats
 func TestSessionMiddlewareEdgeCasesSimple(t *testing.T) {
-	sessionManager := NewSessionManager("http://localhost:8081")
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
 	middleware := NewSessionMiddleware(sessionManager)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -189,7 +190,7 @@ func BenchmarkExtractTokenFromHeaderSimple(b *testing.B) {
 }
 
 func BenchmarkSessionMiddleware(b *testing.B) {
-	sessionManager := NewSessionManager("http://localhost:8081")
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
 	middleware := NewSessionMiddleware(sessionManager)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
