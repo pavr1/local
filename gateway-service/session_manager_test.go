@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"gateway-service/models"
 )
 
 // TestNewSessionManager tests the creation of SessionManager
@@ -64,123 +66,106 @@ func TestSessionManagerWithDifferentURLs(t *testing.T) {
 
 // TestSessionValidationRequest tests the SessionValidationRequest structure
 func TestSessionValidationRequest(t *testing.T) {
-	request := SessionValidationRequest{
-		Token: "test-jwt-token",
+	request := models.SessionValidationRequest{
+		SessionID: "test-session-id",
 	}
 
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	var unmarshaled SessionValidationRequest
+	var unmarshaled models.SessionValidationRequest
 	err = json.Unmarshal(jsonData, &unmarshaled)
 	require.NoError(t, err)
 
-	assert.Equal(t, request.Token, unmarshaled.Token)
+	assert.Equal(t, request.SessionID, unmarshaled.SessionID)
 }
 
 // TestSessionValidationResponse tests the SessionValidationResponse structure
 func TestSessionValidationResponse(t *testing.T) {
 	t.Run("valid session response", func(t *testing.T) {
-		sessionData := &SessionData{
+		response := models.SessionValidationResponse{
+			Valid:       true,
+			SessionID:   "session123",
+			Message:     "Session validated",
 			UserID:      "user123",
 			Username:    "testuser",
 			RoleName:    "admin",
 			Permissions: []string{"read", "write"},
 		}
 
-		response := SessionValidationResponse{
-			IsValid:       true,
-			Session:       sessionData,
-			ShouldRefresh: false,
-		}
-
 		jsonData, err := json.Marshal(response)
 		require.NoError(t, err)
 
-		var unmarshaled SessionValidationResponse
+		var unmarshaled models.SessionValidationResponse
 		err = json.Unmarshal(jsonData, &unmarshaled)
 		require.NoError(t, err)
 
-		assert.Equal(t, response.IsValid, unmarshaled.IsValid)
-		assert.Equal(t, response.ShouldRefresh, unmarshaled.ShouldRefresh)
-		assert.Equal(t, sessionData.UserID, unmarshaled.Session.UserID)
-		assert.Equal(t, sessionData.Username, unmarshaled.Session.Username)
-		assert.Equal(t, sessionData.RoleName, unmarshaled.Session.RoleName)
-		assert.Equal(t, sessionData.Permissions, unmarshaled.Session.Permissions)
+		assert.Equal(t, response.Valid, unmarshaled.Valid)
+		assert.Equal(t, response.SessionID, unmarshaled.SessionID)
+		assert.Equal(t, response.Message, unmarshaled.Message)
+		assert.Equal(t, response.UserID, unmarshaled.UserID)
+		assert.Equal(t, response.Username, unmarshaled.Username)
+		assert.Equal(t, response.RoleName, unmarshaled.RoleName)
+		assert.Equal(t, response.Permissions, unmarshaled.Permissions)
 	})
 
 	t.Run("invalid session response", func(t *testing.T) {
-		response := SessionValidationResponse{
-			IsValid:      false,
-			ErrorCode:    "invalid_token",
-			ErrorMessage: "Token is expired",
+		response := models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Session not found",
 		}
 
 		jsonData, err := json.Marshal(response)
 		require.NoError(t, err)
 
-		var unmarshaled SessionValidationResponse
+		var unmarshaled models.SessionValidationResponse
 		err = json.Unmarshal(jsonData, &unmarshaled)
 		require.NoError(t, err)
 
-		assert.Equal(t, response.IsValid, unmarshaled.IsValid)
-		assert.Equal(t, response.ErrorCode, unmarshaled.ErrorCode)
-		assert.Equal(t, response.ErrorMessage, unmarshaled.ErrorMessage)
-		assert.Nil(t, unmarshaled.Session)
-	})
-
-	t.Run("refresh required response", func(t *testing.T) {
-		sessionData := &SessionData{
-			UserID:   "user123",
-			Username: "testuser",
-		}
-
-		response := SessionValidationResponse{
-			IsValid:       true,
-			Session:       sessionData,
-			ShouldRefresh: true,
-			NewToken:      "new-jwt-token",
-		}
-
-		jsonData, err := json.Marshal(response)
-		require.NoError(t, err)
-
-		var unmarshaled SessionValidationResponse
-		err = json.Unmarshal(jsonData, &unmarshaled)
-		require.NoError(t, err)
-
-		assert.Equal(t, response.IsValid, unmarshaled.IsValid)
-		assert.Equal(t, response.ShouldRefresh, unmarshaled.ShouldRefresh)
-		assert.Equal(t, response.NewToken, unmarshaled.NewToken)
-		assert.NotNil(t, unmarshaled.Session)
+		assert.Equal(t, response.Valid, unmarshaled.Valid)
+		assert.Equal(t, response.Message, unmarshaled.Message)
+		assert.Empty(t, unmarshaled.SessionID)
+		assert.Empty(t, unmarshaled.UserID)
+		assert.Empty(t, unmarshaled.Username)
+		assert.Empty(t, unmarshaled.RoleName)
+		assert.Empty(t, unmarshaled.Permissions)
 	})
 }
 
 // TestSessionCreateRequest tests the SessionCreateRequest structure
 func TestSessionCreateRequest(t *testing.T) {
-	expiresAt := time.Now().Add(24 * time.Hour)
-	request := SessionCreateRequest{
-		UserID:      "user123",
-		Username:    "testuser",
-		RoleName:    "admin",
-		Permissions: []string{"read", "write", "delete"},
-		RememberMe:  true,
-		ExpiresAt:   expiresAt,
+	request := models.SessionCreateRequest{
+		Username: "testuser",
+		Password: "testpass",
 	}
 
 	jsonData, err := json.Marshal(request)
 	require.NoError(t, err)
 
-	var unmarshaled SessionCreateRequest
+	var unmarshaled models.SessionCreateRequest
 	err = json.Unmarshal(jsonData, &unmarshaled)
 	require.NoError(t, err)
 
-	assert.Equal(t, request.UserID, unmarshaled.UserID)
 	assert.Equal(t, request.Username, unmarshaled.Username)
-	assert.Equal(t, request.RoleName, unmarshaled.RoleName)
-	assert.Equal(t, request.Permissions, unmarshaled.Permissions)
-	assert.Equal(t, request.RememberMe, unmarshaled.RememberMe)
-	assert.True(t, request.ExpiresAt.Equal(unmarshaled.ExpiresAt))
+	assert.Equal(t, request.Password, unmarshaled.Password)
+}
+
+// TestSessionCreateResponse tests the SessionCreateResponse structure
+func TestSessionCreateResponse(t *testing.T) {
+	response := models.SessionCreateResponse{
+		SessionID: "session123",
+		Message:   "Session created successfully",
+	}
+
+	jsonData, err := json.Marshal(response)
+	require.NoError(t, err)
+
+	var unmarshaled models.SessionCreateResponse
+	err = json.Unmarshal(jsonData, &unmarshaled)
+	require.NoError(t, err)
+
+	assert.Equal(t, response.SessionID, unmarshaled.SessionID)
+	assert.Equal(t, response.Message, unmarshaled.Message)
 }
 
 // MockTransport implements http.RoundTripper for testing
@@ -200,15 +185,14 @@ func (m *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 func TestSessionManagerValidateSession(t *testing.T) {
 	t.Run("successful validation", func(t *testing.T) {
 		// Create mock response
-		sessionData := &SessionData{
-			UserID:   "user123",
-			Username: "testuser",
-			RoleName: "admin",
-		}
-
-		validationResponse := SessionValidationResponse{
-			IsValid: true,
-			Session: sessionData,
+		validationResponse := models.SessionValidationResponse{
+			Valid:       true,
+			SessionID:   "session123",
+			Message:     "Session validated",
+			UserID:      "user123",
+			Username:    "testuser",
+			RoleName:    "admin",
+			Permissions: []string{"read", "write"},
 		}
 
 		responseBody, _ := json.Marshal(validationResponse)
@@ -223,20 +207,19 @@ func TestSessionManagerValidateSession(t *testing.T) {
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		// Test validation
-		result, err := sessionManager.ValidateSession("test-token")
+		result, err := sessionManager.ValidateSession("test-session-id")
 
 		require.NoError(t, err)
-		assert.True(t, result.IsValid)
-		assert.Equal(t, "user123", result.Session.UserID)
-		assert.Equal(t, "testuser", result.Session.Username)
-		assert.Equal(t, "admin", result.Session.RoleName)
+		assert.True(t, result.Valid)
+		assert.Equal(t, "user123", result.UserID)
+		assert.Equal(t, "testuser", result.Username)
+		assert.Equal(t, "admin", result.RoleName)
 	})
 
-	t.Run("invalid token validation", func(t *testing.T) {
-		validationResponse := SessionValidationResponse{
-			IsValid:      false,
-			ErrorCode:    "invalid_token",
-			ErrorMessage: "Token is expired",
+	t.Run("invalid session validation", func(t *testing.T) {
+		validationResponse := models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Session not found",
 		}
 
 		responseBody, _ := json.Marshal(validationResponse)
@@ -249,19 +232,18 @@ func TestSessionManagerValidateSession(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		result, err := sessionManager.ValidateSession("invalid-token")
+		result, err := sessionManager.ValidateSession("invalid-session-id")
 
 		require.NoError(t, err)
-		assert.False(t, result.IsValid)
-		assert.Equal(t, "invalid_token", result.ErrorCode)
-		assert.Equal(t, "Token is expired", result.ErrorMessage)
+		assert.False(t, result.Valid)
+		assert.Equal(t, "Session not found", result.Message)
 	})
 
 	t.Run("network error", func(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Error: assert.AnError}
 
-		_, err := sessionManager.ValidateSession("test-token")
+		_, err := sessionManager.ValidateSession("test-session-id")
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to validate session")
@@ -277,7 +259,7 @@ func TestSessionManagerValidateSession(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		_, err := sessionManager.ValidateSession("test-token")
+		_, err := sessionManager.ValidateSession("test-session-id")
 
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to unmarshal response")
@@ -287,15 +269,9 @@ func TestSessionManagerValidateSession(t *testing.T) {
 // TestSessionManagerCreateSession tests session creation with mocked HTTP client
 func TestSessionManagerCreateSession(t *testing.T) {
 	t.Run("successful session creation", func(t *testing.T) {
-		createResponse := SessionCreateResponse{
-			Success:   true,
-			Token:     "new-jwt-token",
-			ExpiresAt: time.Now().Add(24 * time.Hour),
-			User: UserContext{
-				ID:       "user123",
-				Username: "testuser",
-				Role:     "admin",
-			},
+		createResponse := models.SessionCreateResponse{
+			SessionID: "session123",
+			Message:   "Session created successfully",
 		}
 
 		responseBody, _ := json.Marshal(createResponse)
@@ -308,34 +284,31 @@ func TestSessionManagerCreateSession(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		createRequest := SessionCreateRequest{
-			UserID:   "user123",
+		createRequest := models.SessionCreateRequest{
 			Username: "testuser",
-			RoleName: "admin",
+			Password: "testpass",
 		}
 
 		result, err := sessionManager.CreateSession(&createRequest)
 
 		require.NoError(t, err)
-		assert.True(t, result.Success)
-		assert.Equal(t, "new-jwt-token", result.Token)
-		assert.Equal(t, "user123", result.User.ID)
+		assert.Equal(t, "session123", result.SessionID)
+		assert.Equal(t, "Session created successfully", result.Message)
 	})
 
 	t.Run("session creation failure", func(t *testing.T) {
 		mockResponse := &http.Response{
 			StatusCode: http.StatusBadRequest,
-			Body:       io.NopCloser(strings.NewReader("User not found")),
+			Body:       io.NopCloser(strings.NewReader("Invalid credentials")),
 			Header:     make(http.Header),
 		}
 
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		createRequest := SessionCreateRequest{
-			UserID:   "nonexistent",
+		createRequest := models.SessionCreateRequest{
 			Username: "nonexistent",
-			RoleName: "admin",
+			Password: "wrongpass",
 		}
 
 		_, err := sessionManager.CreateSession(&createRequest)
@@ -357,7 +330,7 @@ func TestSessionManagerLogoutSession(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		err := sessionManager.LogoutSession("test-token")
+		err := sessionManager.LogoutSession("test-session-id")
 		assert.NoError(t, err)
 	})
 
@@ -371,7 +344,7 @@ func TestSessionManagerLogoutSession(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		err := sessionManager.LogoutSession("invalid-token")
+		err := sessionManager.LogoutSession("invalid-session-id")
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "logout failed with status 404")
 	})
@@ -379,9 +352,10 @@ func TestSessionManagerLogoutSession(t *testing.T) {
 
 // TestSessionManagerConcurrentRequests tests concurrent access to session manager
 func TestSessionManagerConcurrentRequests(t *testing.T) {
-	validationResponse := SessionValidationResponse{
-		IsValid: true,
-		Session: &SessionData{UserID: "user123"},
+	validationResponse := models.SessionValidationResponse{
+		Valid:     true,
+		SessionID: "session123",
+		UserID:    "user123",
 	}
 
 	responseBody, _ := json.Marshal(validationResponse)
@@ -403,13 +377,13 @@ func TestSessionManagerConcurrentRequests(t *testing.T) {
 		go func(id int) {
 			// Validate that session manager can handle concurrent calls
 			// We expect this might fail with network errors in test environment, which is fine
-			result, err := sessionManager.ValidateSession("test-token")
+			result, err := sessionManager.ValidateSession("test-session-id")
 			if err != nil {
 				// In a test environment, network errors are expected
 				errors <- err
 				return
 			}
-			results <- result.IsValid
+			results <- result.Valid
 		}(i)
 	}
 
@@ -436,24 +410,24 @@ func TestSessionManagerConcurrentRequests(t *testing.T) {
 
 // TestSessionManagerEdgeCases tests edge cases and error conditions
 func TestSessionManagerEdgeCases(t *testing.T) {
-	t.Run("empty token validation", func(t *testing.T) {
+	t.Run("empty session validation", func(t *testing.T) {
 		sessionManager := NewSessionManager("http://localhost:8081")
 
-		// Even empty tokens should be sent to the service for validation
+		// Even empty session IDs should be sent to the service for validation
 		mockResponse := &http.Response{
 			StatusCode: http.StatusBadRequest,
-			Body:       io.NopCloser(strings.NewReader(`{"is_valid": false, "error_code": "empty_token"}`)),
+			Body:       io.NopCloser(strings.NewReader(`{"is_valid": false, "error_code": "empty_session"}`)),
 			Header:     make(http.Header),
 		}
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		result, err := sessionManager.ValidateSession("")
 		require.NoError(t, err)
-		assert.False(t, result.IsValid)
+		assert.False(t, result.Valid)
 	})
 
-	t.Run("very long token", func(t *testing.T) {
-		longToken := strings.Repeat("a", 10000)
+	t.Run("very long session ID", func(t *testing.T) {
+		longSessionId := strings.Repeat("a", 10000)
 		sessionManager := NewSessionManager("http://localhost:8081")
 
 		mockResponse := &http.Response{
@@ -463,7 +437,7 @@ func TestSessionManagerEdgeCases(t *testing.T) {
 		}
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
-		_, err := sessionManager.ValidateSession(longToken)
+		_, err := sessionManager.ValidateSession(longSessionId)
 		assert.NoError(t, err)
 	})
 }
@@ -476,13 +450,13 @@ func BenchmarkNewSessionManager(b *testing.B) {
 }
 
 func BenchmarkSessionValidationResponse_Marshal(b *testing.B) {
-	response := SessionValidationResponse{
-		IsValid: true,
-		Session: &SessionData{
-			UserID:   "user123",
-			Username: "testuser",
-			RoleName: "admin",
-		},
+	response := models.SessionValidationResponse{
+		Valid:       true,
+		SessionID:   "session123",
+		UserID:      "user123",
+		Username:    "testuser",
+		RoleName:    "admin",
+		Permissions: []string{"read", "write"},
 	}
 
 	b.ResetTimer()

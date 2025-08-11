@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"gateway-service/models"
 )
 
 // SessionManager handles communication with the session service
@@ -25,77 +27,17 @@ func NewSessionManager(sessionServiceURL string) *SessionManager {
 	}
 }
 
-// Session validation request/response structures
-type SessionValidationRequest struct {
-	Token string `json:"token"`
-}
-
-type SessionValidationResponse struct {
-	IsValid       bool         `json:"is_valid"`
-	Session       *SessionData `json:"session,omitempty"`
-	ShouldRefresh bool         `json:"should_refresh"`
-	NewToken      string       `json:"new_token,omitempty"`
-	ErrorCode     string       `json:"error_code,omitempty"`
-	ErrorMessage  string       `json:"error_message,omitempty"`
-}
-
-// Session creation request/response structures
-type SessionCreateRequest struct {
-	UserID      string    `json:"user_id"`
-	Username    string    `json:"username"`
-	RoleName    string    `json:"role_name"`
-	Permissions []string  `json:"permissions"`
-	RememberMe  bool      `json:"remember_me"`
-	ExpiresAt   time.Time `json:"expires_at,omitempty"`
-}
-
-type SessionCreateResponse struct {
-	Success   bool        `json:"success"`
-	Message   string      `json:"message"`
-	SessionID string      `json:"session_id"`
-	Token     string      `json:"token"`
-	ExpiresAt time.Time   `json:"expires_at"`
-	User      UserContext `json:"user"`
-}
-
-// Session data structure
-type SessionData struct {
-	SessionID    string    `json:"session_id"`
-	UserID       string    `json:"user_id"`
-	Username     string    `json:"username"`
-	RoleName     string    `json:"role_name"`
-	Permissions  []string  `json:"permissions"`
-	CreatedAt    time.Time `json:"created_at"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	LastActivity time.Time `json:"last_activity"`
-}
-
-// User context for adding to requests
-type UserContext struct {
-	ID       string `json:"id"`
-	Username string `json:"username"`
-	Role     string `json:"role"`
-}
-
-// Session logout request
-type SessionLogoutRequest struct {
-	Token string `json:"token"`
-}
-
-// ValidateSession validates a token against the session service
-func (sm *SessionManager) ValidateSession(token string) (*SessionValidationResponse, error) {
-	if token == "" {
-		return &SessionValidationResponse{
-			IsValid:      false,
-			ErrorCode:    "missing_token",
-			ErrorMessage: "Token is required",
+// ValidateSession validates a session ID against the session service
+func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionValidationResponse, error) {
+	if sessionId == "" {
+		return &models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Session ID is required",
 		}, nil
 	}
 
-	// For now, we'll continue using token validation
-	// In the future, we can enhance this to extract session ID from JWT or store it separately
-	validationReq := SessionValidationRequest{
-		Token: token,
+	validationReq := models.SessionValidationRequest{
+		SessionID: sessionId,
 	}
 
 	reqBody, err := json.Marshal(validationReq)
@@ -103,7 +45,7 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", sm.baseURL+"/p/validate", bytes.NewBuffer(reqBody))
+	httpReq, err := http.NewRequest("POST", sm.baseURL+"/validate", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -123,7 +65,7 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	var validationResp SessionValidationResponse
+	var validationResp models.SessionValidationResponse
 	if err := json.Unmarshal(body, &validationResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -132,7 +74,7 @@ func (sm *SessionManager) ValidateSession(token string) (*SessionValidationRespo
 }
 
 // CreateSession creates a new session after successful login
-func (sm *SessionManager) CreateSession(req *SessionCreateRequest) (*SessionCreateResponse, error) {
+func (sm *SessionManager) CreateSession(req *models.SessionCreateRequest) (*models.SessionCreateResponse, error) {
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -162,7 +104,7 @@ func (sm *SessionManager) CreateSession(req *SessionCreateRequest) (*SessionCrea
 		return nil, fmt.Errorf("session creation failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	var createResp SessionCreateResponse
+	var createResp models.SessionCreateResponse
 	if err := json.Unmarshal(body, &createResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -171,9 +113,9 @@ func (sm *SessionManager) CreateSession(req *SessionCreateRequest) (*SessionCrea
 }
 
 // LogoutSession revokes a session
-func (sm *SessionManager) LogoutSession(token string) error {
-	req := SessionLogoutRequest{
-		Token: token,
+func (sm *SessionManager) LogoutSession(sessionId string) error {
+	req := models.SessionLogoutRequest{
+		SessionID: sessionId,
 	}
 
 	reqBody, err := json.Marshal(req)

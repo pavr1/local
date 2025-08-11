@@ -21,18 +21,18 @@ func NewSessionMiddleware(sessionManager *SessionManager) *SessionMiddleware {
 	}
 }
 
-// ValidateSession middleware validates the JWT token against the session service
+// ValidateSession middleware validates the session ID against the session service
 func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Extract token from Authorization header
-		token := extractTokenFromHeader(r)
-		if token == "" {
-			sm.writeErrorResponse(w, http.StatusUnauthorized, "missing_token", "Authorization token is required")
+		// Extract session ID from Authorization header
+		sessionId := extractSessionIdFromHeader(r)
+		if sessionId == "" {
+			sm.writeErrorResponse(w, http.StatusUnauthorized, "missing_session", "Session ID is required")
 			return
 		}
 
-		// Validate token with session service
-		validation, err := sm.sessionManager.ValidateSession(token)
+		// Validate session ID with session service
+		validation, err := sm.sessionManager.ValidateSession(sessionId)
 		if err != nil {
 			log.Printf("Session validation error: %v", err)
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "validation_error", "Failed to validate session")
@@ -40,27 +40,19 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 		}
 
 		// Check if session is valid
-		if !validation.IsValid {
-			sm.writeErrorResponse(w, http.StatusUnauthorized, validation.ErrorCode, validation.ErrorMessage)
+		if !validation.Valid {
+			sm.writeErrorResponse(w, http.StatusUnauthorized, "invalid_session", validation.Message)
 			return
 		}
 
 		// Add user context to request headers for backend services
-		if validation.Session != nil {
-			r.Header.Set("X-User-ID", validation.Session.UserID)
-			r.Header.Set("X-Username", validation.Session.Username)
-			r.Header.Set("X-User-Role", validation.Session.RoleName)
+		r.Header.Set("X-User-ID", validation.UserID)
+		r.Header.Set("X-Username", validation.Username)
+		r.Header.Set("X-User-Role", validation.RoleName)
 
-			// Convert permissions to comma-separated string
-			if len(validation.Session.Permissions) > 0 {
-				r.Header.Set("X-User-Permissions", strings.Join(validation.Session.Permissions, ","))
-			}
-		}
-
-		// Handle token refresh if needed
-		if validation.ShouldRefresh && validation.NewToken != "" {
-			w.Header().Set("X-New-Token", validation.NewToken)
-			log.Printf("Token refreshed for user %s", validation.Session.Username)
+		// Convert permissions to comma-separated string
+		if len(validation.Permissions) > 0 {
+			r.Header.Set("X-User-Permissions", strings.Join(validation.Permissions, ","))
 		}
 
 		// Continue to next handler
@@ -79,7 +71,7 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 		}
 
 		// Forward login request to session service with gateway headers
-		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/login", strings.NewReader(string(body)))
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/login", strings.NewReader(string(body)))
 		if err != nil {
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create login request")
 			return
@@ -128,11 +120,11 @@ func (sm *SessionMiddleware) SessionAwareLoginHandler(sessionServiceURL string) 
 // SessionAwareLogoutHandler handles logout and revokes sessions
 func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Extract token from request
-		token := extractTokenFromHeader(r)
-		if token != "" {
+		// Extract session ID from request
+		sessionId := extractSessionIdFromHeader(r)
+		if sessionId != "" {
 			// Revoke session in session service
-			if err := sm.sessionManager.LogoutSession(token); err != nil {
+			if err := sm.sessionManager.LogoutSession(sessionId); err != nil {
 				log.Printf("Failed to revoke session: %v", err)
 			} else {
 				log.Printf("Session revoked successfully")
@@ -182,13 +174,13 @@ func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string)
 
 // Helper functions
 
-func extractTokenFromHeader(r *http.Request) string {
+func extractSessionIdFromHeader(r *http.Request) string {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return ""
 	}
 
-	// Check for Bearer token
+	// Check for Bearer session ID
 	const bearerPrefix = "Bearer "
 	if strings.HasPrefix(authHeader, bearerPrefix) {
 		return authHeader[len(bearerPrefix):]

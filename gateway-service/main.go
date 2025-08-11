@@ -97,15 +97,12 @@ func main() {
 	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login")).Methods("POST")
-	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate")).Methods("POST")
-	sessionRouter.HandleFunc("/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/login")).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
+	sessionRouter.HandleFunc("/p/health", createProxyHandler(config.SessionServiceURL, "/health")).Methods("GET")
 
 	// Protected session endpoints - session service handles authentication
 	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout")).Methods("POST")
-	sessionRouter.HandleFunc("/refresh", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/refresh")).Methods("POST")
-	sessionRouter.HandleFunc("/profile", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/profile")).Methods("GET")
-	sessionRouter.HandleFunc("/user/{userID}", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/user")).Methods("GET", "DELETE")
 
 	// Public health endpoints (no authentication required)
 	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
@@ -144,14 +141,12 @@ func main() {
 	fmt.Println("")
 	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	fmt.Println("   📂 Public:")
-	fmt.Printf("      POST /api/v1/sessions/p/login    → %s (+ session creation)\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/sessions/p/validate → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/sessions/p/health → %s\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/sessions/p/logout   → %s (+ session revocation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/login    → %s/api/v1/sessions/login (+ session creation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/validate → %s/api/v1/sessions/validate\n", config.SessionServiceURL)
+	fmt.Printf("      GET  /api/v1/sessions/p/health   → %s/health\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
-	fmt.Printf("      POST /api/v1/sessions/refresh  → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/sessions/profile  → %s\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/sessions/user/{userID} → %s\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/logout     → %s/api/v1/sessions/logout (+ session revocation)\n", config.SessionServiceURL)
+
 	fmt.Println("")
 	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")

@@ -15,14 +15,14 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		req.Header.Set("Authorization", "Bearer test-jwt-token")
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		assert.Equal(t, "test-jwt-token", token)
 	})
 
 	t.Run("missing Authorization header", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		assert.Empty(t, token)
 	})
 
@@ -30,7 +30,7 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		req.Header.Set("Authorization", "test-jwt-token")
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		assert.Empty(t, token)
 	})
 
@@ -38,7 +38,7 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		req.Header.Set("Authorization", "Bearer ")
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		assert.Empty(t, token)
 	})
 
@@ -46,7 +46,7 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		req.Header.Set("Authorization", "Bearer   test-jwt-token   ")
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		// The actual implementation might not trim spaces, so let's check what it actually returns
 		assert.NotEmpty(t, token, "Should extract some token even with spaces")
 	})
@@ -55,7 +55,7 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
 		req.Header.Set("Authorization", "bearer test-jwt-token")
 
-		token := extractTokenFromHeader(req)
+		token := extractSessionIdFromHeader(req)
 		// The actual implementation might be case sensitive, so let's just check behavior
 		// If empty, that's the current behavior; if not empty, that's also valid
 		_ = token // Just validate it doesn't crash
@@ -184,7 +184,7 @@ func BenchmarkExtractTokenFromHeaderSimple(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		extractTokenFromHeader(req)
+		extractSessionIdFromHeader(req)
 	}
 }
 
