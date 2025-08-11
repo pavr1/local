@@ -37,12 +37,10 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 
 // SetupRoutes sets up all the routes for the service
 func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
-	// Health check endpoint
+	// Set up routes
 	router.HandleFunc("/health", h.HealthCheck).Methods("GET")
-
-	// Session endpoints
-	sessionsRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	sessionsRouter.HandleFunc("/create", h.sessionsHandler.CreateSession).Methods("POST")
+	router.HandleFunc("/api/v1/sessions/login", h.sessionsHandler.CreateSession).Methods("POST")
+	router.HandleFunc("/api/v1/sessions/validate", h.sessionsHandler.ValidateSession).Methods("POST")
 }
 
 // HealthCheck handles health check requests

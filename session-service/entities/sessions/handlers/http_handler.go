@@ -49,6 +49,27 @@ func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	h.writeJSONResponse(w, http.StatusCreated, response)
 }
 
+// ValidateSession handles session validation requests
+func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
+	// Parse request body
+	var req models.SessionValidationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Invalid request body")
+		return
+	}
+
+	// Validate session
+	response, err := h.dbHandler.ValidateSession(req.SessionID)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to validate session")
+		h.writeErrorResponse(w, http.StatusInternalServerError, "validation_failed", "Failed to validate session")
+		return
+	}
+
+	// Write response
+	h.writeJSONResponse(w, http.StatusOK, response)
+}
+
 // writeJSONResponse writes a JSON response
 func (h *HTTPHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")

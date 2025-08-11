@@ -49,3 +49,14 @@ func (q *Queries) Get(name string) (string, error) {
 	}
 	return query, nil
 }
+
+// SQL query constants
+const (
+	CreateSessionQuery      = "create_session.sql"
+	GetUserByUsernameQuery  = "get_user_by_username.sql"
+	GetUserPermissionsQuery = "get_user_permissions.sql"
+	UpdateLastLoginQuery    = "update_last_login.sql"
+	GetSessionByIDQuery     = "get_session_by_id.sql"
+	DeleteSessionQuery      = "delete_session.sql"
+	UpdateSessionTokenQuery = "update_session_token.sql"
+)

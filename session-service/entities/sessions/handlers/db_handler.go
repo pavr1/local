@@ -6,6 +6,7 @@ import (
 	"session-service/config"
 	"session-service/entities/sessions/models"
 	sessionSQL "session-service/entities/sessions/sql"
+	"time"
 
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -219,4 +220,141 @@ func (h *DBHandler) updateLastLogin(userID string) error {
 	}
 
 	return nil
+}
+
+// ValidateSession validates a session and handles expiration/renewal
+func (h *DBHandler) ValidateSession(sessionID string) (*models.SessionValidationResponse, error) {
+	// Get session from database
+	session, err := h.getSessionByID(sessionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &models.SessionValidationResponse{
+				Valid:   false,
+				Message: "Session not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get session: %w", err)
+	}
+
+	// Validate token and extract claims
+	claims, err := h.jwtHandler.ValidateToken(session.TokenHash)
+	if err != nil {
+		// Token is invalid, delete the session
+		if deleteErr := h.deleteSession(sessionID); deleteErr != nil {
+			h.logger.Errorf("Failed to delete invalid session %s: %v", sessionID, deleteErr)
+		}
+		return &models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Invalid token",
+		}, nil
+	}
+
+	// Check if token is expired by checking the expiration time
+	if time.Now().After(claims.ExpiresAt.Time) {
+		// Token is expired, delete the session
+		if deleteErr := h.deleteSession(sessionID); deleteErr != nil {
+			h.logger.Errorf("Failed to delete expired session %s: %v", sessionID, deleteErr)
+		}
+		return &models.SessionValidationResponse{
+			Valid:   false,
+			Message: "Session expired",
+		}, nil
+	}
+
+	// Additional validation: Check if token is about to expire (within 5 minutes)
+	// If so, we'll renew it proactively
+	shouldRenew := time.Until(claims.ExpiresAt.Time) < 5*time.Minute
+
+	if shouldRenew {
+		// Token is valid but expiring soon, renew it
+		// Create a new user profile for token generation
+		userProfile := &models.UserProfile{
+			User: models.User{
+				ID:       claims.UserID,
+				Username: claims.Username,
+			},
+			Role: models.Role{
+				RoleName: claims.RoleName,
+			},
+			Permissions: make([]models.Permission, len(claims.Permissions)),
+		}
+
+		// Convert permissions back to Permission structs
+		for i, permName := range claims.Permissions {
+			userProfile.Permissions[i] = models.Permission{
+				PermissionName: permName,
+			}
+		}
+
+		newToken, err := h.jwtHandler.GenerateToken(sessionID, userProfile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate new token: %w", err)
+		}
+
+		newTokenHash := h.jwtHandler.GenerateTokenHash(newToken)
+
+		// Update session with new token hash
+		if err := h.updateSessionToken(sessionID, newTokenHash); err != nil {
+			return nil, fmt.Errorf("failed to update session token: %w", err)
+		}
+
+		return &models.SessionValidationResponse{
+			Valid:       true,
+			SessionID:   sessionID,
+			Message:     "Session validated and renewed",
+			UserID:      claims.UserID,
+			Username:    claims.Username,
+			RoleName:    claims.RoleName,
+			Permissions: claims.Permissions,
+		}, nil
+	}
+
+	// Token is valid and not expiring soon, just return validation
+	return &models.SessionValidationResponse{
+		Valid:       true,
+		SessionID:   sessionID,
+		Message:     "Session validated",
+		UserID:      claims.UserID,
+		Username:    claims.Username,
+		RoleName:    claims.RoleName,
+		Permissions: claims.Permissions,
+	}, nil
+}
+
+// getSessionByID retrieves a session by ID
+func (h *DBHandler) getSessionByID(sessionID string) (*models.Session, error) {
+	query, err := h.queries.Get(sessionSQL.GetSessionByIDQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get query: %w", err)
+	}
+
+	var session models.Session
+	err = h.db.QueryRow(query, sessionID).Scan(&session.SessionID, &session.TokenHash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+// deleteSession deletes a session by ID
+func (h *DBHandler) deleteSession(sessionID string) error {
+	query, err := h.queries.Get(sessionSQL.DeleteSessionQuery)
+	if err != nil {
+		return fmt.Errorf("failed to get query: %w", err)
+	}
+
+	_, err = h.db.Exec(query, sessionID)
+	return err
+}
+
+// updateSessionToken updates the token hash for a session
+func (h *DBHandler) updateSessionToken(sessionID, tokenHash string) error {
+	query, err := h.queries.Get(sessionSQL.UpdateSessionTokenQuery)
+	if err != nil {
+		return fmt.Errorf("failed to get query: %w", err)
+	}
+
+	_, err = h.db.Exec(query, sessionID, tokenHash)
+	return err
 }

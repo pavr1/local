@@ -1,0 +1,1 @@
+SELECT session_id, token_hash FROM sessions WHERE session_id = $1 
