@@ -41,7 +41,9 @@
    - [Users Table](#users-table)
    - [Roles Table](#roles-table)
    - [Permissions Table](#permissions-table)
-10. [Audit & Security Entities](#audit--security-entities)
+10. [Session Management Entities](#session-management-entities)
+    - [Sessions Table](#sessions-table)
+11. [Audit & Security Entities](#audit--security-entities)
     - [Audit Logs Table](#audit-logs-table)
 
 ---
@@ -56,7 +58,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 This database schema supports a **microservices architecture** with **9 specialized services**:
 
-- **🔐 Session Service**: JWT tokens, login/logout (reads user data from Administration Service)
+- **🔐 Session Service**: JWT tokens, login/logout, session management (`sessions` table)
 - **📋 Audit Service**: Activity logging (`audit_logs` table)
 - **⚙️ Administration Service**: User/role/permission management, equipment tracking (`users`, `roles`, `permissions`, `system_config`, `user_salary`, `mechanics`, `equipment` tables) - **Admin only**
 - **👥 Customer Service**: Customer management (`customers` table)
@@ -1184,6 +1186,35 @@ UNION ALL SELECT r.id, 'Mechanics-Read', 'View mechanic information', 'Mechanics
 -- Waste & Loss (full access for reporting)
 UNION ALL SELECT r.id, 'WasteLoss-Create', 'Create waste loss records', 'WasteLoss', 'Create' FROM roles r WHERE r.role_name = 'employee'
 UNION ALL SELECT r.id, 'WasteLoss-Read', 'View waste loss information', 'WasteLoss', 'Read' FROM roles r WHERE r.role_name = 'employee';
+
+---
+
+## Session Management Entities
+
+### Sessions Table
+**Purpose:** Store minimal session data for JWT token validation. All session metadata (expiration, creation time, etc.) is stored in the JWT token itself.
+
+```sql
+CREATE TABLE sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    token_hash VARCHAR(255) NOT NULL UNIQUE
+);
+
+-- Indexes
+CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
+```
+
+**Field Descriptions:**
+- `session_id`: Primary key, unique session identifier (UUID string)
+- `token_hash`: SHA256 hash of the JWT token for security validation
+
+**Business Logic:**
+- **JWT Token Contains**: User ID, username, role, permissions, expiration time, creation time, and all session metadata
+- **Database Stores**: Only session ID and token hash for validation
+- **Token Validation**: Check if token hash exists in database to validate session
+- **Session Revocation**: Delete session record to invalidate token
+- **No Cleanup Needed**: JWT expiration is handled by the token itself
+- **No Foreign Keys**: All user data is contained in the JWT token
 
 ---
 
