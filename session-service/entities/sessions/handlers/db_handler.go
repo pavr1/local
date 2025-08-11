@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"session-service/config"
 	"session-service/entities/sessions/models"
 	sessionSQL "session-service/entities/sessions/sql"
 
@@ -19,22 +20,18 @@ type DBHandler struct {
 	logger     *logrus.Logger
 }
 
-// NewDBHandlerWithConnection creates a new database handler with database connection
-func NewDBHandlerWithConnection(dbHost string, dbPort int, dbUser, dbPassword, dbName, dbSSLMode string, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
+// NewDBHandler creates a new database handler with internal database connection
+func NewDBHandler(cfg *config.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
 	// Connect to database
-	db, err := connectToDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode, logger)
+	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Create database handler
-	return NewDBHandler(db, jwtHandler, logger)
-}
-
-// NewDBHandler creates a new database handler
-func NewDBHandler(db *sql.DB, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
+	// Load SQL queries
 	queries, err := sessionSQL.LoadQueries()
 	if err != nil {
+		db.Close() // Close connection if queries fail to load
 		return nil, fmt.Errorf("failed to load SQL queries: %w", err)
 	}
 
@@ -55,9 +52,9 @@ func (h *DBHandler) Close() error {
 }
 
 // connectToDatabase connects to the PostgreSQL database
-func connectToDatabase(dbHost string, dbPort int, dbUser, dbPassword, dbName, dbSSLMode string, logger *logrus.Logger) (*sql.DB, error) {
+func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode)
+		cfg.DatabaseHost, cfg.DatabasePort, cfg.DatabaseUser, cfg.DatabasePassword, cfg.DatabaseName, cfg.DatabaseSSLMode)
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

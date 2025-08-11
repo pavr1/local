@@ -20,17 +20,8 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 	// Create JWT handler
 	jwtHandler := handlers.NewJWTHandler(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
 
-	// Create database handler with connection
-	dbHandler, err := handlers.NewDBHandlerWithConnection(
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseUser,
-		cfg.DatabasePassword,
-		cfg.DatabaseName,
-		cfg.DatabaseSSLMode,
-		jwtHandler,
-		logger,
-	)
+	// Create database handler
+	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)
 	if err != nil {
 		return nil, err
 	}
