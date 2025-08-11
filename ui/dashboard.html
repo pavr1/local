@@ -6010,30 +6010,23 @@
             }
         };
 
-        // === TOKEN VALIDATION AND REFRESH ===
+        // === SESSION MANAGEMENT ===
         
-        // Periodic token validation to prevent expiration
-        function startTokenValidation() {
-            // Check token every 5 minutes
-            setInterval(async () => {
-                try {
-                    if (window.authService && window.authService.isAuthenticated()) {
-                        const isValid = await window.authService.validateToken();
-                        if (!isValid) {
-                            console.warn('Token validation failed, redirecting to login');
-                            window.location.href = 'login.html';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Token validation error:', error);
-                    window.location.href = 'login.html';
-                }
-            }, 5 * 60 * 1000); // 5 minutes
+        // Session is automatically validated on every request through the gateway
+        // No need for periodic validation as the gateway handles session refresh
+        function initializeSessionManagement() {
+            console.log('🔧 Session management initialized - sessions are validated on each request');
+            
+            // Check if user is authenticated on page load
+            if (window.authService && !window.authService.isAuthenticated()) {
+                console.warn('No active session found, redirecting to login');
+                window.location.href = 'login.html';
+            }
         }
 
-        // Start token validation when dashboard loads
+        // Initialize session management when dashboard loads
         if (window.authService) {
-            startTokenValidation();
+            initializeSessionManagement();
         }
 
         // Invoice modal and form functions

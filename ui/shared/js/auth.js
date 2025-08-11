@@ -47,7 +47,7 @@ class AuthService {
         if (!CONFIG.AUTH) {
             console.warn('⚠️ CONFIG.AUTH not found, using defaults');
             CONFIG.AUTH = {
-                TOKEN_KEY: 'icecream_auth_token',
+                SESSION_ID_KEY: 'icecream_session_id',
                 USER_KEY: 'icecream_user_data',
                 REMEMBER_KEY: 'icecream_remember_me'
             };
@@ -55,13 +55,13 @@ class AuthService {
         
         // Use the gateway URL for authentication (gateway handles CORS and routing)
         this.baseURL = CONFIG.GATEWAY_URL;
-        this.tokenKey = CONFIG.AUTH.TOKEN_KEY || CONFIG.AUTH.tokenKey;
+        this.sessionIdKey = CONFIG.AUTH.SESSION_ID_KEY || CONFIG.AUTH.sessionIdKey;
         this.userKey = CONFIG.AUTH.USER_KEY || CONFIG.AUTH.userKey;
         this.rememberKey = CONFIG.AUTH.REMEMBER_KEY || CONFIG.AUTH.rememberKey;
         
         console.log('🔧 AuthService initialized with:', {
             baseURL: this.baseURL,
-            tokenKey: this.tokenKey,
+            sessionIdKey: this.sessionIdKey,
             userKey: this.userKey,
             rememberKey: this.rememberKey
         });
@@ -90,21 +90,21 @@ class AuthService {
             }
 
             const data = await response.json();
-            console.log('✅ Login successful:', { user: data.user?.username, hasToken: !!data.token });
+            console.log('✅ Login successful:', { user: data.user?.username, hasSessionId: !!data.session_id });
             
             // Store authentication data
-            this.setToken(data.token, rememberMe);
+            this.setSessionId(data.session_id, rememberMe);
             this.setUserData(data.user, data.role, data.permissions || []);
             
             return {
                 success: true,
                 user: data.user,
                 role: data.role,
-                token: data.token
+                permissions: data.permissions || []
             };
             
         } catch (error) {
-            console.error('❌ Login error:', error.message);
+            console.error('❌ Login error:', error);
             throw error;
         }
     }
@@ -113,135 +113,76 @@ class AuthService {
     
     async logout() {
         try {
-            const token = this.getToken();
-            if (token) {
-                console.log('🔓 Logging out...');
-                await fetch(`${this.baseURL}${CONFIG.API.LOGOUT}`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    }
-                });
+            console.log('🚪 Attempting logout...');
+            
+            const sessionId = this.getSessionId();
+            if (!sessionId) {
+                console.log('⚠️ No session ID found, clearing local data only');
+                this.clearAuthData();
+                return { success: true };
             }
-        } catch (error) {
-            console.warn('⚠️ Logout API call failed:', error.message);
-        } finally {
+
+            const response = await makeAuthenticatedRequest(`${this.baseURL}${CONFIG.API.LOGOUT}`, {
+                method: 'POST'
+            });
+
+            console.log('📡 Logout response status:', response.status);
+
+            // Always clear local data regardless of server response
             this.clearAuthData();
-        }
-    }
-
-    // === TOKEN VALIDATION ===
-    
-    async validateToken() {
-        try {
-            const token = this.getToken();
-            if (!token) {
-                console.log('❌ No token found for validation');
-                return false;
-            }
-
-            console.log('🔍 Validating token...');
             
-            const response = await fetch(`${this.baseURL}${CONFIG.API.VALIDATE}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            console.log('📡 Token validation response status:', response.status);
-
             if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Token is valid:', { user: data.user?.username });
-                return true;
+                console.log('✅ Logout successful');
+                return { success: true };
             } else {
-                console.log('❌ Token validation failed:', response.status);
-                return false;
+                console.warn('⚠️ Server logout failed, but local data cleared');
+                return { success: true, warning: 'Server logout failed' };
             }
             
         } catch (error) {
-            console.error('❌ Token validation error:', error.message);
-            return false;
+            console.error('❌ Logout error:', error);
+            // Always clear local data even if request fails
+            this.clearAuthData();
+            throw error;
         }
     }
 
-    // === TOKEN REFRESH ===
+    // === SESSION MANAGEMENT ===
     
-    async refreshToken() {
-        try {
-            const token = this.getToken();
-            if (!token) {
-                console.log('❌ No token found for refresh');
-                return false;
-            }
-
-            console.log('🔄 Attempting token refresh...');
-            
-            const response = await fetch(`${this.baseURL}${CONFIG.API.REFRESH}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            console.log('📡 Token refresh response status:', response.status);
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('✅ Token refreshed successfully');
-                
-                // Update stored token
-                this.setToken(data.token, this.isRememberMe());
-                return true;
-            } else {
-                console.log('❌ Token refresh failed:', response.status);
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('❌ Token refresh error:', error.message);
-            return false;
-        }
-    }
-
-    // === TOKEN STORAGE ===
-    
-    setToken(token, rememberMe = false) {
+    setSessionId(sessionId, rememberMe = false) {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem(this.sessionIdKey, sessionId);
+        
+        // Store remember me preference
         if (rememberMe) {
-            localStorage.setItem(this.tokenKey, token);
             localStorage.setItem(this.rememberKey, 'true');
         } else {
-            sessionStorage.setItem(this.tokenKey, token);
-            sessionStorage.setItem(this.rememberKey, 'false');
+            localStorage.removeItem(this.rememberKey);
         }
-        console.log('💾 Token stored:', { rememberMe, hasToken: !!token });
+        
+        console.log('💾 Session ID stored:', { sessionId: sessionId ? '***' : null, rememberMe });
     }
 
-    getToken() {
-        const rememberMe = this.isRememberMe();
-        const storage = rememberMe ? localStorage : sessionStorage;
-        const token = storage.getItem(this.tokenKey);
-        console.log('🔑 Token retrieved:', { rememberMe, hasToken: !!token });
-        return token;
+    getSessionId() {
+        // Check sessionStorage first, then localStorage
+        let sessionId = sessionStorage.getItem(this.sessionIdKey);
+        if (!sessionId) {
+            sessionId = localStorage.getItem(this.sessionIdKey);
+        }
+        return sessionId;
     }
 
     setUserData(user, role, permissions) {
         const userData = { user, role, permissions };
-        const rememberMe = this.isRememberMe();
-        const storage = rememberMe ? localStorage : sessionStorage;
+        const storage = this.isRememberMe() ? localStorage : sessionStorage;
         storage.setItem(this.userKey, JSON.stringify(userData));
-        console.log('👤 User data stored:', { user: user?.username, role, permissionsCount: permissions?.length });
+        console.log('💾 User data stored:', { username: user?.username, role: role?.name });
     }
 
     getUserData() {
-        const rememberMe = this.isRememberMe();
-        const storage = rememberMe ? localStorage : sessionStorage;
-        const userData = storage.getItem(this.userKey);
-        return userData ? JSON.parse(userData) : null;
+        const storage = this.isRememberMe() ? localStorage : sessionStorage;
+        const data = storage.getItem(this.userKey);
+        return data ? JSON.parse(data) : null;
     }
 
     isRememberMe() {
@@ -249,32 +190,31 @@ class AuthService {
     }
 
     clearAuthData() {
-        localStorage.removeItem(this.tokenKey);
+        sessionStorage.removeItem(this.sessionIdKey);
+        sessionStorage.removeItem(this.userKey);
+        localStorage.removeItem(this.sessionIdKey);
         localStorage.removeItem(this.userKey);
         localStorage.removeItem(this.rememberKey);
-        sessionStorage.removeItem(this.tokenKey);
-        sessionStorage.removeItem(this.userKey);
-        sessionStorage.removeItem(this.rememberKey);
         console.log('🧹 Auth data cleared');
     }
 
     isAuthenticated() {
-        return !!this.getToken();
+        return !!this.getSessionId();
     }
 
     getCurrentUser() {
         const userData = this.getUserData();
-        return userData ? userData.user : null;
+        return userData?.user || null;
     }
 
     getCurrentRole() {
         const userData = this.getUserData();
-        return userData ? userData.role : null;
+        return userData?.role || null;
     }
 
     getPermissions() {
         const userData = this.getUserData();
-        return userData ? userData.permissions : [];
+        return userData?.permissions || [];
     }
 
     hasPermission(permission) {
@@ -283,100 +223,79 @@ class AuthService {
     }
 }
 
-// === STATUS CHECKER SERVICE ===
-// Note: StatusService is defined in shared/js/status.js - using that implementation instead
+// === GLOBAL AUTH SERVICE INITIALIZATION ===
 
-// === GLOBAL INSTANCES ===
-
-// Function to safely create AuthService when CONFIG is available
 function initializeAuthService() {
     try {
-        if (typeof CONFIG === 'undefined') {
-            console.warn('⚠️ CONFIG not yet available, retrying...');
-            // Retry after a short delay
-            setTimeout(initializeAuthService, 100);
-            return;
+        console.log('🔧 Initializing global AuthService...');
+        
+        if (window.authService) {
+            console.log('⚠️ AuthService already exists, reusing...');
+            return window.authService;
         }
         
-        // Create global AuthService instance  
-        // StatusService is created in shared/js/status.js
-        window.authService = new AuthService();
+        const authService = new AuthService();
+        window.authService = authService;
         
-        console.log('🔧 AuthService initialized (connects to Session Service)');
+        console.log('✅ Global AuthService initialized');
+        return authService;
+        
     } catch (error) {
         console.error('❌ Failed to initialize AuthService:', error);
-        // Retry after a delay
-        setTimeout(initializeAuthService, 500);
-    }
-}
-
-// Start initialization
-initializeAuthService();
-
-// === UTILITY FUNCTIONS ===
-
-// Make authenticated API request with automatic token refresh
-async function makeAuthenticatedRequest(url, options = {}) {
-    try {
-        // Get authentication token
-        const token = window.authService ? window.authService.getToken() : null;
-        
-        if (!token) {
-            console.warn('No authentication token available, redirecting to login');
-            redirectToLogin();
-            throw new Error('No authentication token available. Please log in again.');
-        }
-        
-        // Set up headers
-        const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            ...options.headers
-        };
-        
-        // Make the request
-        const response = await fetch(url, {
-            ...options,
-            headers
-        });
-        
-        // Handle authentication errors
-        if (response.status === 401) {
-            console.warn('Authentication failed (401), attempting token refresh...');
-            
-            // Try to refresh the token
-            if (window.authService) {
-                const refreshSuccess = await window.authService.refreshToken();
-                if (refreshSuccess) {
-                    // Retry the original request with the new token
-                    console.log('Token refreshed, retrying request...');
-                    return makeAuthenticatedRequest(url, options);
-                }
-            }
-            
-            // If refresh failed, redirect to login
-            console.warn('Token refresh failed, redirecting to login');
-            redirectToLogin();
-            throw new Error('Authentication failed. Please log in again.');
-        }
-        
-        return response;
-        
-    } catch (error) {
-        console.error('Authenticated request failed:', error);
         throw error;
     }
 }
 
-// Helper function to redirect to login
-function redirectToLogin() {
-    if (window.authService) {
-        window.authService.clearAuthData();
+// === AUTHENTICATED REQUEST HELPER ===
+
+async function makeAuthenticatedRequest(url, options = {}) {
+    const authService = window.authService;
+    
+    if (!authService) {
+        console.error('❌ AuthService not available');
+        throw new Error('Authentication service not available');
     }
+    
+    if (!authService.isAuthenticated()) {
+        console.error('❌ User not authenticated');
+        redirectToLogin();
+        throw new Error('User not authenticated');
+    }
+    
+    const sessionId = authService.getSessionId();
+    
+    // Set up headers
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionId}`,
+        ...options.headers
+    };
+    
+    // Make the request
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    // Handle authentication errors
+    if (response.status === 401) {
+        console.warn('⚠️ Session expired, redirecting to login');
+        authService.clearAuthData();
+        redirectToLogin();
+        throw new Error('Session expired');
+    }
+    
+    return response;
+}
+
+// === UTILITY FUNCTIONS ===
+
+function redirectToLogin() {
+    console.log('🔄 Redirecting to login page...');
     window.location.href = 'login.html';
 }
 
-// === CONVENIENCE FUNCTIONS ===
+// === CONVENIENCE METHODS ===
 
 async function authenticatedGet(url) {
     return makeAuthenticatedRequest(url, { method: 'GET' });
@@ -398,4 +317,18 @@ async function authenticatedPut(url, data) {
 
 async function authenticatedDelete(url) {
     return makeAuthenticatedRequest(url, { method: 'DELETE' });
+}
+
+// === AUTO-INITIALIZATION ===
+
+// Initialize AuthService when this script loads
+if (typeof CONFIG !== 'undefined') {
+    initializeAuthService();
+} else {
+    console.log('⏳ Waiting for CONFIG to load before initializing AuthService...');
+    window.addEventListener('load', () => {
+        if (typeof CONFIG !== 'undefined') {
+            initializeAuthService();
+        }
+    });
 } 

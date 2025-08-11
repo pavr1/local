@@ -239,14 +239,14 @@
 
             async checkExistingAuth() {
                 if (window.authService && window.authService.isAuthenticated()) {
-                    console.log('🔍 User already authenticated, validating token...');
-                    const isValid = await window.authService.validateToken();
+                    console.log('🔍 User already authenticated, checking session...');
+                    const sessionId = window.authService.getSessionId();
                     
-                    if (isValid) {
-                        console.log('✅ Token valid, redirecting...');
+                    if (sessionId) {
+                        console.log('✅ Session exists, redirecting...');
                         this.showAlert('Already signed in. Redirecting...', 'success');
                         setTimeout(() => {
-                            window.location.href = 'dashboard.html'; // Future dashboard page
+                            window.location.href = 'dashboard.html';
                         }, 1000);
                     }
                 }
@@ -286,7 +286,7 @@
                     const result = await window.authService.login(username, password, rememberMe);
                     
                     console.log('✅ Login successful:', result);
-                    this.showAlert('Login successful! Welcome back.', 'success');
+                    this.showAlert('Login successful! Session created.', 'success');
                     
                     // Show success modal and redirect to dashboard
                     this.showSuccessModal();
