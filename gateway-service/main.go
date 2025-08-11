@@ -99,6 +99,7 @@ func main() {
 	// Public session endpoints (no authentication required) - /p/ prefix
 	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login")).Methods("POST")
 	// Protected session endpoints - session service handles authentication
+	sessionRouter.HandleFunc("/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/validate")).Methods("POST")
 	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout")).Methods("POST")
 
 	// Public health endpoints (no authentication required)
@@ -142,6 +143,7 @@ func main() {
 	fmt.Printf("      POST /api/v1/sessions/p/login    → %s/api/v1/sessions/p/login (+ session creation)\n", config.SessionServiceURL)
 	fmt.Printf("      GET  /api/v1/sessions/p/health   → %s/api/v1/sessions/p/health\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
+	fmt.Printf("      POST /api/v1/sessions/validate   → %s/api/v1/sessions/validate (+ session validation)\n", config.SessionServiceURL)
 	fmt.Printf("      POST /api/v1/sessions/logout     → %s/api/v1/sessions/logout (+ session revocation)\n", config.SessionServiceURL)
 
 	fmt.Println("")
