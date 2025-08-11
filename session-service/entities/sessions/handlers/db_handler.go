@@ -358,3 +358,43 @@ func (h *DBHandler) updateSessionToken(sessionID, tokenHash string) error {
 	_, err = h.db.Exec(query, sessionID, tokenHash)
 	return err
 }
+
+// DeleteSession deletes a session (logout functionality)
+func (h *DBHandler) DeleteSession(sessionID string) (*models.SessionLogoutResponse, error) {
+	// First check if session exists
+	session, err := h.getSessionByID(sessionID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return &models.SessionLogoutResponse{
+				Success:   false,
+				SessionID: sessionID,
+				Message:   "Session not found",
+			}, nil
+		}
+		return nil, fmt.Errorf("failed to get session: %w", err)
+	}
+
+	// Validate token to get user information for logging
+	claims, err := h.jwtHandler.ValidateToken(session.TokenHash)
+	if err != nil {
+		// Token is invalid, but we'll still try to delete the session
+		h.logger.Warnf("Invalid token for session %s during logout, proceeding with deletion", sessionID)
+	} else {
+		h.logger.WithFields(logrus.Fields{
+			"session_id": sessionID,
+			"user_id":    claims.UserID,
+			"username":   claims.Username,
+		}).Info("User logging out")
+	}
+
+	// Delete the session
+	if err := h.deleteSession(sessionID); err != nil {
+		return nil, fmt.Errorf("failed to delete session: %w", err)
+	}
+
+	return &models.SessionLogoutResponse{
+		Success:   true,
+		SessionID: sessionID,
+		Message:   "Session successfully logged out",
+	}, nil
+}

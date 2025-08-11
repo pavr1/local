@@ -8,14 +8,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DBHandlerInterface defines the interface for database operations
+type DBHandlerInterface interface {
+	CreateSession(req *models.SessionCreateRequest) (*models.SessionCreateResponse, error)
+	ValidateSession(sessionID string) (*models.SessionValidationResponse, error)
+	DeleteSession(sessionID string) (*models.SessionLogoutResponse, error)
+	Close() error
+}
+
 // HTTPHandler handles HTTP requests for sessions
 type HTTPHandler struct {
-	dbHandler *DBHandler
+	dbHandler DBHandlerInterface
 	logger    *logrus.Logger
 }
 
 // NewHTTPHandler creates a new HTTP handler
-func NewHTTPHandler(dbHandler *DBHandler, logger *logrus.Logger) *HTTPHandler {
+func NewHTTPHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HTTPHandler {
 	return &HTTPHandler{
 		dbHandler: dbHandler,
 		logger:    logger,
@@ -68,6 +76,37 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 
 	// Write response
 	h.writeJSONResponse(w, http.StatusOK, response)
+}
+
+// LogoutSession handles session logout requests
+func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
+	// Parse request body
+	var req models.SessionLogoutRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Invalid request body")
+		return
+	}
+
+	// Validate required fields
+	if req.SessionID == "" {
+		h.writeErrorResponse(w, http.StatusBadRequest, "missing_session_id", "Session ID is required")
+		return
+	}
+
+	// Delete session
+	response, err := h.dbHandler.DeleteSession(req.SessionID)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to logout session")
+		h.writeErrorResponse(w, http.StatusInternalServerError, "logout_failed", "Failed to logout session")
+		return
+	}
+
+	// Write response
+	if response.Success {
+		h.writeJSONResponse(w, http.StatusOK, response)
+	} else {
+		h.writeJSONResponse(w, http.StatusNotFound, response)
+	}
 }
 
 // writeJSONResponse writes a JSON response

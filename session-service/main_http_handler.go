@@ -41,6 +41,7 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	router.HandleFunc("/health", h.HealthCheck).Methods("GET")
 	router.HandleFunc("/api/v1/sessions/login", h.sessionsHandler.CreateSession).Methods("POST")
 	router.HandleFunc("/api/v1/sessions/validate", h.sessionsHandler.ValidateSession).Methods("POST")
+	router.HandleFunc("/api/v1/sessions/logout", h.sessionsHandler.LogoutSession).Methods("POST")
 }
 
 // HealthCheck handles health check requests
