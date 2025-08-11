@@ -83,7 +83,7 @@ func main() {
 	// ==== GATEWAY ENDPOINTS ====
 
 	// Gateway health check endpoint
-	api.HandleFunc("/health", healthHandler).Methods("GET")
+	api.HandleFunc("/health", createHealthHandler(&config)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -98,12 +98,11 @@ func main() {
 
 	// Public session endpoints (no authentication required) - /p/ prefix
 	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login")).Methods("POST")
-	sessionRouter.HandleFunc("/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
-
 	// Protected session endpoints - session service handles authentication
 	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout")).Methods("POST")
 
 	// Public health endpoints (no authentication required)
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
 	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
 	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
@@ -141,7 +140,6 @@ func main() {
 	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	fmt.Println("   📂 Public:")
 	fmt.Printf("      POST /api/v1/sessions/p/login    → %s/api/v1/sessions/p/login (+ session creation)\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/sessions/p/validate → %s/api/v1/sessions/validate\n", config.SessionServiceURL)
 	fmt.Printf("      GET  /api/v1/sessions/p/health   → %s/api/v1/sessions/p/health\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
 	fmt.Printf("      POST /api/v1/sessions/logout     → %s/api/v1/sessions/logout (+ session revocation)\n", config.SessionServiceURL)
@@ -265,70 +263,73 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 	}
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
-	// Check all business services that appear on the dashboard + data service for UI monitoring
-	gatewayHealthy := true // Gateway is healthy if it's responding to this request
-	sessionHealthy := checkServiceHealth("http://localhost:8081/api/v1/sessions/p/health")
-	ordersHealthy := checkServiceHealth("http://localhost:8083/api/v1/orders/p/health")
-	inventoryHealthy := checkServiceHealth("http://localhost:8084/api/v1/inventory/p/health")
-	invoiceHealthy := checkServiceHealth("http://localhost:8085/api/v1/invoices/p/health")
-	dataHealthy := checkServiceHealth("http://localhost:8086/health") // For UI monitoring
+// createHealthHandler creates a health handler with config
+func createHealthHandler(config *Config) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check all business services that appear on the dashboard + data service for UI monitoring
+		gatewayHealthy := true // Gateway is healthy if it's responding to this request
+		sessionHealthy := checkServiceHealth(config.SessionServiceURL + "/api/v1/sessions/p/health")
+		ordersHealthy := checkServiceHealth(config.OrdersServiceURL + "/api/v1/orders/p/health")
+		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL + "/api/v1/inventory/p/health")
+		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL + "/api/v1/invoices/p/health")
+		dataHealthy := checkServiceHealth("http://localhost:8086/health") // For UI monitoring
 
-	status := "healthy"
-	if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
-		status = "degraded"
+		status := "healthy"
+		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
+			status = "degraded"
+		}
+
+		response := map[string]interface{}{
+			"status":             status,
+			"version":            "1.0.0",
+			"time":               time.Now(),
+			"gateway":            "operational",
+			"session_management": "enabled",
+			"services": map[string]string{
+				"gateway-service": func() string {
+					if gatewayHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+				"session-service": func() string {
+					if sessionHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+				"orders-service": func() string {
+					if ordersHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+				"inventory-service": func() string {
+					if inventoryHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+				"invoice-service": func() string {
+					if invoiceHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+				"data-service": func() string {
+					if dataHealthy {
+						return "healthy"
+					}
+					return "unhealthy"
+				}(),
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		// Always return HTTP 200 - let the client decide how to handle degraded status
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(response)
 	}
-
-	response := map[string]interface{}{
-		"status":             status,
-		"version":            "1.0.0",
-		"time":               time.Now(),
-		"gateway":            "operational",
-		"session_management": "enabled",
-		"services": map[string]string{
-			"gateway-service": func() string {
-				if gatewayHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"session-service": func() string {
-				if sessionHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"orders-service": func() string {
-				if ordersHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"inventory-service": func() string {
-				if inventoryHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"invoice-service": func() string {
-				if invoiceHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-			"data-service": func() string {
-				if dataHealthy {
-					return "healthy"
-				}
-				return "unhealthy"
-			}(),
-		},
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	// Always return HTTP 200 - let the client decide how to handle degraded status
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
 }
 
 // checkServiceHealth checks if a service is responding to health checks

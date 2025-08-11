@@ -118,20 +118,24 @@ func getServiceConfig() Config {
 
 // TestHealthHandler tests the health check endpoint
 func TestHealthHandler(t *testing.T) {
+	config := getServiceConfig()
+	handler := createHealthHandler(&config)
+
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
 
-	healthHandler(w, req)
+	handler.ServeHTTP(w, req)
 
-	// When backend services are not running, health handler returns degraded status with 503
-	assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+	// Health handler always returns 200, even when services are down (degraded status)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
 
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
 
-	assert.Equal(t, "degraded", response["status"])
+	// Status can be either "healthy" or "degraded" depending on service availability
+	assert.Contains(t, []string{"healthy", "degraded"}, response["status"])
 	assert.Equal(t, "1.0.0", response["version"])
 	assert.Equal(t, "operational", response["gateway"])
 	assert.Equal(t, "enabled", response["session_management"])
@@ -190,7 +194,9 @@ func TestCreateProxyHandler(t *testing.T) {
 
 // TestConcurrentRequests tests handling of concurrent requests
 func TestConcurrentRequests(t *testing.T) {
-	handler := corsMiddleware(http.HandlerFunc(healthHandler))
+	config := getServiceConfig()
+	healthHandler := createHealthHandler(&config)
+	handler := corsMiddleware(healthHandler)
 
 	const numRequests = 10
 	responses := make(chan *httptest.ResponseRecorder, numRequests)
@@ -208,8 +214,8 @@ func TestConcurrentRequests(t *testing.T) {
 	// Collect and verify responses
 	for i := 0; i < numRequests; i++ {
 		w := <-responses
-		// Health handler returns 503 when backend services are not running
-		assert.Equal(t, http.StatusServiceUnavailable, w.Code)
+		// Health handler always returns 200, even when services are down
+		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 	}
 }
@@ -333,11 +339,13 @@ func BenchmarkCorsMiddleware(b *testing.B) {
 }
 
 func BenchmarkHealthHandler(b *testing.B) {
+	config := getServiceConfig()
+	handler := createHealthHandler(&config)
 	req := httptest.NewRequest("GET", "/health", nil)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		w := httptest.NewRecorder()
-		healthHandler(w, req)
+		handler.ServeHTTP(w, req)
 	}
 }

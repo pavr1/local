@@ -92,7 +92,7 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 		assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
-		assert.Contains(t, w.Body.String(), "missing_token")
+		assert.Contains(t, w.Body.String(), "missing_session")
 	})
 
 	t.Run("malformed authorization header", func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 		protectedHandler.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
-		assert.Contains(t, w.Body.String(), "missing_token")
+		assert.Contains(t, w.Body.String(), "missing_session")
 	})
 
 	t.Run("empty Bearer token", func(t *testing.T) {
@@ -114,7 +114,7 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 		protectedHandler.ServeHTTP(w, req)
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
-		assert.Contains(t, w.Body.String(), "missing_token")
+		assert.Contains(t, w.Body.String(), "missing_session")
 	})
 
 	t.Run("invalid token returns error", func(t *testing.T) {

@@ -132,7 +132,7 @@ func (sm *SessionMiddleware) SessionAwareLogoutHandler(sessionServiceURL string)
 		}
 
 		// Forward logout request to session service with gateway headers
-		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/logout", r.Body)
+		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/logout", r.Body)
 		if err != nil {
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create logout request")
 			return

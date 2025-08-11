@@ -51,7 +51,7 @@ func TestSetupRoutes(t *testing.T) {
 	handler.SetupRoutes(router)
 
 	// Test public health endpoint (should work without gateway headers)
-	req := httptest.NewRequest("GET", "/p/health", nil)
+	req := httptest.NewRequest("GET", "/api/v1/sessions/p/health", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -175,8 +175,8 @@ func TestRouterSetup(t *testing.T) {
 		method string
 		path   string
 	}{
-		{"GET", "/health"},
-		{"POST", "/api/v1/sessions/login"},
+		{"GET", "/api/v1/sessions/p/health"},
+		{"POST", "/api/v1/sessions/p/login"},
 		{"POST", "/api/v1/sessions/validate"},
 		{"POST", "/api/v1/sessions/logout"},
 	}
