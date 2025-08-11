@@ -401,7 +401,6 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>ID</th>
                             <th>Name</th>
                             <th>Description</th>
                             <th>Status</th>
@@ -412,7 +411,6 @@
                     <tbody>
                         ${recipeCategoriesData.map(item => `
                             <tr>
-                                <td><code>${item.id}</code></td>
                                 <td><strong>${item.name}</strong></td>
                                 <td>${item.description || '-'}</td>
                                 <td>
@@ -576,10 +574,6 @@
                     <div class="col-md-6">
                         <h6 class="fw-bold">Recipe Category Information</h6>
                         <table class="table table-borderless">
-                            <tr>
-                                <td class="fw-bold">ID:</td>
-                                <td><code>${category.id}</code></td>
-                            </tr>
                             <tr>
                                 <td class="fw-bold">Name:</td>
                                 <td><strong>${category.name}</strong></td>
