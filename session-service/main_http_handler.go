@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
+	"session-service/middleware"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,9 @@ import (
 
 // MainHTTPHandler handles all HTTP requests for the session service
 type MainHTTPHandler struct {
-	sessionsHandler *handlers.HTTPHandler
-	logger          *logrus.Logger
+	sessionsHandler   *handlers.HTTPHandler
+	gatewayMiddleware *middleware.GatewayMiddleware
+	logger            *logrus.Logger
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
@@ -29,19 +31,28 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 	// Create HTTP handler
 	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 
+	// Create gateway middleware
+	gatewayMiddleware := middleware.NewGatewayMiddleware()
+
 	return &MainHTTPHandler{
-		sessionsHandler: sessionsHandler,
-		logger:          logger,
+		sessionsHandler:   sessionsHandler,
+		gatewayMiddleware: gatewayMiddleware,
+		logger:            logger,
 	}, nil
 }
 
 // SetupRoutes sets up all the routes for the service
 func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
-	// Set up routes
-	router.HandleFunc("/health", h.HealthCheck).Methods("GET")
-	router.HandleFunc("/api/v1/sessions/login", h.sessionsHandler.CreateSession).Methods("POST")
-	router.HandleFunc("/api/v1/sessions/validate", h.sessionsHandler.ValidateSession).Methods("POST")
-	router.HandleFunc("/api/v1/sessions/logout", h.sessionsHandler.LogoutSession).Methods("POST")
+	// Public router for endpoints that don't require gateway validation
+	publicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
+	publicRouter.HandleFunc("/p/health", h.HealthCheck).Methods("GET")
+	publicRouter.HandleFunc("/p/login", h.sessionsHandler.CreateSession).Methods("POST")
+
+	// Protected endpoints (require gateway validation)
+	protectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
+	protectedRouter.Use(h.gatewayMiddleware.ValidateGateway)
+	protectedRouter.HandleFunc("/validate", h.sessionsHandler.ValidateSession).Methods("POST")
+	protectedRouter.HandleFunc("/logout", h.sessionsHandler.LogoutSession).Methods("POST")
 }
 
 // HealthCheck handles health check requests

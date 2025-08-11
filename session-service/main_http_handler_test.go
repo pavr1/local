@@ -13,6 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"session-service/middleware"
 )
 
 func TestNewMainHTTPHandler(t *testing.T) {
@@ -41,18 +43,63 @@ func TestNewMainHTTPHandler(t *testing.T) {
 func TestSetupRoutes(t *testing.T) {
 	logger := logrus.New()
 	handler := &MainHTTPHandler{
-		logger: logger,
+		logger:            logger,
+		gatewayMiddleware: &middleware.GatewayMiddleware{},
 	}
 
 	router := mux.NewRouter()
 	handler.SetupRoutes(router)
 
-	// Test health endpoint
-	req := httptest.NewRequest("GET", "/health", nil)
+	// Test public health endpoint (should work without gateway headers)
+	req := httptest.NewRequest("GET", "/p/health", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Test public login endpoint (should work without gateway headers)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/p/login", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Login should work without gateway headers since it's public
+	assert.NotEqual(t, http.StatusForbidden, w.Code)
+
+	// Test protected validate endpoint (should require gateway headers)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should be forbidden without gateway headers
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// Test protected validate endpoint with gateway headers (should work)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should not be forbidden with proper gateway headers
+	assert.NotEqual(t, http.StatusForbidden, w.Code)
+
+	// Test protected logout endpoint (should require gateway headers)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/logout", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should be forbidden without gateway headers
+	assert.Equal(t, http.StatusForbidden, w.Code)
+
+	// Test protected logout endpoint with gateway headers (should work)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/logout", nil)
+	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	// Should not be forbidden with proper gateway headers
+	assert.NotEqual(t, http.StatusForbidden, w.Code)
 }
 
 func TestHealthCheck(t *testing.T) {
