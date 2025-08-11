@@ -37,7 +37,6 @@ func LoadQueries() (*Queries, error) {
 			queries.queries[queryName] = string(content)
 		}
 	}
-
 	return queries, nil
 }
 
@@ -52,11 +51,11 @@ func (q *Queries) Get(name string) (string, error) {
 
 // SQL query constants
 const (
-	CreateSessionQuery      = "create_session.sql"
-	GetUserByUsernameQuery  = "get_user_by_username.sql"
-	GetUserPermissionsQuery = "get_user_permissions.sql"
-	UpdateLastLoginQuery    = "update_last_login.sql"
-	GetSessionByIDQuery     = "get_session_by_id.sql"
-	DeleteSessionQuery      = "delete_session.sql"
-	UpdateSessionTokenQuery = "update_session_token.sql"
+	CreateSessionQuery      = "create_session"
+	GetUserByUsernameQuery  = "get_user_by_username"
+	GetUserPermissionsQuery = "get_user_permissions"
+	UpdateLastLoginQuery    = "update_last_login"
+	GetSessionByIDQuery     = "get_session_by_id"
+	DeleteSessionQuery      = "delete_session"
+	UpdateSessionTokenQuery = "update_session_token"
 )

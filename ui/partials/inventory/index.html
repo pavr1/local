@@ -244,11 +244,12 @@
         console.log('📊 Loading inventory statistics...');
         
         try {
-            const serviceUrls = getServiceUrls();
+            // Use gateway URL for all API calls
+            const gatewayUrl = CONFIG.GATEWAY_URL;
             
             // Load suppliers count
             try {
-                const suppliersResponse = await fetch(`${serviceUrls.inventory}/api/v1/inventory/suppliers?limit=1000`);
+                const suppliersResponse = await authenticatedGet(`${gatewayUrl}/api/v1/inventory/suppliers?limit=1000`);
                 if (suppliersResponse.ok) {
                     const suppliersData = await suppliersResponse.json();
                     document.getElementById('suppliers-count').textContent = suppliersData.data?.length || 0;
@@ -260,7 +261,7 @@
             
             // Load ingredients count  
             try {
-                const ingredientsResponse = await fetch(`${serviceUrls.inventory}/api/v1/inventory/ingredients?limit=1000`);
+                const ingredientsResponse = await authenticatedGet(`${gatewayUrl}/api/v1/inventory/ingredients?limit=1000`);
                 if (ingredientsResponse.ok) {
                     const ingredientsData = await ingredientsResponse.json();
                     document.getElementById('ingredients-count').textContent = ingredientsData.data?.length || 0;
