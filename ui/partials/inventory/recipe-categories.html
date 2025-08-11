@@ -313,7 +313,7 @@
         try {
             showRecipeCategoriesLoading();
             
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch recipe categories: ${response.status}`);
@@ -522,13 +522,7 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(recipeCategoryData)
-            });
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`, recipeCategoryData);
             
             const result = await response.json();
             
@@ -567,7 +561,7 @@
 
     async function loadRecipeCategoryForView(categoryId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -628,7 +622,7 @@
 
     async function loadRecipeCategoryForEdit(categoryId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -705,13 +699,7 @@
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${currentRecipeCategory.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(recipeCategoryData)
-            });
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${currentRecipeCategory.id}`, recipeCategoryData);
             
             const result = await response.json();
             
@@ -758,9 +746,7 @@
         
         if (confirmed.isConfirmed) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`, {
-                    method: 'DELETE'
-                });
+                const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories/${categoryId}`);
                 
                 if (response.ok) {
                     Alert.success('Recipe category deleted successfully!');
