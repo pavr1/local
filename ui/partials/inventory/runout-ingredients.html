@@ -416,7 +416,7 @@
         try {
             showRunoutIngredientsLoading();
             
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients`);
             
             if (!response.ok) {
                 throw new Error(`Failed to fetch runout ingredients: ${response.status}`);
@@ -628,13 +628,7 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(runoutIngredientData)
-            });
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients`, runoutIngredientData);
             
             const result = await response.json();
             
@@ -673,7 +667,7 @@
 
     async function loadRunoutIngredientForView(runoutIngredientId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -738,7 +732,7 @@
 
     async function loadRunoutIngredientForEdit(runoutIngredientId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -823,13 +817,7 @@
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${currentRunoutIngredient.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(runoutIngredientData)
-            });
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${currentRunoutIngredient.id}`, runoutIngredientData);
             
             const result = await response.json();
             
@@ -876,9 +864,7 @@
         
         if (confirmed.isConfirmed) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`, {
-                    method: 'DELETE'
-                });
+                const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/inventory/runout-ingredients/${runoutIngredientId}`);
                 
                 if (response.ok) {
                     Alert.success('Runout ingredient deleted successfully!');

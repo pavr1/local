@@ -120,6 +120,11 @@ func (h *RunoutIngredientDBHandler) List(req models.ListRunoutIngredientsRequest
 		return nil, fmt.Errorf("error iterating runout ingredients: %w", err)
 	}
 
+	// Ensure we always return an empty slice instead of nil
+	if runoutIngredients == nil {
+		runoutIngredients = []models.RunoutIngredient{}
+	}
+
 	return runoutIngredients, nil
 }
 
