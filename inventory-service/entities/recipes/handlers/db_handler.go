@@ -112,6 +112,11 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 		return nil, fmt.Errorf("error iterating recipes: %w", err)
 	}
 
+	// Ensure we always return an empty slice instead of nil
+	if recipes == nil {
+		recipes = []models.Recipe{}
+	}
+
 	return recipes, nil
 }
 

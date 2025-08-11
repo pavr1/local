@@ -466,11 +466,11 @@
         try {
             showRecipesLoading();
             
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch recipes: ${response.status}`);
-            }
+                    const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch recipes: ${response.status}`);
+        }
             
             const result = await response.json();
             console.log('📦 Recipes loaded:', result);
@@ -490,7 +490,7 @@
     // Load recipe categories for dropdowns
     async function loadRecipeCategories() {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
             
             if (response.ok) {
                 const result = await response.json();
@@ -730,13 +730,7 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(recipeData)
-            });
+                    const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
             
             const result = await response.json();
             
@@ -775,7 +769,7 @@
 
     async function loadRecipeForView(recipeId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -853,7 +847,7 @@
 
     async function loadRecipeForEdit(recipeId) {
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -952,13 +946,7 @@
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         
         try {
-            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(recipeData)
-            });
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
             
             const result = await response.json();
             
@@ -1005,9 +993,7 @@
         
         if (confirmed.isConfirmed) {
             try {
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`, {
-                    method: 'DELETE'
-                });
+                const response = await authenticatedDelete(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
                 
                 if (response.ok) {
                     Alert.success('Recipe deleted successfully!');
