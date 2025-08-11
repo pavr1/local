@@ -51,7 +51,7 @@ func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.GetIngredientByIDQuery, id).
-		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
+		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt, &ingredient.CategoryName, &ingredient.SupplierName)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -79,7 +79,7 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 	var ingredients []models.Ingredient
 	for rows.Next() {
 		var ingredient models.Ingredient
-		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
+		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.SupplierID, &ingredient.CreatedAt, &ingredient.UpdatedAt, &ingredient.CategoryName, &ingredient.SupplierName)
 		if err != nil {
 			h.logger.WithError(err).Warn("Failed to scan ingredient row, skipping")
 			continue

@@ -9,6 +9,8 @@ type Ingredient struct {
 	SupplierID           *string `json:"supplier_id" db:"supplier_id"`
 	CreatedAt            string  `json:"created_at" db:"created_at"`
 	UpdatedAt            string  `json:"updated_at" db:"updated_at"`
+	CategoryName         *string `json:"category_name" db:"category_name"`
+	SupplierName         *string `json:"supplier_name" db:"supplier_name"`
 }
 
 // CreateIngredientRequest represents the request to create a new ingredient

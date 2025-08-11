@@ -3313,18 +3313,15 @@
 
         // Create ingredient table row
         function createIngredientRow(ingredient) {
-            const category = availableCategories.find(c => c.id === ingredient.ingredient_category_id);
-            const supplier = availableSuppliers.find(s => s.id === ingredient.supplier_id);
-            
             return `
                 <tr>
-                    <td><strong>${ingredient.ingredient_name}</strong></td>
+                    <td><strong>${ingredient.name}</strong></td>
                     <td>${ingredient.description || '-'}</td>
                     <td>
-                        ${category ? `<span class="badge bg-info">${category.name}</span>` : '-'}
+                        ${ingredient.category_name ? `<span class="badge bg-info">${ingredient.category_name}</span>` : '-'}
                     </td>
                     <td>
-                        ${supplier ? `<span class="supplier-badge">${supplier.supplier_name}</span>` : '-'}
+                        ${ingredient.supplier_name ? `<span class="supplier-badge">${ingredient.supplier_name}</span>` : '-'}
                     </td>
                     <td>${new Date(ingredient.created_at).toLocaleDateString()}</td>
                     <td>
@@ -5156,7 +5153,7 @@
             // Validate required fields
             let isValid = true;
             
-            if (!ingredientData.ingredient_name || ingredientData.ingredient_name.length < 1 || ingredientData.ingredient_name.length > 255) {
+            if (!ingredientData.name || ingredientData.name.length < 1 || ingredientData.name.length > 255) {
                 document.getElementById('ingredientName').classList.add('is-invalid');
                 isValid = false;
             }
@@ -5926,7 +5923,7 @@
             // Validate required fields
             let isValid = true;
             
-            if (!ingredientData.ingredient_name) {
+            if (!ingredientData.name || ingredientData.name.length < 1 || ingredientData.name.length > 255) {
                 document.getElementById('editIngredientName').classList.add('is-invalid');
                 isValid = false;
             }
