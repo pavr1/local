@@ -40,7 +40,7 @@ start-locally: deps ## Run the service locally (no Docker)
 	@echo "$(YELLOW)⚠️  Make sure data-service is running first!$(RESET)"
 	@echo "$(CYAN)📝 Service will be available at: http://localhost:8081$(RESET)"
 	@echo "$(CYAN)🚀 Starting service in background...$(RESET)"
-	@nohup go run main.go > service.log 2>&1 & echo $$! > service.pid
+	@nohup go run . > service.log 2>&1 & echo $$! > service.pid
 	@sleep 2
 	@echo "$(GREEN)✅ Service started successfully$(RESET)"
 

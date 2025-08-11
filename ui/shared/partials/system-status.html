@@ -1,6 +1,11 @@
 <!-- System Status Component - Self-Contained -->
 <div class="system-status mt-5">
-    <h6 class="text-muted mb-3">System Status</h6>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-muted mb-0">System Status</h6>
+        <button class="btn btn-sm btn-outline-secondary refresh-status-btn" id="refresh-status-btn" title="Refresh Status">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
     <div class="status-grid">
         <div class="status-item">
             <div class="status-indicator loading" id="gateway-status"></div>
@@ -18,6 +23,10 @@
             <div class="status-indicator loading" id="inventory-status"></div>
             <span>Inventory</span>
         </div>
+        <div class="status-item">
+            <div class="status-indicator loading" id="invoices-status"></div>
+            <span>Invoice</span>
+        </div>
     </div>
 </div>
 
@@ -31,11 +40,13 @@
     class SystemStatusComponent {
         constructor() {
             this.updateInterval = null;
+            this.healthCheckInterval = null;
             this.statusMapping = {
                 'gateway': 'gateway-status',
                 'session': 'session-status', 
                 'orders': 'orders-status',
-                'inventory': 'inventory-status'
+                'inventory': 'inventory-status',
+                'invoices': 'invoices-status'
             };
             
             this.init();
@@ -45,6 +56,7 @@
             // Wait for StatusService to be available
             this.waitForStatusService().then(() => {
                 this.startMonitoring();
+                this.setupRefreshButton();
             });
         }
         
@@ -88,6 +100,9 @@
                 console.log('✅ StatusService health checks already running');
             }
             
+            // Start real-time health monitoring every 2 seconds (like dashboard)
+            this.startRealTimeMonitoring();
+            
             // Update UI status indicators when health checks complete
             this.updateInterval = setInterval(() => {
                 this.updateStatusIndicators();
@@ -97,6 +112,96 @@
             setTimeout(() => this.updateStatusIndicators(), 500);
             setTimeout(() => this.updateStatusIndicators(), 1500);
             setTimeout(() => this.updateStatusIndicators(), 3000);
+        }
+        
+        startRealTimeMonitoring() {
+            console.log('🔄 System Status Component: Starting real-time monitoring...');
+            
+            // Clear any existing interval
+            if (this.healthCheckInterval) {
+                clearInterval(this.healthCheckInterval);
+            }
+            
+            // Set up automatic health checking every 2 seconds for real-time status
+            this.healthCheckInterval = setInterval(async () => {
+                await this.performRealTimeHealthCheck();
+            }, 2000); // 2 seconds for real-time updates
+        }
+        
+        stopRealTimeMonitoring() {
+            if (this.healthCheckInterval) {
+                clearInterval(this.healthCheckInterval);
+                this.healthCheckInterval = null;
+                console.log('⏹️ System Status Component: Real-time monitoring stopped');
+            }
+        }
+        
+        async performRealTimeHealthCheck() {
+            try {
+                // Use AbortController for better browser compatibility
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch(CONFIG.GATEWAY_URL + '/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    const healthData = await response.json();
+                    
+                    // Update status indicators based on gateway health response
+                    if (healthData.services) {
+                        this.updateStatusFromGateway(healthData.services);
+                    }
+                    
+                } else {
+                    throw new Error(`Gateway health check failed: ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.warn('🔄 [Auto] System status check failed:', error.message);
+                // Mark all services as offline if gateway is unreachable
+                this.markAllServicesOffline();
+            }
+        }
+        
+        updateStatusFromGateway(servicesStatus) {
+            const serviceMapping = {
+                'data-service': 'gateway',
+                'gateway-service': 'gateway', 
+                'session-service': 'session',
+                'orders-service': 'orders',
+                'inventory-service': 'inventory',
+                'invoice-service': 'invoices'
+            };
+            
+            for (const [gatewayServiceName, statusKey] of Object.entries(serviceMapping)) {
+                const elementId = this.statusMapping[statusKey];
+                if (elementId) {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        const serviceStatus = servicesStatus[gatewayServiceName];
+                        if (serviceStatus) {
+                            window.statusService.updateStatusIndicator(element, serviceStatus);
+                        }
+                    }
+                }
+            }
+        }
+        
+        markAllServicesOffline() {
+            for (const elementId of Object.values(this.statusMapping)) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    window.statusService.updateStatusIndicator(element, 'unhealthy');
+                }
+            }
         }
         
         updateStatusIndicators() {
@@ -135,12 +240,52 @@
             }
         }
         
+        setupRefreshButton() {
+            const refreshBtn = document.getElementById('refresh-status-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', async () => {
+                    console.log('🔄 Manual refresh requested');
+                    
+                    // Add spinning animation to button
+                    const icon = refreshBtn.querySelector('i');
+                    icon.classList.add('fa-spin');
+                    refreshBtn.disabled = true;
+                    
+                    try {
+                        // Perform immediate health check
+                        await this.performRealTimeHealthCheck();
+                        
+                        // Also trigger StatusService health check
+                        if (window.statusService) {
+                            await window.statusService.checkAllServices();
+                            this.updateStatusIndicators();
+                        }
+                        
+                        console.log('✅ Manual refresh completed');
+                    } catch (error) {
+                        console.error('❌ Manual refresh failed:', error);
+                    } finally {
+                        // Remove spinning animation
+                        icon.classList.remove('fa-spin');
+                        refreshBtn.disabled = false;
+                    }
+                });
+                console.log('✅ Refresh button setup complete');
+            }
+        }
+        
         destroy() {
             if (this.updateInterval) {
                 clearInterval(this.updateInterval);
                 this.updateInterval = null;
-                console.log('🧹 System Status Component: Cleaned up');
             }
+            
+            if (this.healthCheckInterval) {
+                clearInterval(this.healthCheckInterval);
+                this.healthCheckInterval = null;
+            }
+            
+            console.log('🧹 System Status Component: Cleaned up');
         }
     }
     
