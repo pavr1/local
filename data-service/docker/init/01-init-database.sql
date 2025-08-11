@@ -316,17 +316,11 @@ CREATE TABLE permissions (
 );
 
 -- Sessions Table (for database-backed session management)
+-- Minimal schema: only session_id and token
+-- All session metadata (expiration, user data, etc.) is stored in the JWT token itself
 CREATE TABLE sessions (
     session_id VARCHAR(255) PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    username VARCHAR(255) NOT NULL,
-    role_name VARCHAR(255) NOT NULL,
-    permissions TEXT[], -- Array of permission strings
-    token_hash VARCHAR(255) NOT NULL UNIQUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL,
-    last_activity TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    is_active BOOLEAN NOT NULL DEFAULT true
+    token TEXT NOT NULL UNIQUE
 );
 
 -- =============================================================================
@@ -422,11 +416,7 @@ CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX idx_audit_logs_table_name ON audit_logs(table_name);
 
 -- Session indexes for performance
-CREATE INDEX idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
-CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
-CREATE INDEX idx_sessions_is_active ON sessions(is_active);
-CREATE INDEX idx_sessions_user_active ON sessions(user_id, is_active);
+CREATE INDEX idx_sessions_token ON sessions(token);
 
 -- Indexes for Invoice Tables
 CREATE INDEX idx_invoice_number ON invoice(invoice_number);

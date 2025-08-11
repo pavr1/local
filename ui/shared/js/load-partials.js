@@ -279,9 +279,11 @@ function logout() {
             auth.logout();
         } else {
             // Fallback logout
-            localStorage.removeItem('icecream_auth_token');
+            localStorage.removeItem('icecream_session_id');
             localStorage.removeItem('icecream_user_data');
-            sessionStorage.clear();
+            localStorage.removeItem('icecream_remember_me');
+            sessionStorage.removeItem('icecream_session_id');
+            sessionStorage.removeItem('icecream_user_data');
         }
         
         // Redirect to login

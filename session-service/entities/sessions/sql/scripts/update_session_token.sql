@@ -1,1 +1,1 @@
-UPDATE sessions SET token_hash = $2 WHERE session_id = $1 
+UPDATE sessions SET token = $2 WHERE session_id = $1 

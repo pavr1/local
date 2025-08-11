@@ -20,13 +20,13 @@ type MockQueries struct {
 func NewMockQueries() *MockQueries {
 	return &MockQueries{
 		queries: map[string]string{
-			"create_session":       "INSERT INTO sessions (session_id, token_hash) VALUES ($1, $2)",
+			"create_session":       "INSERT INTO sessions (session_id, token) VALUES ($1, $2)",
 			"get_user_by_username": "SELECT id, username, password_hash, full_name, role_id, is_active, last_login, created_at, updated_at FROM users WHERE username = $1",
 			"get_user_permissions": "SELECT p.id, p.permission_name, p.description, p.role_id, p.created_at, p.updated_at FROM permissions p JOIN user_roles ur ON p.role_id = ur.role_id WHERE ur.user_id = $1",
 			"update_last_login":    "UPDATE users SET last_login = NOW() WHERE id = $1",
-			"get_session_by_id":    "SELECT session_id, token_hash FROM sessions WHERE session_id = $1",
+			"get_session_by_id":    "SELECT session_id, token FROM sessions WHERE session_id = $1",
 			"delete_session":       "DELETE FROM sessions WHERE session_id = $1",
-			"update_session_token": "UPDATE sessions SET token_hash = $2 WHERE session_id = $1",
+			"update_session_token": "UPDATE sessions SET token = $2 WHERE session_id = $1",
 		},
 	}
 }

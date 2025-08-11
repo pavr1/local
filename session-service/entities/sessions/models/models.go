@@ -7,7 +7,7 @@ import (
 // Session represents a user session
 type Session struct {
 	SessionID string `json:"session_id"`
-	TokenHash string `json:"token_hash"`
+	Token     string `json:"token"`
 }
 
 // SessionCreateRequest represents a session creation request

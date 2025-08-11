@@ -1197,21 +1197,21 @@ UNION ALL SELECT r.id, 'WasteLoss-Read', 'View waste loss information', 'WasteLo
 ```sql
 CREATE TABLE sessions (
     session_id VARCHAR(255) PRIMARY KEY,
-    token_hash VARCHAR(255) NOT NULL UNIQUE
+    token TEXT NOT NULL UNIQUE
 );
 
 -- Indexes
-CREATE INDEX idx_sessions_token_hash ON sessions(token_hash);
+CREATE INDEX idx_sessions_token ON sessions(token);
 ```
 
 **Field Descriptions:**
 - `session_id`: Primary key, unique session identifier (UUID string)
-- `token_hash`: SHA256 hash of the JWT token for security validation
+- `token`: Full JWT token for development/debugging purposes
 
 **Business Logic:**
 - **JWT Token Contains**: User ID, username, role, permissions, expiration time, creation time, and all session metadata
-- **Database Stores**: Only session ID and token hash for validation
-- **Token Validation**: Check if token hash exists in database to validate session
+- **Database Stores**: Only session ID and full token for validation and debugging
+- **Token Validation**: Check if token exists in database to validate session
 - **Session Revocation**: Delete session record to invalidate token
 - **No Cleanup Needed**: JWT expiration is handled by the token itself
 - **No Foreign Keys**: All user data is contained in the JWT token

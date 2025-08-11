@@ -92,10 +92,10 @@ func (h *DBHandler) CreateSession(req *models.SessionCreateRequest) (*models.Ses
 	}
 
 	// Generate token hash using JWT handler
-	tokenHash := h.jwtHandler.GenerateTokenHash(tokenString)
+	// Store the full token for development/debugging purposes
 
 	// Store session in database
-	err = h.storeSession(sessionID, tokenHash)
+	err = h.storeSession(sessionID, tokenString)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
@@ -193,13 +193,13 @@ func (h *DBHandler) getUserPermissions(roleID string) ([]models.Permission, erro
 }
 
 // storeSession stores the session in the database
-func (h *DBHandler) storeSession(sessionID, tokenHash string) error {
+func (h *DBHandler) storeSession(sessionID, token string) error {
 	query, err := h.queries.Get("create_session")
 	if err != nil {
 		return fmt.Errorf("failed to get create session query: %w", err)
 	}
 
-	_, err = h.db.Exec(query, sessionID, tokenHash)
+	_, err = h.db.Exec(query, sessionID, token)
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
@@ -237,7 +237,7 @@ func (h *DBHandler) ValidateSession(sessionID string) (*models.SessionValidation
 	}
 
 	// Validate token and extract claims
-	claims, err := h.jwtHandler.ValidateToken(session.TokenHash)
+	claims, err := h.jwtHandler.ValidateToken(session.Token)
 	if err != nil {
 		// Token is invalid, delete the session
 		if deleteErr := h.deleteSession(sessionID); deleteErr != nil {
@@ -291,10 +291,8 @@ func (h *DBHandler) ValidateSession(sessionID string) (*models.SessionValidation
 			return nil, fmt.Errorf("failed to generate new token: %w", err)
 		}
 
-		newTokenHash := h.jwtHandler.GenerateTokenHash(newToken)
-
-		// Update session with new token hash
-		if err := h.updateSessionToken(sessionID, newTokenHash); err != nil {
+		// Update session with new token
+		if err := h.updateSessionToken(sessionID, newToken); err != nil {
 			return nil, fmt.Errorf("failed to update session token: %w", err)
 		}
 
@@ -329,7 +327,7 @@ func (h *DBHandler) getSessionByID(sessionID string) (*models.Session, error) {
 	}
 
 	var session models.Session
-	err = h.db.QueryRow(query, sessionID).Scan(&session.SessionID, &session.TokenHash)
+	err = h.db.QueryRow(query, sessionID).Scan(&session.SessionID, &session.Token)
 	if err != nil {
 		return nil, err
 	}
@@ -349,13 +347,13 @@ func (h *DBHandler) deleteSession(sessionID string) error {
 }
 
 // updateSessionToken updates the token hash for a session
-func (h *DBHandler) updateSessionToken(sessionID, tokenHash string) error {
+func (h *DBHandler) updateSessionToken(sessionID, token string) error {
 	query, err := h.queries.Get(sessionSQL.UpdateSessionTokenQuery)
 	if err != nil {
 		return fmt.Errorf("failed to get query: %w", err)
 	}
 
-	_, err = h.db.Exec(query, sessionID, tokenHash)
+	_, err = h.db.Exec(query, sessionID, token)
 	return err
 }
 
@@ -375,7 +373,7 @@ func (h *DBHandler) DeleteSession(sessionID string) (*models.SessionLogoutRespon
 	}
 
 	// Validate token to get user information for logging
-	claims, err := h.jwtHandler.ValidateToken(session.TokenHash)
+	claims, err := h.jwtHandler.ValidateToken(session.Token)
 	if err != nil {
 		// Token is invalid, but we'll still try to delete the session
 		h.logger.Warnf("Invalid token for session %s during logout, proceeding with deletion", sessionID)
