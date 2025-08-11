@@ -6,6 +6,7 @@ import (
 	"session-service/entities/sessions/models"
 	sessionSQL "session-service/entities/sessions/sql"
 
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,6 +17,18 @@ type DBHandler struct {
 	queries    sessionSQL.Queries
 	jwtHandler *JWTHandler
 	logger     *logrus.Logger
+}
+
+// NewDBHandlerWithConnection creates a new database handler with database connection
+func NewDBHandlerWithConnection(dbHost string, dbPort int, dbUser, dbPassword, dbName, dbSSLMode string, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
+	// Connect to database
+	db, err := connectToDatabase(dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode, logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	// Create database handler
+	return NewDBHandler(db, jwtHandler, logger)
 }
 
 // NewDBHandler creates a new database handler
@@ -31,6 +44,33 @@ func NewDBHandler(db *sql.DB, jwtHandler *JWTHandler, logger *logrus.Logger) (*D
 		jwtHandler: jwtHandler,
 		logger:     logger,
 	}, nil
+}
+
+// Close closes the database connection
+func (h *DBHandler) Close() error {
+	if h.db != nil {
+		return h.db.Close()
+	}
+	return nil
+}
+
+// connectToDatabase connects to the PostgreSQL database
+func connectToDatabase(dbHost string, dbPort int, dbUser, dbPassword, dbName, dbSSLMode string, logger *logrus.Logger) (*sql.DB, error) {
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		dbHost, dbPort, dbUser, dbPassword, dbName, dbSSLMode)
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	// Test the connection
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	logger.Info("Database connection established")
+	return db, nil
 }
 
 // CreateSession creates a new session for a user

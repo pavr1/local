@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"net/http"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
@@ -17,12 +16,21 @@ type MainHTTPHandler struct {
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
-func NewMainHTTPHandler(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
+func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
 	// Create JWT handler
 	jwtHandler := handlers.NewJWTHandler(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
 
-	// Create database handler
-	dbHandler, err := handlers.NewDBHandler(db, jwtHandler, logger)
+	// Create database handler with connection
+	dbHandler, err := handlers.NewDBHandlerWithConnection(
+		cfg.DatabaseHost,
+		cfg.DatabasePort,
+		cfg.DatabaseUser,
+		cfg.DatabasePassword,
+		cfg.DatabaseName,
+		cfg.DatabaseSSLMode,
+		jwtHandler,
+		logger,
+	)
 	if err != nil {
 		return nil, err
 	}
