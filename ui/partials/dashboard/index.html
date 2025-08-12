@@ -354,6 +354,23 @@
         color: white !important;
     }
 
+    .logs-btn {
+        color: #343a40;
+        border-color: rgba(52, 58, 64, 0.3);
+    }
+
+    .logs-btn:hover {
+        background: #343a40 !important;
+        color: white !important;
+    }
+
+    .action-btn.logs-btn:hover .fas,
+    .action-btn.logs-btn:hover i,
+    .logs-btn:hover .fas,
+    .logs-btn:hover i {
+        color: white !important;
+    }
+
     /* Disabled Button Styles */
     .action-btn:disabled {
         opacity: 0.4;
@@ -643,6 +660,9 @@
                 <button class="action-btn restart-btn" onclick="manageService('gateway-service', 'restart')" title="Restart Gateway" disabled>
                     <i class="fas fa-sync"></i>
                 </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('gateway-service')" title="View Gateway Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -671,17 +691,20 @@
                         </h5>
                     </div>
                 </div>
-                <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('session-service', 'start', this)" title="Start Session" disabled>
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop', this)" title="Stop Session" disabled>
-                        <i class="fas fa-stop"></i>
-                    </button>
-                    <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart', this)" title="Restart Session" disabled>
-                        <i class="fas fa-sync"></i>
-                    </button>
-                </div>
+                            <div class="service-actions">
+                <button class="action-btn start-btn" onclick="manageService('session-service', 'start', this)" title="Start Session" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn stop-btn" onclick="manageService('session-service', 'stop', this)" title="Stop Session" disabled>
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="action-btn restart-btn" onclick="manageService('session-service', 'restart', this)" title="Restart Session" disabled>
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('session-service')" title="View Session Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
+            </div>
             </div>
 
             <!-- Orders Service -->
@@ -700,17 +723,20 @@
                         </h5>
                     </div>
                 </div>
-                <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('orders-service', 'start', this)" title="Start Orders" disabled>
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop', this)" title="Stop Orders" disabled>
-                        <i class="fas fa-stop"></i>
-                    </button>
-                    <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart', this)" title="Restart Orders" disabled>
-                        <i class="fas fa-sync"></i>
-                    </button>
-                </div>
+                            <div class="service-actions">
+                <button class="action-btn start-btn" onclick="manageService('orders-service', 'start', this)" title="Start Orders" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn stop-btn" onclick="manageService('orders-service', 'stop', this)" title="Stop Orders" disabled>
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="action-btn restart-btn" onclick="manageService('orders-service', 'restart', this)" title="Restart Orders" disabled>
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('orders-service')" title="View Orders Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
+            </div>
             </div>
 
             <!-- Inventory Service -->
@@ -729,17 +755,20 @@
                         </h5>
                     </div>
                 </div>
-                <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start', this)" title="Start Inventory" disabled>
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop', this)" title="Stop Inventory" disabled>
-                        <i class="fas fa-stop"></i>
-                    </button>
-                    <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart', this)" title="Restart Inventory" disabled>
-                        <i class="fas fa-sync"></i>
-                    </button>
-                </div>
+                            <div class="service-actions">
+                <button class="action-btn start-btn" onclick="manageService('inventory-service', 'start', this)" title="Start Inventory" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn stop-btn" onclick="manageService('inventory-service', 'stop', this)" title="Stop Inventory" disabled>
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="action-btn restart-btn" onclick="manageService('inventory-service', 'restart', this)" title="Restart Inventory" disabled>
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('inventory-service')" title="View Inventory Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
+            </div>
             </div>
 
             <!-- Invoice Service -->
@@ -758,17 +787,20 @@
                         </h5>
                     </div>
                 </div>
-                <div class="service-actions">
-                    <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start', this)" title="Start Invoice" disabled>
-                        <i class="fas fa-play"></i>
-                    </button>
-                    <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop', this)" title="Stop Invoice" disabled>
-                        <i class="fas fa-stop"></i>
-                    </button>
-                    <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart', this)" title="Restart Invoice" disabled>
-                        <i class="fas fa-sync"></i>
-                    </button>
-                </div>
+                            <div class="service-actions">
+                <button class="action-btn start-btn" onclick="manageService('invoice-service', 'start', this)" title="Start Invoice" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn stop-btn" onclick="manageService('invoice-service', 'stop', this)" title="Stop Invoice" disabled>
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="action-btn restart-btn" onclick="manageService('invoice-service', 'restart', this)" title="Restart Invoice" disabled>
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('invoice-service')" title="View Invoice Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
+            </div>
             </div>
         </div>
     </div>
@@ -804,6 +836,9 @@
                 </button>
                 <button class="action-btn restart-btn" onclick="manageService('data-service', 'restart', this)" title="Restart Database" disabled>
                     <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('data-service')" title="View Database Logs">
+                    <i class="fas fa-file-alt"></i>
                 </button>
             </div>
         </div>
