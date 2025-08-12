@@ -597,31 +597,31 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 				"unit_type":     req.UnitType,
 			}).Info("No previous existence found, using default calculation")
 
-			// Calculate derived fields
-			costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
+	// Calculate derived fields
+	costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
 
-			// Calculate margins and taxes
-			incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
-			ivaAmount := (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
-			serviceTaxAmount := (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+	// Calculate margins and taxes
+	incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
+	ivaAmount := (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
+	serviceTaxAmount := (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
 
-			// Calculate final price
-			calculatedPrice := costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
-			// Round up to nearest 100
-			finalPrice := math.Ceil(calculatedPrice/100) * 100
+	// Calculate final price
+	calculatedPrice := costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
+	// Round up to nearest 100
+	finalPrice := math.Ceil(calculatedPrice/100) * 100
 
-			// Log calculations for debugging
-			h.logger.WithFields(logrus.Fields{
-				"cost_per_item":            costPerItem,
-				"income_margin_percentage": req.IncomeMarginPercentage,
-				"income_margin_amount":     incomeMarginAmount,
-				"iva_percentage":           req.IvaPercentage,
-				"iva_amount":               ivaAmount,
-				"service_tax_percentage":   req.ServiceTaxPercentage,
-				"service_tax_amount":       serviceTaxAmount,
-				"calculated_price":         calculatedPrice,
-				"final_price":              finalPrice,
-			}).Debug("Existence calculations completed")
+	// Log calculations for debugging
+	h.logger.WithFields(logrus.Fields{
+		"cost_per_item":            costPerItem,
+		"income_margin_percentage": req.IncomeMarginPercentage,
+		"income_margin_amount":     incomeMarginAmount,
+		"iva_percentage":           req.IvaPercentage,
+		"iva_amount":               ivaAmount,
+		"service_tax_percentage":   req.ServiceTaxPercentage,
+		"service_tax_amount":       serviceTaxAmount,
+		"calculated_price":         calculatedPrice,
+		"final_price":              finalPrice,
+	}).Debug("Existence calculations completed")
 
 			_, err = tx.Exec(invoiceSQL.CreateExistenceQuery,
 				req.IngredientID,

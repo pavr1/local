@@ -909,6 +909,37 @@
                 </button>
             </div>
         </div>
+        
+        <div class="service-card data-card" data-service="fluentd-service" oncontextmenu="showServiceContextMenu(event, 'fluentd-service')">
+            <div class="service-main">
+                <div class="service-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="service-content">
+                    <h4>
+                        Logging Stack
+                        <div class="service-status checking" id="fluentd-status">
+                            <div class="connection-indicator"></div>
+                            <span class="connection-text">Checking</span>
+                        </div>
+                    </h4>
+                </div>
+            </div>
+            <div class="service-actions">
+                <button class="action-btn start-btn" onclick="manageService('fluentd-service', 'start', this)" title="Start Logging Stack" disabled>
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="action-btn stop-btn" onclick="manageService('fluentd-service', 'stop', this)" title="Stop Logging Stack" disabled>
+                    <i class="fas fa-stop"></i>
+                </button>
+                <button class="action-btn restart-btn" onclick="manageService('fluentd-service', 'restart', this)" title="Restart Logging Stack" disabled>
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn logs-btn" onclick="viewServiceLogs('fluentd-service')" title="View Logging Stack Logs">
+                    <i class="fas fa-file-alt"></i>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -954,6 +985,7 @@
                             <option value="inventory-service">Inventory Service</option>
                             <option value="invoice-service">Invoice Service</option>
                             <option value="data-service">Data Service</option>
+                            <option value="fluentd-service">Logging Stack</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -1085,7 +1117,7 @@
          });
          
          // Update all buttons to offline state
-         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service'];
+         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service', 'fluentd-service'];
          services.forEach(serviceName => {
              updateArchitectureServiceButtons(serviceName, 'unhealthy');
          });
@@ -1171,7 +1203,8 @@
              'session-service': 'session',
              'orders-service': 'orders',
              'inventory-service': 'inventory',
-             'invoice-service': 'invoice'
+             'invoice-service': 'invoice',
+             'fluentd-service': 'fluentd'
          };
          
          for (const [gatewayServiceName, servicePrefix] of Object.entries(serviceMapping)) {
@@ -1204,7 +1237,8 @@
              'session-service': 'session-status',
              'orders-service': 'orders-status',
              'inventory-service': 'inventory-status',
-             'invoice-service': 'invoice-status'
+             'invoice-service': 'invoice-status',
+             'fluentd-service': 'fluentd-status'
          };
          
          for (const [serviceName, statusId] of Object.entries(serviceMapping)) {
@@ -1373,7 +1407,7 @@
 
      // Update all architecture service buttons
      function updateAllArchitectureButtons(servicesStatus, overallStatus) {
-         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service'];
+         const services = ['gateway-service', 'session-service', 'orders-service', 'inventory-service', 'invoice-service', 'data-service', 'fluentd-service'];
          
          services.forEach(serviceName => {
              const serviceStatus = (serviceName === 'gateway-service') ? overallStatus : servicesStatus[serviceName];

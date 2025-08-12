@@ -149,10 +149,10 @@ restart-docker: stop-docker start-docker ## Restart all Docker containers
 test-all: test-data test-session test-orders test-inventory test-gateway ## Test all services
 	@echo "$(GREEN)🧪 All service tests completed!$(RESET)"
 
-status: status-data status-session status-orders status-inventory status-gateway ## Check status of all services
+status: status-data status-session status-orders status-inventory status-gateway status-fluentd ## Check status of all services
 	@echo "$(CYAN)📊 System status check completed$(RESET)"
 
-health-all: health-data health-auth health-orders health-gateway health-ui ## Check health of all services
+health-all: health-data health-auth health-orders health-gateway health-ui health-fluentd ## Check health of all services
 	@echo "$(GREEN)🏥 System health check completed!$(RESET)"
 
 final-status: ## Final status check after fresh installation
@@ -400,6 +400,10 @@ status-gateway: ## Check gateway service status
 	@echo "$(BLUE)🌐 Gateway Service Status:$(RESET)"
 	@echo "$(YELLOW)Note: Gateway service doesn't have containers to check$(RESET)"
 
+status-fluentd: ## Check Fluentd logging stack status
+	@echo "$(BLUE)📊 Fluentd Logging Stack Status:$(RESET)"
+	@cd fluentd && $(MAKE) status
+
 status-ui: ## Check UI service status
 	@echo "$(BLUE)🎨 UI Service Status:$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) status
@@ -447,6 +451,10 @@ health-gateway: ## Check gateway service health
 health-ui: ## Check UI service health
 	@echo "$(CYAN)🏥 Checking UI Service health...$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) health
+
+health-fluentd: ## Check Fluentd logging stack health
+	@echo "$(CYAN)🏥 Checking Fluentd Logging Stack health...$(RESET)"
+	@cd fluentd && $(MAKE) health
 
 ## 🧹 Cleanup Commands
 
@@ -598,4 +606,4 @@ logs-status: ## Check status of centralized logging stack
 	@cd fluentd && make status
 
 # List all targets for tab completion
-.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui fresh-fluentd start-data start-session start-orders start-inventory start-invoice start-gateway start-ui start-fluentd stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui stop-fluentd status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway clean-all clean-data clean-session clean-orders clean-gateway system-info banner logs-all version logs-start logs-stop logs-restart logs-status 
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui fresh-fluentd start-data start-session start-orders start-inventory start-invoice start-gateway start-ui start-fluentd stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui stop-fluentd status-data status-session status-orders status-inventory status-gateway status-fluentd test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway health-ui health-fluentd clean-all clean-data clean-session clean-orders clean-gateway clean-ui system-info banner logs-all version logs-start logs-stop logs-restart logs-status 

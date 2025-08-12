@@ -16,7 +16,8 @@ function getServiceUrls() {
             session: 'http://localhost:8081',
             orders: 'http://localhost:8083',
             inventory: 'http://localhost:8084',
-            invoice: 'http://localhost:8085'
+            invoice: 'http://localhost:8085',
+            fluentd: 'http://localhost:8087'
         };
     } else {
         console.log('🔧 Detected production environment - using Docker service names');
@@ -25,7 +26,8 @@ function getServiceUrls() {
             session: 'http://icecream_session:8081',
             orders: 'http://icecream_orders:8083',
             inventory: 'http://icecream_inventory:8084',
-            invoice: 'http://icecream_invoice:8085'
+            invoice: 'http://icecream_invoice:8085',
+            fluentd: 'http://fluentd-health-check:8087'
         };
     }
 }
@@ -45,7 +47,8 @@ const CONFIG = {
         session: SERVICE_URLS.gateway + '/api/v1/sessions/p/health',
         orders: SERVICE_URLS.gateway + '/api/v1/orders/p/health',
         inventory: SERVICE_URLS.gateway + '/api/v1/inventory/p/health',
-        invoices: SERVICE_URLS.gateway + '/api/v1/invoices/p/health'
+        invoices: SERVICE_URLS.gateway + '/api/v1/invoices/p/health',
+        fluentd: SERVICE_URLS.fluentd + '/p/health'
     },
     AUTH: {
         login: SERVICE_URLS.gateway + '/api/v1/sessions/p/login',
@@ -64,7 +67,8 @@ console.log('🔧 Configuration loaded:', {
     session: SERVICE_URLS.session,
     orders: SERVICE_URLS.orders,
     inventory: SERVICE_URLS.inventory,
-    invoice: SERVICE_URLS.invoice
+    invoice: SERVICE_URLS.invoice,
+    fluentd: SERVICE_URLS.fluentd
 });
 
 // Export for global access

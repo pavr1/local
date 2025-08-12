@@ -138,6 +138,10 @@ info: ## Show logging stack information
 
 health: ## Check health of all logging stack components
 	@echo "$(CYAN)🔍 Checking logging stack health...$(RESET)"
+	@curl -s http://localhost:8087/p/health | jq '.' 2>/dev/null || echo "$(RED)Health check service not responding$(RESET)"
+
+health-verbose: ## Check health of all logging stack components (verbose)
+	@echo "$(CYAN)🔍 Checking logging stack health (verbose)...$(RESET)"
 	@echo "$(YELLOW)Elasticsearch:$(RESET)"
 	@curl -s http://localhost:9200/_cluster/health | jq '.status' 2>/dev/null || echo "$(RED)Not responding$(RESET)"
 	@echo "$(YELLOW)Kibana:$(RESET)"
@@ -190,4 +194,4 @@ docs: ## Generate documentation
 	@echo "$(GREEN)✅ Documentation generated: docs.txt$(RESET)"
 
 # List all targets for tab completion
-.PHONY: help start-locally stop-locally restart-locally start stop restart status logs logs-follow logs-fluentd logs-elasticsearch logs-kibana test-elasticsearch test-kibana test-fluentd test-all config-validate config-reload clean clean-logs info health install fresh check-deps version docs 
+.PHONY: help start-locally stop-locally restart-locally start stop restart status logs logs-follow logs-fluentd logs-elasticsearch logs-kibana test-elasticsearch test-kibana test-fluentd test-all config-validate config-reload clean clean-logs info health health-verbose install fresh check-deps version docs 
