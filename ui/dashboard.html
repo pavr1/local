@@ -6090,7 +6090,7 @@
                             <label>Count *</label>
                             <input type="number" class="form-control" name="count" step="0.01" min="0" required>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
                             <label>Unit Type *</label>
                             <select class="form-select" name="unitType" required>
                                 <option value="">Select</option>
@@ -6100,7 +6100,12 @@
                                 <option value="Bag">Bag</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-md-1">
+                            <label>Items/Unit *</label>
+                            <input type="number" class="form-control" name="itemsPerUnit" min="1" value="1" required placeholder="e.g., 31"
+                                   title="Number of individual items in one unit (e.g., 31 ice cream balls per gallon)">
+                        </div>
+                        <div class="col-md-1">
                             <label>Price *</label>
                             <input type="number" class="form-control" name="price" step="0.01" min="0" required>
                         </div>

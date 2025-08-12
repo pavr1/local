@@ -1094,7 +1094,12 @@
                             <option value="Bag">Bag</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-1">
+                        <label>Items/Unit *</label>
+                        <input type="number" class="form-control" name="itemsPerUnit" min="1" value="1" required placeholder="e.g., 31" 
+                               title="Number of individual items in one unit (e.g., 31 ice cream balls per gallon)">
+                    </div>
+                    <div class="col-md-1">
                         <label>Price *</label>
                         <input type="number" class="form-control" name="price" step="0.01" min="0" required onchange="calculateItemTotal(this)" onkeyup="calculateItemTotal(this)">
                     </div>
@@ -1256,15 +1261,17 @@
                 const detail = row.querySelector('input[name="detail"]').value.trim();
                 const count = parseFloat(row.querySelector('input[name="count"]').value);
                 const unitType = row.querySelector('select[name="unitType"]').value;
+                const itemsPerUnit = parseInt(row.querySelector('input[name="itemsPerUnit"]').value);
                 const price = parseFloat(row.querySelector('input[name="price"]').value);
                 const expirationDate = row.querySelector('input[name="expirationDate"]').value || null;
                 const ingredientId = row.querySelector('input[name="ingredientId"]')?.value || null;
 
-                if (detail && count && unitType && price) {
+                if (detail && count && unitType && itemsPerUnit && price) {
                     const itemData = {
                         detail,
                         count,
                         unit_type: unitType,
+                        items_per_unit: itemsPerUnit,
                         price
                     };
 

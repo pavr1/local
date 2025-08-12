@@ -21,15 +21,15 @@ INSERT INTO existences (
     $3,  -- units_purchased
     $3,  -- units_available (same as units_purchased initially)
     $4,  -- unit_type
-    1,   -- items_per_unit (set to 1 for now)
-    $5,  -- cost_per_unit
-    $6,  -- expiration_date
-    $7,  -- income_margin_percentage
-    $8,  -- income_margin_amount
-    $9,  -- iva_percentage
-    $10, -- iva_amount
-    $11, -- service_tax_percentage
-    $12, -- service_tax_amount
-    $13, -- calculated_price
-    $14  -- final_price
+    $5,  -- items_per_unit
+    $6,  -- cost_per_unit
+    $7,  -- expiration_date
+    $8,  -- income_margin_percentage
+    $9,  -- income_margin_amount
+    $10, -- iva_percentage
+    $11, -- iva_amount
+    $12, -- service_tax_percentage
+    $13, -- service_tax_amount
+    $14, -- calculated_price
+    $15  -- final_price
 ); 

@@ -98,6 +98,7 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 				InvoiceDetailID:        detail.ID,
 				UnitsPurchased:         item.Count,
 				UnitType:               item.UnitType,
+				ItemsPerUnit:           item.ItemsPerUnit,
 				CostPerUnit:            item.Price,
 				ExpirationDate:         item.ExpirationDate,
 				IncomeMarginPercentage: 30.0, // Default 30%
@@ -562,8 +563,7 @@ func (h *DBHandler) DeleteInvoiceDetail(id string) error {
 // CreateInventoryExistence creates an existence record from an invoice detail
 func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExistenceRequest) error {
 	// Calculate derived fields
-	itemsPerUnit := 1 //pvillalobos - we would have to request this in the invoice item
-	costPerItem := req.CostPerUnit / float64(itemsPerUnit)
+	costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
 
 	// Calculate margins and taxes
 	incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
@@ -593,6 +593,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		req.InvoiceDetailID,
 		req.UnitsPurchased,
 		req.UnitType,
+		req.ItemsPerUnit,
 		req.CostPerUnit,
 		req.ExpirationDate,
 		req.IncomeMarginPercentage,

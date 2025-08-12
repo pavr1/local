@@ -212,6 +212,7 @@ type CreateExistenceRequest struct {
 	InvoiceDetailID        string     `json:"invoice_detail_id" validate:"required,uuid"`
 	UnitsPurchased         float64    `json:"units_purchased" validate:"required,min=0.01"`
 	UnitType               string     `json:"unit_type" validate:"required,oneof=Liters Gallons Units Bag"`
+	ItemsPerUnit           int        `json:"items_per_unit" validate:"required,gt=0"`
 	CostPerUnit            float64    `json:"cost_per_unit" validate:"required,min=0.01"`
 	ExpirationDate         *time.Time `json:"expiration_date,omitempty"`
 	IncomeMarginPercentage float64    `json:"income_margin_percentage" validate:"required,min=0,max=100"`
