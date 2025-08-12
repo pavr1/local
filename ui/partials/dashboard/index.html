@@ -945,7 +945,28 @@
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
-                    <div class="col-md-8">
+                    <div class="col-md-3">
+                        <select class="form-select" id="logsServiceSelect" onchange="changeLogsService()">
+                            <option value="">All Services</option>
+                            <option value="gateway-service">Gateway Service</option>
+                            <option value="session-service">Session Service</option>
+                            <option value="orders-service">Orders Service</option>
+                            <option value="inventory-service">Inventory Service</option>
+                            <option value="invoice-service">Invoice Service</option>
+                            <option value="data-service">Data Service</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" id="logsLevelSelect" onchange="filterLogs()">
+                            <option value="">All Levels</option>
+                            <option value="DEBUG">Debug</option>
+                            <option value="INFO">Info</option>
+                            <option value="WARN">Warning</option>
+                            <option value="ERROR">Error</option>
+                            <option value="FATAL">Fatal</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
                         <div class="input-group">
                             <input type="text" class="form-control" id="logsSearchInput" placeholder="Search in logs..." onkeyup="filterLogs()">
                             <button class="btn btn-outline-primary" type="button" onclick="filterLogs()">
@@ -953,12 +974,12 @@
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-4 text-end">
+                    <div class="col-md-2 text-end">
                         <button class="btn btn-outline-secondary" onclick="clearLogsSearch()">
-                            <i class="fas fa-times me-1"></i>Clear Search
+                            <i class="fas fa-times me-1"></i>Clear
                         </button>
                         <button class="btn btn-outline-success" onclick="toggleLogsAutoRefresh()" id="autoRefreshBtn">
-                            <i class="fas fa-play me-1"></i>Auto Refresh
+                            <i class="fas fa-play me-1"></i>Auto
                         </button>
                     </div>
                 </div>

@@ -560,5 +560,29 @@ version: ## Show version information for all services
 	@echo ""
 	@cd $(UI_SERVICE) && $(MAKE) version || true
 
+## 📊 Centralized Logging Commands
+
+logs-start: ## Start centralized logging stack (Fluentd + Elasticsearch + Kibana)
+	@echo "$(CYAN)📊 Starting centralized logging stack...$(RESET)"
+	@cd fluentd && docker-compose -f docker-compose.logging.yml up -d
+	@echo "$(GREEN)✅ Logging stack started!$(RESET)"
+	@echo "$(CYAN)📊 Kibana available at: http://localhost:5601$(RESET)"
+	@echo "$(CYAN)🔍 Elasticsearch available at: http://localhost:9200$(RESET)"
+	@echo "$(CYAN)📋 Fluentd listening on port 24224$(RESET)"
+
+logs-stop: ## Stop centralized logging stack
+	@echo "$(CYAN)📊 Stopping centralized logging stack...$(RESET)"
+	@cd fluentd && docker-compose -f docker-compose.logging.yml down
+	@echo "$(GREEN)✅ Logging stack stopped!$(RESET)"
+
+logs-restart: ## Restart centralized logging stack
+	@echo "$(CYAN)📊 Restarting centralized logging stack...$(RESET)"
+	@make logs-stop
+	@make logs-start
+
+logs-status: ## Check status of centralized logging stack
+	@echo "$(CYAN)📊 Checking logging stack status...$(RESET)"
+	@cd fluentd && docker-compose -f docker-compose.logging.yml ps
+
 # List all targets for tab completion
-.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-gateway start-script stop-script restart-script stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version 
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-gateway start-script stop-script restart-script stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version logs-start logs-stop logs-restart logs-status 

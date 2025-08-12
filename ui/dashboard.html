@@ -2171,6 +2171,8 @@
             currentLogsService = serviceName;
             document.getElementById('logsModalTitle').textContent = `${serviceName} Logs`;
             document.getElementById('logsSearchInput').value = '';
+            document.getElementById('logsServiceSelect').value = serviceName;
+            document.getElementById('logsLevelSelect').value = '';
             logsSearchTerm = '';
             
             // Show modal
@@ -2184,21 +2186,98 @@
             startLogsAutoRefresh();
         };
 
+        // Change logs service
+        window.changeLogsService = function() {
+            const serviceSelect = document.getElementById('logsServiceSelect');
+            currentLogsService = serviceSelect.value;
+            
+            if (currentLogsService) {
+                document.getElementById('logsModalTitle').textContent = `${currentLogsService} Logs`;
+            } else {
+                document.getElementById('logsModalTitle').textContent = 'All Services Logs';
+            }
+            
+            loadServiceLogs();
+        };
+
         // Load service logs
         async function loadServiceLogs() {
             try {
-                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/logs/${currentLogsService}`);
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (currentLogsService) {
+                    params.append('service', currentLogsService);
+                }
+                if (logsSearchTerm) {
+                    params.append('search', logsSearchTerm);
+                }
+                const levelSelect = document.getElementById('logsLevelSelect');
+                if (levelSelect.value) {
+                    params.append('level', levelSelect.value);
+                }
+                params.append('limit', '100');
+
+                // Try centralized logging first
+                const centralizedResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/logs?${params.toString()}`);
                 
-                if (response.ok) {
-                    const logs = await response.text();
-                    displayLogs(logs);
+                if (centralizedResponse.ok) {
+                    const data = await centralizedResponse.json();
+                    if (data.hits && data.hits.hits && data.hits.hits.length > 0) {
+                        // Format centralized logs
+                        const logs = formatCentralizedLogs(data.hits.hits);
+                        displayLogs(logs);
+                        return;
+                    } else {
+                        displayLogs('No logs found for the selected criteria');
+                        return;
+                    }
+                }
+                
+                // Fallback to local logs if centralized is not available
+                if (currentLogsService) {
+                    const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/logs/${currentLogsService}`);
+                    
+                    if (response.ok) {
+                        const logs = await response.text();
+                        displayLogs(logs);
+                    } else {
+                        displayLogs('Error: Failed to load logs');
+                    }
                 } else {
-                    displayLogs('Error: Failed to load logs');
+                    displayLogs('Please select a service to view local logs');
                 }
             } catch (error) {
                 console.error('Error loading logs:', error);
                 displayLogs('Error: Failed to load logs');
             }
+        }
+
+        // Format centralized logs from Elasticsearch
+        function formatCentralizedLogs(hits) {
+            let formattedLogs = '';
+            
+            for (const hit of hits) {
+                const source = hit._source;
+                const record = source.record || source;
+                
+                const timestamp = new Date(source['@timestamp'] || record.timestamp).toLocaleString();
+                const level = record.level || 'INFO';
+                const service = record.service || 'unknown';
+                const message = record.message || 'No message';
+                
+                // Format the log line
+                let logLine = `[${timestamp}] ${level} [${service}] ${message}`;
+                
+                // Add fields if present
+                if (record.fields && Object.keys(record.fields).length > 0) {
+                    const fieldsStr = JSON.stringify(record.fields);
+                    logLine += ` | Fields: ${fieldsStr}`;
+                }
+                
+                formattedLogs += logLine + '\n';
+            }
+            
+            return formattedLogs;
         }
 
         // Display logs in the modal

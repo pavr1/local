@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gateway-service/middleware"
 	sessionmanager "gateway-service/middleware/session-manager"
+	"gateway-service/pkg/logger"
 	"io"
 	"log"
 	"net"
@@ -13,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,6 +70,27 @@ func main() {
 		InvoiceServiceURL:   getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
 	}
 
+	// Initialize centralized logging
+	fluentdHost := getEnv("FLUENTD_HOST", "localhost")
+	fluentdPort := 24224
+	if port := getEnv("FLUENTD_PORT", ""); port != "" {
+		if p, err := strconv.Atoi(port); err == nil {
+			fluentdPort = p
+		}
+	}
+
+	// Initialize shared logger
+	centralLogger := logger.InitLogger("gateway-service", fluentdHost, fluentdPort)
+	defer centralLogger.Close()
+
+	centralLogger.Info("Gateway service starting", map[string]interface{}{
+		"port":              config.Port,
+		"session_service":   config.SessionServiceURL,
+		"orders_service":    config.OrdersServiceURL,
+		"inventory_service": config.InventoryServiceURL,
+		"invoice_service":   config.InvoiceServiceURL,
+	})
+
 	log.Printf("Gateway configured with Invoice Service: %s", config.InvoiceServiceURL)
 	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
@@ -109,8 +132,9 @@ func main() {
 	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 
-	// Service logs endpoint - with authentication middleware
+	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler()).Methods("GET")
+	api.HandleFunc("/v1/logs", createCentralizedLogsHandler()).Methods("GET")
 
 	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
@@ -168,6 +192,7 @@ func main() {
 	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
 	fmt.Println("   📋 Service Management:")
 	fmt.Printf("      GET  /api/v1/logs/{service}     → Service logs viewer\n")
+	fmt.Printf("      GET  /api/v1/logs               → Centralized logs viewer\n")
 	fmt.Println("")
 	fmt.Println("📋 SESSION MANAGEMENT:")
 	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)
@@ -219,6 +244,101 @@ func createServiceLogsHandler() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write(output)
 	}
+}
+
+// createCentralizedLogsHandler creates a handler for centralized logs from Elasticsearch
+func createCentralizedLogsHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Get query parameters
+		service := r.URL.Query().Get("service")
+		level := r.URL.Query().Get("level")
+		search := r.URL.Query().Get("search")
+		limit := r.URL.Query().Get("limit")
+
+		if limit == "" {
+			limit = "50"
+		}
+
+		// Build Elasticsearch query
+		query := buildElasticsearchQuery(service, level, search, limit)
+
+		// Query Elasticsearch
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Post("http://localhost:9200/ice-cream-logs-*/_search", "application/json", strings.NewReader(query))
+		if err != nil {
+			http.Error(w, "Failed to query Elasticsearch", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		// Read response
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read response", http.StatusInternalServerError)
+			return
+		}
+
+		// Return the response
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(body)
+	}
+}
+
+// buildElasticsearchQuery builds the Elasticsearch query
+func buildElasticsearchQuery(service, level, search, limit string) string {
+	query := map[string]interface{}{
+		"size": limit,
+		"sort": []map[string]interface{}{
+			{"@timestamp": map[string]interface{}{"order": "desc"}},
+		},
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []map[string]interface{}{},
+			},
+		},
+	}
+
+	// Add service filter
+	if service != "" {
+		query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = append(
+			query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{}),
+			map[string]interface{}{
+				"match": map[string]interface{}{
+					"record.service": service,
+				},
+			},
+		)
+	}
+
+	// Add level filter
+	if level != "" {
+		query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = append(
+			query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{}),
+			map[string]interface{}{
+				"match": map[string]interface{}{
+					"record.level": level,
+				},
+			},
+		)
+	}
+
+	// Add search filter
+	if search != "" {
+		query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = append(
+			query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{}),
+			map[string]interface{}{
+				"multi_match": map[string]interface{}{
+					"query":  search,
+					"fields": []string{"record.message", "record.service", "record.fields.*"},
+				},
+			},
+		)
+	}
+
+	// Convert to JSON
+	queryJSON, _ := json.Marshal(query)
+	return string(queryJSON)
 }
 
 // createInvoiceHealthHandler creates a custom health handler for invoice service
