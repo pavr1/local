@@ -15,7 +15,26 @@ RESET := \033[0m
 
 ## 🚀 Database Management Commands
 
-fresh: clean deps remove-volumes reset start init-manual test status info ## Complete fresh installation: clean everything, install, setup, and test
+migrate-up: ## Apply all pending database migrations
+	@echo "$(CYAN)📈 Applying database migrations...$(RESET)"
+	@./scripts/migrate.sh up
+	@echo "$(GREEN)✅ Migrations completed!$(RESET)"
+
+migrate-down: ## Rollback last database migration
+	@echo "$(YELLOW)📉 Rolling back last migration...$(RESET)"
+	@./scripts/migrate.sh down
+	@echo "$(GREEN)✅ Rollback completed!$(RESET)"
+
+migrate-status: ## Show database migration status
+	@echo "$(CYAN)📊 Checking migration status...$(RESET)"
+	@./scripts/migrate.sh status
+
+migrate-create: ## Create new migration files (usage: make migrate-create description="add new table")
+	@echo "$(CYAN)📝 Creating new migration...$(RESET)"
+	@./scripts/migrate.sh create "$(description)"
+	@echo "$(GREEN)✅ Migration files created!$(RESET)"
+
+fresh: clean deps remove-volumes reset start migrate-up init-manual test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
 	@echo "$(CYAN)📋 Quick verification:$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Fresh install verified!' as status, COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "$(RED)❌ Database verification failed$(RESET)"
@@ -259,5 +278,6 @@ help: ## Show this help message
 	@echo "   Development:    make start → make test → make run"
 	@echo "   Reset Data:     make reset → make start"
 	@echo "   Fresh Start:    make fresh (when something is broken)"
+	@echo "   Migrations:     make migrate-up / make migrate-down / make migrate-status"
 	@echo "   Cleanup:        make clean"
 	@echo "" 
