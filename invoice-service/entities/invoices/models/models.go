@@ -45,16 +45,26 @@ type CreateInvoiceDetailRequest struct {
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
 
+// CreateInvoiceItemRequest represents an item to be created with a new invoice
+type CreateInvoiceItemRequest struct {
+	IngredientID   *string    `json:"ingredient_id,omitempty" validate:"omitempty,uuid"`
+	Detail         string     `json:"detail" validate:"required"`
+	Count          float64    `json:"count" validate:"required,gt=0"`
+	UnitType       string     `json:"unit_type" validate:"required,oneof=Liters Gallons Units Bag"`
+	Price          float64    `json:"price" validate:"required,gt=0"`
+	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
+}
+
 // CreateInvoiceRequest represents the request to create a new invoice with details
 type CreateInvoiceRequest struct {
-	InvoiceNumber     string                       `json:"invoice_number" validate:"required"`
-	TransactionDate   *time.Time                   `json:"transaction_date,omitempty"`
-	TransactionType   string                       `json:"transaction_type" validate:"required,oneof=income outcome"`
-	SupplierID        *string                      `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
-	ExpenseCategoryID string                       `json:"expense_category_id" validate:"required,uuid"`
-	ImageURL          string                       `json:"image_url" validate:"required,url"`
-	Notes             *string                      `json:"notes,omitempty"`
-	Items             []CreateInvoiceDetailRequest `json:"items" validate:"required,dive"`
+	InvoiceNumber     string                     `json:"invoice_number" validate:"required"`
+	TransactionDate   time.Time                  `json:"transaction_date" validate:"required"` // Always required, stored as UTC
+	TransactionType   string                     `json:"transaction_type" validate:"required,oneof=income outcome"`
+	SupplierID        *string                    `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
+	ExpenseCategoryID string                     `json:"expense_category_id" validate:"required,uuid"`
+	ImageURL          string                     `json:"image_url" validate:"required,url"`
+	Notes             *string                    `json:"notes,omitempty"`
+	Items             []CreateInvoiceItemRequest `json:"items" validate:"required,dive"`
 }
 
 // UpdateInvoiceRequest represents the request to update an invoice

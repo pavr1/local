@@ -5,7 +5,6 @@ import (
 	"invoice-service/entities/invoices/models"
 	invoiceSQL "invoice-service/entities/invoices/sql"
 	"math"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -49,11 +48,8 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 	var invoice models.Invoice
 
-	// Use provided transaction date or current time
-	transactionDate := time.Now()
-	if req.TransactionDate != nil {
-		transactionDate = *req.TransactionDate
-	}
+	// Use provided transaction date (always required, stored as UTC)
+	transactionDate := req.TransactionDate
 
 	// Create the invoice
 	err = tx.QueryRow(invoiceSQL.CreateInvoiceQuery,

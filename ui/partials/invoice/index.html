@@ -295,7 +295,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-tags me-2"></i>Select Expense Category
+                    <i class="fas fa-tags"></i>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -337,7 +337,7 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-truck me-2"></i>Select Supplier
+                    <i class="fas fa-truck"></i>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -458,7 +458,38 @@
 </div>
 
 <script>
-
+    // Date utility functions for UTC/local timezone handling
+    window.dateUtils = {
+        // Convert local date to UTC ISO string for sending to server
+        toUTC: function(localDateString) {
+            if (!localDateString) return null;
+            const localDate = new Date(localDateString);
+            return localDate.toISOString();
+        },
+        
+        // Convert UTC date string to local date string for display
+        toLocal: function(utcDateString) {
+            if (!utcDateString) return '';
+            const utcDate = new Date(utcDateString);
+            return utcDate.toLocaleDateString();
+        },
+        
+        // Convert UTC date string to local datetime string for display
+        toLocalDateTime: function(utcDateString) {
+            if (!utcDateString) return '';
+            const utcDate = new Date(utcDateString);
+            return utcDate.toLocaleString();
+        },
+        
+        // Get current date in local timezone as YYYY-MM-DD for input fields
+        getCurrentLocalDate: function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+    };
 
     let invoices = [];
     let availableExpenseCategories = [];
@@ -500,7 +531,7 @@
             }
         } catch (error) {
             console.error('❌ Error loading invoices:', error);
-            showError('Failed to load invoices: ' + error.message);
+            Alert.error('Failed to load invoices', error.message);
         }
     }
 
@@ -991,10 +1022,16 @@
     }
 
     function formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString();
+        return dateUtils.toLocal(dateString);
     }
 
     window.openCreateInvoiceModal = function() {
+        // Set default transaction date to today
+        const transactionDateInput = document.getElementById('transactionDate');
+        if (transactionDateInput) {
+            transactionDateInput.value = dateUtils.getCurrentLocalDate();
+        }
+        
         // Show the create invoice modal
         const modal = document.getElementById('createInvoiceModal');
         if (modal) {
@@ -1190,7 +1227,7 @@
             // Get form data
             const form = document.getElementById('createInvoiceForm');
             if (!form) {
-                showError('Invoice form not found');
+                Alert.error('Invoice form not found');
                 return;
             }
 
@@ -1205,7 +1242,7 @@
 
             // Validate required fields
             if (!invoiceNumber || !transactionDate || !transactionType || !expenseCategoryId || !imageUrl) {
-                showError('Please fill in all required fields');
+                Alert.error('Missing required fields', 'Please fill in all required fields');
                 return;
             }
 
@@ -1233,7 +1270,7 @@
 
                     // Only include expiration_date if it has a value
                     if (expirationDate && expirationDate.trim() !== '') {
-                        itemData.expiration_date = expirationDate;
+                        itemData.expiration_date = dateUtils.toUTC(expirationDate);
                     }
 
                     // Only include ingredient_id if expense category is ingredients
@@ -1246,7 +1283,7 @@
             });
 
             if (items.length === 0) {
-                showError('Please add at least one invoice item');
+                Alert.error('No invoice items', 'Please add at least one invoice item');
                 return;
             }
 
@@ -1256,7 +1293,7 @@
             // Prepare invoice data
             const invoiceData = {
                 invoice_number: invoiceNumber,
-                transaction_date: transactionDate,
+                transaction_date: dateUtils.toUTC(transactionDate), // Convert local date to UTC
                 transaction_type: transactionType,
                 expense_category_id: expenseCategoryId,
                 image_url: imageUrl,
@@ -1279,7 +1316,7 @@
                 const result = await response.json();
                 if (result.success) {
                     console.log('✅ Invoice created successfully:', result.data);
-                    showSuccess('Invoice created successfully!');
+                    Alert.success('Invoice created successfully!');
                     
                     // Close modal and refresh invoice list
                     const modal = bootstrap.Modal.getInstance(document.getElementById('createInvoiceModal'));
@@ -1300,7 +1337,7 @@
             }
         } catch (error) {
             console.error('❌ Error creating invoice:', error);
-            showError('Failed to create invoice: ' + error.message);
+            Alert.error('Failed to create invoice', error.message);
         }
     }
 </script> 

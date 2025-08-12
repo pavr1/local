@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"invoice-service/entities/invoices/models"
 
@@ -61,13 +60,6 @@ func (h *HttpHandler) CreateInvoiceWithDetails(w http.ResponseWriter, r *http.Re
 		h.logger.WithError(err).Error("Invalid JSON in create invoice request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
-	}
-
-	// Set current timestamp as default if no transaction date is provided
-	if req.TransactionDate == nil {
-		now := time.Now()
-		req.TransactionDate = &now
-		h.logger.WithField("invoice_number", req.InvoiceNumber).Info("Setting default transaction date to current timestamp")
 	}
 
 	invoice, err := h.dbHandler.CreateInvoice(req)
