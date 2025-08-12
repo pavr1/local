@@ -50,6 +50,7 @@ help: ## Show this help message
 	@echo "  $(BLUE)make fresh-inventory$(RESET)  # Fresh install inventory service only"
 	@echo "  $(BLUE)make fresh-gateway$(RESET)    # Fresh install gateway service only"
 	@echo "  $(BLUE)make fresh-ui$(RESET)         # Fresh install UI service only"
+	@echo "  $(BLUE)make fresh-fluentd$(RESET)    # Fresh install Fluentd logging stack only"
 	@echo ""
 	@echo "$(YELLOW)📖 Service URLs:$(RESET)"
 	@echo "  $(MAGENTA)Data Service:$(RESET)     http://localhost:5432 (PostgreSQL + PgAdmin: :8080)"
@@ -58,6 +59,7 @@ help: ## Show this help message
 	@echo "  $(MAGENTA)Inventory Service:$(RESET) http://localhost:8084"
 	@echo "  $(MAGENTA)Gateway Service:$(RESET)  http://localhost:8082"
 	@echo "  $(MAGENTA)UI Service:$(RESET)       http://localhost:3000"
+	@echo "  $(MAGENTA)Logging Stack:$(RESET)    http://localhost:5601 (Kibana) + http://localhost:9200 (Elasticsearch)"
 	@echo ""
 
 ## 🚀 Complete System Commands
@@ -85,14 +87,14 @@ fresh: banner fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start
 	@echo "  🌐 Gateway Service API: $(GREEN)http://localhost:8082$(RESET)"
 	@echo ""
 
-start-locally: start-data start-session start-orders start-inventory start-invoice start-gateway start-ui ## Start all services locally in correct order
+start-locally: start-fluentd start-data start-session start-orders start-inventory start-invoice start-gateway start-ui ## Start all services locally in correct order
 	@echo "$(GREEN)🚀 All services are starting locally!$(RESET)"
 	@echo "$(YELLOW)⏳ Waiting for services to initialize...$(RESET)"
 	@sleep 3
 	@echo "$(GREEN)✅ All services should now be running in background$(RESET)"
 	@echo "$(CYAN)💡 Use 'make status' to check service health$(RESET)"
 
-stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-session stop-data ## Stop all local services in reverse order
+stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-session stop-data stop-fluentd ## Stop all local services in reverse order
 	@echo "$(YELLOW)🛑 All local services stopped$(RESET)"
 	@echo "$(CYAN)🔍 Performing final cleanup...$(RESET)"
 	
@@ -244,6 +246,11 @@ fresh-gateway: ## Fresh install gateway service only
 fresh-ui: ## Fresh install UI service only
 	@echo "$(CYAN)🎨 Running fresh install for UI Service...$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) fresh
+
+fresh-fluentd: ## Fresh install Fluentd logging stack only
+	@echo "$(CYAN)📊 Fresh installing Fluentd logging stack...$(RESET)"
+	@cd fluentd && $(MAKE) fresh
+	@echo "$(GREEN)✅ Fluentd logging stack fresh install completed!$(RESET)"
 	@echo "$(GREEN)✅ UI Service fresh install completed!$(RESET)"
 
 ## 🎛️  Individual Service - Management Commands
@@ -287,6 +294,11 @@ start-ui: ## Start UI service locally
 	@cd $(UI_SERVICE) && $(MAKE) start-locally &
 	@sleep 1
 
+start-fluentd: ## Start Fluentd logging stack locally
+	@echo "$(CYAN)📊 Starting centralized logging stack locally...$(RESET)"
+	@cd fluentd && $(MAKE) start-locally &
+	@sleep 2
+
 stop-data: ## Stop data service
 	@echo "$(YELLOW)🗄️  Stopping Data Service...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) stop-locally
@@ -315,6 +327,10 @@ stop-gateway: ## Stop gateway service locally
 stop-ui: ## Stop UI service locally
 	@echo "$(YELLOW)🎨 Stopping UI Service...$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) stop-locally
+
+stop-fluentd: ## Stop Fluentd logging stack locally
+	@echo "$(YELLOW)📊 Stopping centralized logging stack...$(RESET)"
+	@cd fluentd && $(MAKE) stop-locally
 
 ## 🐳 Container Service Commands
 
@@ -564,25 +580,22 @@ version: ## Show version information for all services
 
 logs-start: ## Start centralized logging stack (Fluentd + Elasticsearch + Kibana)
 	@echo "$(CYAN)📊 Starting centralized logging stack...$(RESET)"
-	@cd fluentd && docker-compose -f docker-compose.logging.yml up -d
+	@cd fluentd && make start-locally
 	@echo "$(GREEN)✅ Logging stack started!$(RESET)"
-	@echo "$(CYAN)📊 Kibana available at: http://localhost:5601$(RESET)"
-	@echo "$(CYAN)🔍 Elasticsearch available at: http://localhost:9200$(RESET)"
-	@echo "$(CYAN)📋 Fluentd listening on port 24224$(RESET)"
 
 logs-stop: ## Stop centralized logging stack
 	@echo "$(CYAN)📊 Stopping centralized logging stack...$(RESET)"
-	@cd fluentd && docker-compose -f docker-compose.logging.yml down
+	@cd fluentd && make stop-locally
 	@echo "$(GREEN)✅ Logging stack stopped!$(RESET)"
 
 logs-restart: ## Restart centralized logging stack
 	@echo "$(CYAN)📊 Restarting centralized logging stack...$(RESET)"
-	@make logs-stop
-	@make logs-start
+	@cd fluentd && make restart-locally
+	@echo "$(GREEN)✅ Logging stack restarted!$(RESET)"
 
 logs-status: ## Check status of centralized logging stack
 	@echo "$(CYAN)📊 Checking logging stack status...$(RESET)"
-	@cd fluentd && docker-compose -f docker-compose.logging.yml ps
+	@cd fluentd && make status
 
 # List all targets for tab completion
-.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-gateway start-script stop-script restart-script stop-data stop-auth stop-orders stop-gateway status-data status-auth status-orders status-gateway test-data test-auth test-orders test-inventory test-gateway health-data health-auth health-orders health-gateway clean-all clean-data clean-auth clean-orders clean-gateway system-info banner logs-all version logs-start logs-stop logs-restart logs-status 
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui fresh-fluentd start-data start-session start-orders start-inventory start-invoice start-gateway start-ui start-fluentd stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui stop-fluentd status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway clean-all clean-data clean-session clean-orders clean-gateway system-info banner logs-all version logs-start logs-stop logs-restart logs-status 
