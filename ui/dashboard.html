@@ -3764,13 +3764,19 @@
                                 </div>
                             </div>
                             <div class="row g-2 mt-2">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="detail-card detail-card-info">
                                         <div class="detail-label">Invoice</div>
                                         <div class="detail-value">${invoiceLink}</div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
+                                    <div class="detail-card detail-card-info">
+                                        <div class="detail-label">Price Per Unit</div>
+                                        <div class="detail-value">₡${Number(existence.cost_per_unit || 0).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
                                     <div class="detail-card detail-card-info">
                                         <div class="detail-label">Created</div>
                                         <div class="detail-value">${new Date(existence.created_at).toLocaleDateString()}</div>
