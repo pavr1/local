@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"invoice-service/config"
 	expenseCategoriesHandlers "invoice-service/entities/expense_categories/handlers"
 	invoicesHandlers "invoice-service/entities/invoices/handlers"
 
@@ -19,14 +20,14 @@ type MainHttpHandler struct {
 	logger *logrus.Logger
 
 	// Entity handlers
-	InvoicesHandler         *invoicesHandlers.HttpHandler
+	InvoicesHandler          *invoicesHandlers.HttpHandler
 	ExpenseCategoriesHandler *expenseCategoriesHandlers.HttpHandler
 }
 
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
-func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
+func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *MainHttpHandler {
 	// Initialize invoices handlers
-	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, logger)
+	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, logger, cfg)
 	invoicesHttpHandler := invoicesHandlers.NewHttpHandler(invoicesDBHandler, logger)
 
 	// Initialize expense categories handlers
@@ -34,9 +35,9 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 	expenseCategoriesHttpHandler := expenseCategoriesHandlers.NewHttpHandler(expenseCategoriesDBHandler, logger)
 
 	return &MainHttpHandler{
-		db:                      db,
-		logger:                  logger,
-		InvoicesHandler:         invoicesHttpHandler,
+		db:                       db,
+		logger:                   logger,
+		InvoicesHandler:          invoicesHttpHandler,
 		ExpenseCategoriesHandler: expenseCategoriesHttpHandler,
 	}
 }

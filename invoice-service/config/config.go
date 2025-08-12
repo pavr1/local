@@ -8,29 +8,31 @@ import (
 
 // Config holds the configuration for the invoice service
 type Config struct {
-	ServerPort string
-	ServerHost string
-	DBHost     string
-	DBPort     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBSSLMode  string
-	LogLevel   string
+	ServerPort          string
+	ServerHost          string
+	DBHost              string
+	DBPort              string
+	DBUser              string
+	DBPassword          string
+	DBName              string
+	DBSSLMode           string
+	LogLevel            string
+	InventoryServiceURL string
 }
 
 // LoadConfig loads configuration from environment variables with defaults
 func LoadConfig() *Config {
 	return &Config{
-		ServerPort: getEnvString("INVOICE_SERVER_PORT", "8085"),
-		ServerHost: getEnvString("INVOICE_SERVER_HOST", "0.0.0.0"),
-		DBHost:     getEnvString("DB_HOST", "localhost"),
-		DBPort:     getEnvString("DB_PORT", "5432"),
-		DBUser:     getEnvString("DB_USER", "postgres"),
-		DBPassword: getEnvString("DB_PASSWORD", "postgres123"),
-		DBName:     getEnvString("DB_NAME", "icecream_store"),
-		DBSSLMode:  getEnvString("DB_SSLMODE", "disable"),
-		LogLevel:   getEnvString("LOG_LEVEL", "info"),
+		ServerPort:          getEnvString("INVOICE_SERVER_PORT", "8085"),
+		ServerHost:          getEnvString("INVOICE_SERVER_HOST", "0.0.0.0"),
+		DBHost:              getEnvString("DB_HOST", "localhost"),
+		DBPort:              getEnvString("DB_PORT", "5432"),
+		DBUser:              getEnvString("DB_USER", "postgres"),
+		DBPassword:          getEnvString("DB_PASSWORD", "postgres123"),
+		DBName:              getEnvString("DB_NAME", "icecream_store"),
+		DBSSLMode:           getEnvString("DB_SSLMODE", "disable"),
+		LogLevel:            getEnvString("LOG_LEVEL", "info"),
+		InventoryServiceURL: getEnvString("INVENTORY_SERVICE_URL", "http://localhost:8084"),
 	}
 }
 

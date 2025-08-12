@@ -2,9 +2,14 @@ package handlers
 
 import (
 	"database/sql"
+	"encoding/json"
+	"fmt"
+	"invoice-service/config"
 	"invoice-service/entities/invoices/models"
 	invoiceSQL "invoice-service/entities/invoices/sql"
 	"math"
+	"net/http"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -13,13 +18,15 @@ import (
 type DBHandler struct {
 	db     *sql.DB
 	logger *logrus.Logger
+	config *config.Config
 }
 
 // NewDBHandler creates a new database handler for invoices
-func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
+func NewDBHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *DBHandler {
 	return &DBHandler{
 		db:     db,
 		logger: logger,
+		config: cfg,
 	}
 }
 
@@ -580,18 +587,111 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		"unit_type":         req.UnitType,
 	}).Info("CreateInventoryExistence called with items_per_unit")
 
-	// Calculate derived fields
+	// Call the inventory service to get the most recent existence
+	mostRecentExistence, err := h.getMostRecentExistenceFromInventoryService(req.IngredientID, req.UnitType)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No previous existence found, use default calculation
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id": req.IngredientID,
+				"unit_type":     req.UnitType,
+			}).Info("No previous existence found, using default calculation")
+
+			// Calculate derived fields
+			costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
+
+			// Calculate margins and taxes
+			incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
+			ivaAmount := (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
+			serviceTaxAmount := (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+
+			// Calculate final price
+			calculatedPrice := costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
+			// Round up to nearest 100
+			finalPrice := math.Ceil(calculatedPrice/100) * 100
+
+			// Log calculations for debugging
+			h.logger.WithFields(logrus.Fields{
+				"cost_per_item":            costPerItem,
+				"income_margin_percentage": req.IncomeMarginPercentage,
+				"income_margin_amount":     incomeMarginAmount,
+				"iva_percentage":           req.IvaPercentage,
+				"iva_amount":               ivaAmount,
+				"service_tax_percentage":   req.ServiceTaxPercentage,
+				"service_tax_amount":       serviceTaxAmount,
+				"calculated_price":         calculatedPrice,
+				"final_price":              finalPrice,
+			}).Debug("Existence calculations completed")
+
+			_, err = tx.Exec(invoiceSQL.CreateExistenceQuery,
+				req.IngredientID,
+				req.InvoiceDetailID,
+				req.UnitsPurchased,
+				req.UnitType,
+				req.ItemsPerUnit,
+				req.CostPerUnit,
+				req.ExpirationDate,
+				req.IncomeMarginPercentage,
+				incomeMarginAmount,
+				req.IvaPercentage,
+				ivaAmount,
+				req.ServiceTaxPercentage,
+				serviceTaxAmount,
+				calculatedPrice,
+				finalPrice,
+			)
+
+			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"ingredient_id":     req.IngredientID,
+					"invoice_detail_id": req.InvoiceDetailID,
+				}).Error("Failed to create existence in database")
+				return err
+			}
+
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id":     req.IngredientID,
+				"invoice_detail_id": req.InvoiceDetailID,
+				"units_purchased":   req.UnitsPurchased,
+			}).Info("Existence created successfully")
+
+			return nil
+		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": req.IngredientID,
+			"unit_type":     req.UnitType,
+		}).Error("Failed to call inventory service for existence")
+		return err
+	}
+
+	// Previous existence found, use its pricing structure
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id":               req.IngredientID,
+		"unit_type":                   req.UnitType,
+		"previous_final_price":        mostRecentExistence.FinalPrice,
+		"previous_iva_amount":         mostRecentExistence.IvaAmount,
+		"previous_service_tax_amount": mostRecentExistence.ServiceTaxAmount,
+	}).Info("Previous existence found, using its pricing structure")
+
+	// Calculate new cost per item from current invoice
 	costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
 
-	// Calculate margins and taxes
-	incomeMarginAmount := costPerItem * req.IncomeMarginPercentage / 100
-	ivaAmount := (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
-	serviceTaxAmount := (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+	// Use previous existence's final price, IVA amount, and service tax amount
+	finalPrice := *mostRecentExistence.FinalPrice
+	ivaAmount := mostRecentExistence.IvaAmount
+	serviceTaxAmount := mostRecentExistence.ServiceTaxAmount
 
-	// Calculate final price
+	// Calculate new margin amount: final_price - cost_per_item - iva_amount - service_tax_amount
+	incomeMarginAmount := finalPrice - costPerItem - ivaAmount - serviceTaxAmount
+
+	// Calculate new margin percentage: (margin_amount / final_price) * 100
+	incomeMarginPercentage := (incomeMarginAmount / finalPrice) * 100
+
+	// Update the request with the new margin percentage
+	req.IncomeMarginPercentage = incomeMarginPercentage
+
+	// Calculate the calculated price (should match final price)
 	calculatedPrice := costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
-	// Round up to nearest 100
-	finalPrice := math.Ceil(calculatedPrice/100) * 100
 
 	// Log calculations for debugging
 	h.logger.WithFields(logrus.Fields{
@@ -606,7 +706,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		"final_price":              finalPrice,
 	}).Debug("Existence calculations completed")
 
-	_, err := tx.Exec(invoiceSQL.CreateExistenceQuery,
+	_, err = tx.Exec(invoiceSQL.CreateExistenceQuery,
 		req.IngredientID,
 		req.InvoiceDetailID,
 		req.UnitsPurchased,
@@ -639,4 +739,54 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	}).Info("Existence created successfully")
 
 	return nil
+}
+
+// getMostRecentExistenceFromInventoryService calls the inventory service to get the most recent existence
+func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, unitType string) (*models.Existence, error) {
+	url := fmt.Sprintf("%s/api/v1/inventory/existences/ingredient/%s/unit-type/%s",
+		h.config.InventoryServiceURL, ingredientID, unitType)
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add gateway headers for internal service communication
+	req.Header.Set("X-Gateway-Service", "invoice-service")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call inventory service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		// No existence found, return nil
+		return nil, sql.ErrNoRows
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("inventory service returned status %d", resp.StatusCode)
+	}
+
+	var response struct {
+		Success bool             `json:"success"`
+		Data    models.Existence `json:"data"`
+		Message string           `json:"message"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !response.Success {
+		return nil, fmt.Errorf("inventory service returned error: %s", response.Message)
+	}
+
+	return &response.Data, nil
 }

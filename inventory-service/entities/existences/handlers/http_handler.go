@@ -15,6 +15,7 @@ import (
 type DBHandlerInterface interface {
 	CreateExistence(req models.CreateExistenceRequest) (*models.Existence, error)
 	GetExistenceByID(id string) (*models.Existence, error)
+	GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string) (*models.Existence, error)
 	ListExistences(req models.ListExistencesRequest) ([]models.Existence, error)
 	UpdateExistence(id string, req models.UpdateExistenceRequest) (*models.Existence, error)
 	DeleteExistence(id string) error
@@ -92,6 +93,45 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 	response := models.ExistenceResponse{
 		Success: true,
 		Data:    *existence,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetMostRecentExistenceByIngredientAndUnitType handles GET /existences/ingredient/{ingredientId}/unit-type/{unitType}
+func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	ingredientID := vars["ingredientId"]
+	unitType := vars["unitType"]
+
+	if ingredientID == "" || unitType == "" {
+		http.Error(w, "Missing ingredient ID or unit type", http.StatusBadRequest)
+		return
+	}
+
+	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Return empty response when no existence is found
+			response := models.ExistenceResponse{
+				Success: true,
+				Data:    models.Existence{},
+				Message: "No existence found for this ingredient and unit type",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(response)
+			return
+		}
+		h.logger.WithError(err).Error("Failed to get most recent existence")
+		http.Error(w, "Failed to get most recent existence", http.StatusInternalServerError)
+		return
+	}
+
+	response := models.ExistenceResponse{
+		Success: true,
+		Data:    *existence,
+		Message: "Most recent existence retrieved successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")

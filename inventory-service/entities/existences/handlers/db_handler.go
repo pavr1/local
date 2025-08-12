@@ -96,6 +96,45 @@ func (h *DBHandler) GetExistenceByID(id string) (*models.Existence, error) {
 	return &existence, nil
 }
 
+// GetMostRecentExistenceByIngredientAndUnitType retrieves the most recent existence for a specific ingredient and unit type
+func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string) (*models.Existence, error) {
+	var existence models.Existence
+
+	err := h.db.QueryRow(existenceSQL.GetMostRecentExistenceByIngredientAndUnitTypeQuery, ingredientID, unitType).
+		Scan(&existence.ID, &existence.ExistenceReferenceCode, &existence.IngredientID,
+			&existence.InvoiceDetailID, &existence.UnitsPurchased, &existence.UnitsAvailable,
+			&existence.UnitType, &existence.ItemsPerUnit, &existence.CostPerItem,
+			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
+			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
+			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
+			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
+			&existence.CreatedAt, &existence.UpdatedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id": ingredientID,
+				"unit_type":     unitType,
+			}).Info("No existence found for ingredient and unit type")
+			return nil, err
+		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+			"unit_type":     unitType,
+		}).Error("Failed to get most recent existence from database")
+		return nil, err
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"existence_id":   existence.ID,
+		"ingredient_id":  ingredientID,
+		"unit_type":      unitType,
+		"items_per_unit": existence.ItemsPerUnit,
+	}).Info("Most recent existence retrieved successfully")
+
+	return &existence, nil
+}
+
 // ListExistences retrieves all existences from the database with optional filtering
 func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.Existence, error) {
 	rows, err := h.db.Query(existenceSQL.ListExistencesQuery,

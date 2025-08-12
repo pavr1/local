@@ -18,3 +18,6 @@ var UpdateExistenceQuery string
 
 //go:embed scripts/delete_existence.sql
 var DeleteExistenceQuery string
+
+//go:embed scripts/get_most_recent_existence_by_ingredient_and_unit_type.sql
+var GetMostRecentExistenceByIngredientAndUnitTypeQuery string

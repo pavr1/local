@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"inventory-service/config"
+	"inventory-service/middleware"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -234,6 +235,9 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// GET /api/v1/inventory/existences/{id} - Get existence by ID
 	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().GetExistence).Methods("GET")
 
+	// GET /api/v1/inventory/existences/ingredient/{ingredientId}/unit-type/{unitType} - Get most recent existence by ingredient and unit type
+	existencesRouter.HandleFunc("/ingredient/{ingredientId}/unit-type/{unitType}", mainHandler.GetExistencesHandler().GetMostRecentExistenceByIngredientAndUnitType).Methods("GET")
+
 	// PUT /api/v1/inventory/existences/{id} - Update existence
 	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().UpdateExistence).Methods("PUT")
 
@@ -314,6 +318,10 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 
 	// Logging middleware
 	router.Use(loggingMiddleware(logger))
+
+	// Gateway middleware
+	gatewayMiddleware := middleware.NewGatewayMiddleware(logger)
+	router.Use(gatewayMiddleware.ValidateGateway)
 
 	logger.Info("HTTP routes configured successfully")
 	return router
