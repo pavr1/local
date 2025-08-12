@@ -230,6 +230,106 @@ health: ## Check gateway health
 	@echo "$(CYAN)🔍 Checking gateway health...$(RESET)"
 	@curl -f http://localhost:8080/health || echo "$(RED)❌ Gateway is not responding$(RESET)"
 
+## 📋 Service Logs Commands
+
+logs: ## Show logs for a specific service (usage: make logs SERVICE=service-name)
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "$(RED)❌ Error: SERVICE parameter is required$(RESET)"; \
+		echo "$(CYAN)Usage: make logs SERVICE=service-name$(RESET)"; \
+		echo "$(CYAN)Available services: gateway-service, session-service, orders-service, inventory-service, invoice-service, data-service$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)📋 Loading logs for $(SERVICE)...$(RESET)"
+	@case "$(SERVICE)" in \
+		"gateway-service") \
+			if [ -f "../gateway-service/service.log" ]; then \
+				tail -n 50 "../gateway-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for gateway-service$(RESET)"; \
+			fi ;; \
+		"session-service") \
+			if [ -f "../session-service/service.log" ]; then \
+				tail -n 50 "../session-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for session-service$(RESET)"; \
+			fi ;; \
+		"orders-service") \
+			if [ -f "../orders-service/service.log" ]; then \
+				tail -n 50 "../orders-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for orders-service$(RESET)"; \
+			fi ;; \
+		"inventory-service") \
+			if [ -f "../inventory-service/service.log" ]; then \
+				tail -n 50 "../inventory-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for inventory-service$(RESET)"; \
+			fi ;; \
+		"invoice-service") \
+			if [ -f "../invoice-service/service.log" ]; then \
+				tail -n 50 "../invoice-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for invoice-service$(RESET)"; \
+			fi ;; \
+		"data-service") \
+			if [ -f "../data-service/service.log" ]; then \
+				tail -n 50 "../data-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for data-service$(RESET)"; \
+			fi ;; \
+		*) \
+			echo "$(RED)❌ Unknown service: $(SERVICE)$(RESET)"; \
+			echo "$(CYAN)Available services: gateway-service, session-service, orders-service, inventory-service, invoice-service, data-service$(RESET)" ;; \
+	esac
+
+logs-tail: ## Tail logs for a specific service (usage: make logs-tail SERVICE=service-name)
+	@if [ -z "$(SERVICE)" ]; then \
+		echo "$(RED)❌ Error: SERVICE parameter is required$(RESET)"; \
+		echo "$(CYAN)Usage: make logs-tail SERVICE=service-name$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)📋 Tailing logs for $(SERVICE)...$(RESET)"
+	@case "$(SERVICE)" in \
+		"gateway-service") \
+			if [ -f "../gateway-service/service.log" ]; then \
+				tail -f "../gateway-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for gateway-service$(RESET)"; \
+			fi ;; \
+		"session-service") \
+			if [ -f "../session-service/service.log" ]; then \
+				tail -f "../session-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for session-service$(RESET)"; \
+			fi ;; \
+		"orders-service") \
+			if [ -f "../orders-service/service.log" ]; then \
+				tail -f "../orders-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for orders-service$(RESET)"; \
+			fi ;; \
+		"inventory-service") \
+			if [ -f "../inventory-service/service.log" ]; then \
+				tail -f "../inventory-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for inventory-service$(RESET)"; \
+			fi ;; \
+		"invoice-service") \
+			if [ -f "../invoice-service/service.log" ]; then \
+				tail -f "../invoice-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for invoice-service$(RESET)"; \
+			fi ;; \
+		"data-service") \
+			if [ -f "../data-service/service.log" ]; then \
+				tail -f "../data-service/service.log"; \
+			else \
+				echo "$(YELLOW)⚠️  No log file found for data-service$(RESET)"; \
+			fi ;; \
+		*) \
+			echo "$(RED)❌ Unknown service: $(SERVICE)$(RESET)" ;; \
+	esac
+
 ## 📝 Documentation
 
 docs: ## Generate documentation

@@ -109,6 +109,9 @@ func main() {
 	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
 	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
 
+	// Service logs endpoint - with authentication middleware
+	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler()).Methods("GET")
+
 	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
 	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
@@ -163,6 +166,8 @@ func main() {
 	fmt.Printf("           └─ /invoices/{id}/details  → Invoice details management\n")
 	fmt.Printf("      ALL  /api/v1/expense-categories/* → %s\n", config.InvoiceServiceURL)
 	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
+	fmt.Println("   📋 Service Management:")
+	fmt.Printf("      GET  /api/v1/logs/{service}     → Service logs viewer\n")
 	fmt.Println("")
 	fmt.Println("📋 SESSION MANAGEMENT:")
 	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)
@@ -175,6 +180,45 @@ func main() {
 	fmt.Println("   ✅ User context injection")
 
 	log.Fatal(http.ListenAndServe(":8082", r))
+}
+
+// createServiceLogsHandler creates a handler for service logs
+func createServiceLogsHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		serviceName := vars["service"]
+
+		// Validate service name
+		validServices := map[string]bool{
+			"gateway-service":   true,
+			"session-service":   true,
+			"orders-service":    true,
+			"inventory-service": true,
+			"invoice-service":   true,
+			"data-service":      true,
+		}
+
+		if !validServices[serviceName] {
+			http.Error(w, "Invalid service name", http.StatusBadRequest)
+			return
+		}
+
+		// Execute the make command to get logs
+		cmd := exec.Command("make", "logs", "SERVICE="+serviceName)
+		cmd.Dir = "." // Run from current directory (gateway-service)
+
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			log.Printf("Error executing logs command for %s: %v", serviceName, err)
+			http.Error(w, "Failed to retrieve logs", http.StatusInternalServerError)
+			return
+		}
+
+		// Return logs as plain text
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(output)
+	}
 }
 
 // createInvoiceHealthHandler creates a custom health handler for invoice service

@@ -2157,6 +2157,145 @@
         window.manageService = manageService;
 
         // ===========================================
+        // SERVICE LOGS FUNCTIONALITY
+        // ===========================================
+
+        // Service Logs Variables
+        let currentLogsService = null;
+        let logsAutoRefreshInterval = null;
+        let logsAutoRefreshEnabled = false;
+        let logsSearchTerm = '';
+
+        // View Service Logs
+        window.viewServiceLogs = function(serviceName) {
+            currentLogsService = serviceName;
+            document.getElementById('logsModalTitle').textContent = `${serviceName} Logs`;
+            document.getElementById('logsSearchInput').value = '';
+            logsSearchTerm = '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('serviceLogsModal'));
+            modal.show();
+            
+            // Load initial logs
+            loadServiceLogs();
+            
+            // Start auto-refresh
+            startLogsAutoRefresh();
+        };
+
+        // Load service logs
+        async function loadServiceLogs() {
+            try {
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/logs/${currentLogsService}`);
+                
+                if (response.ok) {
+                    const logs = await response.text();
+                    displayLogs(logs);
+                } else {
+                    displayLogs('Error: Failed to load logs');
+                }
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                displayLogs('Error: Failed to load logs');
+            }
+        }
+
+        // Display logs in the modal
+        function displayLogs(logs) {
+            const logsContent = document.getElementById('logsContent');
+            
+            if (logsSearchTerm) {
+                // Filter logs based on search term
+                const lines = logs.split('\n');
+                const filteredLines = lines.filter(line => 
+                    line.toLowerCase().includes(logsSearchTerm.toLowerCase())
+                );
+                
+                // Highlight search terms
+                const highlightedLogs = filteredLines.map(line => {
+                    if (logsSearchTerm) {
+                        const regex = new RegExp(`(${logsSearchTerm})`, 'gi');
+                        return line.replace(regex, '<span class="highlighted">$1</span>');
+                    }
+                    return line;
+                }).join('\n');
+                
+                logsContent.innerHTML = `<div class="log-line">${highlightedLogs}</div>`;
+            } else {
+                logsContent.innerHTML = `<div class="log-line">${logs}</div>`;
+            }
+            
+            // Auto-scroll to bottom
+            logsContent.scrollTop = logsContent.scrollHeight;
+        }
+
+        // Filter logs
+        window.filterLogs = function() {
+            logsSearchTerm = document.getElementById('logsSearchInput').value;
+            loadServiceLogs();
+        };
+
+        // Clear logs search
+        window.clearLogsSearch = function() {
+            document.getElementById('logsSearchInput').value = '';
+            logsSearchTerm = '';
+            loadServiceLogs();
+        };
+
+        // Toggle auto-refresh
+        window.toggleLogsAutoRefresh = function() {
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (logsAutoRefreshEnabled) {
+                stopLogsAutoRefresh();
+                btn.innerHTML = '<i class="fas fa-play me-1"></i>Auto Refresh';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-success');
+            } else {
+                startLogsAutoRefresh();
+                btn.innerHTML = '<i class="fas fa-pause me-1"></i>Auto Refresh';
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+            }
+        };
+
+        // Start auto-refresh
+        function startLogsAutoRefresh() {
+            logsAutoRefreshEnabled = true;
+            logsAutoRefreshInterval = setInterval(() => {
+                if (logsAutoRefreshEnabled) {
+                    loadServiceLogs();
+                }
+            }, 1000); // Refresh every 1 second
+        }
+
+        // Stop auto-refresh
+        function stopLogsAutoRefresh() {
+            logsAutoRefreshEnabled = false;
+            if (logsAutoRefreshInterval) {
+                clearInterval(logsAutoRefreshInterval);
+                logsAutoRefreshInterval = null;
+            }
+        }
+
+        // Manual refresh
+        window.refreshLogs = function() {
+            loadServiceLogs();
+        };
+
+        // Stop auto-refresh when modal is closed
+        document.addEventListener('DOMContentLoaded', function() {
+            const logsModal = document.getElementById('serviceLogsModal');
+            if (logsModal) {
+                logsModal.addEventListener('hidden.bs.modal', function () {
+                    stopLogsAutoRefresh();
+                    currentLogsService = null;
+                });
+            }
+        });
+
+        // ===========================================
         // SUPPLIERS PAGE FUNCTIONALITY
         // ===========================================
 

@@ -371,6 +371,73 @@
         color: white !important;
     }
 
+    /* Service Logs Modal Styles */
+    .logs-container {
+        background: #000;
+        border-radius: var(--border-radius);
+        border: 1px solid #333;
+        height: 60vh;
+        overflow: hidden;
+    }
+
+    .logs-content {
+        background: #000;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+        padding: 1rem;
+        height: 100%;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .logs-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .logs-content::-webkit-scrollbar-track {
+        background: #333;
+        border-radius: 4px;
+    }
+
+    .logs-content::-webkit-scrollbar-thumb {
+        background: #666;
+        border-radius: 4px;
+    }
+
+    .logs-content::-webkit-scrollbar-thumb:hover {
+        background: #999;
+    }
+
+    .log-line {
+        margin: 0;
+        padding: 0;
+    }
+
+    .log-line.highlighted {
+        background: rgba(255, 255, 0, 0.2);
+        border-left: 3px solid #ffc107;
+        padding-left: 0.5rem;
+    }
+
+    .log-line.error {
+        color: #ff6b6b;
+    }
+
+    .log-line.warning {
+        color: #ffd93d;
+    }
+
+    .log-line.info {
+        color: #6bcf7f;
+    }
+
+    .log-line.debug {
+        color: #74c0fc;
+    }
+
     /* Disabled Button Styles */
     .action-btn:disabled {
         opacity: 0.4;
@@ -862,6 +929,57 @@
      </div>
      <div class="context-menu-item" onclick="setServiceEnvironment('container')">
          <i class="fas fa-docker"></i>Set Environment: Container
+    </div>
+</div>
+
+<!-- Service Logs Modal -->
+<div class="modal fade" id="serviceLogsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl" style="max-width: 95%; width: 95%;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-file-alt me-2"></i>
+                    <span id="logsModalTitle">Service Logs</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="logsSearchInput" placeholder="Search in logs..." onkeyup="filterLogs()">
+                            <button class="btn btn-outline-primary" type="button" onclick="filterLogs()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <button class="btn btn-outline-secondary" onclick="clearLogsSearch()">
+                            <i class="fas fa-times me-1"></i>Clear Search
+                        </button>
+                        <button class="btn btn-outline-success" onclick="toggleLogsAutoRefresh()" id="autoRefreshBtn">
+                            <i class="fas fa-play me-1"></i>Auto Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="logs-container">
+                    <div id="logsContent" class="logs-content">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-3">Loading logs...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="refreshLogs()">
+                    <i class="fas fa-sync me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
