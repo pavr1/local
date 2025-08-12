@@ -105,8 +105,11 @@ apply_migration() {
     
     echo -e "${CYAN}📈 Applying migration: $version${RESET}"
     
+    # Copy migration file to container
+    docker cp "$up_file" icecream_postgres:/tmp/migration.sql
+    
     # Apply the migration
-    if docker exec icecream_postgres psql -U postgres -d icecream_store -f "/docker-entrypoint-initdb.d/migrations/${version}.up.sql" > /dev/null 2>&1; then
+    if docker exec icecream_postgres psql -U postgres -d icecream_store -f /tmp/migration.sql > /dev/null 2>&1; then
         # Record the migration
         docker exec icecream_postgres psql -U postgres -d icecream_store -c "
             INSERT INTO schema_migrations (version) VALUES ('$version');
@@ -132,8 +135,11 @@ rollback_migration() {
     
     echo -e "${CYAN}📉 Rolling back migration: $version${RESET}"
     
+    # Copy rollback file to container
+    docker cp "$down_file" icecream_postgres:/tmp/rollback.sql
+    
     # Apply the rollback
-    if docker exec icecream_postgres psql -U postgres -d icecream_store -f "/docker-entrypoint-initdb.d/migrations/${version}.down.sql" > /dev/null 2>&1; then
+    if docker exec icecream_postgres psql -U postgres -d icecream_store -f /tmp/rollback.sql > /dev/null 2>&1; then
         # Remove the migration record
         docker exec icecream_postgres psql -U postgres -d icecream_store -c "
             DELETE FROM schema_migrations WHERE version = '$version';

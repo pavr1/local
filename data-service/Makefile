@@ -34,7 +34,7 @@ migrate-create: ## Create new migration files (usage: make migrate-create descri
 	@./scripts/migrate.sh create "$(description)"
 	@echo "$(GREEN)✅ Migration files created!$(RESET)"
 
-fresh: clean deps remove-volumes reset start migrate-up init-manual test status info ## Complete fresh installation: clean everything, install, setup, and test
+fresh: clean deps remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
 	@echo "$(CYAN)📋 Quick verification:$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Fresh install verified!' as status, COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "$(RED)❌ Database verification failed$(RESET)"
