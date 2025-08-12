@@ -110,13 +110,13 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.E
 	for rows.Next() {
 		var existence models.Existence
 		err := rows.Scan(&existence.ID, &existence.ExistenceReferenceCode, &existence.IngredientID,
-			&existence.InvoiceDetailID, &existence.UnitsPurchased, &existence.UnitsAvailable,
-			&existence.UnitType, &existence.ItemsPerUnit, &existence.CostPerItem,
-			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
-			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
-			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
-			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
-			&existence.CreatedAt, &existence.UpdatedAt)
+			&existence.IngredientName, &existence.IngredientCategory, &existence.InvoiceDetailID,
+			&existence.UnitsPurchased, &existence.UnitsAvailable, &existence.UnitType,
+			&existence.ItemsPerUnit, &existence.CostPerItem, &existence.CostPerUnit,
+			&existence.TotalPurchaseCost, &existence.RemainingValue, &existence.ExpirationDate,
+			&existence.IncomeMarginPercentage, &existence.IncomeMarginAmount, &existence.IvaPercentage,
+			&existence.IvaAmount, &existence.ServiceTaxPercentage, &existence.ServiceTaxAmount,
+			&existence.CalculatedPrice, &existence.FinalPrice, &existence.CreatedAt, &existence.UpdatedAt)
 
 		if err != nil {
 			h.logger.WithError(err).Error("Failed to scan existence row")

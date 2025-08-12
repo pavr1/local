@@ -93,6 +93,15 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 		// Create existence if this is an ingredient item AND expense category is "Ingredients"
 		//pvillalobos - get rid of hardcoded values
 		if item.IngredientID != nil && expenseCategoryName == "Ingredients" {
+			// Debug logging to verify items_per_unit value
+			h.logger.WithFields(logrus.Fields{
+				"invoice_detail_id": detail.ID,
+				"ingredient_id":     *item.IngredientID,
+				"items_per_unit":    item.ItemsPerUnit,
+				"cost_per_unit":     item.Price,
+				"unit_type":         item.UnitType,
+			}).Info("Creating existence with items_per_unit from invoice detail")
+
 			existenceReq := models.CreateExistenceRequest{
 				IngredientID:           *item.IngredientID,
 				InvoiceDetailID:        detail.ID,
@@ -562,6 +571,15 @@ func (h *DBHandler) DeleteInvoiceDetail(id string) error {
 
 // CreateInventoryExistence creates an existence record from an invoice detail
 func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExistenceRequest) error {
+	// Debug logging to verify items_per_unit value
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id":     req.IngredientID,
+		"invoice_detail_id": req.InvoiceDetailID,
+		"items_per_unit":    req.ItemsPerUnit,
+		"cost_per_unit":     req.CostPerUnit,
+		"unit_type":         req.UnitType,
+	}).Info("CreateInventoryExistence called with items_per_unit")
+
 	// Calculate derived fields
 	costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
 

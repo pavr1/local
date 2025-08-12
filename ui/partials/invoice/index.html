@@ -603,14 +603,25 @@
     };
 
     window.selectExpenseCategory = function(categoryId, categoryName) {
-        document.getElementById('expenseCategory').value = categoryId;
-        document.getElementById('expenseCategoryDisplay').value = categoryName;
+        const expenseCategoryElement = document.getElementById('expenseCategory');
+        const expenseCategoryDisplayElement = document.getElementById('expenseCategoryDisplay');
+        
+        if (expenseCategoryElement) {
+            expenseCategoryElement.value = categoryId;
+        }
+        if (expenseCategoryDisplayElement) {
+            expenseCategoryDisplayElement.value = categoryName;
+        }
 
         // Trigger item row updates when expense category changes
-        handleExpenseCategoryChange();
+        if (typeof handleExpenseCategoryChange === 'function') {
+            handleExpenseCategoryChange();
+        }
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('expenseCategoryPickerModal'));
-        modal.hide();
+        if (modal) {
+            modal.hide();
+        }
     };
 
     // Supplier Picker Functions
@@ -690,11 +701,20 @@
     };
 
     window.selectSupplier = function(supplierId, supplierName) {
-        document.getElementById('supplierId').value = supplierId;
-        document.getElementById('supplierDisplay').value = supplierName;
+        const supplierIdElement = document.getElementById('supplierId');
+        const supplierDisplayElement = document.getElementById('supplierDisplay');
+        
+        if (supplierIdElement) {
+            supplierIdElement.value = supplierId;
+        }
+        if (supplierDisplayElement) {
+            supplierDisplayElement.value = supplierName;
+        }
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('supplierPickerModal'));
-        modal.hide();
+        if (modal) {
+            modal.hide();
+        }
     };
 
     // Image Picker Functions
@@ -768,19 +788,32 @@
     };
 
     window.confirmImageSelection = function() {
+        const imageDisplayElement = document.getElementById('imageDisplay');
+        const imageUrlElement = document.getElementById('imageUrl');
+        
         if (selectedImageFile) {
             // For file upload, we'll use a placeholder URL for now
             // In a real implementation, you'd upload the file to a server
             const imageName = selectedImageFile.name;
-            document.getElementById('imageDisplay').value = imageName;
-            document.getElementById('imageUrl').value = `uploaded://${imageName}`;
+            if (imageDisplayElement) {
+                imageDisplayElement.value = imageName;
+            }
+            if (imageUrlElement) {
+                imageUrlElement.value = `uploaded://${imageName}`;
+            }
         } else if (selectedImageUrl) {
-            document.getElementById('imageDisplay').value = selectedImageUrl;
-            document.getElementById('imageUrl').value = selectedImageUrl;
+            if (imageDisplayElement) {
+                imageDisplayElement.value = selectedImageUrl;
+            }
+            if (imageUrlElement) {
+                imageUrlElement.value = selectedImageUrl;
+            }
         }
 
         const modal = bootstrap.Modal.getInstance(document.getElementById('imagePickerModal'));
-        modal.hide();
+        if (modal) {
+            modal.hide();
+        }
     };
 
     // Ingredient Picker Functions

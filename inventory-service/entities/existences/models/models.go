@@ -9,6 +9,8 @@ type Existence struct {
 	ID                     string     `json:"id" db:"id"`
 	ExistenceReferenceCode int        `json:"existence_reference_code" db:"existence_reference_code"`
 	IngredientID           string     `json:"ingredient_id" db:"ingredient_id"`
+	IngredientName         *string    `json:"ingredient_name" db:"ingredient_name"`
+	IngredientCategory     *string    `json:"ingredient_category" db:"ingredient_category"`
 	InvoiceDetailID        string     `json:"invoice_detail_id" db:"invoice_detail_id"`
 	UnitsPurchased         float64    `json:"units_purchased" db:"units_purchased"`
 	UnitsAvailable         float64    `json:"units_available" db:"units_available"`
