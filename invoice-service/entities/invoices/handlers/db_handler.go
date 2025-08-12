@@ -77,8 +77,8 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 	for _, item := range req.Items {
 		var detail models.InvoiceDetail
 		err = tx.QueryRow(invoiceSQL.CreateInvoiceDetailQuery,
-			invoice.ID, item.IngredientID, item.Detail, item.Count, item.UnitType, item.Price, item.ExpirationDate).
-			Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+			invoice.ID, item.IngredientID, item.Detail, item.Count, item.UnitType, item.ItemsPerUnit, item.Price, item.ExpirationDate).
+			Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 
 		if err != nil {
 			h.logger.WithError(err).WithFields(logrus.Fields{
@@ -288,8 +288,8 @@ func (h *DBHandler) CreateInvoiceDetail(req models.CreateInvoiceDetailRequest) (
 
 	// Create the invoice detail
 	err = tx.QueryRow(invoiceSQL.CreateInvoiceDetailQuery,
-		req.InvoiceID, req.IngredientID, req.Detail, req.Count, req.UnitType, req.Price, req.ExpirationDate).
-		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+		req.InvoiceID, req.IngredientID, req.Detail, req.Count, req.UnitType, req.ItemsPerUnit, req.Price, req.ExpirationDate).
+		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
@@ -337,7 +337,7 @@ func (h *DBHandler) GetInvoiceDetailByID(id string) (*models.InvoiceDetail, erro
 	var detail models.InvoiceDetail
 
 	err := h.db.QueryRow(invoiceSQL.GetInvoiceDetailByIDQuery, id).
-		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -367,7 +367,7 @@ func (h *DBHandler) GetInvoiceDetailsByInvoiceID(invoiceID string) ([]models.Inv
 	var details []models.InvoiceDetail
 	for rows.Next() {
 		var detail models.InvoiceDetail
-		err := rows.Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+		err := rows.Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 		if err != nil {
 			h.logger.WithError(err).Warn("Failed to scan invoice detail row, skipping")
 			continue
@@ -400,7 +400,7 @@ func (h *DBHandler) ListInvoiceDetails() ([]models.InvoiceDetail, error) {
 	var details []models.InvoiceDetail
 	for rows.Next() {
 		var detail models.InvoiceDetail
-		err := rows.Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+		err := rows.Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 		if err != nil {
 			h.logger.WithError(err).Warn("Failed to scan invoice detail row, skipping")
 			continue
@@ -432,8 +432,8 @@ func (h *DBHandler) UpdateInvoiceDetail(id string, req models.UpdateInvoiceDetai
 	var detail models.InvoiceDetail
 
 	err = tx.QueryRow(invoiceSQL.UpdateInvoiceDetailQuery,
-		id, req.IngredientID, req.Detail, req.Count, req.UnitType, req.Price, req.ExpirationDate).
-		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
+		id, req.IngredientID, req.Detail, req.Count, req.UnitType, req.ItemsPerUnit, req.Price, req.ExpirationDate).
+		Scan(&detail.ID, &detail.InvoiceID, &detail.IngredientID, &detail.Detail, &detail.Count, &detail.UnitType, &detail.ItemsPerUnit, &detail.Price, &detail.Total, &detail.ExpirationDate, &detail.CreatedAt, &detail.UpdatedAt)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

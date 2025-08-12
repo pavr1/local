@@ -128,6 +128,7 @@ CREATE TABLE invoice_details (
     detail TEXT NOT NULL,
     count DECIMAL(10,2) NOT NULL CHECK (count > 0),
     unit_type VARCHAR(20) NOT NULL CHECK (unit_type IN ('Liters', 'Gallons', 'Units', 'Bag')),
+    items_per_unit INTEGER NOT NULL CHECK (items_per_unit > 0), -- Number of items contained in one unit (e.g., 31 balls per gallon)
     price DECIMAL(10,2) NOT NULL CHECK (price > 0),
     total DECIMAL(12,2) GENERATED ALWAYS AS (count * price) STORED,
     expiration_date DATE,
@@ -428,6 +429,7 @@ CREATE INDEX idx_invoice_details_invoice ON invoice_details(invoice_id);
 CREATE INDEX idx_invoice_details_ingredient ON invoice_details(ingredient_id);
 CREATE INDEX idx_invoice_details_total ON invoice_details(total);
 CREATE INDEX idx_invoice_details_unit_type ON invoice_details(unit_type);
+CREATE INDEX idx_invoice_details_items_per_unit ON invoice_details(items_per_unit);
 CREATE INDEX idx_invoice_details_expiration ON invoice_details(expiration_date);
 
 -- =============================================================================

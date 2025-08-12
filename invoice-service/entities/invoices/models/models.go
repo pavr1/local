@@ -27,6 +27,7 @@ type InvoiceDetail struct {
 	Detail         string     `json:"detail" db:"detail"`
 	Count          float64    `json:"count" db:"count"`
 	UnitType       string     `json:"unit_type" db:"unit_type"`
+	ItemsPerUnit   int        `json:"items_per_unit" db:"items_per_unit"`
 	Price          float64    `json:"price" db:"price"`
 	Total          float64    `json:"total" db:"total"`
 	ExpirationDate *time.Time `json:"expiration_date" db:"expiration_date"`
@@ -41,6 +42,7 @@ type CreateInvoiceDetailRequest struct {
 	Detail         string     `json:"detail" validate:"required"`
 	Count          float64    `json:"count" validate:"required,gt=0"`
 	UnitType       string     `json:"unit_type" validate:"required,oneof=Liters Gallons Units Bag"`
+	ItemsPerUnit   int        `json:"items_per_unit" validate:"required,gt=0"`
 	Price          float64    `json:"price" validate:"required,gt=0"`
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
@@ -51,6 +53,7 @@ type CreateInvoiceItemRequest struct {
 	Detail         string     `json:"detail" validate:"required"`
 	Count          float64    `json:"count" validate:"required,gt=0"`
 	UnitType       string     `json:"unit_type" validate:"required,oneof=Liters Gallons Units Bag"`
+	ItemsPerUnit   int        `json:"items_per_unit" validate:"required,gt=0"`
 	Price          float64    `json:"price" validate:"required,gt=0"`
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
@@ -84,6 +87,7 @@ type UpdateInvoiceDetailRequest struct {
 	Detail         *string    `json:"detail,omitempty" validate:"omitempty,min=1"`
 	Count          *float64   `json:"count,omitempty" validate:"omitempty,gt=0"`
 	UnitType       *string    `json:"unit_type,omitempty" validate:"omitempty,oneof=Liters Gallons Units Bag"`
+	ItemsPerUnit   *int       `json:"items_per_unit,omitempty" validate:"omitempty,gt=0"`
 	Price          *float64   `json:"price,omitempty" validate:"omitempty,gt=0"`
 	ExpirationDate *time.Time `json:"expiration_date,omitempty"`
 }
