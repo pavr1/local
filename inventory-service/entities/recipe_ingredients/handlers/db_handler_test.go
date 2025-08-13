@@ -8,16 +8,23 @@ import (
 	"inventory-service/entities/recipe_ingredients/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func testLogger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetLevel(logrus.ErrorLevel)
+	return logger
+}
 
 func TestNewRecipeIngredientDBHandler(t *testing.T) {
 	db, _, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 	assert.NotNil(t, handler)
 	assert.Equal(t, db, handler.db)
 }
@@ -27,7 +34,7 @@ func TestRecipeIngredientDBHandler_Create(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	req := models.CreateRecipeIngredientRequest{
 		RecipeID:     "550e8400-e29b-41d4-a716-446655440000",
@@ -80,7 +87,7 @@ func TestRecipeIngredientDBHandler_Create_Error(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	req := models.CreateRecipeIngredientRequest{
 		RecipeID:     "550e8400-e29b-41d4-a716-446655440000",
@@ -107,7 +114,7 @@ func TestRecipeIngredientDBHandler_GetByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	now := time.Now()
 	expectedRecipeIngredient := models.RecipeIngredient{
@@ -154,7 +161,7 @@ func TestRecipeIngredientDBHandler_GetByID_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, unit_type, created_at, updated_at").
 		WithArgs("non-existent-id").
@@ -175,7 +182,7 @@ func TestRecipeIngredientDBHandler_List(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	now := time.Now()
 	expectedRecipeIngredients := []models.RecipeIngredient{
@@ -233,7 +240,7 @@ func TestRecipeIngredientDBHandler_List_WithFilters(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	recipeID := "550e8400-e29b-41d4-a716-446655440000"
 	ingredientID := "550e8400-e29b-41d4-a716-446655440001"
@@ -268,7 +275,7 @@ func TestRecipeIngredientDBHandler_Update(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	now := time.Now()
 	recipeID := "550e8400-e29b-41d4-a716-446655440001"
@@ -325,7 +332,7 @@ func TestRecipeIngredientDBHandler_Update_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	quantity := 3.0
 	req := models.UpdateRecipeIngredientRequest{
@@ -350,7 +357,7 @@ func TestRecipeIngredientDBHandler_Delete(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeIngredientRequest{ID: "550e8400-e29b-41d4-a716-446655440000"}
 
@@ -370,7 +377,7 @@ func TestRecipeIngredientDBHandler_Delete_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeIngredientRequest{ID: "non-existent-id"}
 
@@ -391,7 +398,7 @@ func TestRecipeIngredientDBHandler_Delete_Error(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeIngredientDBHandler(db)
+	handler := NewRecipeIngredientDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeIngredientRequest{ID: "550e8400-e29b-41d4-a716-446655440000"}
 

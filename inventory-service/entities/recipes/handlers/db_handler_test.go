@@ -8,16 +8,24 @@ import (
 	"inventory-service/entities/recipes/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testLogger creates a logger for testing
+func testLogger() *logrus.Logger {
+	log := logrus.New()
+	log.SetLevel(logrus.ErrorLevel) // Only log errors during tests
+	return log
+}
 
 func TestNewRecipeDBHandler(t *testing.T) {
 	db, _, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 	assert.NotNil(t, handler)
 	assert.Equal(t, db, handler.db)
 }
@@ -27,7 +35,7 @@ func TestRecipeDBHandler_Create(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	description := "Test description"
 	pictureURL := "https://example.com/image.jpg"
@@ -86,7 +94,7 @@ func TestRecipeDBHandler_Create_Error(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	req := models.CreateRecipeRequest{
 		RecipeName:        "Test Recipe",
@@ -114,7 +122,7 @@ func TestRecipeDBHandler_GetByID(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	now := time.Now()
 	description := "Test description"
@@ -166,7 +174,7 @@ func TestRecipeDBHandler_GetByID_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	mock.ExpectQuery("SELECT id, recipe_name, recipe_description, picture_url, recipe_category_id, total_recipe_cost, created_at, updated_at").
 		WithArgs("non-existent-id").
@@ -187,7 +195,7 @@ func TestRecipeDBHandler_List(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	now := time.Now()
 	description1 := "Test description 1"
@@ -252,7 +260,7 @@ func TestRecipeDBHandler_List_WithFilters(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	recipeName := "Test"
 	recipeCategoryID := "550e8400-e29b-41d4-a716-446655440000"
@@ -287,7 +295,7 @@ func TestRecipeDBHandler_Update(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	now := time.Now()
 	recipeName := "Updated Recipe"
@@ -349,7 +357,7 @@ func TestRecipeDBHandler_Update_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	recipeName := "Updated Recipe"
 	req := models.UpdateRecipeRequest{
@@ -374,7 +382,7 @@ func TestRecipeDBHandler_Delete(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeRequest{ID: "550e8400-e29b-41d4-a716-446655440000"}
 
@@ -394,7 +402,7 @@ func TestRecipeDBHandler_Delete_NotFound(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeRequest{ID: "non-existent-id"}
 
@@ -415,7 +423,7 @@ func TestRecipeDBHandler_Delete_Error(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	handler := NewRecipeDBHandler(db)
+	handler := NewRecipeDBHandler(db, testLogger())
 
 	req := models.DeleteRecipeRequest{ID: "550e8400-e29b-41d4-a716-446655440000"}
 

@@ -2,18 +2,24 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
-
 	"inventory-service/entities/recipe_ingredients/models"
 	recipeIngredientSQL "inventory-service/entities/recipe_ingredients/sql"
+
+	"github.com/sirupsen/logrus"
 )
 
+// RecipeIngredientDBHandler handles database operations for recipe ingredients
 type RecipeIngredientDBHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *logrus.Logger
 }
 
-func NewRecipeIngredientDBHandler(db *sql.DB) *RecipeIngredientDBHandler {
-	return &RecipeIngredientDBHandler{db: db}
+// NewDBHandler creates a new database handler for recipe ingredients
+func NewDBHandler(db *sql.DB, logger *logrus.Logger) *RecipeIngredientDBHandler {
+	return &RecipeIngredientDBHandler{
+		db:     db,
+		logger: logger,
+	}
 }
 
 func (h *RecipeIngredientDBHandler) Create(req models.CreateRecipeIngredientRequest) (*models.RecipeIngredient, error) {
@@ -35,8 +41,18 @@ func (h *RecipeIngredientDBHandler) Create(req models.CreateRecipeIngredientRequ
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create recipe ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id":     req.RecipeID,
+			"ingredient_id": req.IngredientID,
+		}).Error("Failed to create recipe ingredient in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": recipeIngredient.ID,
+		"recipe_id":            recipeIngredient.RecipeID,
+		"ingredient_id":        recipeIngredient.IngredientID,
+	}).Info("Recipe ingredient created successfully")
 
 	return &recipeIngredient, nil
 }
@@ -55,9 +71,15 @@ func (h *RecipeIngredientDBHandler) GetByID(req models.GetRecipeIngredientReques
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("recipe ingredient not found")
+			h.logger.WithFields(logrus.Fields{
+				"recipe_ingredient_id": req.ID,
+			}).Warn("Recipe ingredient not found")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get recipe ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_ingredient_id": req.ID,
+		}).Error("Failed to get recipe ingredient from database")
+		return nil, err
 	}
 
 	return &recipeIngredient, nil
@@ -82,7 +104,8 @@ func (h *RecipeIngredientDBHandler) List(req models.ListRecipeIngredientsRequest
 		offset,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list recipe ingredients: %w", err)
+		h.logger.WithError(err).Error("Failed to execute recipe ingredients list query")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -99,14 +122,25 @@ func (h *RecipeIngredientDBHandler) List(req models.ListRecipeIngredientsRequest
 			&recipeIngredient.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan recipe ingredient: %w", err)
+			h.logger.WithError(err).Warn("Failed to scan recipe ingredient row, skipping")
+			continue
 		}
 		recipeIngredients = append(recipeIngredients, recipeIngredient)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating recipe ingredients: %w", err)
+		h.logger.WithError(err).Error("Error occurred during rows iteration")
+		return nil, err
 	}
+
+	// Ensure we always return an empty slice instead of nil
+	if recipeIngredients == nil {
+		recipeIngredients = []models.RecipeIngredient{}
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"recipe_ingredients_count": len(recipeIngredients),
+	}).Info("Listed recipe ingredients successfully")
 
 	return recipeIngredients, nil
 }
@@ -132,10 +166,22 @@ func (h *RecipeIngredientDBHandler) Update(req models.UpdateRecipeIngredientRequ
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("recipe ingredient not found")
+			h.logger.WithFields(logrus.Fields{
+				"recipe_ingredient_id": id,
+			}).Warn("Recipe ingredient not found for update")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to update recipe ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_ingredient_id": id,
+		}).Error("Failed to update recipe ingredient in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": recipeIngredient.ID,
+		"recipe_id":            recipeIngredient.RecipeID,
+		"ingredient_id":        recipeIngredient.IngredientID,
+	}).Info("Recipe ingredient updated successfully")
 
 	return &recipeIngredient, nil
 }
@@ -143,17 +189,30 @@ func (h *RecipeIngredientDBHandler) Update(req models.UpdateRecipeIngredientRequ
 func (h *RecipeIngredientDBHandler) Delete(req models.DeleteRecipeIngredientRequest) error {
 	result, err := h.db.Exec(recipeIngredientSQL.DeleteRecipeIngredientQuery, req.ID)
 	if err != nil {
-		return fmt.Errorf("failed to delete recipe ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_ingredient_id": req.ID,
+		}).Error("Failed to execute recipe ingredient delete query")
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_ingredient_id": req.ID,
+		}).Error("Failed to get rows affected after delete")
+		return err
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("recipe ingredient not found")
+		h.logger.WithFields(logrus.Fields{
+			"recipe_ingredient_id": req.ID,
+		}).Warn("No recipe ingredient found to delete")
+		return sql.ErrNoRows
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": req.ID,
+	}).Info("Recipe ingredient deleted successfully")
 
 	return nil
 }

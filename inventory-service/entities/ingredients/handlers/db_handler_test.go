@@ -126,9 +126,9 @@ func TestGetIngredientByID(t *testing.T) {
 		"successful_retrieval": {
 			ingredientID: "ingredient-123",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract", "category-123", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
-				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients WHERE id").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at", "category_name", "supplier_name"}).
+					AddRow("ingredient-123", "Vanilla Extract", "Pure vanilla extract", "category-123", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z", nil, nil)
+				mock.ExpectQuery("SELECT i.id, i.name, i.description, i.ingredient_category_id, i.supplier_id, i.created_at, i.updated_at, ic.name as category_name, s.supplier_name as supplier_name FROM ingredients i LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id LEFT JOIN suppliers s ON i.supplier_id = s.id WHERE i.id").
 					WithArgs("ingredient-123").
 					WillReturnRows(rows)
 			},
@@ -146,7 +146,7 @@ func TestGetIngredientByID(t *testing.T) {
 		"ingredient_not_found": {
 			ingredientID: "nonexistent-id",
 			setupMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients WHERE id").
+				mock.ExpectQuery("SELECT i.id, i.name, i.description, i.ingredient_category_id, i.supplier_id, i.created_at, i.updated_at, ic.name as category_name, s.supplier_name as supplier_name FROM ingredients i LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id LEFT JOIN suppliers s ON i.supplier_id = s.id WHERE i.id").
 					WithArgs("nonexistent-id").
 					WillReturnError(sql.ErrNoRows)
 			},
@@ -193,10 +193,10 @@ func TestListIngredients(t *testing.T) {
 	}{
 		"successful_list": {
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"}).
-					AddRow("ingredient-1", "Sugar", nil, "category-1", nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z").
-					AddRow("ingredient-2", "Vanilla", "Pure vanilla extract", "category-2", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
-				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at", "category_name", "supplier_name"}).
+					AddRow("ingredient-1", "Sugar", nil, "category-1", nil, "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z", nil, nil).
+					AddRow("ingredient-2", "Vanilla", "Pure vanilla extract", "category-2", "supplier-123", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z", nil, nil)
+				mock.ExpectQuery("SELECT i.id, i.name, i.description, i.ingredient_category_id, i.supplier_id, i.created_at, i.updated_at, ic.name as category_name, s.supplier_name as supplier_name FROM ingredients i LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id LEFT JOIN suppliers s ON i.supplier_id = s.id ORDER BY i.name ASC").
 					WillReturnRows(rows)
 			},
 			expectedError: false,
@@ -223,8 +223,8 @@ func TestListIngredients(t *testing.T) {
 		},
 		"empty_result": {
 			setupMock: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at"})
-				mock.ExpectQuery("SELECT id, name, description, ingredient_category_id, supplier_id, created_at, updated_at FROM ingredients ORDER BY name").
+				rows := sqlmock.NewRows([]string{"id", "name", "description", "ingredient_category_id", "supplier_id", "created_at", "updated_at", "category_name", "supplier_name"})
+				mock.ExpectQuery("SELECT i.id, i.name, i.description, i.ingredient_category_id, i.supplier_id, i.created_at, i.updated_at, ic.name as category_name, s.supplier_name as supplier_name FROM ingredients i LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id LEFT JOIN suppliers s ON i.supplier_id = s.id ORDER BY i.name ASC").
 					WillReturnRows(rows)
 			},
 			expectedError:   false,

@@ -19,8 +19,13 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 )
 
+// Global logger instance
+var logrusLogger *logrus.Logger
+
+// Response structs
 type Response struct {
 	Message   string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
@@ -31,6 +36,41 @@ type HealthResponse struct {
 	Status  string    `json:"status"`
 	Version string    `json:"version"`
 	Time    time.Time `json:"time"`
+}
+
+// Initialize logger with structured format
+func initLogger() *logrus.Logger {
+	log := logrus.New()
+
+	// Set log level from environment or default to info
+	logLevel := os.Getenv("LOG_LEVEL")
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		log.SetLevel(logrus.DebugLevel)
+	case "info":
+		log.SetLevel(logrus.InfoLevel)
+	case "warn":
+		log.SetLevel(logrus.WarnLevel)
+	case "error":
+		log.SetLevel(logrus.ErrorLevel)
+	default:
+		log.SetLevel(logrus.InfoLevel)
+	}
+
+	// Set structured JSON formatter for better parsing
+	log.SetFormatter(&logrus.JSONFormatter{
+		TimestampFormat: time.RFC3339,
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyTime:  "timestamp",
+			logrus.FieldKeyLevel: "level",
+			logrus.FieldKeyMsg:   "message",
+		},
+	})
+
+	// Set output to stdout for containerized environments
+	log.SetOutput(os.Stdout)
+
+	return log
 }
 
 // corsMiddleware handles CORS for all services - gateway is the single source of truth
@@ -62,6 +102,9 @@ type Config struct {
 }
 
 func main() {
+	// Initialize structured logger
+	logrusLogger = initLogger()
+
 	config := Config{
 		Port:                getEnv("GATEWAY_PORT", "8082"),
 		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
@@ -83,6 +126,16 @@ func main() {
 	centralLogger := logger.InitLogger("gateway-service", fluentdHost, fluentdPort)
 	defer centralLogger.Close()
 
+	logrusLogger.WithFields(logrus.Fields{
+		"port":              config.Port,
+		"session_service":   config.SessionServiceURL,
+		"orders_service":    config.OrdersServiceURL,
+		"inventory_service": config.InventoryServiceURL,
+		"invoice_service":   config.InvoiceServiceURL,
+		"fluentd_host":      fluentdHost,
+		"fluentd_port":      fluentdPort,
+	}).Info("Gateway service starting")
+
 	centralLogger.Info("Gateway service starting", map[string]interface{}{
 		"port":              config.Port,
 		"session_service":   config.SessionServiceURL,
@@ -96,7 +149,7 @@ func main() {
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
 
-	// Create session manager for authentication
+	// Create session manager for authentication with logger
 	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL)
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager)
 
@@ -108,7 +161,7 @@ func main() {
 	// ==== GATEWAY ENDPOINTS ====
 
 	// Gateway health check endpoint
-	api.HandleFunc("/health", createHealthHandler(&config)).Methods("GET")
+	api.HandleFunc("/health", createHealthHandler(&config, logrusLogger)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -122,33 +175,33 @@ func main() {
 	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login")).Methods("POST")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login", logrusLogger)).Methods("POST")
 	// Protected session endpoints - session service handles authentication
-	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout")).Methods("POST")
+	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout", logrusLogger)).Methods("POST")
 
 	// Public health endpoints (no authentication required)
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health")).Methods("GET")
-	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health")).Methods("GET")
-	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health")).Methods("GET")
-	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health", logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health", logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health", logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logrusLogger)).Methods("GET")
 
 	// Public logs endpoints (no authentication required) - for debugging
-	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler()).Methods("GET")
-	api.HandleFunc("/v1/logs", createCentralizedLogsHandler()).Methods("GET")
+	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/logs", createCentralizedLogsHandler(logrusLogger)).Methods("GET")
 
 	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
-	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders"))
+	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders", logrusLogger))
 	ordersRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Inventory service endpoints - with authentication middleware
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory"))
+	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory", logrusLogger))
 	inventoryRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Invoice service routes - with authentication middleware
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
-	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1"))
+	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1", logrusLogger))
 	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
@@ -162,6 +215,11 @@ func main() {
 
 	// UI is now served by its own service on port 3000
 	// Static file serving removed - UI runs independently
+
+	logrusLogger.WithFields(logrus.Fields{
+		"port": config.Port,
+		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
+	}).Info("Gateway service started successfully")
 
 	fmt.Println("🚀 Gateway Service with Session Management starting on http://localhost:8082")
 	fmt.Println("📡 API available at http://localhost:8082/api")
@@ -208,7 +266,7 @@ func main() {
 }
 
 // createServiceLogsHandler creates a handler for service logs
-func createServiceLogsHandler() http.HandlerFunc {
+func createServiceLogsHandler(logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		serviceName := vars["service"]
@@ -234,7 +292,10 @@ func createServiceLogsHandler() http.HandlerFunc {
 
 		output, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Printf("Error executing logs command for %s: %v", serviceName, err)
+			logger.WithFields(logrus.Fields{
+				"service": serviceName,
+				"error":   err.Error(),
+			}).Error("Failed to retrieve logs")
 			http.Error(w, "Failed to retrieve logs", http.StatusInternalServerError)
 			return
 		}
@@ -247,7 +308,7 @@ func createServiceLogsHandler() http.HandlerFunc {
 }
 
 // createCentralizedLogsHandler creates a handler for centralized logs from Elasticsearch
-func createCentralizedLogsHandler() http.HandlerFunc {
+func createCentralizedLogsHandler(logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get query parameters
 		service := r.URL.Query().Get("service")
@@ -266,6 +327,9 @@ func createCentralizedLogsHandler() http.HandlerFunc {
 		client := &http.Client{Timeout: 10 * time.Second}
 		resp, err := client.Post("http://localhost:9200/ice-cream-logs-*/_search", "application/json", strings.NewReader(query))
 		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+			}).Error("Failed to query Elasticsearch")
 			http.Error(w, "Failed to query Elasticsearch", http.StatusInternalServerError)
 			return
 		}
@@ -274,6 +338,9 @@ func createCentralizedLogsHandler() http.HandlerFunc {
 		// Read response
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+			}).Error("Failed to read response")
 			http.Error(w, "Failed to read response", http.StatusInternalServerError)
 			return
 		}
@@ -342,12 +409,14 @@ func buildElasticsearchQuery(service, level, search, limit string) string {
 }
 
 // createInvoiceHealthHandler creates a custom health handler for invoice service
-func createInvoiceHealthHandler(invoiceServiceURL string) http.HandlerFunc {
+func createInvoiceHealthHandler(invoiceServiceURL string, logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Create a direct request to invoice service health endpoint
 		healthURL := invoiceServiceURL + "/health"
 
-		log.Printf("Proxying invoice health check to %s", healthURL)
+		logger.WithFields(logrus.Fields{
+			"invoice_service_url": healthURL,
+		}).Info("Proxying invoice health check")
 
 		client := &http.Client{
 			Timeout: 5 * time.Second,
@@ -355,6 +424,9 @@ func createInvoiceHealthHandler(invoiceServiceURL string) http.HandlerFunc {
 
 		req, err := http.NewRequest("GET", healthURL, nil)
 		if err != nil {
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+			}).Error("Failed to create health request")
 			http.Error(w, "Failed to create health request", http.StatusInternalServerError)
 			return
 		}
@@ -366,7 +438,9 @@ func createInvoiceHealthHandler(invoiceServiceURL string) http.HandlerFunc {
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("Invoice health check failed: %v", err)
+			logger.WithFields(logrus.Fields{
+				"error": err.Error(),
+			}).Error("Invoice health check failed")
 			http.Error(w, "Invoice service unavailable", http.StatusServiceUnavailable)
 			return
 		}
@@ -386,25 +460,51 @@ func createInvoiceHealthHandler(invoiceServiceURL string) http.HandlerFunc {
 }
 
 // createProxyHandler creates a reverse proxy handler for a specific service
-func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
+func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) http.HandlerFunc {
 	target, err := url.Parse(targetURL)
 	if err != nil {
-		log.Fatalf("Invalid target URL: %v", err)
+		logger.WithFields(logrus.Fields{
+			"target_url": targetURL,
+			"error":      err.Error(),
+		}).Fatalf("Invalid target URL: %v", err)
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
 
 	// Customize the proxy to handle errors and modify requests
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		log.Printf("Proxy error for %s %s: %v", r.Method, r.URL.Path, err)
+		// Determine which service is being called based on the URL path
+		var serviceName string
+		switch {
+		case strings.Contains(r.URL.Path, "/sessions"):
+			serviceName = "session-service"
+		case strings.Contains(r.URL.Path, "/orders"):
+			serviceName = "orders-service"
+		case strings.Contains(r.URL.Path, "/inventory"):
+			serviceName = "inventory-service"
+		case strings.Contains(r.URL.Path, "/invoices"):
+			serviceName = "invoice-service"
+		default:
+			serviceName = "unknown-service"
+		}
+
+		logger.WithFields(logrus.Fields{
+			"method":      r.Method,
+			"path":        r.URL.Path,
+			"target_url":  target.String(),
+			"service":     serviceName,
+			"error":       err.Error(),
+			"remote_addr": r.RemoteAddr,
+		}).Error("Proxy error - service unavailable")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadGateway)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":     "Service unavailable",
-			"message":   "The session service is currently unavailable",
+			"error":     "service_unavailable",
+			"message":   fmt.Sprintf("The %s is currently unavailable", serviceName),
 			"timestamp": time.Now(),
-			"service":   "session-service",
+			"service":   serviceName,
+			"path":      r.URL.Path,
 		})
 	}
 
@@ -415,7 +515,11 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 
 		// Log the proxy request (only for important requests)
 		if req.URL.Path != "/api/v1/sessions/p/health" {
-			log.Printf("Proxying %s %s to %s%s", req.Method, req.URL.Path, target.String(), req.URL.Path)
+			logger.WithFields(logrus.Fields{
+				"method": req.Method,
+				"path":   req.URL.Path,
+				"target": target.String(),
+			}).Info("Proxying request")
 		}
 
 		// Add gateway headers
@@ -430,15 +534,15 @@ func createProxyHandler(targetURL, stripPrefix string) http.HandlerFunc {
 }
 
 // createHealthHandler creates a health handler with config
-func createHealthHandler(config *Config) http.HandlerFunc {
+func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Check all business services that appear on the dashboard + data service for UI monitoring
 		gatewayHealthy := true // Gateway is healthy if it's responding to this request
-		sessionHealthy := checkServiceHealth(config.SessionServiceURL + "/api/v1/sessions/p/health")
-		ordersHealthy := checkServiceHealth(config.OrdersServiceURL + "/api/v1/orders/p/health")
-		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL + "/api/v1/inventory/p/health")
-		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL + "/api/v1/invoices/p/health")
-		dataHealthy := checkServiceHealth("http://localhost:8086/health") // For UI monitoring
+		sessionHealthy := checkServiceHealth(config.SessionServiceURL+"/api/v1/sessions/p/health", logger)
+		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger)
+		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
+		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
+		dataHealthy := checkServiceHealth("http://localhost:8086/health", logger) // For UI monitoring
 
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
@@ -499,7 +603,7 @@ func createHealthHandler(config *Config) http.HandlerFunc {
 }
 
 // checkServiceHealth checks if a service is responding to health checks
-func checkServiceHealth(healthURL string) bool {
+func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -507,6 +611,10 @@ func checkServiceHealth(healthURL string) bool {
 	// Create request with proper gateway headers
 	req, err := http.NewRequest("GET", healthURL, nil)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"health_url": healthURL,
+			"error":      err.Error(),
+		}).Error("Failed to create health request")
 		return false
 	}
 
@@ -516,6 +624,10 @@ func checkServiceHealth(healthURL string) bool {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.WithFields(logrus.Fields{
+			"health_url": healthURL,
+			"error":      err.Error(),
+		}).Error("Health check failed")
 		return false
 	}
 	defer resp.Body.Close()

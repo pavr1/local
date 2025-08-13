@@ -19,11 +19,12 @@ import (
 
 // TestMockDBHandler implements DBHandlerInterface for testing
 type TestMockDBHandler struct {
-	CreateExistenceFunc  func(req models.CreateExistenceRequest) (*models.Existence, error)
-	GetExistenceByIDFunc func(id string) (*models.Existence, error)
-	ListExistencesFunc   func(req models.ListExistencesRequest) ([]models.Existence, error)
-	UpdateExistenceFunc  func(id string, req models.UpdateExistenceRequest) (*models.Existence, error)
-	DeleteExistenceFunc  func(id string) error
+	CreateExistenceFunc                               func(req models.CreateExistenceRequest) (*models.Existence, error)
+	GetExistenceByIDFunc                              func(id string) (*models.Existence, error)
+	GetMostRecentExistenceByIngredientAndUnitTypeFunc func(ingredientID, unitType string) (*models.Existence, error)
+	ListExistencesFunc                                func(req models.ListExistencesRequest) ([]models.Existence, error)
+	UpdateExistenceFunc                               func(id string, req models.UpdateExistenceRequest) (*models.Existence, error)
+	DeleteExistenceFunc                               func(id string) error
 }
 
 // Ensure TestMockDBHandler implements DBHandlerInterface
@@ -39,6 +40,13 @@ func (m *TestMockDBHandler) CreateExistence(req models.CreateExistenceRequest) (
 func (m *TestMockDBHandler) GetExistenceByID(id string) (*models.Existence, error) {
 	if m.GetExistenceByIDFunc != nil {
 		return m.GetExistenceByIDFunc(id)
+	}
+	return nil, nil
+}
+
+func (m *TestMockDBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string) (*models.Existence, error) {
+	if m.GetMostRecentExistenceByIngredientAndUnitTypeFunc != nil {
+		return m.GetMostRecentExistenceByIngredientAndUnitTypeFunc(ingredientID, unitType)
 	}
 	return nil, nil
 }

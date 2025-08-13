@@ -2,18 +2,24 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
-
 	"inventory-service/entities/recipe_categories/models"
 	recipeSQL "inventory-service/entities/recipe_categories/sql"
+
+	"github.com/sirupsen/logrus"
 )
 
+// RecipeCategoryDBHandler handles database operations for recipe categories
 type RecipeCategoryDBHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *logrus.Logger
 }
 
-func NewRecipeCategoryDBHandler(db *sql.DB) *RecipeCategoryDBHandler {
-	return &RecipeCategoryDBHandler{db: db}
+// NewDBHandler creates a new database handler for recipe categories
+func NewDBHandler(db *sql.DB, logger *logrus.Logger) *RecipeCategoryDBHandler {
+	return &RecipeCategoryDBHandler{
+		db:     db,
+		logger: logger,
+	}
 }
 
 func (h *RecipeCategoryDBHandler) Create(req models.CreateRecipeCategoryRequest) (*models.RecipeCategory, error) {
@@ -31,8 +37,16 @@ func (h *RecipeCategoryDBHandler) Create(req models.CreateRecipeCategoryRequest)
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create recipe category: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_name": req.Name,
+		}).Error("Failed to create recipe category in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"category_id":   recipeCategory.ID,
+		"category_name": recipeCategory.Name,
+	}).Info("Recipe category created successfully")
 
 	return &recipeCategory, nil
 }
@@ -49,9 +63,15 @@ func (h *RecipeCategoryDBHandler) GetByID(req models.GetRecipeCategoryRequest) (
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("recipe category not found")
+			h.logger.WithFields(logrus.Fields{
+				"category_id": req.ID,
+			}).Warn("Recipe category not found")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get recipe category: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": req.ID,
+		}).Error("Failed to get recipe category from database")
+		return nil, err
 	}
 
 	return &recipeCategory, nil
@@ -75,7 +95,8 @@ func (h *RecipeCategoryDBHandler) List(req models.ListRecipeCategoriesRequest) (
 		offset,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list recipe categories: %w", err)
+		h.logger.WithError(err).Error("Failed to execute recipe categories list query")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -90,14 +111,25 @@ func (h *RecipeCategoryDBHandler) List(req models.ListRecipeCategoriesRequest) (
 			&recipeCategory.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan recipe category: %w", err)
+			h.logger.WithError(err).Warn("Failed to scan recipe category row, skipping")
+			continue
 		}
 		recipeCategories = append(recipeCategories, recipeCategory)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating recipe categories: %w", err)
+		h.logger.WithError(err).Error("Error occurred during rows iteration")
+		return nil, err
 	}
+
+	// Ensure we always return an empty slice instead of nil
+	if recipeCategories == nil {
+		recipeCategories = []models.RecipeCategory{}
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"categories_count": len(recipeCategories),
+	}).Info("Listed recipe categories successfully")
 
 	return recipeCategories, nil
 }
@@ -119,10 +151,21 @@ func (h *RecipeCategoryDBHandler) Update(req models.UpdateRecipeCategoryRequest,
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("recipe category not found")
+			h.logger.WithFields(logrus.Fields{
+				"category_id": id,
+			}).Warn("Recipe category not found for update")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to update recipe category: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": id,
+		}).Error("Failed to update recipe category in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"category_id":   recipeCategory.ID,
+		"category_name": recipeCategory.Name,
+	}).Info("Recipe category updated successfully")
 
 	return &recipeCategory, nil
 }
@@ -130,17 +173,30 @@ func (h *RecipeCategoryDBHandler) Update(req models.UpdateRecipeCategoryRequest,
 func (h *RecipeCategoryDBHandler) Delete(req models.DeleteRecipeCategoryRequest) error {
 	result, err := h.db.Exec(recipeSQL.DeleteRecipeCategoryQuery, req.ID)
 	if err != nil {
-		return fmt.Errorf("failed to delete recipe category: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": req.ID,
+		}).Error("Failed to execute recipe category delete query")
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": req.ID,
+		}).Error("Failed to get rows affected after delete")
+		return err
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("recipe category not found")
+		h.logger.WithFields(logrus.Fields{
+			"category_id": req.ID,
+		}).Warn("No recipe category found to delete")
+		return sql.ErrNoRows
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"category_id": req.ID,
+	}).Info("Recipe category deleted successfully")
 
 	return nil
 }

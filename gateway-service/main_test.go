@@ -9,9 +9,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// testLogger creates a logger for testing
+func testLogger() *logrus.Logger {
+	log := logrus.New()
+	log.SetLevel(logrus.ErrorLevel) // Only log errors during tests
+	log.SetOutput(os.Stdout)
+	return log
+}
 
 // TestCorsMiddleware tests the CORS middleware functionality
 func TestCorsMiddleware(t *testing.T) {
@@ -119,7 +128,7 @@ func getServiceConfig() Config {
 // TestHealthHandler tests the health check endpoint
 func TestHealthHandler(t *testing.T) {
 	config := getServiceConfig()
-	handler := createHealthHandler(&config)
+	handler := createHealthHandler(&config, testLogger())
 
 	req := httptest.NewRequest("GET", "/health", nil)
 	w := httptest.NewRecorder()
@@ -187,7 +196,7 @@ func TestCreateProxyHandler(t *testing.T) {
 	targetURL := "http://localhost:8081"
 	stripPrefix := "/api/v1/sessions"
 
-	handler := createProxyHandler(targetURL, stripPrefix)
+	handler := createProxyHandler(targetURL, stripPrefix, testLogger())
 	assert.NotNil(t, handler)
 	assert.IsType(t, http.HandlerFunc(nil), handler)
 }
@@ -195,7 +204,7 @@ func TestCreateProxyHandler(t *testing.T) {
 // TestConcurrentRequests tests handling of concurrent requests
 func TestConcurrentRequests(t *testing.T) {
 	config := getServiceConfig()
-	healthHandler := createHealthHandler(&config)
+	healthHandler := createHealthHandler(&config, testLogger())
 	handler := corsMiddleware(healthHandler)
 
 	const numRequests = 10
@@ -340,7 +349,7 @@ func BenchmarkCorsMiddleware(b *testing.B) {
 
 func BenchmarkHealthHandler(b *testing.B) {
 	config := getServiceConfig()
-	handler := createHealthHandler(&config)
+	handler := createHealthHandler(&config, testLogger())
 	req := httptest.NewRequest("GET", "/health", nil)
 
 	b.ResetTimer()

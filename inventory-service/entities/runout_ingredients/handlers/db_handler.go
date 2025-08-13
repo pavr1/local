@@ -2,19 +2,25 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
-	"time"
-
 	"inventory-service/entities/runout_ingredients/models"
 	runoutSQL "inventory-service/entities/runout_ingredients/sql"
+	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
+// RunoutIngredientDBHandler handles database operations for runout ingredients
 type RunoutIngredientDBHandler struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *logrus.Logger
 }
 
-func NewRunoutIngredientDBHandler(db *sql.DB) *RunoutIngredientDBHandler {
-	return &RunoutIngredientDBHandler{db: db}
+// NewDBHandler creates a new database handler for runout ingredients
+func NewDBHandler(db *sql.DB, logger *logrus.Logger) *RunoutIngredientDBHandler {
+	return &RunoutIngredientDBHandler{
+		db:     db,
+		logger: logger,
+	}
 }
 
 func (h *RunoutIngredientDBHandler) Create(req models.CreateRunoutIngredientRequest) (*models.RunoutIngredient, error) {
@@ -43,8 +49,20 @@ func (h *RunoutIngredientDBHandler) Create(req models.CreateRunoutIngredientRequ
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create runout ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"existence_id": req.ExistenceID,
+			"employee_id":  req.EmployeeID,
+			"quantity":     req.Quantity,
+		}).Error("Failed to create runout ingredient in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": runoutIngredient.ID,
+		"existence_id":         runoutIngredient.ExistenceID,
+		"employee_id":          runoutIngredient.EmployeeID,
+		"quantity":             runoutIngredient.Quantity,
+	}).Info("Runout ingredient created successfully")
 
 	return &runoutIngredient, nil
 }
@@ -64,9 +82,15 @@ func (h *RunoutIngredientDBHandler) GetByID(req models.GetRunoutIngredientReques
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("runout ingredient not found")
+			h.logger.WithFields(logrus.Fields{
+				"runout_ingredient_id": req.ID,
+			}).Warn("Runout ingredient not found")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to get runout ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"runout_ingredient_id": req.ID,
+		}).Error("Failed to get runout ingredient from database")
+		return nil, err
 	}
 
 	return &runoutIngredient, nil
@@ -93,7 +117,8 @@ func (h *RunoutIngredientDBHandler) List(req models.ListRunoutIngredientsRequest
 		offset,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list runout ingredients: %w", err)
+		h.logger.WithError(err).Error("Failed to execute runout ingredients list query")
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -111,19 +136,25 @@ func (h *RunoutIngredientDBHandler) List(req models.ListRunoutIngredientsRequest
 			&runoutIngredient.UpdatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to scan runout ingredient: %w", err)
+			h.logger.WithError(err).Warn("Failed to scan runout ingredient row, skipping")
+			continue
 		}
 		runoutIngredients = append(runoutIngredients, runoutIngredient)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating runout ingredients: %w", err)
+		h.logger.WithError(err).Error("Error occurred during rows iteration")
+		return nil, err
 	}
 
 	// Ensure we always return an empty slice instead of nil
 	if runoutIngredients == nil {
 		runoutIngredients = []models.RunoutIngredient{}
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"runout_ingredients_count": len(runoutIngredients),
+	}).Info("Listed runout ingredients successfully")
 
 	return runoutIngredients, nil
 }
@@ -149,10 +180,22 @@ func (h *RunoutIngredientDBHandler) Update(req models.UpdateRunoutIngredientRequ
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("runout ingredient not found")
+			h.logger.WithFields(logrus.Fields{
+				"runout_ingredient_id": id,
+			}).Warn("Runout ingredient not found for update")
+			return nil, err
 		}
-		return nil, fmt.Errorf("failed to update runout ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"runout_ingredient_id": id,
+		}).Error("Failed to update runout ingredient in database")
+		return nil, err
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": runoutIngredient.ID,
+		"existence_id":         runoutIngredient.ExistenceID,
+		"quantity":             runoutIngredient.Quantity,
+	}).Info("Runout ingredient updated successfully")
 
 	return &runoutIngredient, nil
 }
@@ -160,17 +203,30 @@ func (h *RunoutIngredientDBHandler) Update(req models.UpdateRunoutIngredientRequ
 func (h *RunoutIngredientDBHandler) Delete(req models.DeleteRunoutIngredientRequest) error {
 	result, err := h.db.Exec(runoutSQL.DeleteRunoutIngredientQuery, req.ID)
 	if err != nil {
-		return fmt.Errorf("failed to delete runout ingredient: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"runout_ingredient_id": req.ID,
+		}).Error("Failed to execute runout ingredient delete query")
+		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"runout_ingredient_id": req.ID,
+		}).Error("Failed to get rows affected after delete")
+		return err
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("runout ingredient not found")
+		h.logger.WithFields(logrus.Fields{
+			"runout_ingredient_id": req.ID,
+		}).Warn("No runout ingredient found to delete")
+		return sql.ErrNoRows
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": req.ID,
+	}).Info("Runout ingredient deleted successfully")
 
 	return nil
 }

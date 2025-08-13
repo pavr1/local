@@ -17,9 +17,17 @@ type RecipeCategoryHTTPHandler struct {
 	logger    *logrus.Logger
 }
 
+// NewRecipeCategoryDBHandler creates a new database handler for recipe categories
+func NewRecipeCategoryDBHandler(db *sql.DB, logger *logrus.Logger) *RecipeCategoryDBHandler {
+	return &RecipeCategoryDBHandler{
+		db:     db,
+		logger: logger,
+	}
+}
+
 func NewRecipeCategoryHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeCategoryHTTPHandler {
 	return &RecipeCategoryHTTPHandler{
-		dbHandler: NewRecipeCategoryDBHandler(db),
+		dbHandler: NewRecipeCategoryDBHandler(db, logger),
 		logger:    logger,
 	}
 }

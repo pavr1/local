@@ -18,9 +18,17 @@ type RunoutIngredientHTTPHandler struct {
 	logger    *logrus.Logger
 }
 
+// NewRunoutIngredientDBHandler creates a new database handler for runout ingredients
+func NewRunoutIngredientDBHandler(db *sql.DB, logger *logrus.Logger) *RunoutIngredientDBHandler {
+	return &RunoutIngredientDBHandler{
+		db:     db,
+		logger: logger,
+	}
+}
+
 func NewRunoutIngredientHTTPHandler(db *sql.DB, logger *logrus.Logger) *RunoutIngredientHTTPHandler {
 	return &RunoutIngredientHTTPHandler{
-		dbHandler: NewRunoutIngredientDBHandler(db),
+		dbHandler: NewRunoutIngredientDBHandler(db, logger),
 		logger:    logger,
 	}
 }

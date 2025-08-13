@@ -19,7 +19,7 @@ type RecipeHTTPHandler struct {
 
 func NewRecipeHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeHTTPHandler {
 	return &RecipeHTTPHandler{
-		dbHandler: NewRecipeDBHandler(db),
+		dbHandler: NewRecipeDBHandler(db, logger),
 		logger:    logger,
 	}
 }
