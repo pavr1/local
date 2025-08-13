@@ -784,6 +784,73 @@
             background: transparent;
             padding: 0;
         }
+
+        /* Service Logs Modal Styles */
+        .logs-container {
+            background: #000;
+            border-radius: var(--border-radius);
+            border: 1px solid #333;
+            height: 60vh;
+            overflow: hidden;
+        }
+
+        .logs-content {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            padding: 1rem;
+            height: 100%;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .logs-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-content::-webkit-scrollbar-track {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 4px;
+        }
+
+        .logs-content::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .log-line {
+            margin: 0;
+            padding: 0;
+        }
+
+        .log-line.highlighted {
+            background: rgba(255, 255, 0, 0.2);
+            border-left: 3px solid #ffc107;
+            padding-left: 0.5rem;
+        }
+
+        .log-line.error {
+            color: #ff6b6b;
+        }
+
+        .log-line.warning {
+            color: #ffd93d;
+        }
+
+        .log-line.info {
+            color: #6bcf7f;
+        }
+
+        .log-line.debug {
+            color: #74c0fc;
+        }
     </style>
 </head>
 <body>
@@ -2169,35 +2236,53 @@
         // View Service Logs
         window.viewServiceLogs = function(serviceName) {
             currentLogsService = serviceName;
-            document.getElementById('logsModalTitle').textContent = `${serviceName} Logs`;
-            document.getElementById('logsSearchInput').value = '';
-            document.getElementById('logsServiceSelect').value = serviceName;
-            document.getElementById('logsLevelSelect').value = '';
+            
+            const modalTitle = document.getElementById('logsModalTitle');
+            const searchInput = document.getElementById('logsSearchInput');
+            const serviceSelect = document.getElementById('logsServiceSelect');
+            const levelSelect = document.getElementById('logsLevelSelect');
+            
+            if (modalTitle) modalTitle.textContent = `${serviceName} Logs`;
+            if (searchInput) searchInput.value = '';
+            if (serviceSelect) serviceSelect.value = serviceName;
+            if (levelSelect) levelSelect.value = '';
+            
             logsSearchTerm = '';
             
             // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('serviceLogsModal'));
-            modal.show();
-            
-            // Load initial logs
-            loadServiceLogs();
-            
-            // Start auto-refresh
-            startLogsAutoRefresh();
+            const modalElement = document.getElementById('serviceLogsModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+                
+                // Load initial logs
+                loadServiceLogs();
+                
+                // Start auto-refresh
+                startLogsAutoRefresh();
+            } else {
+                console.error('Service logs modal not found');
+            }
         };
 
         // Change logs service
         window.changeLogsService = function() {
             const serviceSelect = document.getElementById('logsServiceSelect');
-            currentLogsService = serviceSelect.value;
+            const modalTitle = document.getElementById('logsModalTitle');
             
-            if (currentLogsService) {
-                document.getElementById('logsModalTitle').textContent = `${currentLogsService} Logs`;
-            } else {
-                document.getElementById('logsModalTitle').textContent = 'All Services Logs';
+            if (serviceSelect) {
+                currentLogsService = serviceSelect.value;
+                
+                if (modalTitle) {
+                    if (currentLogsService) {
+                        modalTitle.textContent = `${currentLogsService} Logs`;
+                    } else {
+                        modalTitle.textContent = 'All Services Logs';
+                    }
+                }
+                
+                loadServiceLogs();
             }
-            
-            loadServiceLogs();
         };
 
         // Load service logs
@@ -2212,7 +2297,7 @@
                     params.append('search', logsSearchTerm);
                 }
                 const levelSelect = document.getElementById('logsLevelSelect');
-                if (levelSelect.value) {
+                if (levelSelect && levelSelect.value) {
                     params.append('level', levelSelect.value);
                 }
                 params.append('limit', '100');
@@ -2241,6 +2326,10 @@
         // Display logs in the modal
         function displayLogs(logs) {
             const logsContent = document.getElementById('logsContent');
+            if (!logsContent) {
+                console.warn('Logs content element not found');
+                return;
+            }
             
             if (logsSearchTerm) {
                 // Filter logs based on search term
@@ -2269,20 +2358,30 @@
 
         // Filter logs
         window.filterLogs = function() {
-            logsSearchTerm = document.getElementById('logsSearchInput').value;
-            loadServiceLogs();
+            const searchInput = document.getElementById('logsSearchInput');
+            if (searchInput) {
+                logsSearchTerm = searchInput.value;
+                loadServiceLogs();
+            }
         };
 
         // Clear logs search
         window.clearLogsSearch = function() {
-            document.getElementById('logsSearchInput').value = '';
-            logsSearchTerm = '';
-            loadServiceLogs();
+            const searchInput = document.getElementById('logsSearchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                logsSearchTerm = '';
+                loadServiceLogs();
+            }
         };
 
         // Toggle auto-refresh
         window.toggleLogsAutoRefresh = function() {
             const btn = document.getElementById('autoRefreshBtn');
+            if (!btn) {
+                console.warn('Auto refresh button not found');
+                return;
+            }
             
             if (logsAutoRefreshEnabled) {
                 stopLogsAutoRefresh();
@@ -2306,6 +2405,20 @@
                 }
             }, 1000); // Refresh every 1 second
         }
+
+        // Stop auto-refresh
+        function stopLogsAutoRefresh() {
+            logsAutoRefreshEnabled = false;
+            if (logsAutoRefreshInterval) {
+                clearInterval(logsAutoRefreshInterval);
+                logsAutoRefreshInterval = null;
+            }
+        }
+
+        // Refresh logs manually
+        window.refreshLogs = function() {
+            loadServiceLogs();
+        };
 
         // Stop auto-refresh
         function stopLogsAutoRefresh() {
@@ -6334,5 +6447,77 @@
             }
         };
     </script>
+
+    <!-- Service Logs Modal -->
+    <div class="modal fade" id="serviceLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-xl" style="max-width: 95%; width: 95%;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-file-alt me-2"></i>
+                        <span id="logsModalTitle">Service Logs</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <select class="form-select" id="logsServiceSelect" onchange="changeLogsService()">
+                                <option value="">All Services</option>
+                                <option value="gateway-service">Gateway Service</option>
+                                <option value="session-service">Session Service</option>
+                                <option value="orders-service">Orders Service</option>
+                                <option value="inventory-service">Inventory Service</option>
+                                <option value="invoice-service">Invoice Service</option>
+                                <option value="data-service">Data Service</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="logsLevelSelect" onchange="filterLogs()">
+                                <option value="">All Levels</option>
+                                <option value="DEBUG">Debug</option>
+                                <option value="INFO">Info</option>
+                                <option value="WARN">Warning</option>
+                                <option value="ERROR">Error</option>
+                                <option value="FATAL">Fatal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="logsSearchInput" placeholder="Search in logs..." onkeyup="filterLogs()">
+                                <button class="btn btn-outline-primary" type="button" onclick="filterLogs()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button class="btn btn-outline-secondary" onclick="clearLogsSearch()">
+                                <i class="fas fa-times me-1"></i>Clear
+                            </button>
+                            <button class="btn btn-outline-success" onclick="toggleLogsAutoRefresh()" id="autoRefreshBtn">
+                                <i class="fas fa-play me-1"></i>Auto
+                            </button>
+                        </div>
+                    </div>
+                    <div class="logs-container">
+                        <div id="logsContent" class="logs-content">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-3">Loading logs...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="refreshLogs()">
+                        <i class="fas fa-sync me-1"></i>Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
