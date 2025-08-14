@@ -162,7 +162,7 @@ func main() {
 
 	// Gateway health check endpoint
 	// API versioning
-	v1 := api.PathPrefix("/api/v1").Subrouter()
+	v1 := api.PathPrefix("/v1").Subrouter()
 
 	// Public health check endpoint
 	v1.HandleFunc("/gateway/p/health", createHealthHandler(&config, logrusLogger)).Methods("GET")

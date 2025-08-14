@@ -1,39 +1,21 @@
-# Build stage
-FROM golang:1.23-alpine AS builder
-
-# Install git for go mod operations
-RUN apk add --no-cache git
-
-# Set working directory
-WORKDIR /app
-
-# Copy go mod files first for better caching
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the application (optimized - removed -a flag for faster builds)
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o main .
-
-# Final stage
+# Single-stage Alpine build for faster builds
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates tzdata wget
+# Install ca-certificates and curl for health checks
+RUN apk add --no-cache ca-certificates curl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
+# Copy the binary (will be built externally)
+COPY main .
+
+# Make binary executable
+RUN chmod +x main
 
 # Change ownership to non-root user
 RUN chown -R appuser:appgroup /app
@@ -44,12 +26,12 @@ USER appuser
 # Expose port
 EXPOSE 8082
 
-# Add health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 http://localhost:8082/api/health -O /dev/null || exit 1
+# Health check with faster intervals
+HEALTHCHECK --interval=1s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8082/api/v1/gateway/p/health || exit 1
 
 # Set timezone
 ENV TZ=UTC
 
-# Run the binary
+# Run the application
 CMD ["./main"] 
