@@ -5,6 +5,8 @@ services:
       dockerfile: docker/Dockerfile
     container_name: icecream_ui
     restart: unless-stopped
+    volumes:
+      - ../docker/nginx.conf:/etc/nginx/nginx.conf:ro
     environment:
       # UI Configuration
       UI_PORT: 3000
