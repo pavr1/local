@@ -113,7 +113,48 @@ stop-locally: ## Stop local service (if running in background)
 	
 	@echo "$(GREEN)✅ Local service stopped and resources cleaned$(RESET)"
 
-## 🐳 Container Management Commands
+## 🐳 Standardized Docker Commands
+
+build-docker: ## Build Docker image for invoice service
+	@echo "$(CYAN)🔨 Building Invoice Service...$(RESET)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main .
+	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
+	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
+	@cd docker && docker build -t docker-invoice-service -f Dockerfile ..
+	@echo "$(GREEN)✅ Docker image built: docker-invoice-service$(RESET)"
+
+start-docker: build-docker ## Start invoice service in Docker
+	@echo "$(CYAN)🍦 Starting Invoice Service...$(RESET)"
+	@echo "$(CYAN)🍦 Starting Ice Cream Store Invoice Service...$(RESET)"
+	@./scripts/start.sh
+
+stop-docker: ## Stop invoice service Docker container
+	@echo "$(YELLOW)🛑 Stopping Invoice Service containers...$(RESET)"
+	@cd docker && docker-compose down
+	@echo "$(GREEN)✅ Invoice service stopped successfully!$(RESET)"
+
+fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+
+## 📊 Monitoring & Debugging Commands
+
+health: ## Check service health
+	@echo "$(CYAN)🏥 Checking invoice service health...$(RESET)"
+	@if curl -f http://localhost:8085/api/v1/invoices/p/health > /dev/null 2>&1; then \
+		echo "$(GREEN)✅ Invoice service is healthy and ready!$(RESET)"; \
+	else \
+		echo "$(RED)❌ Invoice service is not responding$(RESET)"; \
+		exit 1; \
+	fi
+
+logs: ## View service logs
+	@echo "$(CYAN)📋 Viewing Invoice Service logs...$(RESET)"
+	@./scripts/logs.sh
+
+logs-follow: ## Follow service logs in real-time
+	@echo "$(CYAN)📋 Following Invoice Service logs...$(RESET)"
+	@./scripts/logs.sh -f
+
+## 🐳 Legacy Container Management Commands
 docker-build:
 	@echo "Building Docker image for $(SERVICE_NAME)..."
 	docker build -t $(DOCKER_IMAGE) .
@@ -127,9 +168,5 @@ start: docker-run
 stop:
 	@echo "Stopping $(SERVICE_NAME)..."
 	docker stop $(SERVICE_NAME) || true
-
-logs:
-	@echo "Showing logs for $(SERVICE_NAME)..."
-	docker logs $(SERVICE_NAME)
 
 fresh: clean deps build 
