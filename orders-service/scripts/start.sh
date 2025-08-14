@@ -27,15 +27,27 @@ if ! docker network ls | grep -q "docker_icecream_network"; then
     exit 1
 fi
 
-# Check if database is accessible
-echo "🔍 Checking database connectivity..."
-if ! docker run --rm --network docker_icecream_network postgres:15-alpine pg_isready -h postgres -p 5432 -U postgres > /dev/null 2>&1; then
-    echo "❌ Cannot connect to database. Please ensure data-service is running."
-    echo "   Run: cd ../data-service && make start"
+# Check if data-service is ready
+echo "⏳ Waiting for data-service to be ready..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -f http://localhost:8086/api/v1/data/p/health > /dev/null 2>&1; then
+        echo "✅ Data-service is ready!"
+        break
+    fi
+    
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Data-service not ready yet... (trying: http://localhost:8086/api/v1/data/p/health)"
+    sleep 2
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo "❌ Data-service failed to start within the expected time"
+    echo "   Please ensure data-service is running first: cd ../data-service && make start-docker"
     exit 1
 fi
-
-echo "✅ Database connectivity confirmed!"
 
 # Stop existing orders service container if it exists
 echo "🧹 Cleaning up existing orders service container..."
@@ -46,18 +58,17 @@ echo "🚀 Starting orders service..."
 docker-compose up -d
 
 # Wait for orders service to be ready
-echo "⏳ Waiting for orders service to be ready..."
-
+echo "⏳ Waiting for orders-service API to be ready..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     if curl -f http://localhost:8083/api/v1/orders/p/health > /dev/null 2>&1; then
-        echo "✅ Orders service is ready!"
+        echo "✅ Orders-service API is ready!"
         break
     fi
     
-    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Orders service not ready yet..."
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Orders-service API not ready yet... (trying: http://localhost:8083/api/v1/orders/p/health)"
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT + 1))
 done

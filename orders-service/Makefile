@@ -108,6 +108,28 @@ stop-container: ## Stop the orders service container
 restart-container: stop-container start-container ## Restart the orders service container
 	@echo "$(GREEN)🔄 Orders Service container restarted successfully!$(RESET)"
 
+## 🐳 Standardized Docker Commands
+
+build-docker: ## Build Docker image for orders service
+	@echo "$(CYAN)🔨 Building Orders Service...$(RESET)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main .
+	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
+	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
+	@cd docker && docker build -t docker-orders-service -f Dockerfile ..
+	@echo "$(GREEN)✅ Docker image built: docker-orders-service$(RESET)"
+
+start-docker: build-docker ## Start orders service in Docker
+	@echo "$(CYAN)🍦 Starting Orders Service...$(RESET)"
+	@echo "$(CYAN)🍦 Starting Ice Cream Store Orders Service...$(RESET)"
+	@./scripts/start.sh
+
+stop-docker: ## Stop orders service Docker container
+	@echo "$(YELLOW)🛑 Stopping Orders Service containers...$(RESET)"
+	@cd docker && docker-compose down
+	@echo "$(GREEN)✅ Orders service stopped successfully!$(RESET)"
+
+fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+
 # Legacy aliases for backward compatibility
 start: start-container ## [DEPRECATED] Use start-container instead
 stop: stop-container ## [DEPRECATED] Use stop-container instead
@@ -141,12 +163,12 @@ health: ## Check service health
 		exit 1; \
 	fi
 
-## 🧪 Testing Commands
-
 test: ## Run unit tests
 	@echo "$(CYAN)🧪 Running unit tests...$(RESET)"
 	@go test ./... -v -count=1
 	@echo "$(GREEN)✅ Unit tests completed!$(RESET)"
+
+## 🧪 Testing Commands
 
 test-integration: fix-permissions ## Run integration tests (requires service to be running)
 	@echo "$(CYAN)🧪 Running integration tests...$(RESET)"
