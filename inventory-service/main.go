@@ -140,5 +140,3 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 
 	return db, nil
 }
-
-
