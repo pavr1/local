@@ -185,7 +185,7 @@ final-status: ## Final status check after fresh installation
 	db_healthy=false; \
 	auth_running=false; \
 	orders_running=false; \
-	if curl -f http://localhost:8082/api/health > /dev/null 2>&1; then \
+	if curl -f http://localhost:8082/api/v1/gateway/p/health > /dev/null 2>&1; then \
 		gateway_running=true; \
 	fi; \
 	if docker exec icecream_postgres pg_isready -U postgres -d icecream_store > /dev/null 2>&1; then \
@@ -500,11 +500,11 @@ system-info: ## Show complete system information
 	@echo ""
 	@echo "  $(GREEN)Gateway Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:8082"
-	@echo "    • Health:   http://localhost:8082/api/health"
+	@echo "    • Health:   http://localhost:8082/api/v1/gateway/p/health"
 	@echo ""
 	@echo "  $(GREEN)UI Service:$(RESET)"
 	@echo "    • Base URL: http://localhost:3000"
-	@echo "    • Health:   http://localhost:3000/api/health"
+	@echo "    • Health:   http://localhost:3000/health"
 	@echo "    • Login:    http://localhost:3000/login"
 	@echo ""
 	@echo "$(YELLOW)🧪 Quick Test Commands:$(RESET)"
@@ -518,10 +518,10 @@ system-info: ## Show complete system information
 	@echo "  curl http://localhost:8083/api/v1/orders/p/health"
 	@echo ""
 	@echo "  # Test gateway"
-	@echo "  curl http://localhost:8080/api/health"
+	@echo "  curl http://localhost:8082/api/v1/gateway/p/health"
 	@echo ""
 	@echo "  # Test UI"
-	@echo "  curl http://localhost:3000/api/health"
+	@echo "  curl http://localhost:3000/health"
 	@echo ""
 
 banner: ## Show system banner
@@ -574,4 +574,4 @@ version: ## Show version information for all services
 
 
 # List all targets for tab completion
-.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-invoice start-gateway start-ui stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway health-ui clean-all clean-data clean-session clean-orders clean-gateway clean-ui system-info banner logs-all version 
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-invoice start-gateway start-ui stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway health-ui clean-all clean-data clean-session clean-orders clean-gateway clean-ui system-info banner logs-all version Access to fetch at 'http://localhost:8082/api/health

@@ -517,7 +517,7 @@
                                 const controller = new AbortController();
                                 const timeoutId = setTimeout(() => controller.abort(), 5000);
                                 
-                                const healthUrl = CONFIG.GATEWAY_URL + '/api/health';
+                                const healthUrl = CONFIG.GATEWAY_URL + '/api/v1/gateway/p/health';
                                 console.log('🌐 [Auto] Login system status: Fetching from:', healthUrl);
                                 
                                 const response = await fetch(healthUrl, {

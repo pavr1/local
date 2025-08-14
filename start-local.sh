@@ -346,7 +346,7 @@ case "${1:-start}" in
         check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/sessions/p/health"
         check_service_health "Orders Service" "http://localhost:$ORDERS_PORT/api/v1/orders/p/health"
         check_service_health "Inventory Service" "http://localhost:$INVENTORY_PORT/api/v1/inventory/p/health"
-        check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/health"
+        check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/v1/gateway/p/health"
         echo ""
         
         show_status
@@ -384,7 +384,7 @@ case "${1:-start}" in
         check_service_health "Session Service" "http://localhost:$SESSION_PORT/api/v1/sessions/p/health"
         check_service_health "Orders Service" "http://localhost:$ORDERS_PORT/api/v1/orders/p/health"  
         check_service_health "Inventory Service" "http://localhost:$INVENTORY_PORT/api/v1/inventory/p/health"
-        check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/health"
+        check_service_health "Gateway Service" "http://localhost:$GATEWAY_PORT/api/v1/gateway/p/health"
         ;;
         
     "help"|"-h"|"--help")

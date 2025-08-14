@@ -28,14 +28,14 @@ class StatusService {
         const results = {};
         const services = CONFIG.SERVICES;
         
-        for (const [serviceKey, serviceConfig] of Object.entries(services)) {
+        for (const [serviceKey, serviceUrl] of Object.entries(services)) {
             try {
-                console.log(`🔍 Checking ${serviceConfig.name}...`);
-                const status = await this.checkServiceHealth(serviceConfig.url);
+                console.log(`🔍 Checking ${serviceKey} at ${serviceUrl}...`);
+                const status = await this.checkServiceHealth(serviceUrl);
                 results[serviceKey] = status;
-                console.log(`${status === 'healthy' ? '✅' : '❌'} ${serviceConfig.name}: ${status}`);
+                console.log(`${status === 'healthy' ? '✅' : '❌'} ${serviceKey}: ${status}`);
             } catch (error) {
-                console.error(`❌ Error checking ${serviceConfig.name}:`, error);
+                console.error(`❌ Error checking ${serviceKey}:`, error);
                 results[serviceKey] = 'unhealthy';
             }
         }

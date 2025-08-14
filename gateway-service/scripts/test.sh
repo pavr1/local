@@ -52,12 +52,12 @@ echo "=================================="
 
 # Test 1: Basic connectivity
 run_test "Basic Connectivity" \
-    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/health" \
+    "curl -s -w '%{http_code}' -o /dev/null $GATEWAY_URL/api/v1/gateway/p/health" \
     "200"
 
 # Test 2: Health endpoint response
 run_test "Health Endpoint Response" \
-    "curl -s $GATEWAY_URL/api/health" \
+    "curl -s $GATEWAY_URL/api/v1/gateway/p/health" \
     "healthy"
 
 # Test 3: Health check via proxy (if auth service is up)
@@ -72,12 +72,12 @@ run_test "Orders Service Proxy Health" \
 
 # Test 5: CORS headers
 run_test "CORS Headers" \
-    "curl -s -I -X OPTIONS $GATEWAY_URL/api/health" \
+    "curl -s -I -X OPTIONS $GATEWAY_URL/api/v1/gateway/p/health" \
     "Access-Control-Allow-Origin"
 
 # Test 6: Gateway health endpoint
 run_test "Gateway Health Endpoint" \
-    "curl -s $GATEWAY_URL/api/health" \
+    "curl -s $GATEWAY_URL/api/v1/gateway/p/health" \
     "status"
 
 # Test 7: Invalid endpoint (should return 404)
@@ -87,7 +87,7 @@ run_test "Invalid Endpoint (404)" \
 
 # Test 8: Health endpoint format check
 run_test "Health Endpoint Format" \
-    "curl -s $GATEWAY_URL/api/health" \
+    "curl -s $GATEWAY_URL/api/v1/gateway/p/health" \
     "gateway"
 
 # Test 9: Gateway service container health
@@ -109,7 +109,7 @@ fi
 
 # Test 10: Service discovery test
 run_test "Service Discovery" \
-    "curl -s $GATEWAY_URL/api/health" \
+    "curl -s $GATEWAY_URL/api/v1/gateway/p/health" \
     "operational"
 
 echo ""

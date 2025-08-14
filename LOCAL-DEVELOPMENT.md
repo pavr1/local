@@ -94,7 +94,7 @@ View specific service logs:
 ./start-local.sh health
 
 # Individual service health
-curl http://localhost:8082/api/health                    # Gateway
+curl http://localhost:8082/api/v1/gateway/p/health                    # Gateway
 curl http://localhost:8081/api/v1/sessions/p/health      # Session
 curl http://localhost:8083/api/v1/orders/p/health        # Orders
 curl http://localhost:8084/api/v1/inventory/p/health     # Inventory
@@ -261,7 +261,7 @@ If you were running containerized services:
 ## 🎯 Next Steps
 
 1. **Access the UI**: http://localhost:3000
-2. **Check Gateway API**: http://localhost:8082/api/health
+2. **Check Gateway API**: http://localhost:8082/api/v1/gateway/p/health
 3. **Start developing**: Edit any service and restart as needed
 
 Happy coding! 🚀 

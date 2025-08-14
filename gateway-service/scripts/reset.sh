@@ -43,12 +43,12 @@ docker-compose up -d --build
 # Wait for service to be ready
 echo -e "${YELLOW}⏳ Waiting for Gateway Service to be ready...${NC}"
 for i in {1..30}; do
-    if curl -s http://localhost:8082/api/health > /dev/null 2>&1; then
+    if curl -s http://localhost:8082/api/v1/gateway/p/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Gateway Service is ready!${NC}"
         echo ""
         echo -e "${CYAN}📊 Gateway Service Status:${NC}"
         echo -e "   🌐 Gateway API: ${GREEN}http://localhost:8082${NC}"
-        echo -e "   🔌 Health Check: ${GREEN}http://localhost:8082/api/health${NC}"
+        echo -e "   🔌 Health Check: ${GREEN}http://localhost:8082/api/v1/gateway/p/health${NC}"
         echo -e "   🔐 Session Proxy: ${GREEN}http://localhost:8082/api/v1/sessions/*${NC}"
         echo -e "   🛒 Orders Proxy: ${GREEN}http://localhost:8082/api/v1/orders/*${NC}"
         echo ""

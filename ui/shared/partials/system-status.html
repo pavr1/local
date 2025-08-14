@@ -142,7 +142,7 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
                 
-                const response = await fetch(CONFIG.GATEWAY_URL + '/api/health', {
+                const response = await fetch(CONFIG.GATEWAY_URL + '/api/v1/gateway/p/health', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json'

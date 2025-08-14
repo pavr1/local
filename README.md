@@ -97,7 +97,7 @@ make logs-all       # View logs from all services
 - **Database (PostgreSQL)**: `postgresql://postgres:postgres123@localhost:5432/icecream_store`
 - **PgAdmin**: http://localhost:8080 (`admin@icecreamstore.com` / `admin123`)
 - **Session Service**: http://localhost:8081/api/v1/sessions/p/health
-- **Gateway Service**: http://localhost:8080/api/health
+- **Gateway Service**: http://localhost:8080/api/v1/gateway/p/health
 - **Portainer (Docker UI)**: https://localhost:9443
 
 ### **Management Interfaces**

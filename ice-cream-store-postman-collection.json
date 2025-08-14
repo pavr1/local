@@ -635,7 +635,7 @@
 					"request": {
 						"method": "GET",
 						"url": {
-							"raw": "{{gateway_url}}/api/health",
+							"raw": "{{gateway_url}}/api/v1/gateway/p/health",
 							"host": ["{{gateway_url}}"],
 							"path": ["api", "health"]
 						}
