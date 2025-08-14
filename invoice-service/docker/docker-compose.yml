@@ -20,6 +20,9 @@ services:
       
       # Logging Configuration
       LOG_LEVEL: info
+      
+      # Service URLs (use Docker service names for inter-container communication)
+      INVENTORY_SERVICE_URL: http://icecream_inventory:8084
     ports:
       - "8085:8085"
     healthcheck:
