@@ -21,6 +21,8 @@ COPY shared/ /usr/share/nginx/html/shared/
 RUN find . -maxdepth 1 -name "*.js" -exec cp {} /usr/share/nginx/html/ \; 2>/dev/null || true
 RUN find . -maxdepth 1 -name "*.css" -exec cp {} /usr/share/nginx/html/ \; 2>/dev/null || true
 
+# config.js will be mounted as volume in docker-compose.yml
+
 # Create nginx directories and set permissions
 RUN mkdir -p /var/cache/nginx /var/log/nginx /tmp && \
     chown -R appuser:appgroup /usr/share/nginx/html /var/cache/nginx /var/log/nginx /tmp
