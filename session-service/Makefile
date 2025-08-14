@@ -91,9 +91,13 @@ stop-locally: ## Stop local service (if running in background)
 .PHONY: build
 build:
 	@echo "$(CYAN)Building $(SERVICE_NAME)...$(RESET)"
-	@mkdir -p $(BUILD_DIR)
-	$(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME) $(MAIN_FILE)
-	@echo "$(GREEN)Build complete: $(BUILD_DIR)/$(BINARY_NAME)$(RESET)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o main .
+	@echo "$(GREEN)Build complete: main (Linux binary)$(RESET)"
+
+build-docker: build ## Build the Docker image
+	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
+	@docker build -t docker-session-service -f docker/Dockerfile .
+	@echo "$(GREEN)✅ Docker image built: docker-session-service$(RESET)"
 
 # Clean build artifacts
 .PHONY: clean
@@ -147,6 +151,18 @@ stop:
 # Restart the service
 .PHONY: restart
 restart: stop start
+
+# Docker commands
+start-docker: build-docker ## Start session service containers (DB_HOST=postgres)
+	@echo "$(CYAN)🍦 Starting Session Service...$(RESET)"
+	@./scripts/start.sh
+	@echo "$(CYAN)🐳 Session service containers started with DB_HOST=postgres$(RESET)"
+
+stop-docker: ## Stop session service containers
+	@echo "$(YELLOW)🛑 Stopping Session Service containers...$(RESET)"
+	@./scripts/stop.sh
+
+restart-docker: stop-docker start-docker ## Restart session service containers
 
 # Fresh start (clean, build, run)
 .PHONY: fresh
