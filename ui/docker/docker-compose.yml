@@ -1,0 +1,32 @@
+services:
+  ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: icecream_ui
+    restart: unless-stopped
+    environment:
+      # UI Configuration
+      UI_PORT: 3000
+      
+      # Gateway Service URL (for API calls)
+      GATEWAY_URL: ${GATEWAY_URL:-http://icecream_gateway:8082}
+      
+      # CORS Configuration
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,OPTIONS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS:-Content-Type,Authorization}
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - docker_icecream_network
+
+networks:
+  docker_icecream_network:
+    external: true

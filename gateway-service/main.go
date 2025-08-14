@@ -444,7 +444,7 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
 		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
 		//pvillalobos - gateway should not be hitting data service health endpoint, all business services do that already
-		dataHealthy := checkServiceHealth("http://localhost:8086/api/v1/data/p/health", logger) // For UI monitoring
+		dataHealthy := checkServiceHealth("http://icecream_data_service:8086/api/v1/data/p/health", logger) // For UI monitoring
 
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {

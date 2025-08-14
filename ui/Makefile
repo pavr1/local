@@ -81,13 +81,50 @@ stop-locally: ## Stop UI development server (manual process)
 	
 	@echo "$(GREEN)✅ Local UI service stopped and resources cleaned$(RESET)"
 
-## 🐳 Container Management Commands
+## 🐳 Standardized Docker Commands
 
-start-docker: ## Start UI in Docker container (not implemented)
+build-docker: ## Build Docker image for UI service
+	@echo "$(CYAN)🔨 Building UI Service Docker image...$(RESET)"
+	@cd docker && docker build -t docker-ui-service -f Dockerfile ..
+	@echo "$(GREEN)✅ Docker image built: docker-ui-service$(RESET)"
+
+start-docker: build-docker ## Start UI service in Docker
+	@echo "$(CYAN)🎨 Starting UI Service...$(RESET)"
+	@./scripts/start.sh
+
+stop-docker: ## Stop UI service Docker container
+	@echo "$(YELLOW)🛑 Stopping UI Service containers...$(RESET)"
+	@cd docker && docker-compose down
+	@echo "$(GREEN)✅ UI service stopped successfully!$(RESET)"
+
+fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+
+## 📊 Monitoring & Debugging Commands
+
+health: ## Check service health
+	@echo "$(CYAN)🏥 Checking UI service health...$(RESET)"
+	@if curl -f http://localhost:3000/health > /dev/null 2>&1; then \
+		echo "$(GREEN)✅ UI service is healthy and ready!$(RESET)"; \
+	else \
+		echo "$(RED)❌ UI service is not responding$(RESET)"; \
+		exit 1; \
+	fi
+
+logs: ## View service logs
+	@echo "$(CYAN)📋 Viewing UI Service logs...$(RESET)"
+	@./scripts/logs.sh
+
+logs-follow: ## Follow service logs in real-time
+	@echo "$(CYAN)📋 Following UI Service logs...$(RESET)"
+	@./scripts/logs.sh -f
+
+## 🐳 Legacy Container Management Commands
+
+start-container: ## Start UI in Docker container (not implemented)
 	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
 	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
 
-stop-docker: ## Stop UI Docker container (not implemented)
+stop-container: ## Stop UI Docker container (not implemented)
 	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
 
 # Legacy aliases for backward compatibility
