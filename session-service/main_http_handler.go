@@ -2,10 +2,10 @@ package main
 
 import (
 	"net/http"
-	"time"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
 	"session-service/middleware"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -66,7 +66,7 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	// Check data-service health
 	dataServiceHealthy := h.checkDataServiceHealth()
-	
+
 	if !dataServiceHealthy {
 		h.logger.Error("Data-service health check failed")
 		h.writeJSONResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
@@ -91,14 +91,14 @@ func (h *MainHTTPHandler) checkDataServiceHealth() bool {
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
-	
+
 	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to connect to data-service")
 		return false
 	}
 	defer resp.Body.Close()
-	
+
 	return resp.StatusCode == http.StatusOK
 }
 
