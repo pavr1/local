@@ -80,7 +80,7 @@ restart: stop start ## Restart all database containers
 ## 🚀 Local Development Commands
 
 start-locally: start deps ## Start data service containers and HTTP server locally
-	@echo "$(CYAN)🚀 Starting Data Service HTTP server...$(RESET)"
+	@echo "$(CYAN)🚀 Starting Data Service HTTP server locally...$(RESET)"
 	@echo "🛠️  Starting Data Service HTTP server locally..."
 	@echo "🔍 Checking for existing processes on port 8086..."
 	@if lsof -ti:8086 > /dev/null 2>&1; then \
@@ -90,8 +90,8 @@ start-locally: start deps ## Start data service containers and HTTP server local
 	fi
 	@echo "⚠️  Make sure database containers are running first!"
 	@echo "📝 Service will be available at: http://localhost:8086"
-	@echo "🚀 Starting HTTP server in background..."
-	@nohup go run main.go > service.log 2>&1 & echo $$! > service.pid
+	@echo "🚀 Starting HTTP server in background with DB_HOST=localhost..."
+	@DB_HOST=localhost nohup go run main.go > service.log 2>&1 & echo $$! > service.pid
 	@sleep 2
 	@echo "$(GREEN)✅ Data Service HTTP server started successfully$(RESET)"
 
@@ -115,7 +115,8 @@ stop-locally: stop ## Stop data service containers and HTTP server
 	@pkill -f "go run main.go" 2>/dev/null || true
 	@echo "$(GREEN)✅ Local service stopped$(RESET)"
 
-start-docker: start ## [ALIAS] Start data service containers
+start-docker: build-docker start ## Start data service containers (DB_HOST=postgres)
+	@echo "$(CYAN)🐳 Data service containers started with DB_HOST=postgres$(RESET)"
 stop-docker: stop ## [ALIAS] Stop data service containers
 restart-docker: restart ## [ALIAS] Restart data service containers
 
@@ -163,8 +164,13 @@ health: ## Check database health
 
 build: ## Build the data service application
 	@echo "$(CYAN)🔨 Building data service application...$(RESET)"
-	@go build -o bin/data-service .
-	@echo "$(GREEN)✅ Build completed: bin/data-service$(RESET)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
+	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
+
+build-docker: build ## Build the Docker image
+	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
+	@docker build -t docker-data-service -f docker/Dockerfile .
+	@echo "$(GREEN)✅ Docker image built: docker-data-service$(RESET)"
 
 run: build ## Run the data service application to test database connection
 	@echo "$(CYAN)🧪 Running data service application...$(RESET)"
@@ -280,4 +286,8 @@ help: ## Show this help message
 	@echo "   Fresh Start:    make fresh (when something is broken)"
 	@echo "   Migrations:     make migrate-up / make migrate-down / make migrate-status"
 	@echo "   Cleanup:        make clean"
+	@echo ""
+	@echo "$(YELLOW)🔧 Environment Variables:$(RESET)"
+	@echo "   start-locally:  DB_HOST=localhost (connects to localhost:5432)"
+	@echo "   start-docker:   DB_HOST=postgres (connects to container:5432)"
 	@echo "" 

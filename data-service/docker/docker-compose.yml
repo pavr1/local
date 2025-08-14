@@ -13,8 +13,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
-      # - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
-    # command: postgres -c config_file=/etc/postgresql/postgresql.conf
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d icecream_store"]
       interval: 10s
@@ -22,7 +20,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - icecream_network
+      - docker_icecream_network
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -40,7 +38,42 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - icecream_network
+      - docker_icecream_network
+
+  data-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: icecream_data_service
+    restart: unless-stopped
+    environment:
+      # Server Configuration
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8086
+      
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres123
+      DB_NAME: icecream_store
+      DB_SSL_MODE: disable
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "8086:8086"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8086/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - docker_icecream_network
 
 volumes:
   postgres_data:
@@ -49,5 +82,5 @@ volumes:
     driver: local
 
 networks:
-  icecream_network:
+  docker_icecream_network:
     driver: bridge 

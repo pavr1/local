@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Ice Cream Store Database Stop Script
-# This script stops the PostgreSQL database containers
+# Ice Cream Store Data Service Stop Script
+# This script stops the data service containers
 
 set -e
 
@@ -9,15 +9,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKER_DIR="$PROJECT_ROOT/docker"
 
-echo "🍦 Stopping Ice Cream Store Data Service..."
+echo "🍦🗄️  Stopping Ice Cream Store Data Service..."
 
 # Change to docker directory
 cd "$DOCKER_DIR"
 
-# Stop the containers
-echo "🛑 Stopping database containers..."
+# Stop the data service
 docker-compose down
 
-echo "✅ Database containers stopped successfully!"
-echo ""
-echo "📋 To start again: ./scripts/start.sh" 
+echo "✅ Data service stopped successfully!" 

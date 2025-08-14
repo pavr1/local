@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -28,12 +29,12 @@ func main() {
 
 	// Create database configuration
 	config := &database.Config{
-		Host:     "localhost",
-		Port:     5432,
-		User:     "postgres",
-		Password: "postgres123",
-		DBName:   "icecream_store",
-		SSLMode:  "disable",
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnvInt("DB_PORT", 5432),
+		User:     getEnv("DB_USER", "postgres"),
+		Password: getEnv("DB_PASSWORD", "postgres123"),
+		DBName:   getEnv("DB_NAME", "icecream_store"),
+		SSLMode:  getEnv("DB_SSL_MODE", "disable"),
 
 		// Connection pool settings
 		MaxOpenConns:    25,
@@ -107,11 +108,33 @@ func main() {
 	logger.Info("Data Service exited gracefully")
 }
 
+// Helper functions for environment variables
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intValue, err := strconv.Atoi(value); err == nil {
+			return intValue
+		}
+	}
+	return defaultValue
+}
+
 // setupRouter configures the HTTP routes
 func setupRouter(db database.DatabaseHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
-	// Health check endpoint
+	// Public health check endpoint (no authentication required)
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		healthCheck(w, r, db, logger)
+	}).Methods("GET")
+
+	// Legacy health check endpoint (for backward compatibility)
 	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		healthCheck(w, r, db, logger)
 	}).Methods("GET")
