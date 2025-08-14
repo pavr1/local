@@ -72,7 +72,7 @@ func main() {
 	router := setupRouter(db, logger)
 
 	server := &http.Server{
-		Addr:         ":8086", // Data service port
+		Addr:         "0.0.0.0:8086", // Data service port - bind to all interfaces
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -83,7 +83,7 @@ func main() {
 	go func() {
 		logger.WithField("port", "8086").Info("Starting Data Service HTTP server")
 		fmt.Println("🚀 Data Service HTTP server starting on :8086")
-		fmt.Println("📡 Health endpoint available at: http://localhost:8086/health")
+		fmt.Println("📡 Health endpoint available at: http://localhost:8086/api/v1/data/p/health")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Failed to start HTTP server")
@@ -129,18 +129,27 @@ func getEnvInt(key string, defaultValue int) int {
 func setupRouter(db database.DatabaseHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
+	// Root endpoint to test if router is working
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"Data service is running"}`))
+	}).Methods("GET")
+
 	// Public health check endpoint (no authentication required)
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v1/data/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthCheck(w, r, db, logger)
 	}).Methods("GET")
 
-	// Legacy health check endpoint (for backward compatibility)
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		healthCheck(w, r, db, logger)
+	// Test endpoint to verify router is working
+	router.HandleFunc("/api/v1/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"message":"API v1 router is working"}`))
 	}).Methods("GET")
 
 	// Stats endpoint (optional, for monitoring)
-	router.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/v1/data/p/stats", func(w http.ResponseWriter, r *http.Request) {
 		statsEndpoint(w, r, db, logger)
 	}).Methods("GET")
 

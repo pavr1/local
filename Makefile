@@ -327,51 +327,51 @@ stop-ui: ## Stop UI service locally
 
 start-data-container: ## Start data service in container
 	@echo "$(CYAN)🗄️  Starting Data Service container...$(RESET)"
-	@cd $(DATA_SERVICE) && $(MAKE) start
+	@cd $(DATA_SERVICE) && $(MAKE) start-docker
 
 start-session-container: ## Start session service in container
 	@echo "$(CYAN)🔐 Starting Session Service container...$(RESET)"
-	@cd $(SESSION_SERVICE) && $(MAKE) start-container
+	@cd $(SESSION_SERVICE) && $(MAKE) start-docker
 
 start-orders-container: ## Start orders service in container
 	@echo "$(CYAN)📦 Starting Orders Service container...$(RESET)"
-	@cd $(ORDERS_SERVICE) && $(MAKE) start-container
+	@cd $(ORDERS_SERVICE) && $(MAKE) start-docker
 
 start-inventory-container: ## Start inventory service in container
 	@echo "$(CYAN)📋 Starting Inventory Service container...$(RESET)"
-	@cd $(INVENTORY_SERVICE) && $(MAKE) start-container
+	@cd $(INVENTORY_SERVICE) && $(MAKE) start-docker
 
 start-invoice-container: ## Start invoice service in container
 	@echo "$(CYAN)💰 Starting Invoice Service container...$(RESET)"
-	@cd $(INVOICE_SERVICE) && $(MAKE) start-container
+	@cd $(INVOICE_SERVICE) && $(MAKE) start-docker
 
 start-gateway-container: ## Start gateway service in container
 	@echo "$(CYAN)🌐 Starting Gateway Service container...$(RESET)"
-	@cd $(GATEWAY_SERVICE) && $(MAKE) start-container
+	@cd $(GATEWAY_SERVICE) && $(MAKE) start-docker
 
 stop-data-container: ## Stop data service container
 	@echo "$(YELLOW)🗄️  Stopping Data Service container...$(RESET)"
-	@cd $(DATA_SERVICE) && $(MAKE) stop
+	@cd $(DATA_SERVICE) && $(MAKE) stop-docker
 
 stop-session-container: ## Stop session service container
 	@echo "$(YELLOW)🔐 Stopping Session Service container...$(RESET)"
-	@cd $(SESSION_SERVICE) && $(MAKE) stop-container
+	@cd $(SESSION_SERVICE) && $(MAKE) stop-docker
 
 stop-orders-container: ## Stop orders service container
 	@echo "$(YELLOW)📦 Stopping Orders Service container...$(RESET)"
-	@cd $(ORDERS_SERVICE) && $(MAKE) stop-container
+	@cd $(ORDERS_SERVICE) && $(MAKE) stop-docker
 
 stop-inventory-container: ## Stop inventory service container
 	@echo "$(YELLOW)📋 Stopping Inventory Service container...$(RESET)"
-	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-container
+	@cd $(INVENTORY_SERVICE) && $(MAKE) stop-docker
 
 stop-invoice-container: ## Stop invoice service container
 	@echo "$(YELLOW)💰 Stopping Invoice Service container...$(RESET)"
-	@cd $(INVOICE_SERVICE) && $(MAKE) stop-container
+	@cd $(INVOICE_SERVICE) && $(MAKE) stop-docker
 
 stop-gateway-container: ## Stop gateway service container
 	@echo "$(YELLOW)🌐 Stopping Gateway Service container...$(RESET)"
-	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-container
+	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-docker
 
 ## 🔍 Individual Service - Status & Testing Commands
 

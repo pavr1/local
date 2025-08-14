@@ -24,11 +24,11 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 
 # Expose port
-EXPOSE 8086
+EXPOSE 8084
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD curl -f http://localhost:8086/api/v1/data/p/health || exit 1
+    CMD curl -f http://localhost:8084/api/v1/inventory/p/health || exit 1
 
 # Set timezone
 ENV TZ=UTC

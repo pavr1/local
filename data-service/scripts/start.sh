@@ -56,7 +56,7 @@ MAX_RETRIES=30
 RETRY_COUNT=0
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f http://localhost:8086/health > /dev/null 2>&1; then
+    	if curl -f http://localhost:8086/api/v1/data/p/health > /dev/null 2>&1; then
         echo "✅ Data-service API is ready!"
         break
     fi
@@ -84,11 +84,11 @@ echo "📝 Service Details:"
 echo "   PostgreSQL:    localhost:5432"
 echo "   PgAdmin:       http://localhost:8080 (admin@icecreamstore.com / admin123)"
 echo "   Data API:      http://localhost:8086"
-echo "   Health:        http://localhost:8086/health"
+echo "   Health:        http://localhost:8086/api/v1/data/p/health"
 echo ""
 echo "📋 Useful Commands:"
 echo "   Stop service:     ./scripts/stop.sh"
 echo "   View logs:        ./scripts/logs.sh"
 echo "   Test database:    docker exec icecream_postgres pg_isready -U postgres -d icecream_store"
-echo "   Test API:         curl http://localhost:8086/health"
+echo "   Test API:         curl http://localhost:8086/api/v1/data/p/health"
 echo "" 

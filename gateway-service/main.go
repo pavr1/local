@@ -161,7 +161,11 @@ func main() {
 	// ==== GATEWAY ENDPOINTS ====
 
 	// Gateway health check endpoint
-	api.HandleFunc("/health", createHealthHandler(&config, logrusLogger)).Methods("GET")
+	// API versioning
+	v1 := api.PathPrefix("/api/v1").Subrouter()
+
+	// Public health check endpoint
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(&config, logrusLogger)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -309,7 +313,7 @@ func createServiceLogsHandler(logger *logrus.Logger) http.HandlerFunc {
 func createInvoiceHealthHandler(invoiceServiceURL string, logger *logrus.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Create a direct request to invoice service health endpoint
-		healthURL := invoiceServiceURL + "/health"
+		healthURL := invoiceServiceURL + "/api/v1/invoices/p/health"
 
 		logger.WithFields(logrus.Fields{
 			"invoice_service_url": healthURL,
@@ -439,7 +443,8 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger)
 		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
 		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
-		dataHealthy := checkServiceHealth("http://localhost:8086/health", logger) // For UI monitoring
+		//pvillalobos - gateway should not be hitting data service health endpoint, all business services do that already
+		dataHealthy := checkServiceHealth("http://localhost:8086/api/v1/data/p/health", logger) // For UI monitoring
 
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {

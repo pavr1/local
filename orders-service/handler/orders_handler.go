@@ -447,7 +447,7 @@ func (h *ordersHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := client.Get("http://localhost:8086/health")
+	resp, err := client.Get("http://localhost:8086/api/v1/data/p/health")
 	if err != nil {
 		h.respondWithError(w, http.StatusServiceUnavailable, "Data service connection failed", err)
 		return

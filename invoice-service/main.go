@@ -135,7 +135,11 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// CORS removed - gateway handles all CORS headers
 
 	// Health check endpoint
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	// API versioning
+	v1 := router.PathPrefix("/api/v1").Subrouter()
+
+	// Public health check endpoint
+	v1.HandleFunc("/invoices/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
 		w.Header().Set("Content-Type", "application/json")
 
@@ -155,6 +159,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	api := router.PathPrefix("/api/v1").Subrouter()
 
 	// Public health endpoint (consistent with other services)
+	// Protected health check endpoint (for internal use)
 	api.HandleFunc("/invoices/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
 		w.Header().Set("Content-Type", "application/json")

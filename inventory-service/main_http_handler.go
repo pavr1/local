@@ -126,7 +126,7 @@ func (h *MainHttpHandler) HealthCheck() map[string]interface{} {
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := client.Get("http://localhost:8086/health")
+	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to connect to data-service during health check")
 		return map[string]interface{}{
