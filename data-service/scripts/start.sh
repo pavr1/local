@@ -61,7 +61,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         break
     fi
     
-    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Data-service API not ready yet..."
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Data-service API not ready yet... (trying: http://localhost:8086/api/v1/data/p/health)"
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT + 1))
 done

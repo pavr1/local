@@ -27,7 +27,7 @@ USER appuser
 EXPOSE 8081
 
 # Add health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=1s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8081/api/v1/sessions/p/health || exit 1
 
 # Set timezone

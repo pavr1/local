@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
 	"session-service/middleware"
@@ -57,6 +58,25 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 
 // HealthCheck handles health check requests
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
+	h.logger.WithFields(logrus.Fields{
+		"endpoint": "/api/v1/sessions/p/health",
+		"method":   r.Method,
+		"remote":   r.RemoteAddr,
+	}).Info("Health check requested")
+
+	// Check data-service health
+	dataServiceHealthy := h.checkDataServiceHealth()
+	
+	if !dataServiceHealthy {
+		h.logger.Error("Data-service health check failed")
+		h.writeJSONResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"status":  "unhealthy",
+			"service": "session-service",
+			"message": "Data-service is not healthy",
+		})
+		return
+	}
+
 	response := map[string]interface{}{
 		"status":  "healthy",
 		"service": "session-service",
@@ -64,6 +84,22 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeJSONResponse(w, http.StatusOK, response)
+}
+
+// checkDataServiceHealth checks if the data-service is healthy
+func (h *MainHTTPHandler) checkDataServiceHealth() bool {
+	client := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+	
+	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to connect to data-service")
+		return false
+	}
+	defer resp.Body.Close()
+	
+	return resp.StatusCode == http.StatusOK
 }
 
 // writeJSONResponse writes a JSON response

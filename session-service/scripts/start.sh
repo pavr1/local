@@ -30,11 +30,24 @@ fi
 
 # Wait for data-service to be ready (which verifies PostgreSQL)
 echo -e "${CYAN}⏳ Waiting for data-service to be ready...${RESET}"
-until curl -f http://localhost:8086/api/v1/data/p/health > /dev/null 2>&1; do
-    echo "   Waiting for data-service..."
+MAX_RETRIES=30
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -f http://localhost:8086/api/v1/data/p/health > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Data-service is ready!${RESET}"
+        break
+    fi
+    
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Data-service API not ready yet... (trying: http://localhost:8086/api/v1/data/p/health)"
     sleep 2
+    RETRY_COUNT=$((RETRY_COUNT + 1))
 done
-echo -e "${GREEN}✅ Data-service is ready!${RESET}"
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo -e "${RED}❌ Data-service failed to start within the expected time${RESET}"
+    exit 1
+fi
 
 # Stop only session-service containers (don't touch data-service)
 echo -e "${YELLOW}🧹 Cleaning up existing session containers...${RESET}"
@@ -55,7 +68,7 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         break
     fi
     
-    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Session-service API not ready yet..."
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Session-service API not ready yet... (trying: http://localhost:8081/api/v1/sessions/p/health)"
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT + 1))
 done

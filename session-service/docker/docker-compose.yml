@@ -28,10 +28,10 @@ services:
       - "8081:8081"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/sessions/p/health"]
-      interval: 30s
-      timeout: 10s
+      interval: 1s
+      timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 10s
     networks:
       - docker_icecream_network
 
