@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,7 +11,6 @@ import (
 	"time"
 
 	"inventory-service/config"
-	"inventory-service/middleware"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -38,7 +36,8 @@ func main() {
 	mainHandler := NewMainHttpHandler(db, logger)
 
 	// Setup HTTP router
-	router := setupRouter(mainHandler, logger)
+	router := mux.NewRouter()
+	mainHandler.SetupRoutes(router)
 
 	// Start HTTP server
 	server := &http.Server{
@@ -142,227 +141,4 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 	return db, nil
 }
 
-// setupRouter configures the HTTP routes
-func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Router {
-	router := mux.NewRouter()
 
-	// API versioning
-	v1 := router.PathPrefix("/api/v1").Subrouter()
-
-	// Health check endpoint (protected by gateway middleware)
-	v1.HandleFunc("/inventory/p/health", func(w http.ResponseWriter, r *http.Request) {
-		healthData := mainHandler.HealthCheck()
-		w.Header().Set("Content-Type", "application/json")
-
-		// Check if service is unhealthy and set appropriate HTTP status
-		status := http.StatusOK
-		if healthData["status"] == "unhealthy" {
-			status = http.StatusServiceUnavailable
-		}
-		w.WriteHeader(status)
-
-		// Use json.Marshal for proper JSON encoding
-		jsonData, _ := json.Marshal(healthData)
-		w.Write(jsonData)
-	}).Methods("GET")
-
-	// Inventory module endpoints
-	inventoryRouter := v1.PathPrefix("/inventory").Subrouter()
-
-	// Suppliers endpoints under inventory
-	suppliersRouter := inventoryRouter.PathPrefix("/suppliers").Subrouter()
-
-	// GET /api/v1/inventory/suppliers - List all suppliers
-	suppliersRouter.HandleFunc("", mainHandler.GetSuppliersHandler().ListSuppliers).Methods("GET")
-
-	// POST /api/v1/inventory/suppliers - Create new supplier
-	suppliersRouter.HandleFunc("", mainHandler.GetSuppliersHandler().CreateSupplier).Methods("POST")
-
-	// GET /api/v1/inventory/suppliers/{id} - Get supplier by ID
-	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().GetSupplier).Methods("GET")
-
-	// PUT /api/v1/inventory/suppliers/{id} - Update supplier
-	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().UpdateSupplier).Methods("PUT")
-
-	// DELETE /api/v1/inventory/suppliers/{id} - Delete supplier
-	suppliersRouter.HandleFunc("/{id}", mainHandler.GetSuppliersHandler().DeleteSupplier).Methods("DELETE")
-
-	// Ingredient Categories endpoints under inventory
-	categoriesRouter := inventoryRouter.PathPrefix("/ingredient-categories").Subrouter()
-
-	// GET /api/v1/inventory/ingredient-categories - List all ingredient categories
-	categoriesRouter.HandleFunc("", mainHandler.GetIngredientCategoriesHandler().ListIngredientCategories).Methods("GET")
-
-	// POST /api/v1/inventory/ingredient-categories - Create new ingredient category
-	categoriesRouter.HandleFunc("", mainHandler.GetIngredientCategoriesHandler().CreateIngredientCategory).Methods("POST")
-
-	// GET /api/v1/inventory/ingredient-categories/{id} - Get ingredient category by ID
-	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().GetIngredientCategory).Methods("GET")
-
-	// PUT /api/v1/inventory/ingredient-categories/{id} - Update ingredient category
-	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().UpdateIngredientCategory).Methods("PUT")
-
-	// DELETE /api/v1/inventory/ingredient-categories/{id} - Delete ingredient category
-	categoriesRouter.HandleFunc("/{id}", mainHandler.GetIngredientCategoriesHandler().DeleteIngredientCategory).Methods("DELETE")
-
-	// Ingredients endpoints under inventory
-	ingredientsRouter := inventoryRouter.PathPrefix("/ingredients").Subrouter()
-
-	// GET /api/v1/inventory/ingredients - List all ingredients
-	ingredientsRouter.HandleFunc("", mainHandler.GetIngredientsHandler().ListIngredients).Methods("GET")
-
-	// POST /api/v1/inventory/ingredients - Create new ingredient
-	ingredientsRouter.HandleFunc("", mainHandler.GetIngredientsHandler().CreateIngredient).Methods("POST")
-
-	// GET /api/v1/inventory/ingredients/{id} - Get ingredient by ID
-	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().GetIngredient).Methods("GET")
-
-	// PUT /api/v1/inventory/ingredients/{id} - Update ingredient
-	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().UpdateIngredient).Methods("PUT")
-
-	// DELETE /api/v1/inventory/ingredients/{id} - Delete ingredient
-	ingredientsRouter.HandleFunc("/{id}", mainHandler.GetIngredientsHandler().DeleteIngredient).Methods("DELETE")
-
-	// Existences endpoints under inventory
-	existencesRouter := inventoryRouter.PathPrefix("/existences").Subrouter()
-
-	// GET /api/v1/inventory/existences - List all existences
-	existencesRouter.HandleFunc("", mainHandler.GetExistencesHandler().ListExistences).Methods("GET")
-
-	// POST /api/v1/inventory/existences - Create new existence
-	existencesRouter.HandleFunc("", mainHandler.GetExistencesHandler().CreateExistence).Methods("POST")
-
-	// GET /api/v1/inventory/existences/{id} - Get existence by ID
-	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().GetExistence).Methods("GET")
-
-	// GET /api/v1/inventory/existences/ingredient/{ingredientId}/unit-type/{unitType} - Get most recent existence by ingredient and unit type
-	existencesRouter.HandleFunc("/ingredient/{ingredientId}/unit-type/{unitType}", mainHandler.GetExistencesHandler().GetMostRecentExistenceByIngredientAndUnitType).Methods("GET")
-
-	// PUT /api/v1/inventory/existences/{id} - Update existence
-	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().UpdateExistence).Methods("PUT")
-
-	// DELETE /api/v1/inventory/existences/{id} - Delete existence
-	existencesRouter.HandleFunc("/{id}", mainHandler.GetExistencesHandler().DeleteExistence).Methods("DELETE")
-
-	// Runout Ingredients endpoints under inventory
-	runoutIngredientsRouter := inventoryRouter.PathPrefix("/runout-ingredients").Subrouter()
-
-	// GET /api/v1/inventory/runout-ingredients - List all runout ingredients
-	runoutIngredientsRouter.HandleFunc("", mainHandler.GetRunoutIngredientsHandler().ListRunoutIngredients).Methods("GET")
-
-	// POST /api/v1/inventory/runout-ingredients - Create new runout ingredient
-	runoutIngredientsRouter.HandleFunc("", mainHandler.GetRunoutIngredientsHandler().CreateRunoutIngredient).Methods("POST")
-
-	// GET /api/v1/inventory/runout-ingredients/{id} - Get runout ingredient by ID
-	runoutIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRunoutIngredientsHandler().GetRunoutIngredient).Methods("GET")
-
-	// PUT /api/v1/inventory/runout-ingredients/{id} - Update runout ingredient
-	runoutIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRunoutIngredientsHandler().UpdateRunoutIngredient).Methods("PUT")
-
-	// DELETE /api/v1/inventory/runout-ingredients/{id} - Delete runout ingredient
-	runoutIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRunoutIngredientsHandler().DeleteRunoutIngredient).Methods("DELETE")
-
-	// Recipe Categories endpoints under inventory
-	recipeCategoriesRouter := inventoryRouter.PathPrefix("/recipe-categories").Subrouter()
-
-	// GET /api/v1/inventory/recipe-categories - List all recipe categories
-	recipeCategoriesRouter.HandleFunc("", mainHandler.GetRecipeCategoriesHandler().ListRecipeCategories).Methods("GET")
-
-	// POST /api/v1/inventory/recipe-categories - Create new recipe category
-	recipeCategoriesRouter.HandleFunc("", mainHandler.GetRecipeCategoriesHandler().CreateRecipeCategory).Methods("POST")
-
-	// GET /api/v1/inventory/recipe-categories/{id} - Get recipe category by ID
-	recipeCategoriesRouter.HandleFunc("/{id}", mainHandler.GetRecipeCategoriesHandler().GetRecipeCategory).Methods("GET")
-
-	// PUT /api/v1/inventory/recipe-categories/{id} - Update recipe category
-	recipeCategoriesRouter.HandleFunc("/{id}", mainHandler.GetRecipeCategoriesHandler().UpdateRecipeCategory).Methods("PUT")
-
-	// DELETE /api/v1/inventory/recipe-categories/{id} - Delete recipe category
-	recipeCategoriesRouter.HandleFunc("/{id}", mainHandler.GetRecipeCategoriesHandler().DeleteRecipeCategory).Methods("DELETE")
-
-	// Recipes endpoints under inventory
-	recipesRouter := inventoryRouter.PathPrefix("/recipes").Subrouter()
-
-	// GET /api/v1/inventory/recipes - List all recipes
-	recipesRouter.HandleFunc("", mainHandler.GetRecipesHandler().ListRecipes).Methods("GET")
-
-	// POST /api/v1/inventory/recipes - Create new recipe
-	recipesRouter.HandleFunc("", mainHandler.GetRecipesHandler().CreateRecipe).Methods("POST")
-
-	// GET /api/v1/inventory/recipes/{id} - Get recipe by ID
-	recipesRouter.HandleFunc("/{id}", mainHandler.GetRecipesHandler().GetRecipe).Methods("GET")
-
-	// PUT /api/v1/inventory/recipes/{id} - Update recipe
-	recipesRouter.HandleFunc("/{id}", mainHandler.GetRecipesHandler().UpdateRecipe).Methods("PUT")
-
-	// DELETE /api/v1/inventory/recipes/{id} - Delete recipe
-	recipesRouter.HandleFunc("/{id}", mainHandler.GetRecipesHandler().DeleteRecipe).Methods("DELETE")
-
-	// Recipe Ingredients endpoints under inventory
-	recipeIngredientsRouter := inventoryRouter.PathPrefix("/recipe-ingredients").Subrouter()
-
-	// GET /api/v1/inventory/recipe-ingredients - List all recipe ingredients
-	recipeIngredientsRouter.HandleFunc("", mainHandler.GetRecipeIngredientsHandler().ListRecipeIngredients).Methods("GET")
-
-	// POST /api/v1/inventory/recipe-ingredients - Create new recipe ingredient
-	recipeIngredientsRouter.HandleFunc("", mainHandler.GetRecipeIngredientsHandler().CreateRecipeIngredient).Methods("POST")
-
-	// GET /api/v1/inventory/recipe-ingredients/{id} - Get recipe ingredient by ID
-	recipeIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRecipeIngredientsHandler().GetRecipeIngredient).Methods("GET")
-
-	// PUT /api/v1/inventory/recipe-ingredients/{id} - Update recipe ingredient
-	recipeIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRecipeIngredientsHandler().UpdateRecipeIngredient).Methods("PUT")
-
-	// DELETE /api/v1/inventory/recipe-ingredients/{id} - Delete recipe ingredient
-	recipeIngredientsRouter.HandleFunc("/{id}", mainHandler.GetRecipeIngredientsHandler().DeleteRecipeIngredient).Methods("DELETE")
-
-	// Logging middleware
-	router.Use(loggingMiddleware(logger))
-
-	// Gateway middleware
-	gatewayMiddleware := middleware.NewGatewayMiddleware(logger)
-	router.Use(gatewayMiddleware.ValidateGateway)
-
-	logger.Info("HTTP routes configured successfully")
-	return router
-}
-
-// loggingMiddleware logs HTTP requests
-func loggingMiddleware(logger *logrus.Logger) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-
-			// Create a custom response writer to capture status code
-			wrappedWriter := &responseWriter{
-				ResponseWriter: w,
-				statusCode:     http.StatusOK,
-			}
-
-			// Call the next handler
-			next.ServeHTTP(wrappedWriter, r)
-
-			// Log the request
-			duration := time.Since(start)
-			logger.WithFields(logrus.Fields{
-				"method":     r.Method,
-				"path":       r.URL.Path,
-				"status":     wrappedWriter.statusCode,
-				"duration":   duration.String(),
-				"user_agent": r.UserAgent(),
-				"remote_ip":  r.RemoteAddr,
-			}).Info("HTTP request processed")
-		})
-	}
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
-}

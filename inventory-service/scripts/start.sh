@@ -30,10 +30,25 @@ fi
 
 # Wait for data-service to be ready (which verifies PostgreSQL)
 echo -e "${CYAN}⏳ Waiting for data-service to be ready...${RESET}"
-until curl -f http://localhost:8086/api/v1/data/p/health > /dev/null 2>&1; do
-    echo "   Waiting for data-service..."
+RETRY_COUNT=0
+MAX_RETRIES=30
+DATA_SERVICE_URL="http://localhost:8086/api/v1/data/p/health"
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    if curl -f $DATA_SERVICE_URL > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Data-service is ready!${RESET}"
+        break
+    fi
+    
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Data-service not ready yet... (trying: $DATA_SERVICE_URL)"
     sleep 2
+    RETRY_COUNT=$((RETRY_COUNT + 1))
 done
+
+if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+    echo -e "${RED}❌ Data-service failed to start within the expected time${RESET}"
+    exit 1
+fi
 echo -e "${GREEN}✅ Data-service is ready!${RESET}"
 
 # Stop only inventory-service containers (don't touch data-service)
@@ -48,14 +63,15 @@ docker-compose up -d
 echo -e "${CYAN}⏳ Waiting for inventory-service API to be ready...${RESET}"
 RETRY_COUNT=0
 MAX_RETRIES=30
+INVENTORY_SERVICE_URL="http://localhost:8084/api/v1/inventory/p/health"
 
 while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-    if curl -f http://localhost:8084/api/v1/inventory/p/health > /dev/null 2>&1; then
+    if curl -f $INVENTORY_SERVICE_URL > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Inventory-service API is ready!${RESET}"
         break
     fi
     
-    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Inventory-service API not ready yet..."
+    echo "   Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES - Inventory-service API not ready yet... (trying: $INVENTORY_SERVICE_URL)"
     sleep 2
     RETRY_COUNT=$((RETRY_COUNT + 1))
 done
