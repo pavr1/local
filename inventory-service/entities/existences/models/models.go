@@ -85,9 +85,9 @@ type ListExistencesRequest struct {
 // Response Structs
 // ExistenceResponse represents a single existence response
 type ExistenceResponse struct {
-	Success bool      `json:"success"`
-	Data    Existence `json:"data"`
-	Message string    `json:"message,omitempty"`
+	Success bool       `json:"success"`
+	Data    *Existence `json:"data"`
+	Message string     `json:"message,omitempty"`
 }
 
 // ExistencesResponse represents multiple existences response

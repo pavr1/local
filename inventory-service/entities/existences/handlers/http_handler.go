@@ -65,7 +65,7 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 
 	response := models.ExistenceResponse{
 		Success: true,
-		Data:    *existence,
+		Data:    existence,
 		Message: "Existence created successfully",
 	}
 
@@ -92,7 +92,7 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 
 	response := models.ExistenceResponse{
 		Success: true,
-		Data:    *existence,
+		Data:    existence,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -113,14 +113,8 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// Return empty response when no existence is found
-			response := models.ExistenceResponse{
-				Success: true,
-				Data:    models.Existence{},
-				Message: "No existence found for this ingredient and unit type",
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(response)
+			// Return 404 when no existence is found
+			http.Error(w, "No existence found for this ingredient and unit type", http.StatusNotFound)
 			return
 		}
 		h.logger.WithError(err).Error("Failed to get most recent existence")
@@ -130,7 +124,7 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 
 	response := models.ExistenceResponse{
 		Success: true,
-		Data:    *existence,
+		Data:    existence,
 		Message: "Most recent existence retrieved successfully",
 	}
 
@@ -207,7 +201,7 @@ func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
 
 	response := models.ExistenceResponse{
 		Success: true,
-		Data:    *existence,
+		Data:    existence,
 		Message: "Existence updated successfully",
 	}
 

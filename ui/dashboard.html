@@ -3969,6 +3969,7 @@
             const ivaAmount = Number(existence.iva_amount || 0).toLocaleString();
             const serviceTaxAmount = Number(existence.service_tax_amount || 0).toLocaleString();
             const finalPrice = Number(existence.final_price || 0).toLocaleString();
+            const calculatedPrice = Number(existence.calculated_price || 0).toLocaleString();
             
             // Create invoice link
             const invoiceLink = existence.invoice_detail_id ? 
@@ -4000,7 +4001,7 @@
                     </td>
                     <td class="align-middle">
                         <div class="final-price-cell">
-                            <div class="fw-bold">₡${finalPrice}</div>
+                            <div class="fw-bold">₡${calculatedPrice}/₡${finalPrice}</div>
                         </div>
                     </td>
                     <td class="align-middle">

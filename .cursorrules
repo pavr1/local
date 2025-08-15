@@ -9,6 +9,7 @@ This is the identity-api service working on robust database migration and SQL qu
 - If you execute a command, always provide a brief about what you need to achieve to understand what the command does. Always explain what you're doing, at least a small brief.
 - If any document is updated, be sure to update their corresponding index.
 - Explain when running commands, what they do.
+- **KEEP IT SIMPLE**: Do not complicate things, keep solutions as simple as possible. Avoid over-engineering and unnecessary complexity.
 
 ## Documentation Process
 - After ticket provided ask for the ticket information to have context.

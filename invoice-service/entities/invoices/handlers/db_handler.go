@@ -595,6 +595,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 				"ingredient_id": req.IngredientID,
 				"unit_type":     req.UnitType,
 			}).Info("No previous existence found")
+			mostRecentExistence = nil // Ensure it's nil when no rows found
 		} else {
 			h.logger.WithError(err).WithFields(logrus.Fields{
 				"ingredient_id": req.IngredientID,
@@ -607,45 +608,38 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	// Calculate derived fields
 	costPerItem := req.CostPerUnit / float64(req.ItemsPerUnit)
 
+	// Log the cost per item calculation
+	h.logger.WithFields(logrus.Fields{
+		"cost_per_unit":  req.CostPerUnit,
+		"items_per_unit": req.ItemsPerUnit,
+		"cost_per_item":  costPerItem,
+	}).Info("Cost per item calculation")
+
 	var finalPrice, ivaAmount, serviceTaxAmount, incomeMarginAmount, calculatedPrice float64
 	var incomeMarginPercentage float64
 
-	if mostRecentExistence != nil {
+	incomeMarginAmount = costPerItem * req.IncomeMarginPercentage / 100
+	ivaAmount = (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
+	serviceTaxAmount = (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+
+	taxes := ivaAmount + serviceTaxAmount
+
+	if mostRecentExistence != nil && mostRecentExistence.FinalPrice != nil {
 		// Previous existence found, use its pricing structure
 		h.logger.WithFields(logrus.Fields{
-			"ingredient_id":               req.IngredientID,
-			"unit_type":                   req.UnitType,
-			"previous_final_price":        mostRecentExistence.FinalPrice,
-			"previous_iva_amount":         mostRecentExistence.IvaAmount,
-			"previous_service_tax_amount": mostRecentExistence.ServiceTaxAmount,
+			"existence_id": mostRecentExistence,
 		}).Info("Previous existence found, using its pricing structure")
 
-		// Use previous existence's final price, IVA amount, and service tax amount
-		if mostRecentExistence.FinalPrice != nil {
-			finalPrice = *mostRecentExistence.FinalPrice
-		} else {
-			// If no final price is set, calculate it from the current request
-			incomeMarginAmount = costPerItem * req.IncomeMarginPercentage / 100
-			ivaAmount = (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
-			serviceTaxAmount = (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
-			calculatedPrice = costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
-			finalPrice = math.Ceil(calculatedPrice/100) * 100
-		}
+		calculatedPrice = costPerItem + incomeMarginAmount + taxes
 
+		// Use values from previous existence
+		finalPrice = *mostRecentExistence.FinalPrice
 		ivaAmount = mostRecentExistence.IvaAmount
 		serviceTaxAmount = mostRecentExistence.ServiceTaxAmount
 
-		// Calculate new margin amount: final_price - cost_per_item - iva_amount - service_tax_amount
-		incomeMarginAmount = finalPrice - costPerItem - ivaAmount - serviceTaxAmount
-
-		// Calculate new margin percentage: (margin_amount / final_price) * 100
+		// Calculate income margin = final price - cost per item - iva - service tax
+		incomeMarginAmount = finalPrice - costPerItem - taxes
 		incomeMarginPercentage = (incomeMarginAmount / finalPrice) * 100
-
-		// Update the request with the new margin percentage
-		req.IncomeMarginPercentage = incomeMarginPercentage
-
-		// Calculate the calculated price (should match final price)
-		calculatedPrice = costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
 	} else {
 		// No previous existence found, use default calculation
 		h.logger.WithFields(logrus.Fields{
@@ -653,13 +647,26 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 			"unit_type":     req.UnitType,
 		}).Info("No previous existence found, using default calculation")
 
+		// Log the input values for debugging
+		h.logger.WithFields(logrus.Fields{
+			"cost_per_item":            costPerItem,
+			"income_margin_percentage": req.IncomeMarginPercentage,
+			"iva_percentage":           req.IvaPercentage,
+			"service_tax_percentage":   req.ServiceTaxPercentage,
+		}).Info("Input values for first existence calculation")
+
 		// Calculate margins and taxes
-		incomeMarginAmount = costPerItem * req.IncomeMarginPercentage / 100
-		ivaAmount = (costPerItem + incomeMarginAmount) * req.IvaPercentage / 100
-		serviceTaxAmount = (costPerItem + incomeMarginAmount) * req.ServiceTaxPercentage / 100
+		taxes := ivaAmount + serviceTaxAmount
+
+		// Log intermediate calculations
+		h.logger.WithFields(logrus.Fields{
+			"income_margin_amount": incomeMarginAmount,
+			"iva_amount":           ivaAmount,
+			"service_tax_amount":   serviceTaxAmount,
+		}).Info("Intermediate calculations for first existence")
 
 		// Calculate final price
-		calculatedPrice = costPerItem + incomeMarginAmount + ivaAmount + serviceTaxAmount
+		calculatedPrice = costPerItem + incomeMarginAmount + taxes
 		// Round up to nearest 100
 		finalPrice = math.Ceil(calculatedPrice/100) * 100
 
@@ -678,7 +685,8 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		"service_tax_amount":       serviceTaxAmount,
 		"calculated_price":         calculatedPrice,
 		"final_price":              finalPrice,
-	}).Debug("Existence calculations completed")
+		"has_previous_existence":   mostRecentExistence != nil,
+	}).Info("Existence calculations completed")
 
 	_, err = tx.Exec(invoiceSQL.CreateExistenceQuery,
 		req.IngredientID,
