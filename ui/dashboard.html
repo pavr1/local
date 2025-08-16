@@ -4051,7 +4051,23 @@
                                             
                                             return marginAmount.toFixed(2);
                                         })()}</div>
-                                        <div class="detail-percentage">${existence.income_margin_percentage || 0}%/${(() => {
+                                        <div class="detail-percentage">${(() => {
+                                            const finalPrice = Number(existence.final_price || 0);
+                                            const costPerItem = Number(existence.cost_per_item || 0);
+                                            const ivaPercentage = Number(existence.iva_percentage || 0);
+                                            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                            
+                                            // Calculate base amount before taxes for current final price
+                                            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                            const taxMultiplier = 1 + totalTaxRate;
+                                            const baseAmount = finalPrice / taxMultiplier;
+                                            const marginAmount = baseAmount - costPerItem;
+                                            
+                                            // Calculate actual margin percentage of final price
+                                            const marginPercentage = finalPrice > 0 ? (marginAmount / finalPrice) * 100 : 0;
+                                            
+                                            return marginPercentage.toFixed(2);
+                                        })()}%/${(() => {
                                             const maxPrice = Number(existence.maximum_price || 0);
                                             const costPerItem = Number(existence.cost_per_item || 0);
                                             const ivaPercentage = Number(existence.iva_percentage || 0);
