@@ -97,7 +97,14 @@ stop-docker: ## Stop UI service Docker container
 	@cd docker && docker-compose down
 	@echo "$(GREEN)✅ UI service stopped successfully!$(RESET)"
 
-fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+fresh-docker: stop-docker clean-docker build-docker start-docker ## Fresh start: stop, clean, rebuild, and start Docker container
+
+clean-docker: ## Remove Docker image and containers completely
+	@echo "$(YELLOW)🧹 Cleaning Docker image and containers...$(RESET)"
+	@docker rmi docker-ui-service 2>/dev/null || true
+	@docker rmi docker-ui 2>/dev/null || true
+	@docker system prune -f --volumes 2>/dev/null || true
+	@echo "$(GREEN)✅ Docker cleanup completed!$(RESET)"
 
 ## 📊 Monitoring & Debugging Commands
 
