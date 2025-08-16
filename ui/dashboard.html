@@ -3868,7 +3868,6 @@
                     <div class="d-flex justify-content-center align-items-center py-5">
                         <div class="loading-spinner">
                             <i class="fas fa-spinner fa-spin me-2"></i>
-                            Loading existences...
                         </div>
                     </div>
                 `;
@@ -4059,19 +4058,19 @@
                                         </div>
                                         <div class="detail-percentage">
                                             <span class="fw-bold">${(() => {
-                                                const finalPrice = Number(existence.final_price || 0);
+                                                const minimumPrice = Number(existence.minimum_price || 0);
                                                 const costPerItem = Number(existence.cost_per_item || 0);
                                                 const ivaPercentage = Number(existence.iva_percentage || 0);
                                                 const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
                                                 
-                                                // Calculate base amount before taxes for current final price
+                                                // Calculate base amount before taxes for minimum price
                                                 const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
                                                 const taxMultiplier = 1 + totalTaxRate;
-                                                const baseAmount = finalPrice / taxMultiplier;
+                                                const baseAmount = minimumPrice / taxMultiplier;
                                                 const marginAmount = baseAmount - costPerItem;
                                                 
-                                                // Calculate actual margin percentage of final price
-                                                const marginPercentage = finalPrice > 0 ? (marginAmount / finalPrice) * 100 : 0;
+                                                // Calculate margin percentage for minimum price
+                                                const marginPercentage = minimumPrice > 0 ? (marginAmount / minimumPrice) * 100 : 0;
                                                 
                                                 return marginPercentage.toFixed(2);
                                             })()}%</span>
@@ -4567,6 +4566,12 @@
                                     <div class="form-text">
                                         Price range: ₡${minimumPrice.toLocaleString()} - ₡${maximumPrice.toLocaleString()}
                                     </div>
+                                    <div class="invalid-feedback" id="finalPriceFeedback">
+                                        Please enter a valid price within the range.
+                                    </div>
+                                    <div class="valid-feedback">
+                                        Price is within valid range.
+                                    </div>
                                 </div>
                                 
                                 <!-- Income Calculation Preview -->
@@ -4654,10 +4659,11 @@
             const modal = new bootstrap.Modal(document.getElementById('setFinalPriceModal'));
             modal.show();
 
-            // Add real-time calculation updates
+            // Add real-time calculation updates and validation
             const finalPriceInput = document.getElementById('finalPriceInput');
             finalPriceInput.addEventListener('input', function() {
                 updateIncomePreview(this.value, costPerItem, ivaPercentage, serviceTaxPercentage);
+                validateFinalPriceInput(this.value, minimumPrice, maximumPrice);
             });
 
             // Clean up modal after it's hidden
@@ -4707,6 +4713,102 @@
             }
         }
 
+        // Validate final price input
+        function validateFinalPriceInput(value, minimumPrice, maximumPrice) {
+            const input = document.getElementById('finalPriceInput');
+            const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+            const price = parseFloat(value);
+            
+            // Remove previous validation classes
+            input.classList.remove('is-valid', 'is-invalid');
+            
+            if (isNaN(price) || price < 0) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price < minimumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price > maximumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            input.classList.add('is-valid');
+            updateBtn.disabled = false;
+            return true;
+        }
+
+        // Validate final price input
+        function validateFinalPriceInput(value, minimumPrice, maximumPrice) {
+            const input = document.getElementById('finalPriceInput');
+            const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+            const price = parseFloat(value);
+            
+            // Remove previous validation classes
+            input.classList.remove('is-valid', 'is-invalid');
+            
+            if (isNaN(price) || price < 0) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price < minimumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price > maximumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            input.classList.add('is-valid');
+            updateBtn.disabled = false;
+            return true;
+        }
+
+        // Validate final price input
+        function validateFinalPriceInput(value, minimumPrice, maximumPrice) {
+            const input = document.getElementById('finalPriceInput');
+            const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+            const price = parseFloat(value);
+            
+            // Remove previous validation classes
+            input.classList.remove('is-valid', 'is-invalid');
+            
+            if (isNaN(price) || price < 0) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price < minimumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            if (price > maximumPrice) {
+                input.classList.add('is-invalid');
+                updateBtn.disabled = true;
+                return false;
+            }
+            
+            input.classList.add('is-valid');
+            updateBtn.disabled = false;
+            return true;
+        }
+
         // Update final price
         async function updateFinalPrice(existenceId) {
             const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
@@ -4715,9 +4817,18 @@
             try {
                 const finalPriceInput = document.getElementById('finalPriceInput');
                 const finalPrice = parseFloat(finalPriceInput.value);
+                const minimumPrice = parseFloat(finalPriceInput.min);
+                const maximumPrice = parseFloat(finalPriceInput.max);
 
-                if (isNaN(finalPrice) || finalPrice < 0) {
-                    Alert.error('Please enter a valid final price');
+                // Validate input
+                if (!validateFinalPriceInput(finalPriceInput.value, minimumPrice, maximumPrice)) {
+                    if (finalPrice < minimumPrice) {
+                        Alert.error(`Final price cannot be lower than the minimum price (₡${minimumPrice.toLocaleString()})`);
+                    } else if (finalPrice > maximumPrice) {
+                        Alert.error(`Final price cannot be higher than the maximum price (₡${maximumPrice.toLocaleString()})`);
+                    } else {
+                        Alert.error('Please enter a valid final price');
+                    }
                     return;
                 }
 
@@ -4737,7 +4848,12 @@
                     modal.hide();
                     await loadExistencesData();
                 } else {
-                    Alert.error(result.message || 'Failed to update final price');
+                    // Handle specific database validation errors
+                    if (result.message && result.message.includes('check_final_price_range')) {
+                        Alert.error(`Final price must be between ₡${minimumPrice.toLocaleString()} and ₡${maximumPrice.toLocaleString()}`);
+                    } else {
+                        Alert.error(result.message || 'Failed to update final price');
+                    }
                 }
 
             } catch (error) {
