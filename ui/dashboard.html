@@ -4002,15 +4002,14 @@
                         <div class="fw-bold">₡${costPerItem}</div>
                     </td>
                     <td class="align-middle">
-                        <div class="price-range-cell">
-                            <div class="fw-bold">₡${minimumPrice}/₡${maximumPrice}</div>
+                        <div class="final-price-cell">
+                            <div class="fw-bold text-muted">₡${minimumPrice}/₡${maximumPrice}</div>
                         </div>
                     </td>
                     <td class="align-middle">
-                        <div class="final-price-cell">
-                            <div class="fw-bold">₡${finalPrice}</div>
-                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="setFinalPrice('${existence.id}', ${existence.minimum_price}, ${existence.maximum_price}, ${existence.final_price})" title="Set Final Price">
-                                <i class="fas fa-edit"></i> Set Price
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="setFinalPrice('${existence.id}', ${existence.minimum_price}, ${existence.maximum_price}, ${existence.final_price})" title="Set Final Price">
+                                ₡${finalPrice}
                             </button>
                         </div>
                     </td>
@@ -4513,6 +4512,9 @@
 
         // Update final price
         async function updateFinalPrice(existenceId) {
+            const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+            const originalText = updateBtn.innerHTML;
+            
             try {
                 const finalPriceInput = document.getElementById('finalPriceInput');
                 const finalPrice = parseFloat(finalPriceInput.value);
@@ -4522,8 +4524,6 @@
                     return;
                 }
 
-                const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
-                const originalText = updateBtn.innerHTML;
                 updateBtn.disabled = true;
                 updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
@@ -4531,14 +4531,7 @@
                     final_price: finalPrice
                 };
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
+                const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, formData);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -4554,7 +4547,6 @@
                 console.error('❌ Error updating final price:', error);
                 Alert.error('Failed to update final price');
             } finally {
-                const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
                 updateBtn.disabled = false;
                 updateBtn.innerHTML = originalText;
             }
@@ -4585,13 +4577,14 @@
 
         // Update existence
         async function updateExistence() {
+            const updateBtn = document.getElementById('updateExistenceBtn');
+            const originalText = updateBtn.innerHTML;
+            
             try {
                 if (!validateEditExistenceForm()) {
                     return;
                 }
 
-                const updateBtn = document.getElementById('updateExistenceBtn');
-                const originalText = updateBtn.innerHTML;
                 updateBtn.disabled = true;
                 updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
 
@@ -4610,14 +4603,7 @@
                     final_price: parseFloat(document.getElementById('editExistenceFinalPrice').value) || null
                 };
 
-                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
-                });
-
+                const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, formData);
                 const result = await response.json();
 
                 if (response.ok && result.success) {
@@ -4633,9 +4619,8 @@
                 console.error('❌ Error updating existence:', error);
                 Alert.error('Failed to update existence');
             } finally {
-                const updateBtn = document.getElementById('updateExistenceBtn');
                 updateBtn.disabled = false;
-                updateBtn.innerHTML = '<i class="fas fa-save me-2"></i>Update Existence';
+                updateBtn.innerHTML = originalText;
             }
         }
 
