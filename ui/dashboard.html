@@ -3969,7 +3969,7 @@
             const ivaAmount = Number(existence.iva_amount || 0).toLocaleString();
             const serviceTaxAmount = Number(existence.service_tax_amount || 0).toLocaleString();
             const finalPrice = Number(existence.final_price || 0).toLocaleString();
-            const minimumPrice = Number(existence.minimum_price || 0).toLocaleString();
+            const minimumPrice = Math.ceil(Number(existence.minimum_price || 0)).toLocaleString();
             const maximumPrice = Number(existence.maximum_price || 0).toLocaleString();
             
             // Create invoice link
@@ -4039,7 +4039,20 @@
                                     <div class="detail-card">
                                         <div class="detail-label">Income Margin</div>
                                         <div class="detail-value">
-                                            <span class="fw-bold">₡${incomeMarginAmount}</span>
+                                            <span class="fw-bold">₡${(() => {
+                                                const minimumPrice = Number(existence.minimum_price || 0);
+                                                const costPerItem = Number(existence.cost_per_item || 0);
+                                                const ivaPercentage = Number(existence.iva_percentage || 0);
+                                                const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                                
+                                                // Calculate base amount before taxes for minimum price
+                                                const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                                const taxMultiplier = 1 + totalTaxRate;
+                                                const baseAmount = minimumPrice / taxMultiplier;
+                                                const marginAmount = baseAmount - costPerItem;
+                                                
+                                                return marginAmount.toFixed(2);
+                                            })()}</span>
                                             <span class="text-secondary mx-1">/</span>
                                             <span class="fw-bold">₡${(() => {
                                                 const finalPrice = Number(existence.final_price || 0);
