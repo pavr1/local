@@ -161,11 +161,14 @@ CREATE TABLE existences (
     iva_amount DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
     service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
     service_tax_amount DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
-    calculated_price DECIMAL(10,2) DEFAULT 0.00, -- Will be calculated by application
-    final_price DECIMAL(10,2),
+    minimum_price DECIMAL(10,2) DEFAULT 0.00, -- Minimum acceptable price for income (previously calculated_price)
+    maximum_price DECIMAL(10,2), -- Maximum price ceiling (previously final_price)
+    final_price DECIMAL(10,2), -- User-editable final price (must be between minimum_price and maximum_price)
     --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    --constraints
+    CONSTRAINT check_final_price_range CHECK (final_price >= minimum_price AND final_price <= maximum_price)
 );
 
 -- =============================================================================
@@ -391,6 +394,9 @@ CREATE INDEX idx_existences_reference_code ON existences(existence_reference_cod
 CREATE INDEX idx_existences_invoice_detail ON existences(invoice_detail_id);
 CREATE INDEX idx_existences_available ON existences(units_available);
 CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
+CREATE INDEX idx_existences_minimum_price ON existences(minimum_price);
+CREATE INDEX idx_existences_maximum_price ON existences(maximum_price);
+CREATE INDEX idx_existences_final_price ON existences(final_price);
 CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 CREATE INDEX idx_recipe_ingredients_recipe_id ON recipe_ingredients(recipe_id);
 CREATE INDEX idx_recipe_ingredients_ingredient_id ON recipe_ingredients(ingredient_id);

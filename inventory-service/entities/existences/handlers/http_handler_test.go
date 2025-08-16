@@ -124,7 +124,8 @@ func TestHttpHandler_CreateExistence_Success(t *testing.T) {
 		IvaAmount:              20280.00,
 		ServiceTaxPercentage:   10.0,
 		ServiceTaxAmount:       15600.00,
-		CalculatedPrice:        191880.00,
+		MinimumPrice:           191880.00,
+		MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -226,7 +227,8 @@ func TestHttpHandler_GetExistence_Success(t *testing.T) {
 		IvaAmount:              20280.00,
 		ServiceTaxPercentage:   10.0,
 		ServiceTaxAmount:       15600.00,
-		CalculatedPrice:        191880.00,
+		MinimumPrice:           191880.00,
+		MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -327,7 +329,8 @@ func TestHttpHandler_ListExistences_Success(t *testing.T) {
 			IvaAmount:              20280.00,
 			ServiceTaxPercentage:   10.0,
 			ServiceTaxAmount:       15600.00,
-			CalculatedPrice:        191880.00,
+			MinimumPrice:           191880.00,
+			MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
 			FinalPrice:             float64Ptr(15000.00),
 			CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 			UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -382,7 +385,8 @@ func TestHttpHandler_ListExistences_WithFilters(t *testing.T) {
 			IvaAmount:              20280.00,
 			ServiceTaxPercentage:   10.0,
 			ServiceTaxAmount:       15600.00,
-			CalculatedPrice:        191880.00,
+			MinimumPrice:           191880.00,
+			MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
 			FinalPrice:             float64Ptr(15000.00),
 			CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 			UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -468,7 +472,8 @@ func TestHttpHandler_UpdateExistence_Success(t *testing.T) {
 		IvaAmount:              20280.00,
 		ServiceTaxPercentage:   10.0,
 		ServiceTaxAmount:       15600.00,
-		CalculatedPrice:        191880.00,
+		MinimumPrice:           191880.00,
+		MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 30, 0, 0, time.UTC),

@@ -14,6 +14,10 @@ Each migration consists of two files:
 - **Up**: Adds `items_per_unit` column to `invoice_details` table
 - **Down**: Removes `items_per_unit` column from `invoice_details` table
 
+### 002_update_existences_pricing_fields
+- **Up**: Renames `calculated_price` to `minimum_price`, `final_price` to `maximum_price`, and adds new `final_price` field with range validation
+- **Down**: Reverts pricing field changes back to original structure
+
 ## Running Migrations
 
 ### Manual Execution

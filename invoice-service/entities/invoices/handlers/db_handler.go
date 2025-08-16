@@ -627,7 +627,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	if mostRecentExistence != nil && mostRecentExistence.FinalPrice != nil {
 		// Previous existence found, use its pricing structure
 		h.logger.WithFields(logrus.Fields{
-			"existence_id": mostRecentExistence,
+			"existence_id": mostRecentExistence.ID,
 		}).Info("Previous existence found, using its pricing structure")
 
 		calculatedPrice = costPerItem + incomeMarginAmount + taxes
@@ -674,6 +674,10 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		incomeMarginPercentage = req.IncomeMarginPercentage
 	}
 
+	// Map to new pricing structure
+	minimumPrice := calculatedPrice
+	maximumPrice := finalPrice
+
 	// Log calculations for debugging
 	h.logger.WithFields(logrus.Fields{
 		"cost_per_item":            costPerItem,
@@ -684,6 +688,8 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		"service_tax_percentage":   req.ServiceTaxPercentage,
 		"service_tax_amount":       serviceTaxAmount,
 		"calculated_price":         calculatedPrice,
+		"minimum_price":            minimumPrice,
+		"maximum_price":            maximumPrice,
 		"final_price":              finalPrice,
 		"has_previous_existence":   mostRecentExistence != nil,
 	}).Info("Existence calculations completed")
@@ -702,7 +708,8 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		ivaAmount,
 		req.ServiceTaxPercentage,
 		serviceTaxAmount,
-		calculatedPrice,
+		minimumPrice,
+		maximumPrice,
 		finalPrice,
 	)
 

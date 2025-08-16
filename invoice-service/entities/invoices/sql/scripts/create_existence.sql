@@ -13,7 +13,8 @@ INSERT INTO existences (
     iva_amount,
     service_tax_percentage,
     service_tax_amount,
-    calculated_price,
+    minimum_price,
+    maximum_price,
     final_price
 ) VALUES (
     $1,  -- ingredient_id
@@ -30,6 +31,7 @@ INSERT INTO existences (
     $11, -- iva_amount
     $12, -- service_tax_percentage
     $13, -- service_tax_amount
-    $14, -- calculated_price
-    $15  -- final_price
+    $14, -- minimum_price
+    $15, -- maximum_price
+    $16  -- final_price
 ); 

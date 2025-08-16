@@ -18,7 +18,8 @@ SELECT
     iva_amount,
     service_tax_percentage,
     service_tax_amount,
-    calculated_price,
+    minimum_price,
+    maximum_price,
     final_price,
     created_at,
     updated_at

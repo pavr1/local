@@ -39,6 +39,8 @@ func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest) (*models.
 		req.IncomeMarginPercentage,
 		req.IvaPercentage,
 		req.ServiceTaxPercentage,
+		req.MinimumPrice,
+		req.MaximumPrice,
 		req.FinalPrice).
 		Scan(&existence.ID, &existence.ExistenceReferenceCode, &existence.IngredientID,
 			&existence.InvoiceDetailID, &existence.UnitsPurchased, &existence.UnitsAvailable,
@@ -46,7 +48,7 @@ func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest) (*models.
 			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
 			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
 			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
-			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
+			&existence.ServiceTaxAmount, &existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice,
 			&existence.CreatedAt, &existence.UpdatedAt)
 
 	if err != nil {
@@ -77,7 +79,7 @@ func (h *DBHandler) GetExistenceByID(id string) (*models.Existence, error) {
 			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
 			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
 			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
-			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
+			&existence.ServiceTaxAmount, &existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice,
 			&existence.CreatedAt, &existence.UpdatedAt)
 
 	if err != nil {
@@ -107,7 +109,7 @@ func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, 
 			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
 			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
 			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
-			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
+			&existence.ServiceTaxAmount, &existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice,
 			&existence.CreatedAt, &existence.UpdatedAt)
 
 	if err != nil {
@@ -155,7 +157,7 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.E
 			&existence.TotalPurchaseCost, &existence.RemainingValue, &existence.ExpirationDate,
 			&existence.IncomeMarginPercentage, &existence.IncomeMarginAmount, &existence.IvaPercentage,
 			&existence.IvaAmount, &existence.ServiceTaxPercentage, &existence.ServiceTaxAmount,
-			&existence.CalculatedPrice, &existence.FinalPrice, &existence.CreatedAt, &existence.UpdatedAt)
+			&existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice, &existence.CreatedAt, &existence.UpdatedAt)
 
 		if err != nil {
 			h.logger.WithError(err).Error("Failed to scan existence row")
@@ -188,14 +190,14 @@ func (h *DBHandler) UpdateExistence(id string, req models.UpdateExistenceRequest
 	err := h.db.QueryRow(existenceSQL.UpdateExistenceQuery, id,
 		req.UnitsAvailable, req.UnitType, req.ItemsPerUnit, req.CostPerUnit,
 		req.ExpirationDate, req.IncomeMarginPercentage, req.IvaPercentage,
-		req.ServiceTaxPercentage, req.FinalPrice).
+		req.ServiceTaxPercentage, req.MinimumPrice, req.MaximumPrice, req.FinalPrice).
 		Scan(&existence.ID, &existence.ExistenceReferenceCode, &existence.IngredientID,
 			&existence.InvoiceDetailID, &existence.UnitsPurchased, &existence.UnitsAvailable,
 			&existence.UnitType, &existence.ItemsPerUnit, &existence.CostPerItem,
 			&existence.CostPerUnit, &existence.TotalPurchaseCost, &existence.RemainingValue,
 			&existence.ExpirationDate, &existence.IncomeMarginPercentage, &existence.IncomeMarginAmount,
 			&existence.IvaPercentage, &existence.IvaAmount, &existence.ServiceTaxPercentage,
-			&existence.ServiceTaxAmount, &existence.CalculatedPrice, &existence.FinalPrice,
+			&existence.ServiceTaxAmount, &existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice,
 			&existence.CreatedAt, &existence.UpdatedAt)
 
 	if err != nil {

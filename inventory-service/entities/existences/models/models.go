@@ -27,7 +27,8 @@ type Existence struct {
 	IvaAmount              float64    `json:"iva_amount" db:"iva_amount"`
 	ServiceTaxPercentage   float64    `json:"service_tax_percentage" db:"service_tax_percentage"`
 	ServiceTaxAmount       float64    `json:"service_tax_amount" db:"service_tax_amount"`
-	CalculatedPrice        float64    `json:"calculated_price" db:"calculated_price"`
+	MinimumPrice           float64    `json:"minimum_price" db:"minimum_price"`
+	MaximumPrice           *float64   `json:"maximum_price" db:"maximum_price"`
 	FinalPrice             *float64   `json:"final_price" db:"final_price"`
 	CreatedAt              time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at" db:"updated_at"`
@@ -46,6 +47,8 @@ type CreateExistenceRequest struct {
 	IncomeMarginPercentage *float64   `json:"income_margin_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	IvaPercentage          *float64   `json:"iva_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	ServiceTaxPercentage   *float64   `json:"service_tax_percentage,omitempty" validate:"omitempty,min=0,max=100"`
+	MinimumPrice           *float64   `json:"minimum_price,omitempty" validate:"omitempty,min=0"`
+	MaximumPrice           *float64   `json:"maximum_price,omitempty" validate:"omitempty,min=0"`
 	FinalPrice             *float64   `json:"final_price,omitempty" validate:"omitempty,min=0"`
 }
 
@@ -59,6 +62,8 @@ type UpdateExistenceRequest struct {
 	IncomeMarginPercentage *float64   `json:"income_margin_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	IvaPercentage          *float64   `json:"iva_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	ServiceTaxPercentage   *float64   `json:"service_tax_percentage,omitempty" validate:"omitempty,min=0,max=100"`
+	MinimumPrice           *float64   `json:"minimum_price,omitempty" validate:"omitempty,min=0"`
+	MaximumPrice           *float64   `json:"maximum_price,omitempty" validate:"omitempty,min=0"`
 	FinalPrice             *float64   `json:"final_price,omitempty" validate:"omitempty,min=0"`
 }
 

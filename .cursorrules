@@ -10,6 +10,7 @@ This is the identity-api service working on robust database migration and SQL qu
 - If any document is updated, be sure to update their corresponding index.
 - Explain when running commands, what they do.
 - **KEEP IT SIMPLE**: Do not complicate things, keep solutions as simple as possible. Avoid over-engineering and unnecessary complexity.
+- **UNIT TESTS**: Every time you change code, update the corresponding unit tests immediately or run them to identify and fix compilation errors. Do not leave unit tests broken.
 
 ## Documentation Process
 - After ticket provided ask for the ticket information to have context.

@@ -8,7 +8,9 @@ SET
     income_margin_percentage = COALESCE($7, income_margin_percentage),
     iva_percentage = COALESCE($8, iva_percentage),
     service_tax_percentage = COALESCE($9, service_tax_percentage),
-    final_price = COALESCE($10, final_price),
+    minimum_price = COALESCE($10, minimum_price),
+    maximum_price = COALESCE($11, maximum_price),
+    final_price = COALESCE($12, final_price),
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING id, existence_reference_code, ingredient_id, invoice_detail_id, 
@@ -16,4 +18,4 @@ RETURNING id, existence_reference_code, ingredient_id, invoice_detail_id,
           cost_per_item, cost_per_unit, total_purchase_cost, remaining_value,
           expiration_date, income_margin_percentage, income_margin_amount,
           iva_percentage, iva_amount, service_tax_percentage, service_tax_amount,
-          calculated_price, final_price, created_at, updated_at; 
+          minimum_price, maximum_price, final_price, created_at, updated_at; 

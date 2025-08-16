@@ -209,8 +209,11 @@ CREATE TABLE existences (
     iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * iva_percentage / 100) STORED,
     service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
     service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * service_tax_percentage / 100) STORED, -- grabbed from config
-    calculated_price DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_item + income_margin_amount + iva_amount + service_tax_amount) STORED, -- round to top next 100
-    final_price DECIMAL(10,2),
+    minimum_price DECIMAL(10,2) DEFAULT 0.00, -- Minimum acceptable price for income (previously calculated_price)
+    maximum_price DECIMAL(10,2), -- Maximum price ceiling (previously final_price)
+    final_price DECIMAL(10,2), -- User-editable final price (must be between minimum_price and maximum_price)
+    --constraints
+    CONSTRAINT check_final_price_range CHECK (final_price >= minimum_price AND final_price <= maximum_price)
     --dates
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -226,6 +229,9 @@ CREATE INDEX idx_existences_reference_code ON existences(existence_reference_cod
 CREATE INDEX idx_existences_invoice_detail ON existences(invoice_detail_id);
 CREATE INDEX idx_existences_available ON existences(units_available);
 CREATE INDEX idx_existences_cost_per_item ON existences(cost_per_item);
+CREATE INDEX idx_existences_minimum_price ON existences(minimum_price);
+CREATE INDEX idx_existences_maximum_price ON existences(maximum_price);
+CREATE INDEX idx_existences_final_price ON existences(final_price);
 CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 ```
 
@@ -249,8 +255,18 @@ CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 - `iva_amount`: IVA tax amount (read-only auto-generated)
 - `service_tax_percentage`: Service tax percentage (default 10%, from config)
 - `service_tax_amount`: Service tax amount (read-only auto-generated)
-- `calculated_price`: Auto-calculated total price with margins and taxes (round to top next 100)
-- `final_price`: Final price (can be rounded up to next 100)
+- `minimum_price`: Minimum acceptable price for income (previously calculated_price) - represents the minimum price needed to maintain profitability
+- `maximum_price`: Maximum price ceiling (previously final_price) - represents the maximum price that can be charged
+- `final_price`: User-editable final price - must be between minimum_price and maximum_price for income generation
+
+**Pricing Business Logic:**
+- **Minimum Price**: Represents the minimum acceptable price to maintain profitability (includes cost + margins + taxes)
+- **Maximum Price**: Represents the price ceiling based on market conditions and competitive pricing
+- **Final Price**: User-editable price that determines actual selling price
+  - Must be between minimum_price and maximum_price for income generation
+  - Below minimum_price = expense (not allowed)
+  - Defaults to maximum_price when existence is created
+  - Can be adjusted by users within the valid range
 
 ### Runout Ingredient Report Table
 **Purpose:** Track ingredient usage and runouts reported by employees. Updates existences table to reflect ingredient consumption.
