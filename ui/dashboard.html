@@ -4031,27 +4031,80 @@
                     </td>
                 </tr>
                 <tr class="existence-details-row existence-row-group" id="existence-details-${existence.id}" data-existence-group="${existence.id}" style="display: none;">
-                    <td colspan="9" class="p-0">
+                    <td colspan="10" class="p-0">
                         <div class="existence-details-content">
                             <div class="row g-2">
                                 <div class="col-md-3">
                                     <div class="detail-card">
                                         <div class="detail-label">Income Margin</div>
-                                        <div class="detail-value">₡${incomeMarginAmount}</div>
-                                        <div class="detail-percentage">${existence.income_margin_percentage || 0}%</div>
+                                        <div class="detail-value">₡${incomeMarginAmount}/₡${(() => {
+                                            const maxPrice = Number(existence.maximum_price || 0);
+                                            const costPerItem = Number(existence.cost_per_item || 0);
+                                            const ivaPercentage = Number(existence.iva_percentage || 0);
+                                            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                            
+                                            // Calculate base amount before taxes for maximum price
+                                            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                            const taxMultiplier = 1 + totalTaxRate;
+                                            const baseAmount = maxPrice / taxMultiplier;
+                                            const marginAmount = baseAmount - costPerItem;
+                                            
+                                            return marginAmount.toFixed(2);
+                                        })()}</div>
+                                        <div class="detail-percentage">${existence.income_margin_percentage || 0}%/${(() => {
+                                            const maxPrice = Number(existence.maximum_price || 0);
+                                            const costPerItem = Number(existence.cost_per_item || 0);
+                                            const ivaPercentage = Number(existence.iva_percentage || 0);
+                                            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                            
+                                            // Calculate base amount before taxes for maximum price
+                                            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                            const taxMultiplier = 1 + totalTaxRate;
+                                            const baseAmount = maxPrice / taxMultiplier;
+                                            const marginAmount = baseAmount - costPerItem;
+                                            
+                                            // Calculate margin percentage for maximum price
+                                            const marginPercentage = maxPrice > 0 ? (marginAmount / maxPrice) * 100 : 0;
+                                            
+                                            return marginPercentage.toFixed(2);
+                                        })()}%</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="detail-card">
                                         <div class="detail-label">IVA</div>
-                                        <div class="detail-value">₡${ivaAmount}</div>
+                                        <div class="detail-value">₡${ivaAmount}/₡${(() => {
+                                            const maxPrice = Number(existence.maximum_price || 0);
+                                            const ivaPercentage = Number(existence.iva_percentage || 0);
+                                            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                            
+                                            // Calculate IVA amount for maximum price
+                                            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                            const taxMultiplier = 1 + totalTaxRate;
+                                            const baseAmount = maxPrice / taxMultiplier;
+                                            const ivaAmount = baseAmount * (ivaPercentage / 100);
+                                            
+                                            return ivaAmount.toFixed(2);
+                                        })()}</div>
                                         <div class="detail-percentage">${existence.iva_percentage || 0}%</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="detail-card">
                                         <div class="detail-label">Service Tax</div>
-                                        <div class="detail-value">₡${serviceTaxAmount}</div>
+                                        <div class="detail-value">₡${serviceTaxAmount}/₡${(() => {
+                                            const maxPrice = Number(existence.maximum_price || 0);
+                                            const ivaPercentage = Number(existence.iva_percentage || 0);
+                                            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+                                            
+                                            // Calculate Service Tax amount for maximum price
+                                            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                            const taxMultiplier = 1 + totalTaxRate;
+                                            const baseAmount = maxPrice / taxMultiplier;
+                                            const serviceTaxAmount = baseAmount * (serviceTaxPercentage / 100);
+                                            
+                                            return serviceTaxAmount.toFixed(2);
+                                        })()}</div>
                                         <div class="detail-percentage">${existence.service_tax_percentage || 0}%</div>
                                     </div>
                                 </div>
@@ -4491,26 +4544,26 @@
                                         <div class="row g-2">
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
-                                                    <span class="text-muted">Final Price:</span>
-                                                    <span id="previewFinalPrice" class="fw-bold">₡${(currentFinalPrice || maximumPrice).toLocaleString()}</span>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="d-flex justify-content-between">
-                                                    <span class="text-muted">Cost per Item:</span>
-                                                    <span class="fw-bold">₡${costPerItem.toLocaleString()}</span>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="d-flex justify-content-between">
                                                     <span class="text-muted">IVA (${ivaPercentage}%):</span>
-                                                    <span id="previewIvaAmount" class="fw-bold">₡${((currentFinalPrice || maximumPrice) * ivaPercentage / 100).toLocaleString()}</span>
+                                                    <span id="previewIvaAmount" class="fw-bold">₡${(() => {
+                                                        const finalPrice = currentFinalPrice || maximumPrice;
+                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                                        const taxMultiplier = 1 + totalTaxRate;
+                                                        const baseAmount = finalPrice / taxMultiplier;
+                                                        return (baseAmount * (ivaPercentage / 100)).toFixed(2);
+                                                    })()}</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
                                                     <span class="text-muted">Service Tax (${serviceTaxPercentage}%):</span>
-                                                    <span id="previewServiceTaxAmount" class="fw-bold">₡${((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100).toLocaleString()}</span>
+                                                    <span id="previewServiceTaxAmount" class="fw-bold">₡${(() => {
+                                                        const finalPrice = currentFinalPrice || maximumPrice;
+                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                                        const taxMultiplier = 1 + totalTaxRate;
+                                                        const baseAmount = finalPrice / taxMultiplier;
+                                                        return (baseAmount * (serviceTaxPercentage / 100)).toFixed(2);
+                                                    })()}</span>
                                                 </div>
                                             </div>
                                             <div class="col-12">
@@ -4519,13 +4572,26 @@
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
                                                     <span class="text-muted">Income Margin:</span>
-                                                    <span id="previewIncomeMarginAmount" class="fw-bold text-success">₡${((currentFinalPrice || maximumPrice) - costPerItem - ((currentFinalPrice || maximumPrice) * ivaPercentage / 100) - ((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100)).toLocaleString()}</span>
+                                                    <span id="previewIncomeMarginAmount" class="fw-bold text-success">₡${(() => {
+                                                        const finalPrice = currentFinalPrice || maximumPrice;
+                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                                        const taxMultiplier = 1 + totalTaxRate;
+                                                        const baseAmount = finalPrice / taxMultiplier;
+                                                        return (baseAmount - costPerItem).toFixed(2);
+                                                    })()}</span>
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
                                                     <span class="text-muted">Income %:</span>
-                                                    <span id="previewIncomeMarginPercentage" class="fw-bold text-success">${((((currentFinalPrice || maximumPrice) - costPerItem - ((currentFinalPrice || maximumPrice) * ivaPercentage / 100) - ((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100)) / (currentFinalPrice || maximumPrice)) * 100).toFixed(2)}%</span>
+                                                    <span id="previewIncomeMarginPercentage" class="fw-bold text-success">${(() => {
+                                                        const finalPrice = currentFinalPrice || maximumPrice;
+                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+                                                        const taxMultiplier = 1 + totalTaxRate;
+                                                        const baseAmount = finalPrice / taxMultiplier;
+                                                        const marginAmount = baseAmount - costPerItem;
+                                                        return ((marginAmount / finalPrice) * 100).toFixed(2);
+                                                    })()}%</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -4573,24 +4639,32 @@
             const ivaPercentageNum = parseFloat(ivaPercentage) || 0;
             const serviceTaxPercentageNum = parseFloat(serviceTaxPercentage) || 0;
 
-            // Calculate amounts
-            const ivaAmount = finalPriceNum * ivaPercentageNum / 100;
-            const serviceTaxAmount = finalPriceNum * serviceTaxPercentageNum / 100;
-            const incomeMarginAmount = finalPriceNum - costPerItemNum - ivaAmount - serviceTaxAmount;
-            const incomeMarginPercentage = finalPriceNum > 0 ? (incomeMarginAmount / finalPriceNum) * 100 : 0;
+            // pvillalobos - Calculate total tax rate from existence data
+            const totalTaxRate = (ivaPercentageNum + serviceTaxPercentageNum) / 100; // pvillalobos - Total tax rate calculation
+            const taxMultiplier = 1 + totalTaxRate; // pvillalobos - Tax multiplier for reverse calculation
+
+            // Calculate base amount before taxes (reverse calculation)
+            const baseAmount = finalPriceNum / taxMultiplier;
+            const newMarginAmount = baseAmount - costPerItemNum;
+            
+            // Calculate tax amounts based on (cost + margin)
+            const ivaAmount = baseAmount * (ivaPercentageNum / 100);
+            const serviceTaxAmount = baseAmount * (serviceTaxPercentageNum / 100);
+            
+            // Calculate income margin percentage
+            const incomeMarginPercentage = finalPriceNum > 0 ? (newMarginAmount / finalPriceNum) * 100 : 0;
 
             // Update display
-            document.getElementById('previewFinalPrice').textContent = '₡' + finalPriceNum.toLocaleString();
-            document.getElementById('previewIvaAmount').textContent = '₡' + ivaAmount.toLocaleString();
-            document.getElementById('previewServiceTaxAmount').textContent = '₡' + serviceTaxAmount.toLocaleString();
-            document.getElementById('previewIncomeMarginAmount').textContent = '₡' + incomeMarginAmount.toLocaleString();
+            document.getElementById('previewIvaAmount').textContent = '₡' + ivaAmount.toFixed(2);
+            document.getElementById('previewServiceTaxAmount').textContent = '₡' + serviceTaxAmount.toFixed(2);
+            document.getElementById('previewIncomeMarginAmount').textContent = '₡' + newMarginAmount.toFixed(2);
             document.getElementById('previewIncomeMarginPercentage').textContent = incomeMarginPercentage.toFixed(2) + '%';
 
             // Update colors based on profitability
             const incomeMarginElement = document.getElementById('previewIncomeMarginAmount');
             const incomePercentageElement = document.getElementById('previewIncomeMarginPercentage');
             
-            if (incomeMarginAmount > 0) {
+            if (newMarginAmount > 0) {
                 incomeMarginElement.className = 'fw-bold text-success';
                 incomePercentageElement.className = 'fw-bold text-success';
             } else {
