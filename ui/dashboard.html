@@ -4008,7 +4008,7 @@
                     </td>
                     <td class="align-middle">
                         <div>
-                            <button class="btn btn-sm btn-success" onclick="setFinalPrice('${existence.id}', ${existence.minimum_price}, ${existence.maximum_price}, ${existence.final_price})" title="Set Final Price">
+                            <button class="btn btn-sm btn-success" onclick="setFinalPrice('${existence.id}', ${existence.minimum_price}, ${existence.maximum_price}, ${existence.final_price}, ${existence.cost_per_item}, ${existence.iva_percentage}, ${existence.service_tax_percentage}, ${existence.income_margin_percentage})" title="Set Final Price">
                                 ₡${finalPrice}
                             </button>
                         </div>
@@ -4458,7 +4458,7 @@
         }
 
         // Set final price for existence
-        function setFinalPrice(existenceId, minimumPrice, maximumPrice, currentFinalPrice) {
+        function setFinalPrice(existenceId, minimumPrice, maximumPrice, currentFinalPrice, costPerItem, ivaPercentage, serviceTaxPercentage, incomeMarginPercentage) {
             // Create modal content
             const modalContent = `
                 <div class="modal fade" id="setFinalPriceModal" tabindex="-1" aria-labelledby="setFinalPriceModalLabel" aria-hidden="true">
@@ -4479,6 +4479,56 @@
                                     </div>
                                     <div class="form-text">
                                         Price range: ₡${minimumPrice.toLocaleString()} - ₡${maximumPrice.toLocaleString()}
+                                    </div>
+                                </div>
+                                
+                                <!-- Income Calculation Preview -->
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Income Preview</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">Final Price:</span>
+                                                    <span id="previewFinalPrice" class="fw-bold">₡${(currentFinalPrice || maximumPrice).toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">Cost per Item:</span>
+                                                    <span class="fw-bold">₡${costPerItem.toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">IVA (${ivaPercentage}%):</span>
+                                                    <span id="previewIvaAmount" class="fw-bold">₡${((currentFinalPrice || maximumPrice) * ivaPercentage / 100).toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">Service Tax (${serviceTaxPercentage}%):</span>
+                                                    <span id="previewServiceTaxAmount" class="fw-bold">₡${((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100).toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <hr class="my-2">
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">Income Margin:</span>
+                                                    <span id="previewIncomeMarginAmount" class="fw-bold text-success">₡${((currentFinalPrice || maximumPrice) - costPerItem - ((currentFinalPrice || maximumPrice) * ivaPercentage / 100) - ((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100)).toLocaleString()}</span>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="text-muted">Income %:</span>
+                                                    <span id="previewIncomeMarginPercentage" class="fw-bold text-success">${((((currentFinalPrice || maximumPrice) - costPerItem - ((currentFinalPrice || maximumPrice) * ivaPercentage / 100) - ((currentFinalPrice || maximumPrice) * serviceTaxPercentage / 100)) / (currentFinalPrice || maximumPrice)) * 100).toFixed(2)}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -4504,10 +4554,49 @@
             const modal = new bootstrap.Modal(document.getElementById('setFinalPriceModal'));
             modal.show();
 
+            // Add real-time calculation updates
+            const finalPriceInput = document.getElementById('finalPriceInput');
+            finalPriceInput.addEventListener('input', function() {
+                updateIncomePreview(this.value, costPerItem, ivaPercentage, serviceTaxPercentage);
+            });
+
             // Clean up modal after it's hidden
             document.getElementById('setFinalPriceModal').addEventListener('hidden.bs.modal', function() {
                 this.remove();
             });
+        }
+
+        // Update income preview calculations
+        function updateIncomePreview(finalPrice, costPerItem, ivaPercentage, serviceTaxPercentage) {
+            const finalPriceNum = parseFloat(finalPrice) || 0;
+            const costPerItemNum = parseFloat(costPerItem) || 0;
+            const ivaPercentageNum = parseFloat(ivaPercentage) || 0;
+            const serviceTaxPercentageNum = parseFloat(serviceTaxPercentage) || 0;
+
+            // Calculate amounts
+            const ivaAmount = finalPriceNum * ivaPercentageNum / 100;
+            const serviceTaxAmount = finalPriceNum * serviceTaxPercentageNum / 100;
+            const incomeMarginAmount = finalPriceNum - costPerItemNum - ivaAmount - serviceTaxAmount;
+            const incomeMarginPercentage = finalPriceNum > 0 ? (incomeMarginAmount / finalPriceNum) * 100 : 0;
+
+            // Update display
+            document.getElementById('previewFinalPrice').textContent = '₡' + finalPriceNum.toLocaleString();
+            document.getElementById('previewIvaAmount').textContent = '₡' + ivaAmount.toLocaleString();
+            document.getElementById('previewServiceTaxAmount').textContent = '₡' + serviceTaxAmount.toLocaleString();
+            document.getElementById('previewIncomeMarginAmount').textContent = '₡' + incomeMarginAmount.toLocaleString();
+            document.getElementById('previewIncomeMarginPercentage').textContent = incomeMarginPercentage.toFixed(2) + '%';
+
+            // Update colors based on profitability
+            const incomeMarginElement = document.getElementById('previewIncomeMarginAmount');
+            const incomePercentageElement = document.getElementById('previewIncomeMarginPercentage');
+            
+            if (incomeMarginAmount > 0) {
+                incomeMarginElement.className = 'fw-bold text-success';
+                incomePercentageElement.className = 'fw-bold text-success';
+            } else {
+                incomeMarginElement.className = 'fw-bold text-danger';
+                incomePercentageElement.className = 'fw-bold text-danger';
+            }
         }
 
         // Update final price
