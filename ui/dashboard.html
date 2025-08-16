@@ -3928,6 +3928,7 @@
                                 <th style="width: 8%;">Type</th>
                                 <th style="width: 8%;">Items/Unit</th>
                                 <th style="width: 10%;">Cost/Item</th>
+                                <th style="width: 10%;">Price Range</th>
                                 <th style="width: 10%;">Final Price</th>
                                 <th style="width: 8%;">Actions</th>
                                 <th style="width: 1%;">
@@ -3969,7 +3970,8 @@
             const ivaAmount = Number(existence.iva_amount || 0).toLocaleString();
             const serviceTaxAmount = Number(existence.service_tax_amount || 0).toLocaleString();
             const finalPrice = Number(existence.final_price || 0).toLocaleString();
-            const calculatedPrice = Number(existence.calculated_price || 0).toLocaleString();
+            const minimumPrice = Number(existence.minimum_price || 0).toLocaleString();
+            const maximumPrice = Number(existence.maximum_price || 0).toLocaleString();
             
             // Create invoice link
             const invoiceLink = existence.invoice_detail_id ? 
@@ -4000,8 +4002,16 @@
                         <div class="fw-bold">₡${costPerItem}</div>
                     </td>
                     <td class="align-middle">
+                        <div class="price-range-cell">
+                            <div class="fw-bold">₡${minimumPrice}/₡${maximumPrice}</div>
+                        </div>
+                    </td>
+                    <td class="align-middle">
                         <div class="final-price-cell">
-                            <div class="fw-bold">₡${calculatedPrice}/₡${finalPrice}</div>
+                            <div class="fw-bold">₡${finalPrice}</div>
+                            <button class="btn btn-sm btn-outline-primary mt-1" onclick="setFinalPrice('${existence.id}', ${existence.minimum_price}, ${existence.maximum_price}, ${existence.final_price})" title="Set Final Price">
+                                <i class="fas fa-edit"></i> Set Price
+                            </button>
                         </div>
                     </td>
                     <td class="align-middle">
@@ -4409,9 +4419,10 @@
             document.getElementById('viewExistenceIvaAmount').textContent = '₡' + Number(existence.iva_amount || 0).toLocaleString();
             document.getElementById('viewExistenceServiceTaxPercentage').textContent = Number(existence.service_tax_percentage || 0).toFixed(2);
             document.getElementById('viewExistenceServiceTaxAmount').textContent = '₡' + Number(existence.service_tax_amount || 0).toLocaleString();
-            document.getElementById('viewExistenceCalculatedPrice').textContent = '₡' + Number(existence.calculated_price || 0).toLocaleString();
+            document.getElementById('viewExistenceMinimumPrice').textContent = '₡' + Number(existence.minimum_price || 0).toLocaleString();
+            document.getElementById('viewExistenceMaximumPrice').textContent = '₡' + Number(existence.maximum_price || 0).toLocaleString();
             document.getElementById('viewExistenceFinalPrice').textContent = existence.final_price ? 
-                '₡' + Number(existence.final_price).toLocaleString() : 'Auto-calculated';
+                '₡' + Number(existence.final_price).toLocaleString() : 'Not set';
 
             // Store ID for potential edit
             document.getElementById('viewExistenceModal').setAttribute('data-existence-id', existence.id);
@@ -4447,6 +4458,108 @@
             }
         }
 
+        // Set final price for existence
+        function setFinalPrice(existenceId, minimumPrice, maximumPrice, currentFinalPrice) {
+            // Create modal content
+            const modalContent = `
+                <div class="modal fade" id="setFinalPriceModal" tabindex="-1" aria-labelledby="setFinalPriceModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="setFinalPriceModalLabel">Set Final Price</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="finalPriceInput" class="form-label">Final Price</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₡</span>
+                                        <input type="number" class="form-control" id="finalPriceInput" 
+                                               value="${currentFinalPrice || maximumPrice}" 
+                                               min="${minimumPrice}" max="${maximumPrice}" step="0.01">
+                                    </div>
+                                    <div class="form-text">
+                                        Price range: ₡${minimumPrice.toLocaleString()} - ₡${maximumPrice.toLocaleString()}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="updateFinalPrice('${existenceId}')">Update Price</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if any
+            const existingModal = document.getElementById('setFinalPriceModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Add modal to body
+            document.body.insertAdjacentHTML('beforeend', modalContent);
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('setFinalPriceModal'));
+            modal.show();
+
+            // Clean up modal after it's hidden
+            document.getElementById('setFinalPriceModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+
+        // Update final price
+        async function updateFinalPrice(existenceId) {
+            try {
+                const finalPriceInput = document.getElementById('finalPriceInput');
+                const finalPrice = parseFloat(finalPriceInput.value);
+
+                if (isNaN(finalPrice) || finalPrice < 0) {
+                    Alert.error('Please enter a valid final price');
+                    return;
+                }
+
+                const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+                const originalText = updateBtn.innerHTML;
+                updateBtn.disabled = true;
+                updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+
+                const formData = {
+                    final_price: finalPrice
+                };
+
+                const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    Alert.success('Final price updated successfully!');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('setFinalPriceModal'));
+                    modal.hide();
+                    await loadExistencesData();
+                } else {
+                    Alert.error(result.message || 'Failed to update final price');
+                }
+
+            } catch (error) {
+                console.error('❌ Error updating final price:', error);
+                Alert.error('Failed to update final price');
+            } finally {
+                const updateBtn = document.querySelector('#setFinalPriceModal .btn-primary');
+                updateBtn.disabled = false;
+                updateBtn.innerHTML = originalText;
+            }
+        }
+
         // Populate edit existence modal
         function populateEditExistenceModal(existence) {
             document.getElementById('editExistenceId').value = existence.id;
@@ -4465,6 +4578,8 @@
             document.getElementById('editExistenceIncomeMarginPercentage').value = existence.income_margin_percentage || '';
             document.getElementById('editExistenceIvaPercentage').value = existence.iva_percentage || '';
             document.getElementById('editExistenceServiceTaxPercentage').value = existence.service_tax_percentage || '';
+            document.getElementById('editExistenceMinimumPrice').value = existence.minimum_price || '';
+            document.getElementById('editExistenceMaximumPrice').value = existence.maximum_price || '';
             document.getElementById('editExistenceFinalPrice').value = existence.final_price || '';
         }
 
@@ -4490,6 +4605,8 @@
                     income_margin_percentage: parseFloat(document.getElementById('editExistenceIncomeMarginPercentage').value) || null,
                     iva_percentage: parseFloat(document.getElementById('editExistenceIvaPercentage').value) || null,
                     service_tax_percentage: parseFloat(document.getElementById('editExistenceServiceTaxPercentage').value) || null,
+                    minimum_price: parseFloat(document.getElementById('editExistenceMinimumPrice').value) || null,
+                    maximum_price: parseFloat(document.getElementById('editExistenceMaximumPrice').value) || null,
                     final_price: parseFloat(document.getElementById('editExistenceFinalPrice').value) || null
                 };
 
@@ -6449,6 +6566,218 @@
             }
         };
     </script>
+
+    <!-- View Existence Modal -->
+    <div class="modal fade" id="viewExistenceModal" tabindex="-1" aria-labelledby="viewExistenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewExistenceModalLabel">
+                        <i class="fas fa-eye me-2"></i>View Existence Details
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Reference Code</label>
+                                <div id="viewExistenceReferenceCode" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Ingredient</label>
+                                <div id="viewExistenceIngredient" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Invoice Detail ID</label>
+                                <div id="viewExistenceInvoiceDetailId" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Expiration Date</label>
+                                <div id="viewExistenceExpirationDate" class="form-control-plaintext"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Units Purchased</label>
+                                <div id="viewExistenceUnitsPurchased" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Units Available</label>
+                                <div id="viewExistenceUnitsAvailable" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Unit Type</label>
+                                <div id="viewExistenceUnitType" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Items Per Unit</label>
+                                <div id="viewExistenceItemsPerUnit" class="form-control-plaintext"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Cost Per Unit</label>
+                                <div id="viewExistenceCostPerUnit" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Cost Per Item</label>
+                                <div id="viewExistenceCostPerItem" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Total Purchase Cost</label>
+                                <div id="viewExistenceTotalPurchaseCost" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Remaining Value</label>
+                                <div id="viewExistenceRemainingValue" class="form-control-plaintext"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Income Margin</label>
+                                <div class="d-flex justify-content-between">
+                                    <span id="viewExistenceIncomeMarginPercentage"></span>%
+                                    <span id="viewExistenceIncomeMarginAmount"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">IVA</label>
+                                <div class="d-flex justify-content-between">
+                                    <span id="viewExistenceIvaPercentage"></span>%
+                                    <span id="viewExistenceIvaAmount"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Service Tax</label>
+                                <div class="d-flex justify-content-between">
+                                    <span id="viewExistenceServiceTaxPercentage"></span>%
+                                    <span id="viewExistenceServiceTaxAmount"></span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Minimum Price</label>
+                                <div id="viewExistenceMinimumPrice" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Maximum Price</label>
+                                <div id="viewExistenceMaximumPrice" class="form-control-plaintext"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Final Price</label>
+                                <div id="viewExistenceFinalPrice" class="form-control-plaintext"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editExistenceFromView()">
+                        <i class="fas fa-edit me-2"></i>Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Existence Modal -->
+    <div class="modal fade" id="editExistenceModal" tabindex="-1" aria-labelledby="editExistenceModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editExistenceModalLabel">
+                        <i class="fas fa-edit me-2"></i>Edit Existence
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editExistenceForm" novalidate>
+                        <input type="hidden" id="editExistenceId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editExistenceReferenceCode" class="form-label">Reference Code</label>
+                                    <input type="text" class="form-control" id="editExistenceReferenceCode" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceIngredient" class="form-label">Ingredient</label>
+                                    <input type="text" class="form-control" id="editExistenceIngredient" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceInvoiceDetailId" class="form-label">Invoice Detail ID</label>
+                                    <input type="text" class="form-control" id="editExistenceInvoiceDetailId" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceExpirationDate" class="form-label">Expiration Date</label>
+                                    <input type="date" class="form-control" id="editExistenceExpirationDate">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editExistenceUnitsPurchased" class="form-label">Units Purchased</label>
+                                    <input type="number" class="form-control" id="editExistenceUnitsPurchased" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceUnitsAvailable" class="form-label">Units Available</label>
+                                    <input type="number" class="form-control" id="editExistenceUnitsAvailable" step="0.01" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceUnitType" class="form-label">Unit Type</label>
+                                    <input type="text" class="form-control" id="editExistenceUnitType" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceItemsPerUnit" class="form-label">Items Per Unit</label>
+                                    <input type="number" class="form-control" id="editExistenceItemsPerUnit" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editExistenceCostPerUnit" class="form-label">Cost Per Unit</label>
+                                    <input type="number" class="form-control" id="editExistenceCostPerUnit" step="0.01" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceIncomeMarginPercentage" class="form-label">Income Margin Percentage</label>
+                                    <input type="number" class="form-control" id="editExistenceIncomeMarginPercentage" step="0.01">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceIvaPercentage" class="form-label">IVA Percentage</label>
+                                    <input type="number" class="form-control" id="editExistenceIvaPercentage" step="0.01">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editExistenceServiceTaxPercentage" class="form-label">Service Tax Percentage</label>
+                                    <input type="number" class="form-control" id="editExistenceServiceTaxPercentage" step="0.01">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceMinimumPrice" class="form-label">Minimum Price</label>
+                                    <input type="number" class="form-control" id="editExistenceMinimumPrice" step="0.01" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceMaximumPrice" class="form-label">Maximum Price</label>
+                                    <input type="number" class="form-control" id="editExistenceMaximumPrice" step="0.01" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editExistenceFinalPrice" class="form-label">Final Price</label>
+                                    <input type="number" class="form-control" id="editExistenceFinalPrice" step="0.01">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="updateExistenceBtn" onclick="updateExistence()">
+                        <i class="fas fa-save me-2"></i>Update Existence
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Service Logs Modal -->
     <div class="modal fade" id="serviceLogsModal" tabindex="-1">

@@ -20,6 +20,21 @@ migrate-up: ## Apply all pending database migrations
 	@./scripts/migrate.sh up
 	@echo "$(GREEN)✅ Migrations completed!$(RESET)"
 
+migrate-up-force: ## Force apply migrations with verbose output (for debugging)
+	@echo "$(CYAN)📈 Force applying database migrations with verbose output...$(RESET)"
+	@echo "$(YELLOW)⚠️  This will show detailed migration output$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Migration test connection' as status;"
+	@echo "$(CYAN)🔍 Checking current table structure...$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "\d existences" | head -20
+	@echo "$(CYAN)📋 Applying migration manually...$(RESET)"
+	@docker cp docker/init/migrations/002_update_existences_pricing_fields.up.sql icecream_postgres:/tmp/migration.sql
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -f /tmp/migration.sql
+	@echo "$(CYAN)📋 Recording migration...$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "INSERT INTO schema_migrations (version) VALUES ('002_update_existences_pricing_fields') ON CONFLICT (version) DO NOTHING;"
+	@echo "$(CYAN)🔍 Verifying new table structure...$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "\d existences" | head -20
+	@echo "$(GREEN)✅ Force migration completed!$(RESET)"
+
 migrate-down: ## Rollback last database migration
 	@echo "$(YELLOW)📉 Rolling back last migration...$(RESET)"
 	@./scripts/migrate.sh down
@@ -33,6 +48,16 @@ migrate-create: ## Create new migration files (usage: make migrate-create descri
 	@echo "$(CYAN)📝 Creating new migration...$(RESET)"
 	@./scripts/migrate.sh create "$(description)"
 	@echo "$(GREEN)✅ Migration files created!$(RESET)"
+
+migrate-reset: ## Reset migrations and reapply (⚠️  DESTRUCTIVE - removes migration history)
+	@echo "$(RED)⚠️  WARNING: This will reset migration history and reapply all migrations!$(RESET)"
+	@echo "$(YELLOW)This is useful when migrations get out of sync$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "DROP TABLE IF EXISTS schema_migrations;"
+	@echo "$(CYAN)📋 Recreating migrations table...$(RESET)"
+	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "CREATE TABLE schema_migrations (version VARCHAR(255) PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+	@echo "$(CYAN)📈 Reapplying all migrations...$(RESET)"
+	@./scripts/migrate.sh up
+	@echo "$(GREEN)✅ Migration reset completed!$(RESET)"
 
 fresh: clean deps remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
@@ -285,6 +310,8 @@ help: ## Show this help message
 	@echo "   Reset Data:     make reset → make start"
 	@echo "   Fresh Start:    make fresh (when something is broken)"
 	@echo "   Migrations:     make migrate-up / make migrate-down / make migrate-status"
+	@echo "   Migration Debug: make migrate-up-force (verbose output)"
+	@echo "   Migration Reset: make migrate-reset (when migrations are out of sync)"
 	@echo "   Cleanup:        make clean"
 	@echo ""
 	@echo "$(YELLOW)🔧 Environment Variables:$(RESET)"
