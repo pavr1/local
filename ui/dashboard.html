@@ -3940,13 +3940,48 @@
                         <tbody>
             `;
 
+            // Group existences by ingredient and unit type
+            const groupedExistences = {};
             existences.forEach(existence => {
+                const key = `${existence.ingredient_id}_${existence.unit_type}`;
+                if (!groupedExistences[key]) {
+                    groupedExistences[key] = [];
+                }
+                groupedExistences[key].push(existence);
+            });
+
+            // Sort each group by creation date (oldest first)
+            Object.keys(groupedExistences).forEach(key => {
+                groupedExistences[key].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+            });
+
+            // Process existences with margin comparison
+            existences.forEach((existence, index) => {
                 const status = getExistenceStatus(existence);
                 const statusBadge = getStatusBadge(status);
                 const expirationDate = existence.expiration_date ? 
                     new Date(existence.expiration_date).toLocaleDateString() : 'N/A';
                 
-                tableHTML += createExistenceRow(existence, status, statusBadge, expirationDate);
+                // Find the group for this existence
+                const key = `${existence.ingredient_id}_${existence.unit_type}`;
+                const group = groupedExistences[key];
+                const existenceIndex = group.findIndex(e => e.id === existence.id);
+                
+                // Calculate margin arrow (only for existences after the first one in the group)
+                let marginArrow = '';
+                if (existenceIndex > 0) {
+                    const previousExistence = group[existenceIndex - 1];
+                    const currentMarginPercent = calculateMarginPercentage(existence);
+                    const previousMarginPercent = calculateMarginPercentage(previousExistence);
+                    
+                    if (currentMarginPercent > previousMarginPercent) {
+                        marginArrow = '<i class="fas fa-arrow-up text-success ms-1" title="Margin increased"></i>';
+                    } else if (currentMarginPercent < previousMarginPercent) {
+                        marginArrow = '<i class="fas fa-arrow-down text-danger ms-1" title="Margin decreased"></i>';
+                    }
+                }
+                
+                tableHTML += createExistenceRow(existence, status, statusBadge, expirationDate, marginArrow);
             });
 
             tableHTML += `
@@ -3961,8 +3996,25 @@
             addGroupHoverListeners();
         }
 
+        // Calculate margin percentage for comparison
+        function calculateMarginPercentage(existence) {
+            const finalPrice = Number(existence.final_price || 0);
+            const costPerItem = Number(existence.cost_per_item || 0);
+            const ivaPercentage = Number(existence.iva_percentage || 0);
+            const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
+            
+            if (finalPrice <= 0) return 0;
+            
+            const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
+            const taxMultiplier = 1 + totalTaxRate;
+            const baseAmount = finalPrice / taxMultiplier;
+            const marginAmount = baseAmount - costPerItem;
+            
+            return (marginAmount / finalPrice) * 100;
+        }
+
         // Create existence table row
-        function createExistenceRow(existence, status, statusBadge, expirationDate) {
+        function createExistenceRow(existence, status, statusBadge, expirationDate, marginArrow = '') {
             // Format currency values from database
             const costPerItem = Number(existence.cost_per_item || 0).toLocaleString();
             const incomeMarginAmount = Number(existence.income_margin_amount || 0).toLocaleString();
@@ -3984,7 +4036,10 @@
                         <strong>#${existence.existence_reference_code || 'N/A'}</strong>
                     </td>
                     <td class="align-middle">
-                        <div class="fw-bold">${existence.ingredient_name || 'Unknown'}</div>
+                        <div class="fw-bold">
+                            ${existence.ingredient_name || 'Unknown'}
+                            ${marginArrow}
+                        </div>
                         <small class="text-muted">${existence.ingredient_category || ''}</small>
                     </td>
                     <td class="align-middle">${statusBadge}</td>
