@@ -20,15 +20,21 @@ import (
 )
 
 func main() {
-	// Load configuration
-	cfg := config.LoadConfig()
-
-	// Setup logger
-	logger := setupLogger(cfg.LogLevel)
+	// Setup initial logger
+	logger := setupLogger("info") // Default log level for initial setup
 	logger.Info("Starting Ice Cream Store Orders Service")
 
-	// Connect to database
-	db, err := connectToDatabase(cfg, logger)
+	// Load configuration from database
+	cfg, err := config.LoadConfigFromDatabase(logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to load configuration from database")
+	}
+
+	// Update logger with proper log level
+	logger = setupLogger(cfg.LogLevel)
+
+	// Connect to database with default credentials
+	db, err := connectToDatabase(logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
@@ -99,9 +105,8 @@ func setupLogger(logLevel string) *logrus.Logger {
 }
 
 // connectToDatabase establishes database connection
-func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
+func connectToDatabase(logger *logrus.Logger) (*sql.DB, error) {
+	dsn := "host=localhost port=5432 user=postgres password=postgres123 dbname=icecream_store sslmode=disable"
 
 	var db *sql.DB
 	var err error

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,16 +13,30 @@ import (
 	"session-service/config"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	// Load configuration
-	cfg := config.LoadConfig()
-
-	// Setup logger
-	logger := setupLogger(cfg.LogLevel)
+	// Setup initial logger
+	logger := setupLogger("info") // Default log level for initial setup
 	logger.Info("Starting Session Service")
+
+	// Load configuration from database
+	cfg, err := config.LoadConfigFromDatabase(logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to load configuration from database")
+	}
+
+	// Update logger with proper log level
+	logger = setupLogger(cfg.LogLevel)
+
+	// Connect to database with default credentials
+	db, err := connectToDatabase(logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to connect to database")
+	}
+	defer db.Close()
 
 	// Create main HTTP handler
 	mainHandler, err := NewMainHTTPHandler(cfg, logger)
@@ -88,4 +103,22 @@ func setupLogger(logLevel string) *logrus.Logger {
 	})
 
 	return logger
+}
+
+// connectToDatabase establishes connection to PostgreSQL database with default credentials
+func connectToDatabase(logger *logrus.Logger) (*sql.DB, error) {
+	dsn := "host=localhost port=5432 user=postgres password=postgres123 dbname=icecream_store sslmode=disable"
+
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	// Test the connection
+	if err := db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	logger.Info("Database connection established successfully")
+	return db, nil
 }

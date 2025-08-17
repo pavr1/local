@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -58,20 +57,21 @@ func main() {
 	// Connect to database
 	fmt.Println("🍦 Connecting to Ice Cream Store Data Service...")
 	if err := db.Connect(); err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer db.Close()
 
 	// Perform initial health check
 	if err := db.HealthCheck(); err != nil {
-		log.Fatalf("Initial database health check failed: %v", err)
+		logger.WithError(err).Fatal("Initial database health check failed")
 	}
 
 	fmt.Println("✅ Database connection established successfully")
 
-	// Initialize settings components
-	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
-	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
+	// Create settings service
+	settingsService := settings.NewSettingsService(db.GetDB(), logger)
+
+	// Create settings handler
 	settingsHandler, err := settings.NewSettingsHandler(settingsService, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize settings handler")
@@ -162,10 +162,10 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 		statsEndpoint(w, r, db, logger)
 	}).Methods("GET")
 
-	// Settings endpoints (require gateway authentication)
+	// Settings endpoints
 	router.HandleFunc("/api/v1/data/settings/by-service", settingsHandler.GetSettingsByService).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/by-name", settingsHandler.GetSettingsByName).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings/grouped", settingsHandler.GetSettingsByServiceGrouped).Methods("GET")
+	router.HandleFunc("/api/v1/data/settings/by-service-grouped", settingsHandler.GetSettingsByServiceGrouped).Methods("POST")
 
 	return router
 }

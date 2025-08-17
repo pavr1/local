@@ -4,18 +4,15 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/pablovillalobos/local/data-service/pkg/settings"
+	"github.com/sirupsen/logrus"
 )
 
 // Config holds the configuration for the invoice service
 type Config struct {
 	ServerPort          string
 	ServerHost          string
-	DBHost              string
-	DBPort              string
-	DBUser              string
-	DBPassword          string
-	DBName              string
-	DBSSLMode           string
 	LogLevel            string
 	InventoryServiceURL string
 }
@@ -25,15 +22,35 @@ func LoadConfig() *Config {
 	return &Config{
 		ServerPort:          getEnvString("INVOICE_SERVER_PORT", "8085"),
 		ServerHost:          getEnvString("INVOICE_SERVER_HOST", "0.0.0.0"),
-		DBHost:              getEnvString("DB_HOST", "localhost"),
-		DBPort:              getEnvString("DB_PORT", "5432"),
-		DBUser:              getEnvString("DB_USER", "postgres"),
-		DBPassword:          getEnvString("DB_PASSWORD", "postgres123"),
-		DBName:              getEnvString("DB_NAME", "icecream_store"),
-		DBSSLMode:           getEnvString("DB_SSLMODE", "disable"),
 		LogLevel:            getEnvString("LOG_LEVEL", "info"),
 		InventoryServiceURL: getEnvString("INVENTORY_SERVICE_URL", "http://localhost:8084"),
 	}
+}
+
+// LoadConfigFromDatabase loads configuration from the database using the ServiceConfig
+func LoadConfigFromDatabase(logger *logrus.Logger) (*Config, error) {
+	// Create service config instance
+	serviceConfig, err := settings.NewServiceConfig("Invoice", logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create config with database values, falling back to environment variables
+	config := &Config{
+		ServerPort:          serviceConfig.GetOrDefault("INVOICE_SERVER_PORT", getEnvString("INVOICE_SERVER_PORT", "8085")),
+		ServerHost:          serviceConfig.GetOrDefault("INVOICE_SERVER_HOST", getEnvString("INVOICE_SERVER_HOST", "0.0.0.0")),
+		LogLevel:            serviceConfig.GetOrDefault("LOG_LEVEL", getEnvString("LOG_LEVEL", "info")),
+		InventoryServiceURL: serviceConfig.GetOrDefault("INVENTORY_SERVICE_URL", getEnvString("INVENTORY_SERVICE_URL", "http://localhost:8084")),
+	}
+
+	logger.WithFields(logrus.Fields{
+		"server_port":           config.ServerPort,
+		"server_host":           config.ServerHost,
+		"log_level":             config.LogLevel,
+		"inventory_service_url": config.InventoryServiceURL,
+	}).Info("Invoice service configuration loaded from database")
+
+	return config, nil
 }
 
 // getEnvString returns the environment variable value or default if not set
