@@ -6294,6 +6294,118 @@
             }
         };
 
+        // Recipe Save Function
+        window.saveRecipe = async function() {
+            const form = document.getElementById('addRecipeForm');
+            const saveBtn = document.getElementById('saveRecipeBtn');
+            
+            // Reset validation state
+            form.classList.remove('was-validated');
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            
+            // Validate ingredients
+            if (!recipeIngredients || recipeIngredients.length === 0) {
+                Alert.error('Please add at least one ingredient to the recipe.');
+                return;
+            }
+            
+            // Collect form data
+            const formData = new FormData(form);
+            const recipeData = {};
+            
+            // Process form fields
+            for (let [key, value] of formData.entries()) {
+                const trimmedValue = value.trim();
+                if (trimmedValue) {
+                    recipeData[key] = trimmedValue;
+                }
+            }
+            
+            // Calculate total recipe cost
+            let totalCost = 0;
+            recipeIngredients.forEach(ingredient => {
+                const pricePerItem = ingredient.final_price || 0;
+                totalCost += pricePerItem * ingredient.quantity;
+            });
+            
+            // Prepare ingredients data
+            const ingredients = recipeIngredients.map(ingredient => ({
+                ingredient_id: ingredient.id,
+                number_of_units: ingredient.quantity,
+                ingredient_name: ingredient.name,
+                unit_type: ingredient.unit_type
+            }));
+            
+            // Prepare final recipe data
+            const finalRecipeData = {
+                recipe_name: recipeData.recipe_name,
+                recipe_description: recipeData.recipe_description || null,
+                picture_url: recipeData.picture_url || null,
+                recipe_category_id: recipeData.recipe_category_id,
+                total_recipe_cost: totalCost,
+                ingredients: ingredients
+            };
+            
+            // Validate required fields
+            let isValid = true;
+            
+            if (!finalRecipeData.recipe_name || finalRecipeData.recipe_name.length < 1 || finalRecipeData.recipe_name.length > 255) {
+                document.getElementById('recipeName').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!finalRecipeData.recipe_category_id) {
+                document.getElementById('recipeCategoryId').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (finalRecipeData.recipe_description && finalRecipeData.recipe_description.length > 500) {
+                document.getElementById('recipeDescription').classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            // Update button state
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+            
+            try {
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, finalRecipeData);
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    Alert.success('Recipe created successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
+                    modal.hide();
+                    
+                    // Reset form and ingredients
+                    form.reset();
+                    recipeIngredients = [];
+                    displayRecipeIngredients();
+                    
+                    // Reload recipes data
+                    await loadRecipesData();
+                } else {
+                    throw new Error(result.message || 'Failed to create recipe');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error saving recipe:', error);
+                Alert.error('Failed to save recipe. Please check your connection and try again.');
+            }
+            
+            // Reset button state
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Recipe';
+        };
+
         // Recipe Ingredients Management
         let recipeIngredients = [];
         let allIngredients = [];
