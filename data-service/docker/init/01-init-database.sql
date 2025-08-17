@@ -520,7 +520,7 @@ INSERT INTO ingredient_categories (name, description) VALUES
 ('Toppings', 'Salsas de chocolate, caramelo, jarabes de frutas, fudge, sprinkles, crema batida, cerezas, nueces'),
 ('Contenedores Desechables', 'Tazas de helado, contenedores para llevar, tarrinas, tazones desechables'),
 ('Contenedores Comestibles', 'Conos de helado, conos waffle, crepes, galletas oblea comestibles'),
-('Conos y Bowls', 'Conos de helado, bowls comestibles, tazones reutilizables'),
+('Helados', 'Helados de paleta, helados de cono, helados de taza, helados de vaso'),
 ('Utensilios de Servicio', 'Cucharas, servilletas, pajillas, agitadores'),
 ('Empaques', 'Bolsas, tapas, etiquetas, cajas, envolturas'),
 ('Suministros de Limpieza', 'Sanitizantes, detergentes, paños de limpieza, cepillos'),
