@@ -72,7 +72,10 @@ func main() {
 	// Initialize settings components
 	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
 	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
-	settingsHandler := settings.NewSettingsHandler(settingsService, logger)
+	settingsHandler, err := settings.NewSettingsHandler(settingsService, logger)
+	if err != nil {
+		logger.WithError(err).Fatal("Failed to initialize settings handler")
+	}
 
 	// Setup HTTP server
 	router := setupRouter(db, logger, settingsHandler)
@@ -160,7 +163,6 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 	}).Methods("GET")
 
 	// Settings endpoints (require gateway authentication)
-	router.HandleFunc("/api/v1/data/settings/load-all", settingsHandler.LoadAllSettings).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/by-service", settingsHandler.GetSettingsByService).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/by-name", settingsHandler.GetSettingsByName).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/grouped", settingsHandler.GetSettingsByServiceGrouped).Methods("GET")

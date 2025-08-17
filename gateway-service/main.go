@@ -266,7 +266,6 @@ func main() {
 	fmt.Printf("      ALL  /api/v1/expense-categories/* → %s\n", config.InvoiceServiceURL)
 	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
 	fmt.Printf("      ALL  /api/v1/data/*            → %s\n", config.DataServiceURL)
-	fmt.Printf("           ├─ /settings/load-all     → Load all settings into memory\n")
 	fmt.Printf("           ├─ /settings/by-service   → Get settings by service\n")
 	fmt.Printf("           ├─ /settings/by-name      → Get settings by name\n")
 	fmt.Printf("           └─ /settings/grouped      → Get settings grouped by service\n")

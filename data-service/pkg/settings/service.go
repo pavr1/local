@@ -25,53 +25,45 @@ func NewSettingsService(dbHandler *SettingsDBHandler, logger *logrus.Logger) *Se
 	}
 }
 
-// LoadAllSettings loads all settings into memory cache
-func (s *SettingsService) LoadAllSettings() (*SettingsResponse, error) {
+// loadAllSettings loads all settings into memory cache (private method)
+func (s *SettingsService) loadAllSettings() error {
 	s.logger.Info("Loading all settings into memory cache")
 
-	settings, err := s.dbHandler.LoadAllSettings()
+	settingsMap, err := s.dbHandler.LoadAllSettings()
 	if err != nil {
 		s.logger.WithError(err).Error("Failed to load settings from database")
-		return &SettingsResponse{
-			Success: false,
-			Message: "Failed to load settings from database",
-		}, err
+		return err
 	}
 
 	// Update cache
 	s.cacheMux.Lock()
-	s.cache = make(map[string]Setting)
-	for _, setting := range settings {
-		cacheKey := s.getCacheKey(setting.Service, setting.Key)
-		s.cache[cacheKey] = setting
-	}
+	s.cache = settingsMap
 	s.lastLoad = time.Now()
 	s.cacheMux.Unlock()
 
 	s.logger.WithFields(logrus.Fields{
-		"settings_count": len(settings),
+		"settings_count": len(settingsMap),
 		"cache_size":     len(s.cache),
 	}).Info("Settings loaded into cache successfully")
 
-	return &SettingsResponse{
-		Success: true,
-		Data:    settings,
-		Total:   len(settings),
-		Message: "Settings loaded successfully",
-	}, nil
+	return nil
 }
 
 // GetSettingsByService retrieves settings for a specific service
 func (s *SettingsService) GetSettingsByService(service string) (*SettingsResponse, error) {
 	s.logger.WithField("service", service).Info("Getting settings by service")
 
-	settings, err := s.dbHandler.GetSettingsByService(service)
-	if err != nil {
-		s.logger.WithError(err).WithField("service", service).Error("Failed to get settings by service")
-		return &SettingsResponse{
-			Success: false,
-			Message: "Failed to get settings by service",
-		}, err
+	// Use cached settings
+	s.cacheMux.RLock()
+	settingsMap := s.cache
+	s.cacheMux.RUnlock()
+
+	// Filter settings by service
+	var settings []Setting
+	for _, setting := range settingsMap {
+		if setting.Service == service {
+			settings = append(settings, setting)
+		}
 	}
 
 	s.logger.WithFields(logrus.Fields{
@@ -91,17 +83,21 @@ func (s *SettingsService) GetSettingsByService(service string) (*SettingsRespons
 func (s *SettingsService) GetSettingsByName(key string) (*SettingsResponse, error) {
 	s.logger.WithField("key", key).Info("Getting settings by name")
 
-	settings, err := s.dbHandler.GetSettingsByName(key)
-	if err != nil {
-		s.logger.WithError(err).WithField("key", key).Error("Failed to get settings by name")
-		return &SettingsResponse{
-			Success: false,
-			Message: "Failed to get settings by name",
-		}, err
+	// Use cached settings
+	s.cacheMux.RLock()
+	settingsMap := s.cache
+	s.cacheMux.RUnlock()
+
+	// Filter settings by key
+	var settings []Setting
+	for _, setting := range settingsMap {
+		if setting.Key == key {
+			settings = append(settings, setting)
+		}
 	}
 
 	s.logger.WithFields(logrus.Fields{
-		"key":           key,
+		"key":            key,
 		"settings_count": len(settings),
 	}).Info("Settings retrieved by name successfully")
 
@@ -117,13 +113,15 @@ func (s *SettingsService) GetSettingsByName(key string) (*SettingsResponse, erro
 func (s *SettingsService) GetSettingsByServiceGrouped() (*SettingsByServiceResponse, error) {
 	s.logger.Info("Getting all settings grouped by service")
 
-	settings, err := s.dbHandler.LoadAllSettings()
-	if err != nil {
-		s.logger.WithError(err).Error("Failed to load settings for grouping")
-		return &SettingsByServiceResponse{
-			Success: false,
-			Message: "Failed to load settings for grouping",
-		}, err
+	// Use cached settings
+	s.cacheMux.RLock()
+	settingsMap := s.cache
+	s.cacheMux.RUnlock()
+
+	// Convert map to slice for grouping
+	var settings []Setting
+	for _, setting := range settingsMap {
+		settings = append(settings, setting)
 	}
 
 	groupedSettings := s.dbHandler.GroupSettingsByService(settings)

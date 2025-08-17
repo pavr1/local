@@ -11,35 +11,33 @@ import (
 type SettingsHandler struct {
 	service *SettingsService
 	logger  *logrus.Logger
+	config  map[string]Setting
 }
 
 // NewSettingsHandler creates a new settings HTTP handler
-func NewSettingsHandler(service *SettingsService, logger *logrus.Logger) *SettingsHandler {
-	return &SettingsHandler{
+func NewSettingsHandler(service *SettingsService, logger *logrus.Logger) (*SettingsHandler, error) {
+	handler := &SettingsHandler{
 		service: service,
 		logger:  logger,
-	}
-}
-
-// LoadAllSettings handles the request to load all settings into memory
-func (h *SettingsHandler) LoadAllSettings(w http.ResponseWriter, r *http.Request) {
-	h.logger.Info("Received request to load all settings")
-
-	// Check if request is from gateway
-	if !h.validateGatewayRequest(r) {
-		h.logger.Warn("Request not from gateway, rejecting")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+		config:  make(map[string]Setting),
 	}
 
-	response, err := h.service.LoadAllSettings()
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to load all settings")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	// Load all settings into memory during initialization
+	if err := service.loadAllSettings(); err != nil {
+		logger.WithError(err).Error("Failed to load settings during handler initialization")
+		return nil, err
 	}
 
-	h.writeJSONResponse(w, response)
+	// Copy settings to handler config
+	service.cacheMux.RLock()
+	handler.config = make(map[string]Setting)
+	for k, v := range service.cache {
+		handler.config[k] = v
+	}
+	service.cacheMux.RUnlock()
+	logger.Info("Settings loaded into handler config successfully")
+
+	return handler, nil
 }
 
 // GetSettingsByService handles the request to get settings by service
@@ -68,11 +66,19 @@ func (h *SettingsHandler) GetSettingsByService(w http.ResponseWriter, r *http.Re
 
 	h.logger.WithField("service", req.Service).Info("Received request to get settings by service")
 
-	response, err := h.service.GetSettingsByService(req.Service)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get settings by service")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	// Filter settings by service from config map
+	var settings []Setting
+	for _, setting := range h.config {
+		if setting.Service == req.Service {
+			settings = append(settings, setting)
+		}
+	}
+
+	response := &SettingsResponse{
+		Success: true,
+		Data:    settings,
+		Total:   len(settings),
+		Message: "Settings retrieved successfully",
 	}
 
 	h.writeJSONResponse(w, response)
@@ -104,11 +110,19 @@ func (h *SettingsHandler) GetSettingsByName(w http.ResponseWriter, r *http.Reque
 
 	h.logger.WithField("key", req.Key).Info("Received request to get settings by name")
 
-	response, err := h.service.GetSettingsByName(req.Key)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get settings by name")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	// Filter settings by key from config map
+	var settings []Setting
+	for _, setting := range h.config {
+		if setting.Key == req.Key {
+			settings = append(settings, setting)
+		}
+	}
+
+	response := &SettingsResponse{
+		Success: true,
+		Data:    settings,
+		Total:   len(settings),
+		Message: "Settings retrieved successfully",
 	}
 
 	h.writeJSONResponse(w, response)
@@ -125,11 +139,25 @@ func (h *SettingsHandler) GetSettingsByServiceGrouped(w http.ResponseWriter, r *
 
 	h.logger.Info("Received request to get settings grouped by service")
 
-	response, err := h.service.GetSettingsByServiceGrouped()
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to get settings grouped by service")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
+	// Group settings by service from config map
+	serviceMap := make(map[string][]Setting)
+	for _, setting := range h.config {
+		serviceMap[setting.Service] = append(serviceMap[setting.Service], setting)
+	}
+
+	var groupedSettings []SettingsByService
+	for service, serviceSettings := range serviceMap {
+		groupedSettings = append(groupedSettings, SettingsByService{
+			Service:  service,
+			Settings: serviceSettings,
+		})
+	}
+
+	response := &SettingsByServiceResponse{
+		Success: true,
+		Data:    groupedSettings,
+		Total:   len(h.config),
+		Message: "Settings grouped successfully",
 	}
 
 	h.writeJSONResponse(w, response)
@@ -140,18 +168,18 @@ func (h *SettingsHandler) validateGatewayRequest(r *http.Request) bool {
 	// Check for gateway headers
 	gatewayService := r.Header.Get("X-Gateway-Service")
 	gatewaySessionManaged := r.Header.Get("X-Gateway-Session-Managed")
-	
+
 	// Check for user context headers (indicating gateway authentication)
 	userID := r.Header.Get("X-User-ID")
 	username := r.Header.Get("X-Username")
 	userRole := r.Header.Get("X-User-Role")
 
 	// Request must come from gateway and have user context
-	return gatewayService == "gateway" && 
-		   gatewaySessionManaged == "true" && 
-		   userID != "" && 
-		   username != "" && 
-		   userRole != ""
+	return gatewayService == "gateway" &&
+		gatewaySessionManaged == "true" &&
+		userID != "" &&
+		username != "" &&
+		userRole != ""
 }
 
 // writeJSONResponse writes a JSON response to the HTTP response writer
