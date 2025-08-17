@@ -137,10 +137,10 @@ stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-
 restart-locally: stop-locally start-locally ## Restart all local services
 	@echo "$(GREEN)🔄 All local services restarted!$(RESET)"
 
-start-docker: start-data-container start-session-container start-orders-container start-inventory-container start-invoice-container start-gateway-container ## Start all services in Docker containers
+start-docker: start-data-container start-session-container start-orders-container start-inventory-container start-invoice-container start-gateway-container start-ui-container ## Start all services in Docker containers
 	@echo "$(GREEN)🚀 All services are starting in Docker containers!$(RESET)"
 
-stop-docker: stop-gateway-container stop-invoice-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
+stop-docker: stop-ui-container stop-gateway-container stop-invoice-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
 	@echo "$(YELLOW)🛑 All Docker containers stopped$(RESET)"
 
 restart-docker: stop-docker start-docker ## Restart all Docker containers
@@ -349,6 +349,10 @@ start-gateway-container: ## Start gateway service in container
 	@echo "$(CYAN)🌐 Starting Gateway Service container...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) start-docker
 
+start-ui-container: ## Start UI service in container
+	@echo "$(CYAN)🎨 Starting UI Service container...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) start-docker
+
 stop-data-container: ## Stop data service container
 	@echo "$(YELLOW)🗄️  Stopping Data Service container...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) stop-docker
@@ -372,6 +376,10 @@ stop-invoice-container: ## Stop invoice service container
 stop-gateway-container: ## Stop gateway service container
 	@echo "$(YELLOW)🌐 Stopping Gateway Service container...$(RESET)"
 	@cd $(GATEWAY_SERVICE) && $(MAKE) stop-docker
+
+stop-ui-container: ## Stop UI service container
+	@echo "$(YELLOW)🎨 Stopping UI Service container...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) stop-docker
 
 ## 🔍 Individual Service - Status & Testing Commands
 
