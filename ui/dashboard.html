@@ -6195,49 +6195,103 @@
             Alert.info('Add recipe category functionality coming soon!');
         };
 
-        // Recipe Image Upload Functions
-        window.handleRecipeImageUpload = function() {
-            const fileInput = document.getElementById('recipeImageFile');
-            const preview = document.getElementById('recipeImagePreview');
-            const previewImg = document.getElementById('recipeImagePreviewImg');
-            const urlInput = document.getElementById('recipePictureUrl');
+        // Recipe Image Picker Functions
+        let selectedRecipeImageUrl = null;
+        let selectedRecipeImageFile = null;
+
+        window.openRecipeImagePicker = function() {
+            // Reset the modal
+            document.getElementById('recipeImageFileInput').value = '';
+            document.getElementById('recipeImageUrlInput').value = '';
+            document.getElementById('recipeImagePreview').style.display = 'none';
+            document.getElementById('confirmRecipeImageBtn').disabled = true;
+            selectedRecipeImageUrl = null;
+            selectedRecipeImageFile = null;
             
-            if (fileInput.files && fileInput.files[0]) {
-                const file = fileInput.files[0];
-                
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    Alert.error('Please select a valid image file.');
-                    fileInput.value = '';
-                    return;
-                }
-                
-                // Validate file size (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    Alert.error('Image file size must be less than 5MB.');
-                    fileInput.value = '';
-                    return;
-                }
-                
-                // Create preview
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    preview.style.display = 'block';
-                    urlInput.value = e.target.result; // Store as data URL for now
-                };
-                reader.readAsDataURL(file);
-            }
+            const modal = new bootstrap.Modal(document.getElementById('recipeImagePickerModal'));
+            modal.show();
         };
 
-        window.clearRecipeImage = function() {
-            const fileInput = document.getElementById('recipeImageFile');
-            const preview = document.getElementById('recipeImagePreview');
-            const urlInput = document.getElementById('recipePictureUrl');
+        window.handleRecipeImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                Alert.error('Please select a valid image file.');
+                return;
+            }
+
+            // Validate file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                Alert.error('Image file size must be less than 5MB.');
+                return;
+            }
+
+            selectedRecipeImageFile = file;
+            selectedRecipeImageUrl = null;
+            document.getElementById('recipeImageUrlInput').value = '';
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('recipePreviewImage').src = e.target.result;
+                document.getElementById('recipeImagePreview').style.display = 'block';
+                document.getElementById('confirmRecipeImageBtn').disabled = false;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.selectRecipeImageFromUrl = function() {
+            const url = document.getElementById('recipeImageUrlInput').value.trim();
+            if (!url) {
+                Alert.error('Please enter a valid image URL.');
+                return;
+            }
+
+            // Basic URL validation
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                Alert.error('Please enter a valid URL starting with http:// or https://');
+                return;
+            }
+
+            selectedRecipeImageUrl = url;
+            selectedRecipeImageFile = null;
+            document.getElementById('recipeImageFileInput').value = '';
+
+            // Show preview
+            document.getElementById('recipePreviewImage').src = url;
+            document.getElementById('recipeImagePreview').style.display = 'block';
+            document.getElementById('confirmRecipeImageBtn').disabled = false;
+        };
+
+        window.confirmRecipeImageSelection = function() {
+            const imageDisplayElement = document.getElementById('recipeImageDisplay');
+            const imageUrlElement = document.getElementById('recipePictureUrl');
             
-            fileInput.value = '';
-            preview.style.display = 'none';
-            urlInput.value = '';
+            if (selectedRecipeImageFile) {
+                // For file upload, we'll use a placeholder URL for now
+                // In a real implementation, you'd upload the file to a server
+                const imageName = selectedRecipeImageFile.name;
+                if (imageDisplayElement) {
+                    imageDisplayElement.value = imageName;
+                }
+                if (imageUrlElement) {
+                    imageUrlElement.value = `uploaded://${imageName}`;
+                }
+            } else if (selectedRecipeImageUrl) {
+                if (imageDisplayElement) {
+                    imageDisplayElement.value = selectedRecipeImageUrl;
+                }
+                if (imageUrlElement) {
+                    imageUrlElement.value = selectedRecipeImageUrl;
+                }
+            }
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recipeImagePickerModal'));
+            if (modal) {
+                modal.hide();
+            }
         };
 
         // Recipe Ingredients Management
@@ -6369,12 +6423,16 @@
         };
 
         window.selectRecipeIngredient = function(ingredientId, ingredientName, unitType) {
+            // Find the ingredient with pricing information
+            const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
+            
             // Add ingredient to the list
             const ingredient = {
                 id: ingredientId,
                 name: ingredientName,
                 unit_type: unitType,
-                quantity: 1
+                quantity: 1,
+                final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
             };
             
             recipeIngredients.push(ingredient);
@@ -6414,11 +6472,15 @@
                 // Check if ingredient is already added
                 const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
                 if (!existingIngredient) {
+                    // Find the ingredient with pricing information
+                    const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
+                    
                     const ingredient = {
                         id: ingredientId,
                         name: ingredientName,
                         unit_type: unitType,
-                        quantity: 1
+                        quantity: 1,
+                        final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
                     };
                     
                     recipeIngredients.push(ingredient);
@@ -6453,41 +6515,77 @@
                 return;
             }
 
-            container.innerHTML = recipeIngredients.map((ingredient, index) => `
-                <div class="card mb-2">
+            let totalCost = 0;
+
+            const ingredientsHtml = recipeIngredients.map((ingredient, index) => {
+                const pricePerItem = ingredient.final_price || 0;
+                const subtotal = pricePerItem * ingredient.quantity;
+                totalCost += subtotal;
+
+                const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
+
+                return `
+                    <div class="card mb-2">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <strong>${ingredient.name}</strong>
+                                    <br><small class="text-muted">${priceDisplay}</small>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" step="0.001" min="0.001" class="form-control form-control-sm" 
+                                           value="${ingredient.quantity}" 
+                                           onchange="updateRecipeIngredientQuantity(${index}, this.value)"
+                                           onkeyup="updateRecipeIngredientQuantity(${index}, this.value)"
+                                           onclick="this.select()">
+                                </div>
+                                <div class="col-md-2">
+                                    <span class="text-muted">units</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <span class="badge bg-info">₡${subtotal.toFixed(2)}</span>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeIngredient(${index})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add total row
+            const totalRow = `
+                <div class="card mb-2 border-success">
                     <div class="card-body p-3">
                         <div class="row align-items-center">
-                            <div class="col-md-4">
-                                <strong>${ingredient.name}</strong>
-                                <br><small class="text-muted">${ingredient.unit_type}</small>
+                            <div class="col-md-7">
+                                <strong class="text-success">Total Recipe Cost</strong>
                             </div>
-                            <div class="col-md-3">
-                                <input type="number" step="0.001" min="0.001" class="form-control form-control-sm" 
-                                       value="${ingredient.quantity}" 
-                                       onchange="updateRecipeIngredientQuantity(${index}, this.value)">
-                            </div>
-                            <div class="col-md-3">
-                                <span class="text-muted">units</span>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeIngredient(${index})">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="col-md-5 text-end">
+                                <span class="badge bg-success fs-6">₡${totalCost.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+
+            container.innerHTML = ingredientsHtml + totalRow;
         }
 
         window.updateRecipeIngredientQuantity = function(index, quantity) {
             if (recipeIngredients[index]) {
                 recipeIngredients[index].quantity = parseFloat(quantity) || 1;
+                // Redisplay to update subtotals and total
+                displayRecipeIngredients();
             }
         };
 
         window.removeRecipeIngredient = function(index) {
             recipeIngredients.splice(index, 1);
+            // Redisplay to update subtotals and total
             displayRecipeIngredients();
         };
 
