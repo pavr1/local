@@ -25,6 +25,27 @@ vendor/
 bin/
 dist/
 
+# Go main binaries
+main
+gateway
+session
+orders
+inventory
+invoice
+data-service
+ui
+
+# Go compiled files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+
 # Node.js
 node_modules/
 npm-debug.log*
