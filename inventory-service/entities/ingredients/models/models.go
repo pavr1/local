@@ -6,11 +6,9 @@ type Ingredient struct {
 	Name                 string  `json:"name" db:"name"`
 	Description          *string `json:"description" db:"description"`
 	IngredientCategoryID *string `json:"ingredient_category_id" db:"ingredient_category_id"`
-	SupplierID           *string `json:"supplier_id" db:"supplier_id"`
 	CreatedAt            string  `json:"created_at" db:"created_at"`
 	UpdatedAt            string  `json:"updated_at" db:"updated_at"`
 	CategoryName         *string `json:"category_name" db:"category_name"`
-	SupplierName         *string `json:"supplier_name" db:"supplier_name"`
 }
 
 // CreateIngredientRequest represents the request to create a new ingredient
@@ -18,7 +16,6 @@ type CreateIngredientRequest struct {
 	Name                 string  `json:"name" validate:"required,min=1,max=255"`
 	Description          *string `json:"description,omitempty" validate:"omitempty,max=1000"`
 	IngredientCategoryID *string `json:"ingredient_category_id,omitempty" validate:"omitempty,uuid"`
-	SupplierID           *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // UpdateIngredientRequest represents the request to update an ingredient
@@ -26,7 +23,6 @@ type UpdateIngredientRequest struct {
 	Name                 *string `json:"name,omitempty" validate:"omitempty,min=1,max=255"`
 	Description          *string `json:"description,omitempty" validate:"omitempty,max=1000"`
 	IngredientCategoryID *string `json:"ingredient_category_id,omitempty" validate:"omitempty,uuid"`
-	SupplierID           *string `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
 }
 
 // GetIngredientRequest represents the request to get an ingredient by ID

@@ -1321,12 +1321,12 @@
                 },
                 'inventory': { 
                     title: 'Inventory Overview', 
-                    subtitle: 'Track ingredients, manage suppliers, and monitor stock levels',
+                    subtitle: 'Track ingredients and monitor stock levels',
                     icon: 'fas fa-warehouse'
                 },
                 'inventory-overview': { 
                     title: 'Inventory Overview', 
-                    subtitle: 'Manage ingredients, existences, recipes, and suppliers',
+                    subtitle: 'Manage ingredients, existences, and recipes',
                     icon: 'fas fa-th-large'
                 },
                 'inventory-suppliers': { 
@@ -2668,26 +2668,6 @@
                     
                     // If called from ingredient modal, refresh dropdowns
                     if (currentIngredientModal) {
-                        // Refresh supplier data for ingredient dropdowns
-                        await loadDropdownData();
-                        
-                        // Repopulate the supplier dropdown in the ingredient form
-                        const supplierSelect = currentIngredientModal === 'add' 
-                            ? document.getElementById('ingredientSupplier')
-                            : document.getElementById('editIngredientSupplier');
-                        
-                        if (supplierSelect) {
-                            supplierSelect.innerHTML = '<option value="">Select a supplier</option>';
-                            availableSuppliers.forEach(supplier => {
-                                supplierSelect.innerHTML += `<option value="${supplier.id}">${supplier.supplier_name}</option>`;
-                            });
-                            
-                            // Auto-select the newly created supplier
-                            if (result.data && result.data.id) {
-                                supplierSelect.value = result.data.id;
-                            }
-                        }
-                        
                         currentIngredientModal = null;
                     }
                 } else {
@@ -3611,7 +3591,7 @@
                         ${ingredient.category_name ? `<span class="badge bg-info">${ingredient.category_name}</span>` : '-'}
                     </td>
                     <td>
-                        ${ingredient.supplier_name ? `<span class="supplier-badge">${ingredient.supplier_name}</span>` : '-'}
+                        -
                     </td>
                     <td>${new Date(ingredient.created_at).toLocaleDateString()}</td>
                     <td>
@@ -5132,7 +5112,7 @@
                         <td><strong>${ingredient.name}</strong></td>
                         <td>${ingredient.description || 'No description'}</td>
                         <td>${ingredient.category_name || 'Uncategorized'}</td>
-                        <td>${ingredient.supplier_name || 'No supplier'}</td>
+                        <td>-</td>
                         <td>
                             <button class="btn btn-select btn-sm" onclick="selectIngredient('${ingredient.id}', '${ingredient.name}')">
                                 <i class="fas fa-check me-1"></i>Select
@@ -5864,27 +5844,7 @@
         };
 
         // Select a supplier
-        window.selectSupplier = function(supplierId, supplierName) {
-            if (currentSupplierModal === 'add') {
-                const supplierElement = document.getElementById('ingredientSupplier');
-                const supplierDisplayElement = document.getElementById('ingredientSupplierDisplay');
-                if (supplierElement) supplierElement.value = supplierId;
-                if (supplierDisplayElement) supplierDisplayElement.value = supplierName;
-            } else {
-                const editSupplierElement = document.getElementById('editIngredientSupplier');
-                const editSupplierDisplayElement = document.getElementById('editIngredientSupplierDisplay');
-                if (editSupplierElement) editSupplierElement.value = supplierId;
-                if (editSupplierDisplayElement) editSupplierDisplayElement.value = supplierName;
-            }
 
-            // Close supplier picker modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('supplierPickerModal'));
-            if (modal) {
-                modal.hide();
-            }
-            
-            currentSupplierModal = null;
-        };
 
         // Ingredient Modal Functions
         window.openAddIngredientModal = async function() {
@@ -5903,8 +5863,6 @@
                 // Clear picker displays
                 document.getElementById('ingredientCategoryDisplay').value = '';
                 document.getElementById('ingredientCategory').value = '';
-                document.getElementById('ingredientSupplierDisplay').value = '';
-                document.getElementById('ingredientSupplier').value = '';
                 
                 // Remove validation classes
                 const fields = ['ingredientName', 'ingredientDescription'];
@@ -5948,10 +5906,7 @@
                 isValid = false;
             }
             
-            if (!ingredientData.supplier_id) {
-                document.getElementById('ingredientSupplierDisplay').classList.add('is-invalid');
-                isValid = false;
-            }
+
             
             if (!isValid) {
                 form.classList.add('was-validated');
@@ -6127,103 +6082,7 @@
         };
 
         // Supplier Modal Functions
-        let currentIngredientModal = null; // Track which modal opened the supplier modal
 
-        // Open supplier modal from ingredient form
-        window.openSupplierModalFromIngredient = function(modalType) {
-            currentIngredientModal = modalType;
-            injectSupplierModal();
-            
-            // Update the save button to call the correct function
-            const saveBtn = document.getElementById('saveSupplierBtn');
-            if (saveBtn) {
-                saveBtn.onclick = saveSupplierFromIngredient;
-            }
-            
-            const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
-            modal.show();
-        };
-
-        // Save supplier from ingredient modal
-        async function saveSupplierFromIngredient() {
-            const form = document.getElementById('addSupplierForm');
-            const saveBtn = document.getElementById('saveSupplierBtn');
-            
-            // Reset validation state
-            form.classList.remove('was-validated');
-            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            
-            // Collect form data
-            const formData = new FormData(form);
-            const supplierData = {};
-            
-            // Process form fields
-            for (let [key, value] of formData.entries()) {
-                const trimmedValue = value.trim();
-                if (trimmedValue) {
-                    supplierData[key] = trimmedValue;
-                }
-            }
-            
-            // Validate required fields
-            let isValid = true;
-            
-            if (!supplierData.supplier_name || supplierData.supplier_name.length < 1 || supplierData.supplier_name.length > 255) {
-                document.getElementById('supplierName').classList.add('is-invalid');
-                isValid = false;
-            }
-            
-            if (!isValid) {
-                form.classList.add('was-validated');
-                return;
-            }
-            
-            // Update button state
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
-            
-            try {
-                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`, supplierData);
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    Alert.success('Supplier created successfully!');
-                    
-                    // Hide modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addSupplierModal'));
-                    modal.hide();
-                    
-                    // Reload suppliers data
-                    await loadDropdownData();
-                    
-                    // If called from ingredient modal, refresh dropdowns
-                    if (currentIngredientModal) {
-                        // Auto-select the newly created supplier
-                        const newSupplier = result.data;
-                        if (currentIngredientModal === 'add') {
-                            document.getElementById('ingredientSupplier').value = newSupplier.id;
-                            document.getElementById('ingredientSupplierDisplay').value = newSupplier.supplier_name;
-                        } else {
-                            document.getElementById('editIngredientSupplier').value = newSupplier.id;
-                            document.getElementById('editIngredientSupplierDisplay').value = newSupplier.supplier_name;
-                        }
-                    }
-                    
-                    currentIngredientModal = null;
-                } else {
-                    throw new Error(result.message || 'Failed to create supplier');
-                }
-                
-            } catch (error) {
-                console.error('❌ Error saving supplier:', error);
-                Alert.error('Failed to save supplier. Please check your connection and try again.');
-            }
-            
-            // Reset button state
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Supplier';
-        }
 
         // Add existence modal function (placeholder)
         window.openAddExistenceModal = function() {
@@ -6639,9 +6498,8 @@
                 const result = await response.json();
                 const ingredient = result.data;
                 
-                // Get category and supplier names if IDs exist
+                // Get category name if ID exists
                 let categoryName = '';
-                let supplierName = '';
                 
                 if (ingredient.ingredient_category_id) {
                     try {
@@ -6655,24 +6513,10 @@
                     }
                 }
                 
-                if (ingredient.supplier_id) {
-                    try {
-                        const supplierResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${ingredient.supplier_id}`);
-                        if (supplierResponse.ok) {
-                            const supplierResult = await supplierResponse.json();
-                            supplierName = supplierResult.data.supplier_name;
-                        }
-                    } catch (error) {
-                        console.warn('Could not fetch supplier name:', error);
-                    }
-                }
-                
                 // Populate edit form
                 document.getElementById('editIngredientName').value = ingredient.name;
                 document.getElementById('editIngredientCategoryDisplay').value = categoryName;
                 document.getElementById('editIngredientCategory').value = ingredient.ingredient_category_id || '';
-                document.getElementById('editIngredientSupplierDisplay').value = supplierName;
-                document.getElementById('editIngredientSupplier').value = ingredient.supplier_id || '';
                 document.getElementById('editIngredientDescription').value = ingredient.description || '';
                 
                 currentIngredientForEdit = ingredient;

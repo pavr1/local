@@ -107,7 +107,7 @@ func (h *MainHTTPHandler) writeJSONResponse(w http.ResponseWriter, statusCode in
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	// For now, we'll just write a simple response
-	// In a real implementation, you'd use json.NewEncoder
-	w.Write([]byte(`{"status":"ok"}`))
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		h.logger.WithError(err).Error("Failed to encode JSON response")
+	}
 }

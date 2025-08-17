@@ -68,7 +68,6 @@ func TestCreateIngredientHTTP(t *testing.T) {
 				Name:                 "Vanilla Extract",
 				Description:          stringPtr("Pure vanilla extract"),
 				IngredientCategoryID: stringPtr("category-123"),
-				SupplierID:           stringPtr("supplier-123"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
 				mockDB.On("CreateIngredient", mock.AnythingOfType("models.CreateIngredientRequest")).Return(
@@ -77,7 +76,6 @@ func TestCreateIngredientHTTP(t *testing.T) {
 						Name:                 "Vanilla Extract",
 						Description:          stringPtr("Pure vanilla extract"),
 						IngredientCategoryID: stringPtr("category-123"),
-						SupplierID:           stringPtr("supplier-123"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					}, nil)
@@ -90,7 +88,6 @@ func TestCreateIngredientHTTP(t *testing.T) {
 					Name:                 "Vanilla Extract",
 					Description:          stringPtr("Pure vanilla extract"),
 					IngredientCategoryID: stringPtr("category-123"),
-					SupplierID:           stringPtr("supplier-123"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
@@ -107,7 +104,6 @@ func TestCreateIngredientHTTP(t *testing.T) {
 				Name:                 "Test Ingredient",
 				Description:          nil,
 				IngredientCategoryID: nil,
-				SupplierID:           nil,
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
 				mockDB.On("CreateIngredient", mock.AnythingOfType("models.CreateIngredientRequest")).Return(
@@ -177,7 +173,6 @@ func TestGetIngredientHTTP(t *testing.T) {
 						Name:                 "Vanilla Extract",
 						Description:          stringPtr("Pure vanilla extract"),
 						IngredientCategoryID: stringPtr("category-123"),
-						SupplierID:           stringPtr("supplier-123"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					}, nil)
@@ -190,7 +185,6 @@ func TestGetIngredientHTTP(t *testing.T) {
 					Name:                 "Vanilla Extract",
 					Description:          stringPtr("Pure vanilla extract"),
 					IngredientCategoryID: stringPtr("category-123"),
-					SupplierID:           stringPtr("supplier-123"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
@@ -259,7 +253,6 @@ func TestListIngredientsHTTP(t *testing.T) {
 						Name:                 "Sugar",
 						Description:          nil,
 						IngredientCategoryID: stringPtr("category-1"),
-						SupplierID:           nil,
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					},
@@ -268,7 +261,6 @@ func TestListIngredientsHTTP(t *testing.T) {
 						Name:                 "Vanilla",
 						Description:          stringPtr("Pure vanilla extract"),
 						IngredientCategoryID: stringPtr("category-2"),
-						SupplierID:           stringPtr("supplier-123"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					},
@@ -283,7 +275,6 @@ func TestListIngredientsHTTP(t *testing.T) {
 						Name:                 "Sugar",
 						Description:          nil,
 						IngredientCategoryID: stringPtr("category-1"),
-						SupplierID:           nil,
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					},
@@ -292,7 +283,6 @@ func TestListIngredientsHTTP(t *testing.T) {
 						Name:                 "Vanilla",
 						Description:          stringPtr("Pure vanilla extract"),
 						IngredientCategoryID: stringPtr("category-2"),
-						SupplierID:           stringPtr("supplier-123"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					},
@@ -362,7 +352,6 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 				Name:                 stringPtr("Updated Vanilla"),
 				Description:          stringPtr("Updated description"),
 				IngredientCategoryID: stringPtr("new-category-456"),
-				SupplierID:           stringPtr("new-supplier-456"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
 				mockDB.On("UpdateIngredient", "ingredient-123", mock.AnythingOfType("models.UpdateIngredientRequest")).Return(
@@ -371,7 +360,6 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 						Name:                 "Updated Vanilla",
 						Description:          stringPtr("Updated description"),
 						IngredientCategoryID: stringPtr("new-category-456"),
-						SupplierID:           stringPtr("new-supplier-456"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T12:00:00Z",
 					}, nil)
@@ -384,7 +372,6 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 					Name:                 "Updated Vanilla",
 					Description:          stringPtr("Updated description"),
 					IngredientCategoryID: stringPtr("new-category-456"),
-					SupplierID:           stringPtr("new-supplier-456"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T12:00:00Z",
 				},

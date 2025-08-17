@@ -27,13 +27,7 @@ dist/
 
 # Go main binaries
 main
-gateway
-session
-orders
-inventory
-invoice
-data-service
-ui
+
 
 # Go compiled files
 *.exe
