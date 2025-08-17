@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,9 +64,17 @@ func TestExtractTokenFromHeaderSimple(t *testing.T) {
 	})
 }
 
+// createTestLogger creates a logger for testing
+func createTestLogger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	return logger
+}
+
 // TestSessionMiddlewareStructure tests the SessionMiddleware struct creation
 func TestSessionMiddlewareStructure(t *testing.T) {
-	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
+	logger := createTestLogger()
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
 	middleware := NewSessionMiddleware(sessionManager)
 
 	assert.NotNil(t, middleware)
@@ -74,7 +83,8 @@ func TestSessionMiddlewareStructure(t *testing.T) {
 
 // Test basic middleware functionality with real session manager (will fail gracefully)
 func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
-	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
+	logger := createTestLogger()
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
 	middleware := NewSessionMiddleware(sessionManager)
 
 	// Create a test handler
@@ -133,7 +143,8 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 
 // Test edge cases with various header formats
 func TestSessionMiddlewareEdgeCasesSimple(t *testing.T) {
-	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
+	logger := createTestLogger()
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
 	middleware := NewSessionMiddleware(sessionManager)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +201,8 @@ func BenchmarkExtractTokenFromHeaderSimple(b *testing.B) {
 }
 
 func BenchmarkSessionMiddleware(b *testing.B) {
-	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081")
+	logger := createTestLogger()
+	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
 	middleware := NewSessionMiddleware(sessionManager)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

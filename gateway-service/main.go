@@ -150,7 +150,7 @@ func main() {
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
 
 	// Create session manager for authentication with logger
-	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL)
+	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logrusLogger)
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager)
 
 	r := mux.NewRouter()

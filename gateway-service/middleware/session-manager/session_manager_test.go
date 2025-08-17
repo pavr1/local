@@ -9,22 +9,32 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"gateway-service/models"
 )
 
+// createTestLogger creates a logger for testing
+func createTestLogger() *logrus.Logger {
+	logger := logrus.New()
+	logger.SetLevel(logrus.DebugLevel)
+	return logger
+}
+
 // TestNewSessionManager tests the creation of SessionManager
 func TestNewSessionManager(t *testing.T) {
 	sessionServiceURL := "http://localhost:8081"
+	logger := createTestLogger()
 
-	sessionManager := NewSessionManager(sessionServiceURL)
+	sessionManager := NewSessionManager(sessionServiceURL, logger)
 
 	assert.NotNil(t, sessionManager)
 	assert.Equal(t, sessionServiceURL+"/api/v1/sessions", sessionManager.baseURL)
 	assert.NotNil(t, sessionManager.client)
 	assert.Equal(t, 10*time.Second, sessionManager.client.Timeout)
+	assert.NotNil(t, sessionManager.logger)
 }
 
 // TestSessionManagerWithDifferentURLs tests SessionManager with various URLs
@@ -58,7 +68,8 @@ func TestSessionManagerWithDifferentURLs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			manager := NewSessionManager(tt.serviceURL)
+			logger := createTestLogger()
+			manager := NewSessionManager(tt.serviceURL, logger)
 			assert.Equal(t, tt.expectedBaseURL, manager.baseURL)
 		})
 	}
@@ -203,7 +214,8 @@ func TestSessionManagerValidateSession(t *testing.T) {
 		}
 
 		// Create session manager with mock transport
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		// Test validation
@@ -229,7 +241,8 @@ func TestSessionManagerValidateSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		result, err := sessionManager.ValidateSession("invalid-session-id")
@@ -240,7 +253,8 @@ func TestSessionManagerValidateSession(t *testing.T) {
 	})
 
 	t.Run("network error", func(t *testing.T) {
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Error: assert.AnError}
 
 		_, err := sessionManager.ValidateSession("test-session-id")
@@ -256,7 +270,8 @@ func TestSessionManagerValidateSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		_, err := sessionManager.ValidateSession("test-session-id")
@@ -281,7 +296,8 @@ func TestSessionManagerLoginSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		createRequest := models.SessionCreateRequest{
@@ -303,7 +319,8 @@ func TestSessionManagerLoginSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		createRequest := models.SessionCreateRequest{
@@ -327,7 +344,8 @@ func TestSessionManagerLogoutSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		err := sessionManager.LogoutSession("test-session-id")
@@ -341,7 +359,8 @@ func TestSessionManagerLogoutSession(t *testing.T) {
 			Header:     make(http.Header),
 		}
 
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 		sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 		err := sessionManager.LogoutSession("invalid-session-id")
@@ -365,7 +384,8 @@ func TestSessionManagerConcurrentRequests(t *testing.T) {
 		Header:     make(http.Header),
 	}
 
-	sessionManager := NewSessionManager("http://localhost:8081")
+	logger := createTestLogger()
+	sessionManager := NewSessionManager("http://localhost:8081", logger)
 	sessionManager.client.Transport = &MockTransport{Response: mockResponse}
 
 	const numRequests = 10
@@ -411,7 +431,8 @@ func TestSessionManagerConcurrentRequests(t *testing.T) {
 // TestSessionManagerEdgeCases tests edge cases and error conditions
 func TestSessionManagerEdgeCases(t *testing.T) {
 	t.Run("empty session validation", func(t *testing.T) {
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 
 		// Even empty session IDs should be sent to the service for validation
 		mockResponse := &http.Response{
@@ -428,7 +449,8 @@ func TestSessionManagerEdgeCases(t *testing.T) {
 
 	t.Run("very long session ID", func(t *testing.T) {
 		longSessionId := strings.Repeat("a", 10000)
-		sessionManager := NewSessionManager("http://localhost:8081")
+		logger := createTestLogger()
+		sessionManager := NewSessionManager("http://localhost:8081", logger)
 
 		mockResponse := &http.Response{
 			StatusCode: http.StatusOK,
@@ -444,8 +466,9 @@ func TestSessionManagerEdgeCases(t *testing.T) {
 
 // Benchmark tests for performance
 func BenchmarkNewSessionManager(b *testing.B) {
+	logger := createTestLogger()
 	for i := 0; i < b.N; i++ {
-		NewSessionManager("http://localhost:8081")
+		NewSessionManager("http://localhost:8081", logger)
 	}
 }
 
