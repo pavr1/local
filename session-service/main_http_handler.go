@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
