@@ -48,11 +48,11 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	publicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
 	publicRouter.HandleFunc("/p/health", h.HealthCheck).Methods("GET")
 	publicRouter.HandleFunc("/p/login", h.sessionsHandler.CreateSession).Methods("POST")
+	publicRouter.HandleFunc("/p/validate", h.sessionsHandler.ValidateSession).Methods("POST")
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
 	protectedRouter.Use(h.gatewayMiddleware.ValidateGateway)
-	protectedRouter.HandleFunc("/validate", h.sessionsHandler.ValidateSession).Methods("POST")
 	protectedRouter.HandleFunc("/logout", h.sessionsHandler.LogoutSession).Methods("POST")
 }
 

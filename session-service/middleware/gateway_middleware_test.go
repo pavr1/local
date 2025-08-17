@@ -12,7 +12,7 @@ func TestGatewayMiddleware_ValidateGateway(t *testing.T) {
 	middleware := NewGatewayMiddleware()
 
 	t.Run("valid gateway request", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+		req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 
@@ -31,7 +31,7 @@ func TestGatewayMiddleware_ValidateGateway(t *testing.T) {
 	})
 
 	t.Run("missing gateway service header", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+		req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 
 		w := httptest.NewRecorder()
@@ -49,7 +49,7 @@ func TestGatewayMiddleware_ValidateGateway(t *testing.T) {
 	})
 
 	t.Run("missing session managed header", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+		req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 
 		w := httptest.NewRecorder()
@@ -67,7 +67,7 @@ func TestGatewayMiddleware_ValidateGateway(t *testing.T) {
 	})
 
 	t.Run("invalid gateway service", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+		req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 		req.Header.Set("X-Gateway-Service", "invalid-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 
@@ -86,7 +86,7 @@ func TestGatewayMiddleware_ValidateGateway(t *testing.T) {
 	})
 
 	t.Run("invalid session managed flag", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+		req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "false")
 

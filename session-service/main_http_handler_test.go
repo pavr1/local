@@ -65,16 +65,16 @@ func TestSetupRoutes(t *testing.T) {
 	// Login should work without gateway headers since it's public
 	assert.NotEqual(t, http.StatusForbidden, w.Code)
 
-	// Test protected validate endpoint (should require gateway headers)
-	req = httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+	// Test public validate endpoint (should not require gateway headers)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
-	// Should be forbidden without gateway headers
-	assert.Equal(t, http.StatusForbidden, w.Code)
+	// Should not be forbidden without gateway headers since it's public
+	assert.NotEqual(t, http.StatusForbidden, w.Code)
 
-	// Test protected validate endpoint with gateway headers (should work)
-	req = httptest.NewRequest("POST", "/api/v1/sessions/validate", nil)
+	// Test public validate endpoint with gateway headers (should also work)
+	req = httptest.NewRequest("POST", "/api/v1/sessions/p/validate", nil)
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
 	w = httptest.NewRecorder()
@@ -177,7 +177,7 @@ func TestRouterSetup(t *testing.T) {
 	}{
 		{"GET", "/api/v1/sessions/p/health"},
 		{"POST", "/api/v1/sessions/p/login"},
-		{"POST", "/api/v1/sessions/validate"},
+		{"POST", "/api/v1/sessions/p/validate"},
 		{"POST", "/api/v1/sessions/logout"},
 	}
 

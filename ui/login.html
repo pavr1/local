@@ -239,15 +239,50 @@
 
             async checkExistingAuth() {
                 if (window.authService && window.authService.isAuthenticated()) {
-                    console.log('🔍 User already authenticated, checking session...');
+                    console.log('🔍 User already authenticated, validating session...');
                     const sessionId = window.authService.getSessionId();
                     
                     if (sessionId) {
-                        console.log('✅ Session exists, redirecting...');
-                        this.showAlert('Already signed in. Redirecting...', 'success');
-                        setTimeout(() => {
-                            window.location.href = 'dashboard.html';
-                        }, 1000);
+                        try {
+                            // Validate session by calling the gateway validate endpoint
+                            const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/sessions/p/validate`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    session_id: sessionId
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.valid) {
+                                    console.log('✅ Session is valid, redirecting...');
+                                    this.showAlert('Already signed in. Redirecting...', 'success');
+                                    setTimeout(() => {
+                                        window.location.href = 'dashboard.html';
+                                    }, 1000);
+                                } else {
+                                    console.log('⚠️ Session is invalid, clearing auth data...');
+                                    window.authService.clearAuthData();
+                                    this.showAlert('Session is invalid. Please login again.', 'info');
+                                }
+                            } else if (response.status === 401) {
+                                console.log('⚠️ Session expired, clearing auth data...');
+                                window.authService.clearAuthData();
+                                this.showAlert('Previous session expired. Please login again.', 'info');
+                            } else {
+                                console.log('⚠️ Session validation failed, clearing auth data...');
+                                window.authService.clearAuthData();
+                                this.showAlert('Session validation failed. Please login again.', 'info');
+                            }
+                        } catch (error) {
+                            console.error('❌ Error validating session:', error);
+                            // If we can't validate the session, clear it to be safe
+                            window.authService.clearAuthData();
+                            this.showAlert('Unable to validate session. Please login again.', 'info');
+                        }
                     }
                 }
             }

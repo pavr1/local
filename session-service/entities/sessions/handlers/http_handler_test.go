@@ -190,7 +190,7 @@ func TestValidateSession_Success(t *testing.T) {
 	jsonBody, _ := json.Marshal(reqBody)
 
 	// Create HTTP request
-	req := httptest.NewRequest("POST", "/api/v1/sessions/validate", bytes.NewBuffer(jsonBody))
+	req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -218,7 +218,7 @@ func TestValidateSession_InvalidRequest(t *testing.T) {
 	handler := NewHTTPHandler(mockDBHandler, logger)
 
 	// Create invalid request body
-	req := httptest.NewRequest("POST", "/api/v1/sessions/validate", bytes.NewBufferString("invalid json"))
+	req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", bytes.NewBufferString("invalid json"))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -247,7 +247,7 @@ func TestValidateSession_DBError(t *testing.T) {
 	}
 	jsonBody, _ := json.Marshal(reqBody)
 
-	req := httptest.NewRequest("POST", "/api/v1/sessions/validate", bytes.NewBuffer(jsonBody))
+	req := httptest.NewRequest("POST", "/api/v1/sessions/p/validate", bytes.NewBuffer(jsonBody))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 

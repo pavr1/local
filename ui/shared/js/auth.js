@@ -199,7 +199,14 @@ class AuthService {
     }
 
     isAuthenticated() {
-        return !!this.getSessionId();
+        const sessionId = this.getSessionId();
+        if (!sessionId) {
+            return false;
+        }
+        
+        // Basic validation - check if session ID exists and has a reasonable format
+        // Note: Full validation should be done with a server call
+        return sessionId.length > 0 && sessionId !== 'null' && sessionId !== 'undefined';
     }
 
     getCurrentUser() {

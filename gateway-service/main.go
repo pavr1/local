@@ -180,6 +180,7 @@ func main() {
 
 	// Public session endpoints (no authentication required) - /p/ prefix
 	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login", logrusLogger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate", logrusLogger)).Methods("POST")
 	// Protected session endpoints - session service handles authentication
 	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout", logrusLogger)).Methods("POST")
 
@@ -230,6 +231,7 @@ func main() {
 	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	fmt.Println("   📂 Public:")
 	fmt.Printf("      POST /api/v1/sessions/p/login    → %s/api/v1/sessions/p/login (+ session creation)\n", config.SessionServiceURL)
+	fmt.Printf("      POST /api/v1/sessions/p/validate → %s/api/v1/sessions/p/validate (+ session validation)\n", config.SessionServiceURL)
 	fmt.Printf("      GET  /api/v1/sessions/p/health   → %s/api/v1/sessions/p/health\n", config.SessionServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
 	fmt.Printf("      POST /api/v1/sessions/logout     → %s/api/v1/sessions/logout (+ session revocation)\n", config.SessionServiceURL)
