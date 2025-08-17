@@ -6251,20 +6251,63 @@
 
         window.openRecipeIngredientPicker = async function() {
             await loadIngredientsForRecipe();
+            
+            // Reset checkboxes and search
+            const selectAllCheckbox = document.getElementById('selectAllIngredients');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
+            document.getElementById('recipeIngredientSearchInput').value = '';
+            
             const modal = new bootstrap.Modal(document.getElementById('recipeIngredientPickerModal'));
             modal.show();
         };
 
         async function loadIngredientsForRecipe() {
             try {
-                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
+                // Load ingredients
+                const ingredientsResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (!ingredientsResponse.ok) {
+                    throw new Error(`HTTP ${ingredientsResponse.status}: ${ingredientsResponse.statusText}`);
                 }
                 
-                const result = await response.json();
-                allIngredients = result.data || [];
+                const ingredientsResult = await ingredientsResponse.json();
+                const ingredients = ingredientsResult.data || [];
+                
+                // Load existences to get pricing information
+                const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
+                
+                if (!existencesResponse.ok) {
+                    throw new Error(`HTTP ${existencesResponse.status}: ${existencesResponse.statusText}`);
+                }
+                
+                const existencesResult = await existencesResponse.json();
+                const existences = existencesResult.data || [];
+                
+                // Create a map of ingredient ID to most recent final price
+                const ingredientPrices = new Map();
+                existences.forEach(existence => {
+                    if (existence.final_price && existence.final_price > 0) {
+                        const currentPrice = ingredientPrices.get(existence.ingredient_id);
+                        if (!currentPrice || existence.created_at > currentPrice.created_at) {
+                            ingredientPrices.set(existence.ingredient_id, {
+                                final_price: existence.final_price,
+                                created_at: existence.created_at
+                            });
+                        }
+                    }
+                });
+                
+                // Merge ingredients with pricing information
+                allIngredients = ingredients.map(ingredient => {
+                    const priceInfo = ingredientPrices.get(ingredient.id);
+                    return {
+                        ...ingredient,
+                        final_price: priceInfo ? priceInfo.final_price : null
+                    };
+                });
+                
                 filteredIngredients = [...allIngredients];
                 
                 displayIngredientsForRecipe();
@@ -6291,13 +6334,18 @@
 
             tbody.innerHTML = filteredIngredients.map(ingredient => `
                 <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input ingredient-checkbox" 
+                               value="${ingredient.id}" 
+                               data-name="${ingredient.name || 'N/A'}" 
+                               data-unit="${ingredient.unit_type || 'N/A'}">
+                    </td>
                     <td><strong>${ingredient.name || 'N/A'}</strong></td>
                     <td>${ingredient.category_name || 'N/A'}</td>
-                    <td><span class="badge bg-secondary">${ingredient.unit_type || 'N/A'}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="selectRecipeIngredient('${ingredient.id}', '${ingredient.name}', '${ingredient.unit_type}')">
-                            <i class="fas fa-check"></i>
-                        </button>
+                        <span class="badge bg-success">
+                            ₡${ingredient.final_price ? ingredient.final_price.toFixed(2) : 'N/A'}
+                        </span>
                     </td>
                 </tr>
             `).join('');
@@ -6312,6 +6360,12 @@
             );
             
             displayIngredientsForRecipe();
+            
+            // Reset select all checkbox when filtering
+            const selectAllCheckbox = document.getElementById('selectAllIngredients');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+            }
         };
 
         window.selectRecipeIngredient = function(ingredientId, ingredientName, unitType) {
@@ -6332,6 +6386,59 @@
             
             // Clear search
             document.getElementById('recipeIngredientSearchInput').value = '';
+        };
+
+        // Multiple ingredient selection functions
+        window.toggleSelectAllIngredients = function() {
+            const selectAllCheckbox = document.getElementById('selectAllIngredients');
+            const ingredientCheckboxes = document.querySelectorAll('.ingredient-checkbox');
+            
+            ingredientCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        };
+
+        window.addSelectedIngredients = function() {
+            const selectedCheckboxes = document.querySelectorAll('.ingredient-checkbox:checked');
+            
+            if (selectedCheckboxes.length === 0) {
+                Alert.warning('Please select at least one ingredient.');
+                return;
+            }
+            
+            selectedCheckboxes.forEach(checkbox => {
+                const ingredientId = checkbox.value;
+                const ingredientName = checkbox.getAttribute('data-name');
+                const unitType = checkbox.getAttribute('data-unit');
+                
+                // Check if ingredient is already added
+                const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
+                if (!existingIngredient) {
+                    const ingredient = {
+                        id: ingredientId,
+                        name: ingredientName,
+                        unit_type: unitType,
+                        quantity: 1
+                    };
+                    
+                    recipeIngredients.push(ingredient);
+                }
+            });
+            
+            displayRecipeIngredients();
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recipeIngredientPickerModal'));
+            modal.hide();
+            
+            // Clear search and reset checkboxes
+            document.getElementById('recipeIngredientSearchInput').value = '';
+            document.getElementById('selectAllIngredients').checked = false;
+            document.querySelectorAll('.ingredient-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
+            Alert.success(`Added ${selectedCheckboxes.length} ingredient(s) to the recipe.`);
         };
 
         function displayRecipeIngredients() {
