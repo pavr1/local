@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"data-service/pkg/database"
+	"data-service/pkg/settings"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -68,8 +69,13 @@ func main() {
 
 	fmt.Println("✅ Database connection established successfully")
 
+	// Initialize settings components
+	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
+	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
+	settingsHandler := settings.NewSettingsHandler(settingsService, logger)
+
 	// Setup HTTP server
-	router := setupRouter(db, logger)
+	router := setupRouter(db, logger, settingsHandler)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8086", // Data service port - bind to all interfaces
@@ -126,7 +132,7 @@ func getEnvInt(key string, defaultValue int) int {
 }
 
 // setupRouter configures the HTTP routes
-func setupRouter(db database.DatabaseHandler, logger *logrus.Logger) *mux.Router {
+func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHandler *settings.SettingsHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Root endpoint to test if router is working
@@ -152,6 +158,12 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger) *mux.Router
 	router.HandleFunc("/api/v1/data/p/stats", func(w http.ResponseWriter, r *http.Request) {
 		statsEndpoint(w, r, db, logger)
 	}).Methods("GET")
+
+	// Settings endpoints (require gateway authentication)
+	router.HandleFunc("/api/v1/data/settings/load-all", settingsHandler.LoadAllSettings).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/by-service", settingsHandler.GetSettingsByService).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/by-name", settingsHandler.GetSettingsByName).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/grouped", settingsHandler.GetSettingsByServiceGrouped).Methods("GET")
 
 	return router
 }
@@ -198,7 +210,7 @@ func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHan
 }
 
 // statsEndpoint provides database connection statistics
-func statsEndpoint(w http.ResponseWriter, r *http.Request, db database.DatabaseHandler, logger *logrus.Logger) {
+func statsEndpoint(w http.ResponseWriter, _ *http.Request, db database.DatabaseHandler, _ *logrus.Logger) {
 	stats := db.GetStats()
 
 	response := map[string]interface{}{

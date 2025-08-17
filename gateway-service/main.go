@@ -99,6 +99,7 @@ type Config struct {
 	OrdersServiceURL    string
 	InventoryServiceURL string
 	InvoiceServiceURL   string
+	DataServiceURL      string
 }
 
 func main() {
@@ -111,6 +112,7 @@ func main() {
 		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
 		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
 		InvoiceServiceURL:   getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
+		DataServiceURL:      getEnv("DATA_SERVICE_URL", "http://localhost:8086"),
 	}
 
 	// Initialize centralized logging
@@ -132,6 +134,7 @@ func main() {
 		"orders_service":    config.OrdersServiceURL,
 		"inventory_service": config.InventoryServiceURL,
 		"invoice_service":   config.InvoiceServiceURL,
+		"data_service":      config.DataServiceURL,
 		"fluentd_host":      fluentdHost,
 		"fluentd_port":      fluentdPort,
 	}).Info("Gateway service starting")
@@ -142,12 +145,14 @@ func main() {
 		"orders_service":    config.OrdersServiceURL,
 		"inventory_service": config.InventoryServiceURL,
 		"invoice_service":   config.InvoiceServiceURL,
+		"data_service":      config.DataServiceURL,
 	})
 
 	log.Printf("Gateway configured with Invoice Service: %s", config.InvoiceServiceURL)
 	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
 	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
 	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
+	log.Printf("Gateway configured with Data Service: %s", config.DataServiceURL)
 
 	// Create session manager for authentication with logger
 	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logrusLogger)
@@ -189,6 +194,7 @@ func main() {
 	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health", logrusLogger)).Methods("GET")
 	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health", logrusLogger)).Methods("GET")
 	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.DataServiceURL, "/api/v1/data/p/health", logrusLogger)).Methods("GET")
 
 	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logrusLogger)).Methods("GET")
@@ -207,6 +213,11 @@ func main() {
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
 	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1", logrusLogger))
 	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
+
+	// Data service routes - with authentication middleware
+	dataRouter := api.PathPrefix("/v1/data").Subrouter()
+	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
+	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
@@ -242,6 +253,7 @@ func main() {
 	fmt.Printf("      GET  /api/v1/orders/p/health       → %s\n", config.OrdersServiceURL)
 	fmt.Printf("      GET  /api/v1/inventory/p/health    → %s\n", config.InventoryServiceURL)
 	fmt.Printf("      GET  /api/v1/invoices/p/health     → %s\n", config.InvoiceServiceURL)
+	fmt.Printf("      GET  /api/v1/data/p/health         → %s\n", config.DataServiceURL)
 	fmt.Println("   🔒 Protected (require valid session):")
 	fmt.Printf("      ALL  /api/v1/orders/*          → %s\n", config.OrdersServiceURL)
 	fmt.Printf("      ALL  /api/v1/inventory/*       → %s\n", config.InventoryServiceURL)
@@ -253,6 +265,11 @@ func main() {
 	fmt.Printf("           └─ /invoices/{id}/details  → Invoice details management\n")
 	fmt.Printf("      ALL  /api/v1/expense-categories/* → %s\n", config.InvoiceServiceURL)
 	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
+	fmt.Printf("      ALL  /api/v1/data/*            → %s\n", config.DataServiceURL)
+	fmt.Printf("           ├─ /settings/load-all     → Load all settings into memory\n")
+	fmt.Printf("           ├─ /settings/by-service   → Get settings by service\n")
+	fmt.Printf("           ├─ /settings/by-name      → Get settings by name\n")
+	fmt.Printf("           └─ /settings/grouped      → Get settings grouped by service\n")
 	fmt.Println("   📋 Service Management:")
 	fmt.Printf("      GET  /api/v1/logs/{service}     → Service logs viewer\n")
 	fmt.Println("")
