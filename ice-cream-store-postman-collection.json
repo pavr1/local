@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "ice-cream-store-api",
 		"name": "Ice Cream Store API",
-		"description": "Complete API collection for Ice Cream Store microservices",
+		"description": "Complete API collection for Ice Cream Store microservices with proper authentication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "12345678"
 	},
@@ -15,6 +15,24 @@
 					"item": [
 						{
 							"name": "Login",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"type": "text/javascript",
+										"exec": [
+											"if (pm.response.code === 200) {",
+											"    const response = pm.response.json();",
+											"    if (response.session_id) {",
+											"        pm.environment.set('session_id', response.session_id);",
+											"        pm.environment.set('auth_token', response.session_id);",
+											"        console.log('Session ID saved:', response.session_id);",
+											"    }",
+											"}"
+										]
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [
@@ -46,7 +64,7 @@
 								],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"token\": \"{{auth_token}}\"\n}"
+									"raw": "{\n  \"token\": \"{{session_id}}\"\n}"
 								},
 								"url": {
 									"raw": "{{gateway_url}}/api/v1/sessions/p/validate",
@@ -63,8 +81,8 @@
 									"raw": "{{gateway_url}}/api/v1/sessions/p/health",
 									"host": ["{{gateway_url}}"],
 									"path": ["api", "v1", "sessions", "p", "health"]
+								}
 							}
-						}
 						}
 					]
 				},
@@ -72,53 +90,19 @@
 					"name": "Protected Endpoints",
 					"item": [
 						{
-							"name": "Refresh Session",
+							"name": "Logout",
 							"request": {
 								"method": "POST",
 								"header": [
 									{
 										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-											"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/refresh",
-				"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "refresh"]
-								}
-							}
-						},
-						{
-							"name": "Get User Sessions",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
+										"value": "Bearer {{session_id}}"
 									}
 								],
 								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/user/{{user_id}}",
+									"raw": "{{gateway_url}}/api/v1/sessions/logout",
 									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "user", "{{user_id}}"]
-								}
-							}
-						},
-						{
-							"name": "Revoke Session",
-							"request": {
-								"method": "DELETE",
-								"header": [
-									{
-										"key": "Authorization",
-										"value": "Bearer {{auth_token}}"
-									}
-								],
-								"url": {
-									"raw": "{{gateway_url}}/api/v1/sessions/{{session_id}}",
-									"host": ["{{gateway_url}}"],
-									"path": ["api", "v1", "sessions", "{{session_id}}"]
+									"path": ["api", "v1", "sessions", "logout"]
 								}
 							}
 						}
@@ -698,6 +682,1443 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "📦 Inventory Management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/inventory/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "inventory", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Suppliers",
+					"item": [
+						{
+							"name": "List Suppliers",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers"]
+								}
+							}
+						},
+						{
+							"name": "Create Supplier",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Supplier\",\n  \"contact_person\": \"John Doe\",\n  \"phone\": \"+1234567890\",\n  \"email\": \"john@supplier.com\",\n  \"address\": \"123 Supplier St\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers"]
+								}
+							}
+						},
+						{
+							"name": "Get Supplier",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Supplier",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Supplier\",\n  \"contact_person\": \"Jane Doe\",\n  \"phone\": \"+0987654321\",\n  \"email\": \"jane@supplier.com\",\n  \"address\": \"456 Updated St\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Supplier",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/suppliers/{{supplier_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "suppliers", "{{supplier_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Ingredient Categories",
+					"item": [
+						{
+							"name": "List Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories"]
+								}
+							}
+						},
+						{
+							"name": "Create Category",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Category\",\n  \"description\": \"Test category description\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories"]
+								}
+							}
+						},
+						{
+							"name": "Get Category",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories/{{category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories", "{{category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Category\",\n  \"description\": \"Updated category description\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories/{{category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories", "{{category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Category",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredient-categories/{{category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredient-categories", "{{category_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Ingredients",
+					"item": [
+						{
+							"name": "List Ingredients",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Create Ingredient",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Ingredient\",\n  \"description\": \"Test ingredient description\",\n  \"ingredient_category_id\": \"{{category_id}}\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"unit_type\": \"Liters\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Get Ingredient",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients/{{ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients", "{{ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Ingredient",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Ingredient\",\n  \"description\": \"Updated ingredient description\",\n  \"ingredient_category_id\": \"{{category_id}}\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"unit_type\": \"Kilograms\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients/{{ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients", "{{ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Ingredient",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/ingredients/{{ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "ingredients", "{{ingredient_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Existences",
+					"item": [
+						{
+							"name": "List Existences",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences"]
+								}
+							}
+						},
+						{
+							"name": "Create Existence",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"unit_type\": \"Liters\",\n  \"quantity\": 100.5,\n  \"price_per_unit\": 2.50,\n  \"expiration_date\": \"2024-12-31T00:00:00Z\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences"]
+								}
+							}
+						},
+						{
+							"name": "Get Existence",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences/{{existence_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences", "{{existence_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Get Most Recent Existence",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences/ingredient/{{ingredient_id}}/unit-type/Liters",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences", "ingredient", "{{ingredient_id}}", "unit-type", "Liters"]
+								}
+							}
+						},
+						{
+							"name": "Update Existence",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"unit_type\": \"Liters\",\n  \"quantity\": 150.0,\n  \"price_per_unit\": 3.00,\n  \"expiration_date\": \"2024-12-31T00:00:00Z\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences/{{existence_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences", "{{existence_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Existence",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/existences/{{existence_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "existences", "{{existence_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Runout Ingredients",
+					"item": [
+						{
+							"name": "List Runout Ingredients",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/runout-ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "runout-ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Create Runout Ingredient",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"quantity_needed\": 50.0,\n  \"unit_type\": \"Liters\",\n  \"priority\": \"high\",\n  \"notes\": \"Urgent restock needed\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/runout-ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "runout-ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Get Runout Ingredient",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/runout-ingredients/{{runout_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "runout-ingredients", "{{runout_ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Runout Ingredient",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"quantity_needed\": 75.0,\n  \"unit_type\": \"Liters\",\n  \"priority\": \"medium\",\n  \"notes\": \"Updated restock request\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/runout-ingredients/{{runout_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "runout-ingredients", "{{runout_ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Runout Ingredient",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/runout-ingredients/{{runout_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "runout-ingredients", "{{runout_ingredient_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Recipe Categories",
+					"item": [
+						{
+							"name": "List Recipe Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-categories"]
+								}
+							}
+						},
+						{
+							"name": "Create Recipe Category",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Recipe Category\",\n  \"description\": \"Test recipe category description\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-categories"]
+								}
+							}
+						},
+						{
+							"name": "Get Recipe Category",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-categories/{{recipe_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-categories", "{{recipe_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Recipe Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Recipe Category\",\n  \"description\": \"Updated recipe category description\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-categories/{{recipe_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-categories", "{{recipe_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Recipe Category",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-categories/{{recipe_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-categories", "{{recipe_category_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Recipes",
+					"item": [
+						{
+							"name": "List Recipes",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipes",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipes"]
+								}
+							}
+						},
+						{
+							"name": "Create Recipe",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Test Recipe\",\n  \"description\": \"Test recipe description\",\n  \"recipe_category_id\": \"{{recipe_category_id}}\",\n  \"instructions\": \"Mix ingredients and freeze\",\n  \"preparation_time\": 30,\n  \"cooking_time\": 0,\n  \"servings\": 4,\n  \"difficulty_level\": \"easy\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipes",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipes"]
+								}
+							}
+						},
+						{
+							"name": "Get Recipe",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipes/{{recipe_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipes", "{{recipe_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Recipe",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Updated Recipe\",\n  \"description\": \"Updated recipe description\",\n  \"recipe_category_id\": \"{{recipe_category_id}}\",\n  \"instructions\": \"Updated mixing instructions\",\n  \"preparation_time\": 45,\n  \"cooking_time\": 0,\n  \"servings\": 6,\n  \"difficulty_level\": \"medium\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipes/{{recipe_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipes", "{{recipe_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Recipe",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipes/{{recipe_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipes", "{{recipe_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Recipe Ingredients",
+					"item": [
+						{
+							"name": "List Recipe Ingredients",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Create Recipe Ingredient",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"recipe_id\": \"{{recipe_id}}\",\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"quantity\": 2.5,\n  \"unit_type\": \"Liters\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-ingredients",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-ingredients"]
+								}
+							}
+						},
+						{
+							"name": "Get Recipe Ingredient",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-ingredients/{{recipe_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-ingredients", "{{recipe_ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Recipe Ingredient",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"recipe_id\": \"{{recipe_id}}\",\n  \"ingredient_id\": \"{{ingredient_id}}\",\n  \"quantity\": 3.0,\n  \"unit_type\": \"Liters\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-ingredients/{{recipe_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-ingredients", "{{recipe_ingredient_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Recipe Ingredient",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/inventory/recipe-ingredients/{{recipe_ingredient_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "inventory", "recipe-ingredients", "{{recipe_ingredient_id}}"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📄 Invoice Management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/invoices/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "invoices", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Expense Categories",
+					"item": [
+						{
+							"name": "List Expense Categories",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories"]
+								}
+							}
+						},
+						{
+							"name": "Create Expense Category",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"category_name\": \"Test Category\",\n  \"description\": \"Test expense category\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories"]
+								}
+							}
+						},
+						{
+							"name": "Get Expense Category",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories/{{expense_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories", "{{expense_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Expense Category",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"category_name\": \"Updated Category\",\n  \"description\": \"Updated expense category\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories/{{expense_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories", "{{expense_category_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Expense Category",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/expense-categories/{{expense_category_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "expense-categories", "{{expense_category_id}}"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Invoices",
+					"item": [
+						{
+							"name": "List Invoices",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices"]
+								}
+							}
+						},
+						{
+							"name": "Create Invoice",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"invoice_number\": \"INV-001\",\n  \"transaction_date\": \"2024-01-15T00:00:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"expense_category_id\": \"{{expense_category_id}}\",\n  \"image_url\": \"https://example.com/invoice.jpg\",\n  \"notes\": \"Test invoice\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"items\": [\n    {\n      \"detail\": \"Test Item\",\n      \"count\": 10,\n      \"unit_type\": \"Units\",\n      \"price\": 5.50,\n      \"ingredient_id\": \"{{ingredient_id}}\"\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices"]
+								}
+							}
+						},
+						{
+							"name": "Get Invoice",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Get Invoice by Number",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/number/INV-001",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "number", "INV-001"]
+								}
+							}
+						},
+						{
+							"name": "Update Invoice",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"invoice_number\": \"INV-001-UPDATED\",\n  \"transaction_date\": \"2024-01-16T00:00:00Z\",\n  \"transaction_type\": \"outcome\",\n  \"expense_category_id\": \"{{expense_category_id}}\",\n  \"image_url\": \"https://example.com/updated-invoice.jpg\",\n  \"notes\": \"Updated test invoice\",\n  \"supplier_id\": \"{{supplier_id}}\",\n  \"items\": [\n    {\n      \"detail\": \"Updated Test Item\",\n      \"count\": 15,\n      \"unit_type\": \"Units\",\n      \"price\": 6.00,\n      \"ingredient_id\": \"{{ingredient_id}}\"\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Delete Invoice",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/invoices/{{invoice_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "invoices", "{{invoice_id}}"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🛒 Orders Management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/orders/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "orders", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Orders",
+					"item": [
+						{
+							"name": "List Orders",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders"]
+								}
+							}
+						},
+						{
+							"name": "Create Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_name\": \"John Doe\",\n  \"customer_phone\": \"+1234567890\",\n  \"customer_email\": \"john@example.com\",\n  \"total_amount\": 25.50,\n  \"discount_amount\": 2.50,\n  \"payment_method\": \"cash\",\n  \"order_status\": \"pending\",\n  \"notes\": \"Test order\",\n  \"ordered_recipes\": [\n    {\n      \"recipe_id\": \"{{recipe_id}}\",\n      \"quantity\": 2,\n      \"unit_price\": 12.75\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders"]
+								}
+							}
+						},
+						{
+							"name": "Get Order",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "{{order_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Update Order",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"customer_name\": \"Jane Doe\",\n  \"customer_phone\": \"+0987654321\",\n  \"customer_email\": \"jane@example.com\",\n  \"total_amount\": 30.00,\n  \"discount_amount\": 3.00,\n  \"payment_method\": \"card\",\n  \"order_status\": \"completed\",\n  \"notes\": \"Updated test order\",\n  \"ordered_recipes\": [\n    {\n      \"recipe_id\": \"{{recipe_id}}\",\n      \"quantity\": 3,\n      \"unit_price\": 15.00\n    }\n  ]\n}"
+								},
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "{{order_id}}"]
+								}
+							}
+						},
+						{
+							"name": "Cancel Order",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/{{order_id}}/cancel",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "{{order_id}}", "cancel"]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Statistics",
+					"item": [
+						{
+							"name": "Order Summary",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/summary",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "summary"]
+								}
+							}
+						},
+						{
+							"name": "Payment Method Stats",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/orders/stats/payment-methods",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "orders", "stats", "payment-methods"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🔧 Gateway Management",
+			"item": [
+				{
+					"name": "Gateway Health",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/gateway/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "gateway", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Service Logs",
+					"item": [
+						{
+							"name": "Get Gateway Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/gateway-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "gateway-service"]
+								}
+							}
+						},
+						{
+							"name": "Get Session Service Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/session-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "session-service"]
+								}
+							}
+						},
+						{
+							"name": "Get Inventory Service Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/inventory-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "inventory-service"]
+								}
+							}
+						},
+						{
+							"name": "Get Invoice Service Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/invoice-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "invoice-service"]
+								}
+							}
+						},
+						{
+							"name": "Get Orders Service Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/orders-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "orders-service"]
+								}
+							}
+						},
+						{
+							"name": "Get Data Service Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{session_id}}"
+									}
+								],
+								"url": {
+									"raw": "{{gateway_url}}/api/v1/logs/data-service",
+									"host": ["{{gateway_url}}"],
+									"path": ["api", "v1", "logs", "data-service"]
+								}
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "🗄️ Data Service",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/data/p/health",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "data", "p", "health"]
+						}
+					}
+				},
+				{
+					"name": "Database Stats",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{gateway_url}}/api/v1/data/p/stats",
+							"host": ["{{gateway_url}}"],
+							"path": ["api", "v1", "data", "p", "stats"]
+						}
+					}
+				}
+			]
 		}
 	],
 	"event": [
@@ -727,23 +2148,18 @@
 			"type": "string"
 		},
 		{
+			"key": "session_id",
+			"value": "",
+			"type": "string"
+		},
+		{
 			"key": "auth_token",
 			"value": "",
 			"type": "string"
 		},
 		{
-			"key": "user_id",
+			"key": "supplier_id",
 			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "session_id",
-													"value": "",
-			"type": "string"
-												},
-												{
-													"key": "supplier_id",
-													"value": "",
 			"type": "string"
 		},
 		{
@@ -753,6 +2169,31 @@
 		},
 		{
 			"key": "ingredient_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "existence_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recipe_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recipe_category_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "recipe_ingredient_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "runout_ingredient_id",
 			"value": "",
 			"type": "string"
 		},
@@ -770,16 +2211,6 @@
 			"key": "order_id",
 			"value": "",
 			"type": "string"
-		},
-		{
-			"key": "customer_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "service_name",
-			"value": "session",
-				"type": "string"
 		}
 	]
 } 
