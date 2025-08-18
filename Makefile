@@ -149,6 +149,9 @@ restart-docker: stop-docker start-docker ## Restart all Docker containers
 test-all: test-data test-session test-orders test-inventory test-gateway ## Test all services
 	@echo "$(GREEN)🧪 All service tests completed!$(RESET)"
 
+build-all: build-data build-session build-orders build-inventory build-invoice build-gateway build-ui ## Build all services
+	@echo "$(GREEN)🔨 All services built successfully!$(RESET)"
+
 status: status-data status-session status-orders status-inventory status-gateway ## Check status of all services
 	@echo "$(CYAN)📊 System status check completed$(RESET)"
 
@@ -429,6 +432,34 @@ test-ui: ## Test UI service
 	@echo "$(CYAN)🧪 Testing UI Service...$(RESET)"
 	@cd $(UI_SERVICE) && $(MAKE) test
 
+build-data: ## Build data service
+	@echo "$(CYAN)🔨 Building Data Service...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) build
+
+build-session: ## Build session service
+	@echo "$(CYAN)🔨 Building Session Service...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) build
+
+build-orders: ## Build orders service
+	@echo "$(CYAN)🔨 Building Orders Service...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) build
+
+build-inventory: ## Build inventory service
+	@echo "$(CYAN)🔨 Building Inventory Service...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) build
+
+build-invoice: ## Build invoice service
+	@echo "$(CYAN)🔨 Building Invoice Service...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) build
+
+build-gateway: ## Build gateway service
+	@echo "$(CYAN)🔨 Building Gateway Service...$(RESET)"
+	@cd $(GATEWAY_SERVICE) && $(MAKE) build
+
+build-ui: ## Build UI service
+	@echo "$(CYAN)🔨 Building UI Service...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) build
+
 health-data: ## Check data service health
 	@echo "$(CYAN)🏥 Checking Data Service health...$(RESET)"
 	@cd $(DATA_SERVICE) && $(MAKE) health
@@ -582,4 +613,4 @@ version: ## Show version information for all services
 
 
 # List all targets for tab completion
-.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-invoice start-gateway start-ui stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway health-data health-session health-orders health-gateway health-ui clean-all clean-data clean-session clean-orders clean-gateway clean-ui system-info banner logs-all version
+.PHONY: help fresh start-locally stop-locally restart-locally start-docker stop-docker restart-docker test-all build-all status health-all final-status fresh-data fresh-session fresh-orders fresh-gateway fresh-ui start-data start-session start-orders start-inventory start-invoice start-gateway start-ui stop-data stop-session stop-orders stop-inventory stop-invoice stop-gateway stop-ui status-data status-session status-orders status-inventory status-gateway test-data test-session test-orders test-inventory test-gateway build-data build-session build-orders build-inventory build-invoice build-gateway build-ui health-data health-session health-orders health-gateway health-ui clean-all clean-data clean-session clean-orders clean-gateway clean-ui system-info banner logs-all version
