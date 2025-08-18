@@ -3567,7 +3567,6 @@
                                 <th>Name</th>
                                 <th>Description</th>
                                 <th>Category</th>
-                                <th>Supplier</th>
                                 <th>Created</th>
                                 <th class="text-end">Actions</th>
                             </tr>
@@ -3590,9 +3589,6 @@
                     <td>${ingredient.description || '-'}</td>
                     <td>
                         ${ingredient.category_name ? `<span class="badge bg-info">${ingredient.category_name}</span>` : '-'}
-                    </td>
-                    <td>
-                        -
                     </td>
                     <td>${new Date(ingredient.created_at).toLocaleDateString()}</td>
                     <td>
