@@ -51,6 +51,14 @@ type Config struct {
 	DefaultTaxRate     float64
 	DefaultServiceRate float64
 	OrderTimeout       int // minutes
+
+	// Database configuration
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBSSLMode  string
 }
 
 func LoadConfig() *Config {
@@ -82,26 +90,34 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
 	}
 
-	// Set settings as environment variables
-	setSettingsAsEnvVars(settings, logger)
-
-	// Create config with environment variables (now populated from data service)
+	// Create config and populate it directly from settings
 	config := &Config{
 		// Server
-		ServerHost: getEnv("SERVER_HOST", "0.0.0.0"),
-		ServerPort: getEnv("SERVER_PORT", "8083"),
+		ServerHost: "0.0.0.0",
+		ServerPort: "8083",
 
 		// JWT
-		JWTSecret: getEnv("JWT_SECRET", "icecream-super-secret-jwt-key-change-in-production-2024"),
+		JWTSecret: "icecream-super-secret-jwt-key-change-in-production-2024",
 
 		// Logging
-		LogLevel: getEnv("LOG_LEVEL", "info"),
+		LogLevel: "info",
 
 		// Business
-		DefaultTaxRate:     getEnvFloat("DEFAULT_TAX_RATE", 13.0),
-		DefaultServiceRate: getEnvFloat("DEFAULT_SERVICE_RATE", 10.0),
-		OrderTimeout:       getEnvInt("ORDER_TIMEOUT", 30),
+		DefaultTaxRate:     13.0,
+		DefaultServiceRate: 10.0,
+		OrderTimeout:       30,
+
+		// Database
+		DBHost:     "localhost",
+		DBPort:     "5432",
+		DBUser:     "postgres",
+		DBPassword: "postgres123",
+		DBName:     "icecream_store",
+		DBSSLMode:  "disable",
 	}
+
+	// Populate config from settings
+	populateConfigFromSettings(config, settings, logger)
 
 	logger.WithFields(logrus.Fields{
 		"server_port":          config.ServerPort,
@@ -176,20 +192,60 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	return settingsResponse.Data, nil
 }
 
-// setSettingsAsEnvVars sets the settings as environment variables
-func setSettingsAsEnvVars(settings []Setting, logger *logrus.Logger) {
+// populateConfigFromSettings populates the config struct from settings
+func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
 	for _, setting := range settings {
-		// Set environment variable using the key as the variable name
-		os.Setenv(setting.Key, setting.Value)
+		switch setting.Key {
+		case "SERVER_PORT":
+			config.ServerPort = setting.Value
+		case "SERVER_HOST":
+			config.ServerHost = setting.Value
+		case "JWT_SECRET":
+			config.JWTSecret = setting.Value
+		case "LOG_LEVEL":
+			config.LogLevel = setting.Value
+		case "DEFAULT_TAX_RATE":
+			if rate, err := strconv.ParseFloat(setting.Value, 64); err == nil {
+				config.DefaultTaxRate = rate
+			} else {
+				logger.WithError(err).Warnf("Failed to parse DEFAULT_TAX_RATE: %s", setting.Value)
+			}
+		case "DEFAULT_SERVICE_RATE":
+			if rate, err := strconv.ParseFloat(setting.Value, 64); err == nil {
+				config.DefaultServiceRate = rate
+			} else {
+				logger.WithError(err).Warnf("Failed to parse DEFAULT_SERVICE_RATE: %s", setting.Value)
+			}
+		case "ORDER_TIMEOUT":
+			if timeout, err := strconv.Atoi(setting.Value); err == nil {
+				config.OrderTimeout = timeout
+			} else {
+				logger.WithError(err).Warnf("Failed to parse ORDER_TIMEOUT: %s", setting.Value)
+			}
+		case "DB_HOST":
+			config.DBHost = setting.Value
+		case "DB_PORT":
+			config.DBPort = setting.Value
+		case "DB_USER":
+			config.DBUser = setting.Value
+		case "DB_PASSWORD":
+			config.DBPassword = setting.Value
+		case "DB_NAME":
+			config.DBName = setting.Value
+		case "DB_SSL_MODE":
+			config.DBSSLMode = setting.Value
+		default:
+			logger.WithField("key", setting.Key).Debug("Setting not mapped to config struct")
+		}
 
 		logger.WithFields(logrus.Fields{
 			"key":     setting.Key,
 			"value":   setting.Value,
 			"service": setting.Service,
-		}).Debug("Set environment variable from data service")
+		}).Debug("Populated config from data service setting")
 	}
 
-	logger.WithField("variables_set", len(settings)).Info("Environment variables set from data service settings")
+	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 }
 
 func getEnv(key, defaultValue string) string {

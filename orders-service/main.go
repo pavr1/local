@@ -33,8 +33,8 @@ func main() {
 	// Update logger with proper log level
 	logger = setupLogger(cfg.LogLevel)
 
-	// Connect to database with default credentials
-	db, err := connectToDatabase(logger)
+	// Connect to database using config
+	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
@@ -104,9 +104,10 @@ func setupLogger(logLevel string) *logrus.Logger {
 	return logger
 }
 
-// connectToDatabase establishes database connection
-func connectToDatabase(logger *logrus.Logger) (*sql.DB, error) {
-	dsn := "host=localhost port=5432 user=postgres password=postgres123 dbname=icecream_store sslmode=disable"
+// connectToDatabase establishes database connection using config
+func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
 
 	var db *sql.DB
 	var err error

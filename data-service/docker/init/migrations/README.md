@@ -2,6 +2,13 @@
 
 This directory contains database migration files for the Ice Cream Store application.
 
+## Migration Rules
+
+- **Migration files MUST be consecutive**: Migration files must be numbered sequentially (001, 002, 003, etc.) without gaps or duplicates.
+- Each migration should have both `.up.sql` and `.down.sql` files.
+- Migration files should be descriptive and indicate what they do.
+- Never reuse migration numbers or create gaps in the sequence.
+
 ## Migration Structure
 
 Each migration consists of two files:

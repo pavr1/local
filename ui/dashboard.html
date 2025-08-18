@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ice Cream Store - Management Dashboard</title>
+    <!-- Cache bust: v1.4 -->
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -2666,9 +2667,9 @@
                         await loadSuppliersData();
                     }
                     
-                    // If called from ingredient modal, refresh dropdowns
-                    if (currentIngredientModal) {
-                        currentIngredientModal = null;
+cd                    // If called from supplier modal, refresh dropdowns
+                    if (currentSupplierModal) {
+                        currentSupplierModal = null;
                     }
                 } else {
                     throw new Error(result.message || 'Failed to create supplier');

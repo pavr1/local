@@ -88,7 +88,7 @@ build-docker: ## Build Docker image for UI service
 	@cd docker && docker build --no-cache -t docker-ui-service -f Dockerfile ..
 	@echo "$(GREEN)✅ Docker image built: docker-ui-service$(RESET)"
 
-start-docker: build-docker ## Start UI service in Docker
+start-docker: fresh-docker ## Start UI service in Docker (fresh build)
 	@echo "$(CYAN)🎨 Starting UI Service...$(RESET)"
 	@./scripts/start.sh
 
