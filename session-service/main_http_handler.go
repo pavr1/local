@@ -17,6 +17,7 @@ type MainHTTPHandler struct {
 	sessionsHandler   *handlers.HTTPHandler
 	gatewayMiddleware *middleware.GatewayMiddleware
 	logger            *logrus.Logger
+	dataServiceURL    string // For testing - allows mocking the data service URL
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
@@ -89,6 +90,11 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 // checkDataServiceHealth checks if the data-service is healthy
 func (h *MainHTTPHandler) checkDataServiceHealth() bool {
+	// Skip data-service health check in unit tests
+	if os.Getenv("SKIP_DATA_SERVICE_HEALTH_CHECK") == "true" {
+		return true
+	}
+
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
