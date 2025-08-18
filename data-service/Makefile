@@ -1,7 +1,7 @@
 # Ice Cream Store Data Service Makefile
 # This Makefile provides convenient commands to manage the PostgreSQL database service
 
-.PHONY: help start stop restart reset logs connect status health test build run clean install deps fresh
+.PHONY: help start stop restart reset logs connect status health test test-unit test-integration build run clean install deps fresh
 
 # Default target
 .DEFAULT_GOAL := help
@@ -201,8 +201,16 @@ run: build ## Run the data service application to test database connection
 	@echo "$(CYAN)🧪 Running data service application...$(RESET)"
 	@./bin/data-service
 
-test: health ## Run basic database connectivity tests
-	@echo "$(CYAN)🧪 Running connectivity tests...$(RESET)"
+test: test-unit ## Run unit tests (no database required)
+	@echo "$(GREEN)✅ All tests completed!$(RESET)"
+
+test-unit: ## Run unit tests only (no database required)
+	@echo "$(CYAN)🧪 Running unit tests...$(RESET)"
+	@go test ./... -v -count=1
+	@echo "$(GREEN)✅ Unit tests completed!$(RESET)"
+
+test-integration: health ## Run integration tests (requires database)
+	@echo "$(CYAN)🧪 Running integration tests...$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Connection test successful!' as result;" > /dev/null 2>&1 && \
 		echo "$(GREEN)✅ Database connectivity test passed!$(RESET)" || \
 		(echo "$(RED)❌ Database connectivity test failed!$(RESET)" && exit 1)

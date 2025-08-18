@@ -410,7 +410,7 @@ status-ui: ## Check UI service status
 
 test-data: ## Test data service
 	@echo "$(CYAN)🧪 Testing Data Service...$(RESET)"
-	@cd $(DATA_SERVICE) && $(MAKE) test
+	@cd $(DATA_SERVICE) && $(MAKE) test-unit
 
 test-auth: ## Test auth service
 	@echo "$(CYAN)🧪 Testing Auth Service...$(RESET)"

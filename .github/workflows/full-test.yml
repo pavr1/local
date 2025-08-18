@@ -37,7 +37,11 @@ jobs:
       working-directory: ${{ matrix.service }}
       run: |
         echo "🧪 Running tests for ${{ matrix.service }}..."
-        make test
+        if [ "${{ matrix.service }}" = "data-service" ]; then
+          make test-unit
+        else
+          make test
+        fi
         echo "✅ Tests completed for ${{ matrix.service }}"
         
     - name: Build ${{ matrix.service }}
