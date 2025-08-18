@@ -41,6 +41,14 @@ type Config struct {
 	ServerPort string
 	ServerHost string
 
+	// Database settings
+	DBHost     string
+	DBPort     string
+	DBUser     string
+	DBPassword string
+	DBName     string
+	DBSSLMode  string
+
 	// JWT settings
 	JWTSecret         string
 	JWTExpirationTime time.Duration
@@ -74,22 +82,24 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
 	}
 
-	// Set settings as environment variables
-	setSettingsAsEnvVars(settings, logger)
-
-	// Create config with environment variables (now populated from data service)
+	// Create config and populate from settings
 	config := &Config{
-		// Server settings
-		ServerPort: getEnvString("SESSION_SERVER_PORT", "8081"),
-		ServerHost: getEnvString("SESSION_SERVER_HOST", "0.0.0.0"),
-
-		// JWT settings
-		JWTSecret:         getEnvString("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
-		JWTExpirationTime: getEnvDuration("JWT_EXPIRATION_TIME", "30m"),
-
-		// Logging
-		LogLevel: getEnvString("LOG_LEVEL", "info"),
+		// Default values
+		ServerPort:        "8081",
+		ServerHost:        "0.0.0.0",
+		DBHost:            "localhost",
+		DBPort:            "5432",
+		DBUser:            "postgres",
+		DBPassword:        "postgres123",
+		DBName:            "icecream_store",
+		DBSSLMode:         "disable",
+		JWTSecret:         "your-super-secret-jwt-key-change-in-production",
+		JWTExpirationTime: 30 * time.Minute,
+		LogLevel:          "info",
 	}
+
+	// Populate config from settings
+	populateConfigFromSettings(config, settings, logger)
 
 	logger.WithFields(logrus.Fields{
 		"server_port":    config.ServerPort,
@@ -162,20 +172,48 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	return settingsResponse.Data, nil
 }
 
-// setSettingsAsEnvVars sets the settings as environment variables
-func setSettingsAsEnvVars(settings []Setting, logger *logrus.Logger) {
+// populateConfigFromSettings populates the config struct from settings
+func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
 	for _, setting := range settings {
-		// Set environment variable using the key as the variable name
-		os.Setenv(setting.Key, setting.Value)
+		switch setting.Key {
+		case "SESSION_SERVER_PORT":
+			config.ServerPort = setting.Value
+		case "SESSION_SERVER_HOST":
+			config.ServerHost = setting.Value
+		case "JWT_SECRET":
+			config.JWTSecret = setting.Value
+		case "JWT_EXPIRATION_TIME":
+			if duration, err := time.ParseDuration(setting.Value); err == nil {
+				config.JWTExpirationTime = duration
+			} else {
+				logger.WithError(err).Warnf("Failed to parse JWT_EXPIRATION_TIME: %s", setting.Value)
+			}
+		case "LOG_LEVEL":
+			config.LogLevel = setting.Value
+		case "DB_HOST":
+			config.DBHost = setting.Value
+		case "DB_PORT":
+			config.DBPort = setting.Value
+		case "DB_USER":
+			config.DBUser = setting.Value
+		case "DB_PASSWORD":
+			config.DBPassword = setting.Value
+		case "DB_NAME":
+			config.DBName = setting.Value
+		case "DB_SSL_MODE":
+			config.DBSSLMode = setting.Value
+		default:
+			logger.WithField("key", setting.Key).Debug("Setting not mapped to config struct")
+		}
 
 		logger.WithFields(logrus.Fields{
 			"key":     setting.Key,
 			"value":   setting.Value,
 			"service": setting.Service,
-		}).Debug("Set environment variable from data service")
+		}).Debug("Populated config from data service setting")
 	}
 
-	logger.WithField("variables_set", len(settings)).Info("Environment variables set from data service settings")
+	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 }
 
 func getEnvString(key, defaultValue string) string {

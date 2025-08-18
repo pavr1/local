@@ -10,6 +10,9 @@ services:
       INVOICE_SERVER_HOST: 0.0.0.0
       INVOICE_SERVER_PORT: 8085
       
+      # Data Service Configuration
+      DATA_SERVICE_URL: http://icecream_data_service:8086
+      
       # Database Configuration (connect to existing data-service database)
       DB_HOST: postgres
       DB_PORT: 5432

@@ -10,6 +10,9 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8083
       
+      # Data Service Configuration
+      DATA_SERVICE_URL: http://icecream_data_service:8086
+      
       # JWT Configuration (must match session-service)
       JWT_SECRET: ${JWT_SECRET:-icecream-super-secret-jwt-key-change-in-production-2024}
       
