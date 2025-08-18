@@ -17,13 +17,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "0.0.0.0", config.ServerHost)
 	assert.Equal(t, "8084", config.ServerPort)
 
-	// Database settings
-	assert.Equal(t, "localhost", config.DBHost)
-	assert.Equal(t, "5432", config.DBPort)
-	assert.Equal(t, "postgres", config.DBUser)
-	assert.Equal(t, "postgres123", config.DBPassword)
-	assert.Equal(t, "icecream_store", config.DBName)
-	assert.Equal(t, "disable", config.DBSSLMode)
+	// Database settings are now loaded from data service
+	// No longer stored in config struct
 
 	// Logging
 	assert.Equal(t, "info", config.LogLevel)
@@ -35,12 +30,6 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 	envVars := map[string]string{
 		"INVENTORY_SERVER_HOST": "127.0.0.1",
 		"INVENTORY_SERVER_PORT": "9084",
-		"DB_HOST":               "db.example.com",
-		"DB_PORT":               "3306",
-		"DB_USER":               "testuser",
-		"DB_PASSWORD":           "testpass",
-		"DB_NAME":               "testdb",
-		"DB_SSLMODE":            "require",
 		"LOG_LEVEL":             "debug",
 	}
 
@@ -55,12 +44,7 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 	// Verify environment variables were used
 	assert.Equal(t, "127.0.0.1", config.ServerHost)
 	assert.Equal(t, "9084", config.ServerPort)
-	assert.Equal(t, "db.example.com", config.DBHost)
-	assert.Equal(t, "3306", config.DBPort)
-	assert.Equal(t, "testuser", config.DBUser)
-	assert.Equal(t, "testpass", config.DBPassword)
-	assert.Equal(t, "testdb", config.DBName)
-	assert.Equal(t, "require", config.DBSSLMode)
+	// Database settings are now loaded from data service, not from environment variables
 	assert.Equal(t, "debug", config.LogLevel)
 }
 
@@ -271,21 +255,12 @@ func TestConfigConsistency(t *testing.T) {
 	// Test that required fields are not empty
 	require.NotEmpty(t, config.ServerHost)
 	require.NotEmpty(t, config.ServerPort)
-	require.NotEmpty(t, config.DBHost)
-	require.NotEmpty(t, config.DBPort)
-	require.NotEmpty(t, config.DBUser)
-	require.NotEmpty(t, config.DBName)
 	require.NotEmpty(t, config.LogLevel)
 
 	// Test that server port is a valid number
 	assert.Regexp(t, `^\d+$`, config.ServerPort, "Server port should be numeric")
 
-	// Test that DB port is a valid number
-	assert.Regexp(t, `^\d+$`, config.DBPort, "DB port should be numeric")
-
-	// Test valid SSL modes
-	validSSLModes := []string{"disable", "require", "verify-ca", "verify-full"}
-	assert.Contains(t, validSSLModes, config.DBSSLMode, "DB SSL mode should be valid")
+	// Database settings are now loaded from data service, not from config
 
 	// Test valid log levels
 	validLogLevels := []string{"trace", "debug", "info", "warn", "error", "fatal", "panic"}
@@ -322,21 +297,7 @@ func TestEnvironmentVariableOverrides(t *testing.T) {
 		assert.Equal(t, "8585", config.ServerPort)
 	})
 
-	t.Run("database configuration override", func(t *testing.T) {
-		os.Setenv("DB_HOST", "prod-db.example.com")
-		os.Setenv("DB_PORT", "5433")
-		os.Setenv("DB_NAME", "prod_icecream_store")
-		defer func() {
-			os.Unsetenv("DB_HOST")
-			os.Unsetenv("DB_PORT")
-			os.Unsetenv("DB_NAME")
-		}()
-
-		config := LoadConfig()
-		assert.Equal(t, "prod-db.example.com", config.DBHost)
-		assert.Equal(t, "5433", config.DBPort)
-		assert.Equal(t, "prod_icecream_store", config.DBName)
-	})
+	// Database configuration is now loaded from data service, not from environment variables
 }
 
 // TestEdgeCases tests edge cases for environment variable parsing

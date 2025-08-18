@@ -18,12 +18,8 @@ func TestLoadConfigDefaults(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "8085", cfg.ServerPort)
 	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
-	assert.Equal(t, "localhost", cfg.DBHost)
-	assert.Equal(t, "5432", cfg.DBPort)
-	assert.Equal(t, "postgres", cfg.DBUser)
-	assert.Equal(t, "postgres123", cfg.DBPassword)
-	assert.Equal(t, "icecream_store", cfg.DBName)
-	assert.Equal(t, "disable", cfg.DBSSLMode)
+	// Database settings are now loaded from data service
+	// No longer stored in config struct
 	assert.Equal(t, "info", cfg.LogLevel)
 }
 
@@ -35,12 +31,6 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	// Set custom environment variables
 	os.Setenv("INVOICE_SERVER_PORT", "9090")
 	os.Setenv("INVOICE_SERVER_HOST", "127.0.0.1")
-	os.Setenv("DB_HOST", "db.example.com")
-	os.Setenv("DB_PORT", "5433")
-	os.Setenv("DB_USER", "invoice_user")
-	os.Setenv("DB_PASSWORD", "secure_password")
-	os.Setenv("DB_NAME", "invoice_db")
-	os.Setenv("DB_SSLMODE", "require")
 	os.Setenv("LOG_LEVEL", "debug")
 
 	cfg := LoadConfig()
@@ -48,12 +38,7 @@ func TestLoadConfigFromEnvironment(t *testing.T) {
 	assert.NotNil(t, cfg)
 	assert.Equal(t, "9090", cfg.ServerPort)
 	assert.Equal(t, "127.0.0.1", cfg.ServerHost)
-	assert.Equal(t, "db.example.com", cfg.DBHost)
-	assert.Equal(t, "5433", cfg.DBPort)
-	assert.Equal(t, "invoice_user", cfg.DBUser)
-	assert.Equal(t, "secure_password", cfg.DBPassword)
-	assert.Equal(t, "invoice_db", cfg.DBName)
-	assert.Equal(t, "require", cfg.DBSSLMode)
+	// Database settings are now loaded from data service, not from environment variables
 	assert.Equal(t, "debug", cfg.LogLevel)
 }
 
@@ -64,7 +49,6 @@ func TestLoadConfigPartialEnvironment(t *testing.T) {
 
 	// Set only some environment variables
 	os.Setenv("INVOICE_SERVER_PORT", "8086")
-	os.Setenv("DB_NAME", "custom_invoice_db")
 	os.Setenv("LOG_LEVEL", "warn")
 
 	cfg := LoadConfig()
@@ -72,16 +56,11 @@ func TestLoadConfigPartialEnvironment(t *testing.T) {
 	assert.NotNil(t, cfg)
 	// Custom values from environment
 	assert.Equal(t, "8086", cfg.ServerPort)
-	assert.Equal(t, "custom_invoice_db", cfg.DBName)
 	assert.Equal(t, "warn", cfg.LogLevel)
 
 	// Default values for unset variables
 	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
-	assert.Equal(t, "localhost", cfg.DBHost)
-	assert.Equal(t, "5432", cfg.DBPort)
-	assert.Equal(t, "postgres", cfg.DBUser)
-	assert.Equal(t, "postgres123", cfg.DBPassword)
-	assert.Equal(t, "disable", cfg.DBSSLMode)
+	// Database settings are now loaded from data service, not from environment variables
 }
 
 func TestGetEnvString(t *testing.T) {
@@ -162,25 +141,14 @@ func TestConfigStructFields(t *testing.T) {
 	cfg := &Config{
 		ServerPort: "8085",
 		ServerHost: "0.0.0.0",
-		DBHost:     "localhost",
-		DBPort:     "5432",
-		DBUser:     "postgres",
-		DBPassword: "postgres123",
-		DBName:     "icecream_store",
-		DBSSLMode:  "disable",
 		LogLevel:   "info",
 	}
 
 	// Test that all required fields are present
 	assert.NotEmpty(t, cfg.ServerPort)
 	assert.NotEmpty(t, cfg.ServerHost)
-	assert.NotEmpty(t, cfg.DBHost)
-	assert.NotEmpty(t, cfg.DBPort)
-	assert.NotEmpty(t, cfg.DBUser)
-	assert.NotEmpty(t, cfg.DBPassword)
-	assert.NotEmpty(t, cfg.DBName)
-	assert.NotEmpty(t, cfg.DBSSLMode)
 	assert.NotEmpty(t, cfg.LogLevel)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestInvoiceServiceSpecificPort(t *testing.T) {
@@ -199,15 +167,10 @@ func TestConfigConsistencyAcrossServices(t *testing.T) {
 	clearEnvVars()
 	defer clearEnvVars()
 
-	cfg := LoadConfig()
+	_ = LoadConfig()
 
-	// Database connection settings should be consistent with other services
-	assert.Equal(t, "localhost", cfg.DBHost)
-	assert.Equal(t, "5432", cfg.DBPort)
-	assert.Equal(t, "postgres", cfg.DBUser)
-	assert.Equal(t, "postgres123", cfg.DBPassword)
-	assert.Equal(t, "icecream_store", cfg.DBName) // Same database for all services
-	assert.Equal(t, "disable", cfg.DBSSLMode)
+	// Database settings are now loaded from data service, not from config
+	// All services use the same data service for configuration
 }
 
 // Helper function to clear all relevant environment variables

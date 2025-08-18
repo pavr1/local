@@ -137,12 +137,6 @@ func TestConfigValidation(t *testing.T) {
 	cfg := &config.Config{
 		ServerPort:        "8080",
 		ServerHost:        "0.0.0.0",
-		DatabaseHost:      "localhost",
-		DatabasePort:      5432,
-		DatabaseUser:      "testuser",
-		DatabasePassword:  "testpass",
-		DatabaseName:      "testdb",
-		DatabaseSSLMode:   "disable",
 		JWTSecret:         "test-secret",
 		JWTExpirationTime: 1 * time.Hour,
 		LogLevel:          "info",
@@ -150,15 +144,10 @@ func TestConfigValidation(t *testing.T) {
 
 	assert.Equal(t, "8080", cfg.ServerPort)
 	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
-	assert.Equal(t, "localhost", cfg.DatabaseHost)
-	assert.Equal(t, 5432, cfg.DatabasePort)
-	assert.Equal(t, "testuser", cfg.DatabaseUser)
-	assert.Equal(t, "testpass", cfg.DatabasePassword)
-	assert.Equal(t, "testdb", cfg.DatabaseName)
-	assert.Equal(t, "disable", cfg.DatabaseSSLMode)
 	assert.Equal(t, "test-secret", cfg.JWTSecret)
 	assert.Equal(t, 1*time.Hour, cfg.JWTExpirationTime)
 	assert.Equal(t, "info", cfg.LogLevel)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestRouterSetup(t *testing.T) {

@@ -31,9 +31,17 @@ type GetSettingsByServiceRequest struct {
 	Service string `json:"service" validate:"required"`
 }
 
-// GetSettingsByNameRequest represents the request to get settings by name
-type GetSettingsByNameRequest struct {
-	Key string `json:"key" validate:"required"`
+// GetSettingByKeyRequest represents the request to get a setting by service and key
+type GetSettingByKeyRequest struct {
+	Service string `json:"service" validate:"required"`
+	Key     string `json:"key" validate:"required"`
+}
+
+// UpdateSettingRequest represents the request to update a setting
+type UpdateSettingRequest struct {
+	Service string `json:"service" validate:"required"`
+	Key     string `json:"key" validate:"required"`
+	Value   string `json:"value" validate:"required"`
 }
 
 // Response structs

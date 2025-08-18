@@ -22,10 +22,10 @@ func main() {
 	logger := setupLogger("info") // Default log level for initial setup
 	logger.Info("Starting Session Service")
 
-	// Load configuration from database
-	cfg, err := config.LoadConfigFromDatabase(logger)
+	// Load configuration from data service
+	cfg, err := config.LoadConfigFromDataService(logger)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to load configuration from database")
+		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	// Update logger with proper log level

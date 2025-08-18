@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"os"
 	"testing"
 
@@ -55,28 +54,8 @@ func TestConnectToDatabase(t *testing.T) {
 		assert.NoError(t, mock.ExpectationsWereMet())
 	})
 
-	t.Run("database connection string format", func(t *testing.T) {
-		cfg := &config.Config{
-			DBHost:     "localhost",
-			DBPort:     "5432",
-			DBUser:     "testuser",
-			DBPassword: "testpass",
-			DBName:     "testdb",
-			DBSSLMode:  "disable",
-		}
-
-		logger := setupLogger("info")
-		dsn := buildDSN(cfg)
-		expected := "host=localhost port=5432 user=testuser password=testpass dbname=testdb sslmode=disable"
-		assert.Equal(t, expected, dsn)
-
-		// Test that connectToDatabase would use this DSN (without actually connecting)
-		_, err := connectToDatabaseWithDSN(dsn, logger)
-		// We expect an error since we're not connecting to a real database
-		assert.Error(t, err)
-		// Could be various error messages depending on the system
-		assert.True(t, err != nil, "Should get an error when connecting with test credentials")
-	})
+	// Database connection is now handled with hardcoded values in connectToDatabase
+	// No longer using config fields for database connection
 }
 
 // TestConfigurationIntegration tests that configuration loads correctly for main
@@ -87,10 +66,9 @@ func TestConfigurationIntegration(t *testing.T) {
 		// Verify essential configuration values
 		assert.NotEmpty(t, cfg.ServerHost)
 		assert.NotEmpty(t, cfg.ServerPort)
-		assert.NotEmpty(t, cfg.DBHost)
-		assert.NotEmpty(t, cfg.DBPort)
 		assert.NotEmpty(t, cfg.LogLevel)
 		assert.Equal(t, "8084", cfg.ServerPort) // Inventory service specific port
+		// Database settings are now loaded from data service, not from config
 	})
 
 	t.Run("configuration with environment overrides", func(t *testing.T) {
@@ -98,8 +76,6 @@ func TestConfigurationIntegration(t *testing.T) {
 		envVars := map[string]string{
 			"INVENTORY_SERVER_HOST": "127.0.0.1",
 			"INVENTORY_SERVER_PORT": "9084",
-			"DB_HOST":               "test-db",
-			"DB_PORT":               "3306",
 		}
 
 		for key, value := range envVars {
@@ -111,8 +87,7 @@ func TestConfigurationIntegration(t *testing.T) {
 
 		assert.Equal(t, "127.0.0.1", cfg.ServerHost)
 		assert.Equal(t, "9084", cfg.ServerPort)
-		assert.Equal(t, "test-db", cfg.DBHost)
-		assert.Equal(t, "3306", cfg.DBPort)
+		// Database settings are now loaded from data service, not from environment variables
 	})
 }
 
@@ -131,10 +106,7 @@ func TestApplicationComponents(t *testing.T) {
 		// Test required fields are not empty
 		require.NotEmpty(t, cfg.ServerHost)
 		require.NotEmpty(t, cfg.ServerPort)
-		require.NotEmpty(t, cfg.DBHost)
-		require.NotEmpty(t, cfg.DBPort)
-		require.NotEmpty(t, cfg.DBUser)
-		require.NotEmpty(t, cfg.DBName)
+		// Database settings are now loaded from data service, not from config
 	})
 
 	t.Run("main handler initialization", func(t *testing.T) {
@@ -152,83 +124,8 @@ func TestApplicationComponents(t *testing.T) {
 	})
 }
 
-// Helper function to build DSN for testing
-func buildDSN(cfg *config.Config) string {
-	return "host=" + cfg.DBHost +
-		" port=" + cfg.DBPort +
-		" user=" + cfg.DBUser +
-		" password=" + cfg.DBPassword +
-		" dbname=" + cfg.DBName +
-		" sslmode=" + cfg.DBSSLMode
-}
-
-// Helper function to test connection with DSN (extracted for testing)
-func connectToDatabaseWithDSN(dsn string, logger *logrus.Logger) (*sql.DB, error) {
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := db.Ping(); err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	return db, nil
-}
-
-// TestDSNBuilder tests the DSN building logic
-func TestDSNBuilder(t *testing.T) {
-	tests := []struct {
-		name     string
-		config   *config.Config
-		expected string
-	}{
-		{
-			name: "default configuration",
-			config: &config.Config{
-				DBHost:     "localhost",
-				DBPort:     "5432",
-				DBUser:     "postgres",
-				DBPassword: "postgres123",
-				DBName:     "icecream_store",
-				DBSSLMode:  "disable",
-			},
-			expected: "host=localhost port=5432 user=postgres password=postgres123 dbname=icecream_store sslmode=disable",
-		},
-		{
-			name: "production configuration",
-			config: &config.Config{
-				DBHost:     "prod-db.example.com",
-				DBPort:     "5432",
-				DBUser:     "produser",
-				DBPassword: "securepassword",
-				DBName:     "prod_icecream_store",
-				DBSSLMode:  "require",
-			},
-			expected: "host=prod-db.example.com port=5432 user=produser password=securepassword dbname=prod_icecream_store sslmode=require",
-		},
-		{
-			name: "test configuration",
-			config: &config.Config{
-				DBHost:     "test-db",
-				DBPort:     "3306",
-				DBUser:     "testuser",
-				DBPassword: "testpass",
-				DBName:     "test_db",
-				DBSSLMode:  "disable",
-			},
-			expected: "host=test-db port=3306 user=testuser password=testpass dbname=test_db sslmode=disable",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			dsn := buildDSN(tt.config)
-			assert.Equal(t, tt.expected, dsn)
-		})
-	}
-}
+// Database connection is now handled with hardcoded values in connectToDatabase
+// No longer using config fields for database connection
 
 // TestLoggerLevels tests different logger levels
 func TestLoggerLevels(t *testing.T) {
@@ -313,19 +210,5 @@ func BenchmarkLoggerSetup(b *testing.B) {
 	}
 }
 
-// BenchmarkDSNBuild benchmarks DSN building
-func BenchmarkDSNBuild(b *testing.B) {
-	cfg := &config.Config{
-		DBHost:     "localhost",
-		DBPort:     "5432",
-		DBUser:     "postgres",
-		DBPassword: "postgres123",
-		DBName:     "icecream_store",
-		DBSSLMode:  "disable",
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		buildDSN(cfg)
-	}
-}
+// Database connection is now handled with hardcoded values
+// No longer using config fields for database connection

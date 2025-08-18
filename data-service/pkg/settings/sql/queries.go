@@ -13,6 +13,7 @@ var (
 	LoadAllSettingsQuery     string
 	GetSettingsByServiceQuery string
 	GetSettingsByNameQuery   string
+	UpdateSettingQuery       string
 )
 
 // init loads SQL queries from embedded files
@@ -20,6 +21,7 @@ func init() {
 	LoadAllSettingsQuery = mustReadSQLFile("scripts/load_all_settings.sql")
 	GetSettingsByServiceQuery = mustReadSQLFile("scripts/get_settings_by_service.sql")
 	GetSettingsByNameQuery = mustReadSQLFile("scripts/get_settings_by_name.sql")
+	UpdateSettingQuery = mustReadSQLFile("scripts/update_setting.sql")
 }
 
 // mustReadSQLFile reads a SQL file from the embedded filesystem

@@ -14,12 +14,8 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, "8081", cfg.ServerPort)
 	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
-	assert.Equal(t, "localhost", cfg.DatabaseHost)
-	assert.Equal(t, 5432, cfg.DatabasePort)
-	assert.Equal(t, "postgres", cfg.DatabaseUser)
-	assert.Equal(t, "postgres123", cfg.DatabasePassword)
-	assert.Equal(t, "icecream_store", cfg.DatabaseName)
-	assert.Equal(t, "disable", cfg.DatabaseSSLMode)
+	// Database settings are now loaded from data service
+	// No longer stored in config struct
 	assert.Equal(t, "your-super-secret-jwt-key-change-in-production", cfg.JWTSecret)
 	assert.Equal(t, 30*time.Minute, cfg.JWTExpirationTime)
 	assert.Equal(t, "info", cfg.LogLevel)
@@ -29,12 +25,6 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 	// Set environment variables
 	os.Setenv("SESSION_SERVER_PORT", "9090")
 	os.Setenv("SESSION_SERVER_HOST", "127.0.0.1")
-	os.Setenv("DB_HOST", "test-host")
-	os.Setenv("DB_PORT", "5433")
-	os.Setenv("DB_USER", "testuser")
-	os.Setenv("DB_PASSWORD", "testpass")
-	os.Setenv("DB_NAME", "testdb")
-	os.Setenv("DB_SSLMODE", "require")
 	os.Setenv("JWT_SECRET", "test-secret")
 	os.Setenv("JWT_EXPIRATION_TIME", "1h")
 	os.Setenv("LOG_LEVEL", "debug")
@@ -58,12 +48,7 @@ func TestLoadConfigWithEnvironmentVariables(t *testing.T) {
 
 	assert.Equal(t, "9090", cfg.ServerPort)
 	assert.Equal(t, "127.0.0.1", cfg.ServerHost)
-	assert.Equal(t, "test-host", cfg.DatabaseHost)
-	assert.Equal(t, 5433, cfg.DatabasePort)
-	assert.Equal(t, "testuser", cfg.DatabaseUser)
-	assert.Equal(t, "testpass", cfg.DatabasePassword)
-	assert.Equal(t, "testdb", cfg.DatabaseName)
-	assert.Equal(t, "require", cfg.DatabaseSSLMode)
+	// Database settings are now loaded from data service, not from environment variables
 	assert.Equal(t, "test-secret", cfg.JWTSecret)
 	assert.Equal(t, time.Hour, cfg.JWTExpirationTime)
 	assert.Equal(t, "debug", cfg.LogLevel)
@@ -126,12 +111,6 @@ func TestConfigValidation(t *testing.T) {
 	cfg := &Config{
 		ServerPort:        "8080",
 		ServerHost:        "0.0.0.0",
-		DatabaseHost:      "localhost",
-		DatabasePort:      5432,
-		DatabaseUser:      "postgres",
-		DatabasePassword:  "password",
-		DatabaseName:      "testdb",
-		DatabaseSSLMode:   "disable",
 		JWTSecret:         "test-secret",
 		JWTExpirationTime: 24 * time.Hour,
 		LogLevel:          "info",
@@ -140,15 +119,10 @@ func TestConfigValidation(t *testing.T) {
 	// Test all fields are properly set
 	assert.Equal(t, "8080", cfg.ServerPort)
 	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
-	assert.Equal(t, "localhost", cfg.DatabaseHost)
-	assert.Equal(t, 5432, cfg.DatabasePort)
-	assert.Equal(t, "postgres", cfg.DatabaseUser)
-	assert.Equal(t, "password", cfg.DatabasePassword)
-	assert.Equal(t, "testdb", cfg.DatabaseName)
-	assert.Equal(t, "disable", cfg.DatabaseSSLMode)
 	assert.Equal(t, "test-secret", cfg.JWTSecret)
 	assert.Equal(t, 24*time.Hour, cfg.JWTExpirationTime)
 	assert.Equal(t, "info", cfg.LogLevel)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithZeroValues(t *testing.T) {
@@ -157,92 +131,81 @@ func TestConfigWithZeroValues(t *testing.T) {
 
 	// Set some values to zero
 	cfg.ServerPort = ""
-	cfg.DatabasePort = 0
 	cfg.JWTExpirationTime = 0
 
 	assert.Equal(t, "", cfg.ServerPort)
-	assert.Equal(t, 0, cfg.DatabasePort)
 	assert.Equal(t, time.Duration(0), cfg.JWTExpirationTime)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithNegativeValues(t *testing.T) {
 	// Test that negative values are handled correctly
-	os.Setenv("DB_PORT", "-5432")
-	defer os.Unsetenv("DB_PORT")
+	os.Setenv("SESSION_SERVER_PORT", "-8080")
+	defer os.Unsetenv("SESSION_SERVER_PORT")
 
 	cfg := LoadConfig()
 
-	// Should return the negative value as-is since getEnvInt doesn't validate
-	assert.Equal(t, -5432, cfg.DatabasePort)
+	// Should return the negative value as-is since getEnvString doesn't validate
+	assert.Equal(t, "-8080", cfg.ServerPort)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithEmptyStrings(t *testing.T) {
 	// Test that empty strings are handled correctly
-	os.Setenv("DB_HOST", "")
-	os.Setenv("DB_USER", "")
+	os.Setenv("SESSION_SERVER_HOST", "")
 	os.Setenv("JWT_SECRET", "")
 	defer func() {
-		os.Unsetenv("DB_HOST")
-		os.Unsetenv("DB_USER")
+		os.Unsetenv("SESSION_SERVER_HOST")
 		os.Unsetenv("JWT_SECRET")
 	}()
 
 	cfg := LoadConfig()
 
 	// Should return default values for empty strings
-	assert.Equal(t, "localhost", cfg.DatabaseHost)
-	assert.Equal(t, "postgres", cfg.DatabaseUser)
+	assert.Equal(t, "0.0.0.0", cfg.ServerHost)
 	assert.Equal(t, "your-super-secret-jwt-key-change-in-production", cfg.JWTSecret)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithWhitespaceStrings(t *testing.T) {
 	// Test that whitespace strings are handled correctly
-	os.Setenv("DB_HOST", "   ")
-	os.Setenv("DB_USER", "\t")
+	os.Setenv("SESSION_SERVER_HOST", "   ")
 	os.Setenv("JWT_SECRET", "\n")
 	defer func() {
-		os.Unsetenv("DB_HOST")
-		os.Unsetenv("DB_USER")
+		os.Unsetenv("SESSION_SERVER_HOST")
 		os.Unsetenv("JWT_SECRET")
 	}()
 
 	cfg := LoadConfig()
 
 	// Should return the whitespace strings as-is since getEnvString doesn't trim
-	assert.Equal(t, "   ", cfg.DatabaseHost)
-	assert.Equal(t, "\t", cfg.DatabaseUser)
+	assert.Equal(t, "   ", cfg.ServerHost)
 	assert.Equal(t, "\n", cfg.JWTSecret)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithVeryLargeValues(t *testing.T) {
 	// Test that very large values are handled correctly
 	os.Setenv("SESSION_SERVER_PORT", "999999")
-	os.Setenv("DB_PORT", "65535")
 	defer func() {
 		os.Unsetenv("SESSION_SERVER_PORT")
-		os.Unsetenv("DB_PORT")
 	}()
 
 	cfg := LoadConfig()
 
 	assert.Equal(t, "999999", cfg.ServerPort)
-	assert.Equal(t, 65535, cfg.DatabasePort)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestConfigWithSpecialCharacters(t *testing.T) {
 	// Test that special characters in strings are handled correctly
-	os.Setenv("DB_PASSWORD", "p@ssw0rd!@#$%^&*()")
 	os.Setenv("JWT_SECRET", "my-super-secret-key-with-special-chars!@#$%^&*()")
-	os.Setenv("DB_NAME", "test_db_with_underscores")
 	defer func() {
-		os.Unsetenv("DB_PASSWORD")
 		os.Unsetenv("JWT_SECRET")
-		os.Unsetenv("DB_NAME")
 	}()
 
 	cfg := LoadConfig()
 
-	assert.Equal(t, "p@ssw0rd!@#$%^&*()", cfg.DatabasePassword)
 	assert.Equal(t, "my-super-secret-key-with-special-chars!@#$%^&*()", cfg.JWTSecret)
-	assert.Equal(t, "test_db_with_underscores", cfg.DatabaseName)
+	// Database settings are now loaded from data service, not from config
 }

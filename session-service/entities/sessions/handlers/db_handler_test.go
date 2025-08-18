@@ -44,12 +44,10 @@ func TestNewDBHandler(t *testing.T) {
 	jwtHandler := NewJWTHandler("test-secret", 1*time.Hour, logger)
 
 	cfg := &config.Config{
-		DatabaseHost:     "localhost",
-		DatabasePort:     5432,
-		DatabaseUser:     "testuser",
-		DatabasePassword: "testpass",
-		DatabaseName:     "testdb",
-		DatabaseSSLMode:  "disable",
+		ServerPort: "8080",
+		ServerHost: "0.0.0.0",
+		JWTSecret:  "test-secret",
+		LogLevel:   "info",
 	}
 
 	// This test will fail if we can't connect to a real database
@@ -67,6 +65,7 @@ func TestNewDBHandler(t *testing.T) {
 	assert.NotNil(t, handler.db)
 	assert.NotNil(t, handler.jwtHandler)
 	assert.NotNil(t, handler.logger)
+	// Database settings are now loaded from data service, not from config
 }
 
 func TestValidateSession(t *testing.T) {

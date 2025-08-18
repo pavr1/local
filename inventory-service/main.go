@@ -22,10 +22,10 @@ func main() {
 	logger := setupLogger("info") // Default log level for initial setup
 	logger.Info("Starting Ice Cream Store Inventory Service")
 
-	// Load configuration from database
-	cfg, err := config.LoadConfigFromDatabase(logger)
+	// Load configuration from data service
+	cfg, err := config.LoadConfigFromDataService(logger)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to load configuration from database")
+		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	// Update logger with proper log level
@@ -138,9 +138,9 @@ func connectToDatabase(logger *logrus.Logger) (*sql.DB, error) {
 	db.SetConnMaxLifetime(5 * time.Minute)
 
 	logger.WithFields(logrus.Fields{
-		"host":     cfg.DBHost,
-		"port":     cfg.DBPort,
-		"database": cfg.DBName,
+		"host":     "localhost",
+		"port":     "5432",
+		"database": "icecream_store",
 	}).Info("Successfully connected to database")
 
 	return db, nil

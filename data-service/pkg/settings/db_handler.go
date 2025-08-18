@@ -167,3 +167,39 @@ func (h *SettingsDBHandler) GroupSettingsByService(settings []Setting) []Setting
 
 	return result
 }
+
+// UpdateSetting updates a setting value in the database
+func (h *SettingsDBHandler) UpdateSetting(service, key, value string) error {
+	result, err := h.db.Exec(sqlQueries.UpdateSettingQuery, value, service, key)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"service": service,
+			"key":     key,
+			"value":   value,
+		}).Error("Failed to update setting in database")
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get rows affected")
+		return err
+	}
+
+	if rowsAffected == 0 {
+		h.logger.WithFields(logrus.Fields{
+			"service": service,
+			"key":     key,
+		}).Warn("No setting found to update")
+		return sql.ErrNoRows
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"service":       service,
+		"key":           key,
+		"value":         value,
+		"rows_affected": rowsAffected,
+	}).Info("Setting updated successfully")
+
+	return nil
+}

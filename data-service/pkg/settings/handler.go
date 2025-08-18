@@ -40,15 +40,35 @@ func NewSettingsHandler(service *SettingsService, logger *logrus.Logger) (*Setti
 	return handler, nil
 }
 
-// GetSettingsByService handles the request to get settings by service
-func (h *SettingsHandler) GetSettingsByService(w http.ResponseWriter, r *http.Request) {
-	// Check if request is from gateway
+// GetAllSettings returns all settings (requires gateway validation for UI access)
+func (h *SettingsHandler) GetAllSettings(w http.ResponseWriter, r *http.Request) {
+	// Check if request is from gateway (UI access)
 	if !h.validateGatewayRequest(r) {
 		h.logger.Warn("Request not from gateway, rejecting")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
+	h.logger.Info("Received request to get all settings")
+
+	// Get all settings from config map
+	var settings []Setting
+	for _, setting := range h.config {
+		settings = append(settings, setting)
+	}
+
+	response := &SettingsResponse{
+		Success: true,
+		Data:    settings,
+		Total:   len(settings),
+		Message: "All settings retrieved successfully",
+	}
+
+	h.writeJSONResponse(w, response)
+}
+
+// GetByService returns general settings + service-specific settings (for business services)
+func (h *SettingsHandler) GetByService(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req GetSettingsByServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -66,10 +86,10 @@ func (h *SettingsHandler) GetSettingsByService(w http.ResponseWriter, r *http.Re
 
 	h.logger.WithField("service", req.Service).Info("Received request to get settings by service")
 
-	// Filter settings by service from config map
+	// Get general settings + service-specific settings
 	var settings []Setting
 	for _, setting := range h.config {
-		if setting.Service == req.Service {
+		if setting.Service == "General" || setting.Service == req.Service {
 			settings = append(settings, setting)
 		}
 	}
@@ -84,17 +104,10 @@ func (h *SettingsHandler) GetSettingsByService(w http.ResponseWriter, r *http.Re
 	h.writeJSONResponse(w, response)
 }
 
-// GetSettingsByName handles the request to get settings by name
-func (h *SettingsHandler) GetSettingsByName(w http.ResponseWriter, r *http.Request) {
-	// Check if request is from gateway
-	if !h.validateGatewayRequest(r) {
-		h.logger.Warn("Request not from gateway, rejecting")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
+// GetByKey returns a specific setting by service and key
+func (h *SettingsHandler) GetByKey(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
-	var req GetSettingsByNameRequest
+	var req GetSettingByKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -102,62 +115,126 @@ func (h *SettingsHandler) GetSettingsByName(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Validate request
-	if req.Key == "" {
-		h.logger.Error("Key parameter is required")
-		http.Error(w, "Key parameter is required", http.StatusBadRequest)
+	if req.Service == "" || req.Key == "" {
+		h.logger.Error("Service and Key parameters are required")
+		http.Error(w, "Service and Key parameters are required", http.StatusBadRequest)
 		return
 	}
 
-	h.logger.WithField("key", req.Key).Info("Received request to get settings by name")
+	h.logger.WithFields(logrus.Fields{
+		"service": req.Service,
+		"key":     req.Key,
+	}).Info("Received request to get setting by key")
 
-	// Filter settings by key from config map
-	var settings []Setting
+	// Find the specific setting
+	var foundSetting *Setting
 	for _, setting := range h.config {
-		if setting.Key == req.Key {
-			settings = append(settings, setting)
+		if setting.Service == req.Service && setting.Key == req.Key {
+			foundSetting = &setting
+			break
 		}
 	}
 
-	response := &SettingsResponse{
+	if foundSetting == nil {
+		h.logger.WithFields(logrus.Fields{
+			"service": req.Service,
+			"key":     req.Key,
+		}).Warn("Setting not found")
+		http.Error(w, "Setting not found", http.StatusNotFound)
+		return
+	}
+
+	response := &SettingResponse{
 		Success: true,
-		Data:    settings,
-		Total:   len(settings),
-		Message: "Settings retrieved successfully",
+		Data:    *foundSetting,
+		Message: "Setting retrieved successfully",
 	}
 
 	h.writeJSONResponse(w, response)
 }
 
-// GetSettingsByServiceGrouped handles the request to get all settings grouped by service
-func (h *SettingsHandler) GetSettingsByServiceGrouped(w http.ResponseWriter, r *http.Request) {
-	// Check if request is from gateway
+// Reload reloads all settings into memory
+func (h *SettingsHandler) Reload(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("Received request to reload settings")
+
+	// Reload settings into memory
+	if err := h.service.loadAllSettings(); err != nil {
+		h.logger.WithError(err).Error("Failed to reload settings")
+		http.Error(w, "Failed to reload settings", http.StatusInternalServerError)
+		return
+	}
+
+	// Update handler config
+	h.service.cacheMux.RLock()
+	h.config = make(map[string]Setting)
+	for k, v := range h.service.cache {
+		h.config[k] = v
+	}
+	h.service.cacheMux.RUnlock()
+
+	response := &GenericResponse{
+		Success: true,
+		Message: "Settings reloaded successfully",
+	}
+
+	h.writeJSONResponse(w, response)
+}
+
+// UpdateSetting updates a specific setting (requires gateway validation for UI access)
+func (h *SettingsHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) {
+	// Check if request is from gateway (UI access)
 	if !h.validateGatewayRequest(r) {
 		h.logger.Warn("Request not from gateway, rejecting")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	h.logger.Info("Received request to get settings grouped by service")
-
-	// Group settings by service from config map
-	serviceMap := make(map[string][]Setting)
-	for _, setting := range h.config {
-		serviceMap[setting.Service] = append(serviceMap[setting.Service], setting)
+	// Parse request body
+	var req UpdateSettingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.WithError(err).Error("Failed to decode request body")
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
 
-	var groupedSettings []SettingsByService
-	for service, serviceSettings := range serviceMap {
-		groupedSettings = append(groupedSettings, SettingsByService{
-			Service:  service,
-			Settings: serviceSettings,
-		})
+	// Validate request
+	if req.Service == "" || req.Key == "" || req.Value == "" {
+		h.logger.Error("Service, Key, and Value parameters are required")
+		http.Error(w, "Service, Key, and Value parameters are required", http.StatusBadRequest)
+		return
 	}
 
-	response := &SettingsByServiceResponse{
+	h.logger.WithFields(logrus.Fields{
+		"service": req.Service,
+		"key":     req.Key,
+		"value":   req.Value,
+	}).Info("Received request to update setting")
+
+	// Update setting in database
+	if err := h.service.dbHandler.UpdateSetting(req.Service, req.Key, req.Value); err != nil {
+		h.logger.WithError(err).Error("Failed to update setting in database")
+		http.Error(w, "Failed to update setting", http.StatusInternalServerError)
+		return
+	}
+
+	// Reload settings into memory
+	if err := h.service.loadAllSettings(); err != nil {
+		h.logger.WithError(err).Error("Failed to reload settings after update")
+		http.Error(w, "Setting updated but failed to reload cache", http.StatusInternalServerError)
+		return
+	}
+
+	// Update handler config
+	h.service.cacheMux.RLock()
+	h.config = make(map[string]Setting)
+	for k, v := range h.service.cache {
+		h.config[k] = v
+	}
+	h.service.cacheMux.RUnlock()
+
+	response := &GenericResponse{
 		Success: true,
-		Data:    groupedSettings,
-		Total:   len(h.config),
-		Message: "Settings grouped successfully",
+		Message: "Setting updated successfully",
 	}
 
 	h.writeJSONResponse(w, response)

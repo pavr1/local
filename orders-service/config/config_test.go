@@ -15,13 +15,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "0.0.0.0", config.ServerHost)
 	assert.Equal(t, "8083", config.ServerPort)
 
-	// Database settings
-	assert.Equal(t, "localhost", config.DBHost)
-	assert.Equal(t, "5432", config.DBPort)
-	assert.Equal(t, "postgres", config.DBUser)
-	assert.Equal(t, "postgres123", config.DBPassword)
-	assert.Equal(t, "icecream_store", config.DBName)
-	assert.Equal(t, "disable", config.DBSSLMode)
+	// Database settings are now loaded from data service
+	// No longer stored in config struct
 
 	// Business settings
 	assert.Equal(t, 13.0, config.DefaultTaxRate)

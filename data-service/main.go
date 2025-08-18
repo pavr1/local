@@ -69,7 +69,8 @@ func main() {
 	fmt.Println("✅ Database connection established successfully")
 
 	// Create settings service
-	settingsService := settings.NewSettingsService(db.GetDB(), logger)
+	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
+	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
 
 	// Create settings handler
 	settingsHandler, err := settings.NewSettingsHandler(settingsService, logger)
@@ -163,9 +164,11 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 	}).Methods("GET")
 
 	// Settings endpoints
-	router.HandleFunc("/api/v1/data/settings/by-service", settingsHandler.GetSettingsByService).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings/by-name", settingsHandler.GetSettingsByName).Methods("POST")
-	router.HandleFunc("/api/v1/data/settings/by-service-grouped", settingsHandler.GetSettingsByServiceGrouped).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/all", settingsHandler.GetAllSettings).Methods("GET")
+	router.HandleFunc("/api/v1/data/settings/by-service", settingsHandler.GetByService).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/by-key", settingsHandler.GetByKey).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/reload", settingsHandler.Reload).Methods("POST")
+	router.HandleFunc("/api/v1/data/settings/update-setting", settingsHandler.UpdateSetting).Methods("POST")
 
 	return router
 }
