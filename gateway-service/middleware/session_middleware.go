@@ -8,43 +8,81 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // SessionMiddleware handles session validation for protected routes
 type SessionMiddleware struct {
 	sessionManager *sessionmanager.SessionManager
+	logger         *logrus.Logger
 }
 
 // NewSessionMiddleware creates a new session middleware
-func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager) *SessionMiddleware {
+func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager, logger *logrus.Logger) *SessionMiddleware {
 	return &SessionMiddleware{
 		sessionManager: sessionManager,
+		logger:         logger,
 	}
 }
 
 // ValidateSession middleware validates the session ID against the session service
 func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sm.logger.WithFields(logrus.Fields{
+			"method": r.Method,
+			"path":   r.URL.Path,
+			"remote": r.RemoteAddr,
+		}).Info("Session validation middleware triggered")
+
 		// Extract session ID from Authorization header
 		sessionId := extractSessionIdFromHeader(r)
 		if sessionId == "" {
+			sm.logger.WithFields(logrus.Fields{
+				"method": r.Method,
+				"path":   r.URL.Path,
+			}).Warn("Session validation failed: missing session ID")
 			sm.writeErrorResponse(w, http.StatusUnauthorized, "missing_session", "Session ID is required")
 			return
 		}
 
+		sm.logger.WithFields(logrus.Fields{
+			"session_id": sessionId,
+			"method":     r.Method,
+			"path":       r.URL.Path,
+		}).Info("Validating session with session service")
+
 		// Validate session ID with session service
 		validation, err := sm.sessionManager.ValidateSession(sessionId)
 		if err != nil {
-			log.Printf("Session validation error: %v", err)
+			sm.logger.WithError(err).WithFields(logrus.Fields{
+				"session_id": sessionId,
+				"method":     r.Method,
+				"path":       r.URL.Path,
+			}).Error("Session validation error")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "validation_error", "Failed to validate session")
 			return
 		}
 
 		// Check if session is valid
 		if !validation.Valid {
+			sm.logger.WithFields(logrus.Fields{
+				"session_id": sessionId,
+				"method":     r.Method,
+				"path":       r.URL.Path,
+				"message":    validation.Message,
+			}).Warn("Session validation failed: invalid session")
 			sm.writeErrorResponse(w, http.StatusUnauthorized, "invalid_session", validation.Message)
 			return
 		}
+
+		sm.logger.WithFields(logrus.Fields{
+			"session_id": sessionId,
+			"user_id":    validation.UserID,
+			"username":   validation.Username,
+			"method":     r.Method,
+			"path":       r.URL.Path,
+		}).Info("Session validation successful")
 
 		// Add user context to request headers for backend services
 		r.Header.Set("X-User-ID", validation.UserID)
@@ -87,7 +125,11 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("Login proxy error: %v", err)
+			sm.logger.WithError(err).WithFields(logrus.Fields{
+				"session_service_url": sessionServiceURL,
+				"method":              r.Method,
+				"remote_addr":         r.RemoteAddr,
+			}).Error("Login proxy error")
 			sm.writeErrorResponse(w, http.StatusBadGateway, "service_unavailable", "Authentication service unavailable")
 			return
 		}
@@ -96,13 +138,21 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		// Read response from session service
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
+			sm.logger.WithError(err).WithFields(logrus.Fields{
+				"session_service_url": sessionServiceURL,
+				"status_code":         resp.StatusCode,
+			}).Error("Failed to read login response body")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "response_error", "Failed to read login response")
 			return
 		}
 
 		// Gateway acts as pure proxy - session service handles all session creation logic
 		if resp.StatusCode == http.StatusOK {
-			log.Printf("Login successful - session service handled session creation")
+			sm.logger.WithFields(logrus.Fields{
+				"session_service_url": sessionServiceURL,
+				"status_code":         resp.StatusCode,
+				"response_length":     len(respBody),
+			}).Info("Login successful - session service handled session creation")
 		}
 
 		// Copy headers from session service response
@@ -124,12 +174,27 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		// Extract session ID from request
 		sessionId := extractSessionIdFromHeader(r)
 		if sessionId != "" {
+			sm.logger.WithFields(logrus.Fields{
+				"session_id": sessionId,
+				"method":     r.Method,
+				"remote_addr": r.RemoteAddr,
+			}).Info("Attempting to revoke session")
+			
 			// Revoke session in session service
 			if err := sm.sessionManager.LogoutSession(sessionId); err != nil {
-				log.Printf("Failed to revoke session: %v", err)
+				sm.logger.WithError(err).WithFields(logrus.Fields{
+					"session_id": sessionId,
+				}).Error("Failed to revoke session")
 			} else {
-				log.Printf("Session revoked successfully")
+				sm.logger.WithFields(logrus.Fields{
+					"session_id": sessionId,
+				}).Info("Session revoked successfully")
 			}
+		} else {
+			sm.logger.WithFields(logrus.Fields{
+				"method":     r.Method,
+				"remote_addr": r.RemoteAddr,
+			}).Warn("Logout request without session ID")
 		}
 
 		// Forward logout request to session service with gateway headers
@@ -148,7 +213,11 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("Logout proxy error: %v", err)
+			sm.logger.WithError(err).WithFields(logrus.Fields{
+				"session_service_url": sessionServiceURL,
+				"method":              r.Method,
+				"remote_addr":         r.RemoteAddr,
+			}).Error("Logout proxy error")
 			sm.writeErrorResponse(w, http.StatusBadGateway, "service_unavailable", "Authentication service unavailable")
 			return
 		}

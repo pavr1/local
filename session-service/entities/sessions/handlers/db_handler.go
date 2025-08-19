@@ -112,8 +112,18 @@ func (h *DBHandler) CreateSession(req *models.SessionCreateRequest) (*models.Ses
 		"user_id":    userProfile.User.ID,
 	}).Info("Session created successfully")
 
+	// Convert permissions to string slice for JSON response
+	var permissionNames []string
+	for _, perm := range userProfile.Permissions {
+		permissionNames = append(permissionNames, perm.PermissionName)
+	}
+
 	return &models.SessionCreateResponse{
-		SessionID: sessionID,
+		SessionID:   sessionID,
+		Message:     "Session created successfully",
+		User:        &userProfile.User,
+		Role:        &userProfile.Role,
+		Permissions: permissionNames,
 	}, nil
 }
 

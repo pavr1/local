@@ -106,13 +106,19 @@ type Config struct {
 func main() {
 	// Initialize structured logger
 	logrusLogger = initLogger()
+	logrusLogger.Info("Gateway service starting - logger initialized")
 
 	// Bootstrap config with hardcoded data service URL for initial config loading
 	bootstrapConfig := Config{
 		DataServiceURL: "http://icecream_data_service:8086", // Hardcoded for bootstrap - Docker service name
 	}
 
+	logrusLogger.WithFields(logrus.Fields{
+		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
+	}).Info("Created bootstrap configuration")
+
 	// Load full configuration from data service
+	logrusLogger.Info("Loading configuration from data service...")
 	config, err := loadConfigFromDataService(&bootstrapConfig, logrusLogger)
 	if err != nil {
 		logrusLogger.WithError(err).Fatal("Failed to load configuration from data service")
@@ -151,15 +157,17 @@ func main() {
 		"data_service":      config.DataServiceURL,
 	})
 
-	log.Printf("Gateway configured with Invoice Service: %s", config.InvoiceServiceURL)
-	log.Printf("Gateway configured with Session Service: %s", config.SessionServiceURL)
-	log.Printf("Gateway configured with Orders Service: %s", config.OrdersServiceURL)
-	log.Printf("Gateway configured with Inventory Service: %s", config.InventoryServiceURL)
-	log.Printf("Gateway configured with Data Service: %s", config.DataServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"invoice_service":   config.InvoiceServiceURL,
+		"session_service":   config.SessionServiceURL,
+		"orders_service":    config.OrdersServiceURL,
+		"inventory_service": config.InventoryServiceURL,
+		"data_service":      config.DataServiceURL,
+	}).Info("Gateway service configuration loaded")
 
 	// Create session manager for authentication with logger
 	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logrusLogger)
-	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager)
+	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logrusLogger)
 
 	r := mux.NewRouter()
 
@@ -219,14 +227,14 @@ func main() {
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
-	
+
 	// Settings endpoints (authenticated)
 	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logrusLogger)).Methods("GET")
 	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-service", logrusLogger)).Methods("POST")
 	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-key", logrusLogger)).Methods("POST")
 	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logrusLogger)).Methods("POST")
 	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logrusLogger)).Methods("POST")
-	
+
 	// Other data service endpoints
 	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
 	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
@@ -447,9 +455,11 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 		// Log the proxy request (only for important requests)
 		if req.URL.Path != "/api/v1/sessions/p/health" {
 			logger.WithFields(logrus.Fields{
-				"method": req.Method,
-				"path":   req.URL.Path,
-				"target": target.String(),
+				"method":      req.Method,
+				"path":        req.URL.Path,
+				"target":      target.String(),
+				"remote_addr": req.RemoteAddr,
+				"user_agent":  req.UserAgent(),
 			}).Info("Proxying request")
 		}
 
@@ -457,6 +467,17 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
+
+		logger.WithFields(logrus.Fields{
+			"method": req.Method,
+			"path":   req.URL.Path,
+			"headers": map[string]string{
+				"X-Forwarded-For":           req.Header.Get("X-Forwarded-For"),
+				"X-Gateway-Service":         req.Header.Get("X-Gateway-Service"),
+				"X-Gateway-Session-Managed": req.Header.Get("X-Gateway-Session-Managed"),
+				"Authorization":             req.Header.Get("Authorization"),
+			},
+		}).Debug("Added gateway headers to request")
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -536,6 +557,10 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 
 // checkServiceHealth checks if a service is responding to health checks
 func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
+	logger.WithFields(logrus.Fields{
+		"health_url": healthURL,
+	}).Debug("Starting health check")
+
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -554,6 +579,14 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
 
+	logger.WithFields(logrus.Fields{
+		"health_url": healthURL,
+		"headers": map[string]string{
+			"X-Gateway-Service":         req.Header.Get("X-Gateway-Service"),
+			"X-Gateway-Session-Managed": req.Header.Get("X-Gateway-Session-Managed"),
+		},
+	}).Debug("Making health check request")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
@@ -564,7 +597,26 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	}
 	defer resp.Body.Close()
 
-	return resp.StatusCode == http.StatusOK
+	logger.WithFields(logrus.Fields{
+		"health_url":  healthURL,
+		"status_code": resp.StatusCode,
+		"status":      resp.Status,
+	}).Debug("Health check response received")
+
+	healthy := resp.StatusCode == http.StatusOK
+	if !healthy {
+		logger.WithFields(logrus.Fields{
+			"health_url":  healthURL,
+			"status_code": resp.StatusCode,
+			"status":      resp.Status,
+		}).Warn("Service health check failed")
+	} else {
+		logger.WithFields(logrus.Fields{
+			"health_url": healthURL,
+		}).Debug("Service health check passed")
+	}
+
+	return healthy
 }
 
 // isServiceRunning checks if a service is currently running by checking its port
@@ -581,7 +633,9 @@ func isServiceRunning(serviceName string) bool {
 
 	port, exists := servicePorts[serviceName]
 	if !exists {
-		log.Printf("⚠️  Unknown service %s, cannot check running status", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Warn("Unknown service, cannot check running status")
 		return false
 	}
 
@@ -589,11 +643,19 @@ func isServiceRunning(serviceName string) bool {
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%s", port), 2*time.Second)
 	if err != nil {
 		// Port is not in use, service is not running
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+			"port":         port,
+			"error":        err.Error(),
+		}).Debug("Service is not running")
 		return false
 	}
 	defer conn.Close()
 
-	log.Printf("🔍 Service %s is running on port %s", serviceName, port)
+	logrusLogger.WithFields(logrus.Fields{
+		"service_name": serviceName,
+		"port":         port,
+	}).Info("Service is running")
 	return true
 }
 
@@ -616,7 +678,10 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	log.Printf("🔧 Starting %s service (environment: %s)", serviceName, environment)
+	logrusLogger.WithFields(logrus.Fields{
+		"service_name": serviceName,
+		"environment":  environment,
+	}).Info("Starting service")
 
 	// Check if service is already running
 	isRunning := isServiceRunning(serviceName)
@@ -625,7 +690,10 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 	var finalError error
 
 	if isRunning {
-		log.Printf("⚠️  Service %s is already running, stopping it first...", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Warn("Service is already running, stopping it first")
+		
 		finalOutput.WriteString(fmt.Sprintf("Service %s was already running, stopping first...\n", serviceName))
 
 		// Stop the service first
@@ -634,11 +702,18 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		finalOutput.WriteString(fmt.Sprintf("Stop output: %s\n", stopOutput))
 
 		if !stopSuccess || stopErr != nil {
-			log.Printf("❌ Failed to stop running service %s: %v", serviceName, stopErr)
+			logrusLogger.WithError(stopErr).WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"stop_output":  stopOutput,
+			}).Error("Failed to stop running service")
+			
 			finalSuccess = false
 			finalError = fmt.Errorf("failed to stop running service: %v", stopErr)
 		} else {
-			log.Printf("✅ Successfully stopped running service %s", serviceName)
+			logrusLogger.WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"stop_output":  stopOutput,
+			}).Info("Successfully stopped running service")
 			// Wait a moment for the service to fully stop
 			time.Sleep(2 * time.Second)
 		}
@@ -672,13 +747,21 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 	if finalError != nil {
 		response["error"] = finalError.Error()
-		log.Printf("❌ Failed to start %s: %v", serviceName, finalError)
+		logrusLogger.WithError(finalError).WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Error("Failed to start service")
 	} else {
-		log.Printf("✅ Successfully executed start command for %s", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+			"environment":  environment,
+		}).Info("Successfully executed start command for service")
 
 		// If data-service was successfully started, automatically restart all dependent services
 		if serviceName == "data-service" && finalSuccess {
-			log.Printf("🔄 Data service started successfully, auto-restarting dependent services...")
+			logrusLogger.WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"environment":  environment,
+			}).Info("Data service started successfully, auto-restarting dependent services")
 			go restartDependentServices(environment)
 		}
 	}
@@ -703,10 +786,16 @@ func restartDependentServices(environment string) {
 		"gateway-service", // Gateway last to ensure all other services are ready
 	}
 
-	log.Printf("🔄 Starting automatic restart of dependent services...")
+	logrusLogger.WithFields(logrus.Fields{
+		"environment": environment,
+		"services":    dependentServices,
+	}).Info("Starting automatic restart of dependent services")
 
 	for _, serviceName := range dependentServices {
-		log.Printf("🔄 Auto-restarting %s...", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+			"environment":  environment,
+		}).Info("Auto-restarting service")
 
 		// Check if service is running before attempting restart
 		if isServiceRunning(serviceName) {
@@ -715,11 +804,17 @@ func restartDependentServices(environment string) {
 			stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
 
 			if !stopSuccess || stopErr != nil {
-				log.Printf("❌ Failed to stop %s during auto-restart: %v", serviceName, stopErr)
+				logrusLogger.WithError(stopErr).WithFields(logrus.Fields{
+					"service_name": serviceName,
+					"stop_output":  stopOutput,
+				}).Error("Failed to stop service during auto-restart")
 				continue // Skip to next service
 			}
 
-			log.Printf("✅ Stopped %s, output: %s", serviceName, stopOutput)
+			logrusLogger.WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"stop_output":  stopOutput,
+			}).Info("Stopped service during auto-restart")
 
 			// Wait for service to fully stop
 			time.Sleep(2 * time.Second)
@@ -730,16 +825,25 @@ func restartDependentServices(environment string) {
 		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget)
 
 		if !startSuccess || startErr != nil {
-			log.Printf("❌ Failed to start %s during auto-restart: %v", serviceName, startErr)
+			logrusLogger.WithError(startErr).WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"start_output": startOutput,
+			}).Error("Failed to start service during auto-restart")
 		} else {
-			log.Printf("✅ Successfully auto-restarted %s, output: %s", serviceName, startOutput)
+			logrusLogger.WithFields(logrus.Fields{
+				"service_name": serviceName,
+				"start_output": startOutput,
+			}).Info("Successfully auto-restarted service")
 		}
 
 		// Wait before starting next service to avoid overwhelming the system
 		time.Sleep(3 * time.Second)
 	}
 
-	log.Printf("🎉 Completed automatic restart of dependent services!")
+	logrusLogger.WithFields(logrus.Fields{
+		"environment": environment,
+		"services":    dependentServices,
+	}).Info("Completed automatic restart of dependent services")
 }
 
 func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
@@ -760,7 +864,10 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	log.Printf("🔧 Stopping %s service (environment: %s)", serviceName, environment)
+	logrusLogger.WithFields(logrus.Fields{
+		"service_name": serviceName,
+		"environment":  environment,
+	}).Info("Stopping service")
 
 	// Check if service is already stopped
 	isRunning := isServiceRunning(serviceName)
@@ -769,7 +876,9 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if !isRunning {
-		log.Printf("ℹ️  Service %s is already stopped, ignoring stop request", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Info("Service is already stopped, ignoring stop request")
 		output = fmt.Sprintf("Service %s was already stopped", serviceName)
 		success = true
 		err = nil
@@ -795,9 +904,13 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response["error"] = err.Error()
-		log.Printf("❌ Failed to stop %s: %v", serviceName, err)
+		logrusLogger.WithError(err).WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Error("Failed to stop service")
 	} else {
-		log.Printf("✅ Successfully executed stop command for %s", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Info("Successfully executed stop command for service")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -827,7 +940,10 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	log.Printf("🔧 Restarting %s service (environment: %s)", serviceName, environment)
+	logrusLogger.WithFields(logrus.Fields{
+		"service_name": serviceName,
+		"environment":  environment,
+	}).Info("Restarting service")
 
 	// For restart, we execute stop then start
 	stopTarget := fmt.Sprintf("stop-%s", environment)
@@ -863,9 +979,17 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg += fmt.Sprintf("Start error: %v", startErr)
 		}
 		response["error"] = errMsg
-		log.Printf("❌ Failed to restart %s: %s", serviceName, errMsg)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+			"stop_error":   stopErr,
+			"start_error":  startErr,
+			"error_msg":    errMsg,
+		}).Error("Failed to restart service")
 	} else {
-		log.Printf("✅ Successfully executed restart command for %s", serviceName)
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+			"environment":  environment,
+		}).Info("Successfully executed restart command for service")
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -898,17 +1022,29 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 	cmd := exec.Command("make", makeTarget)
 	cmd.Dir = fmt.Sprintf("../%s", serviceDir) // Relative to gateway-service directory
 
-	log.Printf("🔧 Executing: cd %s && make %s", serviceDir, makeTarget)
+	logrusLogger.WithFields(logrus.Fields{
+		"service_dir": serviceDir,
+		"make_target": makeTarget,
+		"command":     fmt.Sprintf("cd %s && make %s", serviceDir, makeTarget),
+	}).Info("Executing service command")
 
 	// Capture output
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		log.Printf("❌ Command failed: %v, output: %s", err, string(output))
+		logrusLogger.WithError(err).WithFields(logrus.Fields{
+			"service_dir": serviceDir,
+			"make_target": makeTarget,
+			"output":      string(output),
+		}).Error("Command failed")
 		return false, string(output), err
 	}
 
-	log.Printf("✅ Command succeeded, output: %s", string(output))
+	logrusLogger.WithFields(logrus.Fields{
+		"service_dir": serviceDir,
+		"make_target": makeTarget,
+		"output":      string(output),
+	}).Info("Command succeeded")
 	return true, string(output), nil
 }
 
@@ -922,11 +1058,20 @@ func getEnv(key, defaultValue string) string {
 
 // loadConfigFromDataService loads configuration from the data service API
 func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (*Config, error) {
+	logger.WithFields(logrus.Fields{
+		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
+	}).Info("Starting configuration loading from data service")
+
 	// Get settings from data service
 	settings, err := getSettingsFromDataService("Gateway", logger)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get settings from data service")
 		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
 	}
+
+	logger.WithFields(logrus.Fields{
+		"settings_count": len(settings),
+	}).Info("Successfully retrieved settings from data service")
 
 	// Create config with defaults
 	config := &Config{
@@ -938,8 +1083,26 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 		DataServiceURL:      bootstrapConfig.DataServiceURL, // Use bootstrap value
 	}
 
+	logger.WithFields(logrus.Fields{
+		"default_port":              config.Port,
+		"default_session_service":   config.SessionServiceURL,
+		"default_orders_service":    config.OrdersServiceURL,
+		"default_inventory_service": config.InventoryServiceURL,
+		"default_invoice_service":   config.InvoiceServiceURL,
+		"bootstrap_data_service":    config.DataServiceURL,
+	}).Info("Created default configuration")
+
 	// Populate config from settings
 	populateConfigFromSettings(config, settings, logger)
+
+	logger.WithFields(logrus.Fields{
+		"final_port":              config.Port,
+		"final_session_service":   config.SessionServiceURL,
+		"final_orders_service":    config.OrdersServiceURL,
+		"final_inventory_service": config.InventoryServiceURL,
+		"final_invoice_service":   config.InvoiceServiceURL,
+		"final_data_service":      config.DataServiceURL,
+	}).Info("Configuration loading completed successfully")
 
 	return config, nil
 }
@@ -947,6 +1110,12 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
 	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
+
+	logger.WithFields(logrus.Fields{
+		"service_name":     serviceName,
+		"data_service_url": dataServiceURL,
+		"endpoint":         "/api/v1/data/settings/by-service",
+	}).Info("Requesting settings from data service")
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,
@@ -959,8 +1128,16 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 
 	jsonBody, err := json.Marshal(requestBody)
 	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"request_body": requestBody,
+		}).Error("Failed to marshal request body")
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
+
+	logger.WithFields(logrus.Fields{
+		"request_body": string(jsonBody),
+		"url":          dataServiceURL + "/api/v1/data/settings/by-service",
+	}).Debug("Making HTTP request to data service")
 
 	// Make request to data service
 	resp, err := client.Post(
@@ -969,11 +1146,23 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 		bytes.NewBuffer(jsonBody),
 	)
 	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"url": dataServiceURL + "/api/v1/data/settings/by-service",
+		}).Error("Failed to make HTTP request to data service")
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
+	logger.WithFields(logrus.Fields{
+		"status_code": resp.StatusCode,
+		"status":      resp.Status,
+	}).Info("Received response from data service")
+
 	if resp.StatusCode != http.StatusOK {
+		logger.WithFields(logrus.Fields{
+			"status_code": resp.StatusCode,
+			"status":      resp.Status,
+		}).Error("Data service returned non-OK status")
 		return nil, fmt.Errorf("data service returned status %d", resp.StatusCode)
 	}
 
@@ -985,12 +1174,26 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		logger.WithError(err).Error("Failed to decode data service response")
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
+	logger.WithFields(logrus.Fields{
+		"success":       response.Success,
+		"data_count":    len(response.Data),
+		"message":       response.Message,
+	}).Info("Parsed data service response")
+
 	if !response.Success {
+		logger.WithFields(logrus.Fields{
+			"message": response.Message,
+		}).Error("Data service returned error")
 		return nil, fmt.Errorf("data service error: %s", response.Message)
 	}
+
+	logger.WithFields(logrus.Fields{
+		"settings_count": len(response.Data),
+	}).Info("Successfully retrieved settings from data service")
 
 	return response.Data, nil
 }
@@ -1005,20 +1208,71 @@ type Setting struct {
 
 // populateConfigFromSettings populates the config struct from settings
 func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
+	logger.WithFields(logrus.Fields{
+		"settings_count": len(settings),
+	}).Info("Starting to populate configuration from settings")
+
 	for _, setting := range settings {
+		logger.WithFields(logrus.Fields{
+			"service": setting.Service,
+			"key":     setting.Key,
+			"value":   setting.Value,
+		}).Debug("Processing setting")
+
 		switch setting.Key {
 		case "SESSION_SERVICE_URL":
+			oldValue := config.SessionServiceURL
 			config.SessionServiceURL = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated session service URL")
 		case "ORDERS_SERVICE_URL":
+			oldValue := config.OrdersServiceURL
 			config.OrdersServiceURL = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated orders service URL")
 		case "INVENTORY_SERVICE_URL":
+			oldValue := config.InventoryServiceURL
 			config.InventoryServiceURL = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated inventory service URL")
 		case "INVOICE_SERVICE_URL":
+			oldValue := config.InvoiceServiceURL
 			config.InvoiceServiceURL = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated invoice service URL")
 		case "DATA_SERVICE_URL":
+			oldValue := config.DataServiceURL
 			config.DataServiceURL = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated data service URL")
 		case "GATEWAY_PORT":
+			oldValue := config.Port
 			config.Port = setting.Value
+			logger.WithFields(logrus.Fields{
+				"key":      setting.Key,
+				"old_value": oldValue,
+				"new_value": setting.Value,
+			}).Info("Updated gateway port")
+		default:
+			logger.WithFields(logrus.Fields{
+				"key":   setting.Key,
+				"value": setting.Value,
+			}).Warn("Unknown setting key, ignoring")
 		}
 	}
 
@@ -1029,5 +1283,5 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 		"invoice_service":   config.InvoiceServiceURL,
 		"data_service":      config.DataServiceURL,
 		"port":              config.Port,
-	}).Info("Configuration loaded from data service")
+	}).Info("Configuration populated from settings successfully")
 }

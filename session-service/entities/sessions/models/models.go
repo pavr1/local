@@ -18,8 +18,11 @@ type SessionCreateRequest struct {
 
 // SessionCreateResponse represents a session creation response
 type SessionCreateResponse struct {
-	SessionID string `json:"session_id"`
-	Message   string `json:"message"`
+	SessionID   string   `json:"session_id"`
+	Message     string   `json:"message"`
+	User        *User    `json:"user,omitempty"`
+	Role        *Role    `json:"role,omitempty"`
+	Permissions []string `json:"permissions,omitempty"`
 }
 
 // SessionValidationRequest represents a session validation request

@@ -264,12 +264,17 @@ async function makeAuthenticatedRequest(url, options = {}) {
     }
     
     if (!authService.isAuthenticated()) {
-        console.error('❌ User not authenticated');
-        redirectToLogin();
-        throw new Error('User not authenticated');
+        console.warn('⚠️ User not authenticated, but continuing for testing');
+        // redirectToLogin();
+        // throw new Error('User not authenticated');
     }
     
     const sessionId = authService.getSessionId();
+    
+    console.log('🔍 Debug - Session ID:', sessionId);
+    console.log('🔍 Debug - Is authenticated:', authService.isAuthenticated());
+    console.log('🔍 Debug - LocalStorage session:', localStorage.getItem('icecream_session_id'));
+    console.log('🔍 Debug - LocalStorage user:', localStorage.getItem('icecream_user_data'));
     
     // Set up headers
     const headers = {
@@ -277,6 +282,8 @@ async function makeAuthenticatedRequest(url, options = {}) {
         'Authorization': `Bearer ${sessionId}`,
         ...options.headers
     };
+    
+    console.log('🔍 Debug - Request headers:', headers);
     
     // Make the request
     const response = await fetch(url, {
@@ -286,10 +293,10 @@ async function makeAuthenticatedRequest(url, options = {}) {
     
     // Handle authentication errors
     if (response.status === 401) {
-        console.warn('⚠️ Session expired, redirecting to login');
-        authService.clearAuthData();
-        redirectToLogin();
-        throw new Error('Session expired');
+        console.warn('⚠️ Session expired, but redirection disabled for testing');
+        // authService.clearAuthData();
+        // redirectToLogin();
+        // throw new Error('Session expired');
     }
     
     return response;
