@@ -120,4 +120,8 @@ This is the identity-api service working on robust database migration and SQL qu
 - NEVER create separate layout files for navigation (layout-sidebar, layout-header, etc.)
 - NEVER create repeated code for menus across different pages
 - All navigation logic and structure should be centralized in dashboard.html
-- Use dashboard.html as the single source of truth for all navigation elements 
+- Use dashboard.html as the single source of truth for all navigation elements
+
+## Makefile Commands Rules
+- **MAKEFILE COMMANDS ONLY**: NEVER use direct commands like `go build`, `docker build`, `npm install`, etc. ALWAYS use the project's Makefile commands (e.g., `make fresh-gateway`, `make start`, `make build-all`, `make test`). This ensures consistency and proper project management.
+- **NO DIRECT COMMANDS**: Avoid using `run_terminal_cmd` with direct commands. Use Makefile targets instead. 

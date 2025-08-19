@@ -219,6 +219,15 @@ func main() {
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
+	
+	// Settings endpoints (authenticated)
+	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logrusLogger)).Methods("GET")
+	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-service", logrusLogger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-key", logrusLogger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logrusLogger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logrusLogger)).Methods("POST")
+	
+	// Other data service endpoints
 	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
 	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
@@ -938,7 +947,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
 	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
-	
+
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -970,9 +979,9 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 
 	// Parse response
 	var response struct {
-		Success bool     `json:"success"`
+		Success bool      `json:"success"`
 		Data    []Setting `json:"data"`
-		Message string   `json:"message"`
+		Message string    `json:"message"`
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
