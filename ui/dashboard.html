@@ -985,6 +985,13 @@
                             </li>
                         </ul>
                     </li>
+                    
+                    <li class="nav-item">
+                        <button class="nav-link" onclick="loadContent('settings')" data-page="settings">
+                            <i class="fas fa-cog me-2"></i>
+                            Settings
+                        </button>
+                    </li>
                 </ul>
             </nav>
             
@@ -1185,7 +1192,8 @@
             'inventory-recipes': 'partials/inventory/recipes.html',
             'invoice-overview': 'partials/invoice/overview.html',
             'invoice-details': 'partials/invoice/index.html',
-            'invoice-expense-categories': 'partials/invoice/expense-categories.html'
+            'invoice-expense-categories': 'partials/invoice/expense-categories.html',
+            'settings': 'partials/settings/index.html'
         };
         
         return contentMap[page] || 'partials/dashboard/index.html';
@@ -1208,7 +1216,8 @@
                 'invoice': 'initInvoiceContent',
                 'invoice-overview': 'initInvoiceOverviewContent',
                 'invoice-details': 'initInvoiceContent',
-                'invoice-expense-categories': 'initExpenseCategoriesContent'
+                'invoice-expense-categories': 'initExpenseCategoriesContent',
+                'settings': 'initSettingsContent'
             };
             
             // Setup header time (always visible in top panel)
@@ -1385,6 +1394,11 @@
                     title: 'Expense Categories', 
                     subtitle: 'Manage expense categories for invoice classification',
                     icon: 'fas fa-tags'
+                },
+                'settings': { 
+                    title: 'Settings', 
+                    subtitle: 'Manage system configuration and settings',
+                    icon: 'fas fa-cog'
                 }
             };
             
@@ -1761,30 +1775,30 @@
                     if (overallStatus === 'healthy') {
                         statusElement.className = 'service-status online';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Online</span>';
-                        console.log(`✅ ${cardId} card: Online (system healthy)`);
+                        console.log(`✅`);
                     } else if (overallStatus === 'degraded') {
                         statusElement.className = 'service-status degraded';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Degraded</span>';
-                        console.log(`⚠️  ${cardId} card: Degraded (system degraded)`);
+                        console.log(`⚠️`);
                     } else {
                         statusElement.className = 'service-status offline';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
-                        console.log(`❌ ${cardId} card: Offline`);
+                        console.log(`❌`);
                     }
                 } else {
                     // For all other services, use individual service status
                     if (serviceStatus === 'healthy') {
                         statusElement.className = 'service-status online';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Online</span>';
-                        console.log(`✅ ${cardId} card: Online`);
+                        //console.log(`✅ ${cardId} card: Online`);
                     } else if (serviceStatus === 'unhealthy') {
                         statusElement.className = 'service-status offline';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
-                        console.log(`❌ ${cardId} card: Offline`);
+                        //console.log(`❌ ${cardId} card: Offline`);
                     } else {
                         statusElement.className = 'service-status degraded';
                         statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Unknown</span>';
-                        console.log(`⚠️  ${cardId} card: Unknown status`);
+                        //console.log(`⚠️  ${cardId} card: Unknown status`);
                     }
                 }
             }
@@ -1812,7 +1826,7 @@
                 if (statusElement) {
                     statusElement.className = 'service-status offline';
                     statusElement.innerHTML = '<div class="connection-indicator"></div><span class="connection-text">Offline</span>';
-                    console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
+                    //console.log(`❌ ${serviceId} card: Marked offline (gateway unreachable)`);
                 }
                 
                 // Also disable management buttons (assume database is also down when gateway is unreachable)
@@ -1840,7 +1854,7 @@
         // Service management function
         async function manageService(serviceName, action, clickedButton = null) {
             const env = ENVIRONMENT_CONFIG.current;
-            console.log(`🔧 Managing ${serviceName}: ${action} (${env})`);
+            //console.log(`🔧 Managing ${serviceName}: ${action} (${env})`);
             
             // Find the clicked button if not provided
             if (!clickedButton) {
@@ -2135,9 +2149,9 @@
                     // Don't change button state if it's currently showing loading/success/error animations
                     if (!hasLoading && !hasSuccess && !hasError) {
                         button.disabled = shouldDisable;
-                        console.log(`🔘 ${button.title}: ${shouldDisable ? 'DISABLED' : 'ENABLED'} ${reason}`);
+                        //console.log(`🔘 ${button.title}: ${shouldDisable ? 'DISABLED' : 'ENABLED'} ${reason}`);
                     } else {
-                        console.log(`🔄 ${button.title}: Skipped update (in animation)`);
+                        //console.log(`🔄 ${button.title}: Skipped update (in animation)`);
                     }
                 }
                 
@@ -2154,7 +2168,7 @@
                         safeUpdateButton(startBtn, false, '(gateway offline - can restart system)');
                         safeUpdateButton(stopBtn, true, '(service offline)');
                         safeUpdateButton(restartBtn, false, '(gateway offline - can restart)');
-                        console.log('🚪 Gateway offline: Start/Restart buttons enabled for system recovery');
+                        //console.log('🚪 Gateway offline: Start/Restart buttons enabled for system recovery');
                     } else if (isDatabaseDependent && !dataServiceHealthy) {
                         // Database-dependent service is down AND database is down: disable all buttons
                         safeUpdateButton(startBtn, true, '(database down - cannot start)');
@@ -2168,7 +2182,7 @@
                     }
                 }
                 
-                console.log(`🔧 Service buttons updated for ${servicePrefix}-service: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy ? 'healthy' : 'down'}${isDatabaseDependent ? ' - DB dependent' : ' - Independent'})`);
+                //console.log(`🔧 Service buttons updated for ${servicePrefix}-service: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy ? 'healthy' : 'down'}${isDatabaseDependent ? ' - DB dependent' : ' - Independent'})`);
             }
         }
 
@@ -2183,11 +2197,11 @@
                 'invoice-service': 'invoice'
             };
             
-            console.log('🔧 updateAllServiceButtons called with:', servicesStatus);
+            //console.log('🔧 updateAllServiceButtons called with:', servicesStatus);
             
             // Check if data-service is healthy
             const dataServiceHealthy = servicesStatus['data-service'] === 'healthy';
-            console.log(`📊 Data service status: ${dataServiceHealthy ? 'healthy' : 'unhealthy'}`);
+            //console.log(`📊 Data service status: ${dataServiceHealthy ? 'healthy' : 'unhealthy'}`);
             
             for (const [gatewayServiceName, servicePrefix] of Object.entries(serviceMapping)) {
                 const serviceStatus = servicesStatus[gatewayServiceName];
@@ -2199,7 +2213,7 @@
                     // For gateway, use overall system health instead of individual service status
                     // If any critical service is down (especially database), gateway should be considered offline for button purposes
                     isOnline = dataServiceHealthy && serviceStatus === 'healthy';
-                    console.log(`🚪 Gateway button status: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy}, Gateway: ${serviceStatus})`);
+                    //console.log(`🚪 Gateway button status: ${isOnline ? 'Online' : 'Offline'} (DB: ${dataServiceHealthy}, Gateway: ${serviceStatus})`);
                 } else {
                     // For all other services, use individual service status
                     isOnline = serviceStatus === 'healthy';
@@ -5678,6 +5692,101 @@
         // Initialize Recipes Content
         async function initRecipesContent() {
             await loadRecipesData();
+        }
+
+        // Initialize Settings Content
+        async function initSettingsContent() {
+            await loadSettingsData();
+        }
+
+        async function loadSettingsData() {
+            try {
+                const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/data/settings/all`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                const settings = data.data || [];
+                
+                displaySettings(settings);
+                
+            } catch (error) {
+                console.error('❌ Error loading settings:', error);
+                displaySettingsError('Failed to load settings. Please check your connection and try again.');
+            }
+        }
+
+        function displaySettings(settings) {
+            const tbody = document.getElementById('settingsTableBody');
+            
+            if (!settings || settings.length === 0) {
+                displaySettingsEmpty();
+                return;
+            }
+
+            tbody.innerHTML = '';
+            
+            settings.forEach(setting => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <span class="badge bg-primary">${setting.service}</span>
+                    </td>
+                    <td>
+                        <code class="text-dark">${setting.key}</code>
+                    </td>
+                    <td>
+                        <div class="setting-value" title="${setting.value}">
+                            ${setting.value}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="setting-description" title="${setting.description || ''}">
+                            ${setting.description || '-'}
+                        </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.service}', '${setting.key}', '${setting.value}', '${setting.description || ''}')">
+                            <i class="fas fa-edit me-1"></i>Edit
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function displaySettingsError(message) {
+            const tbody = document.getElementById('settingsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        <span class="text-muted">${message}</span>
+                        <button class="btn btn-sm btn-primary ms-2" onclick="loadSettingsData()">
+                            <i class="fas fa-redo me-1"></i>Try Again
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function displaySettingsEmpty() {
+            const tbody = document.getElementById('settingsTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="text-center py-4">
+                        <i class="fas fa-cog text-muted me-2"></i>
+                        <span class="text-muted">No settings found</span>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function editSetting(service, key, value, description) {
+            // For now, just show an alert. This can be enhanced with a modal later
+            alert(`Edit Setting:\nService: ${service}\nKey: ${key}\nCurrent Value: ${value}\nDescription: ${description}`);
         }
 
         async function loadRecipesData() {

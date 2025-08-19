@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"gateway-service/middleware"
@@ -106,13 +107,15 @@ func main() {
 	// Initialize structured logger
 	logrusLogger = initLogger()
 
-	config := Config{
-		Port:                getEnv("GATEWAY_PORT", "8082"),
-		SessionServiceURL:   getEnv("SESSION_SERVICE_URL", "http://localhost:8081"),
-		OrdersServiceURL:    getEnv("ORDERS_SERVICE_URL", "http://localhost:8083"),
-		InventoryServiceURL: getEnv("INVENTORY_SERVICE_URL", "http://localhost:8084"),
-		InvoiceServiceURL:   getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
-		DataServiceURL:      getEnv("DATA_SERVICE_URL", "http://localhost:8086"),
+	// Bootstrap config with hardcoded data service URL for initial config loading
+	bootstrapConfig := Config{
+		DataServiceURL: "http://icecream_data_service:8086", // Hardcoded for bootstrap - Docker service name
+	}
+
+	// Load full configuration from data service
+	config, err := loadConfigFromDataService(&bootstrapConfig, logrusLogger)
+	if err != nil {
+		logrusLogger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	// Initialize centralized logging
@@ -170,7 +173,7 @@ func main() {
 	v1 := api.PathPrefix("/v1").Subrouter()
 
 	// Public health check endpoint
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(&config, logrusLogger)).Methods("GET")
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(config, logrusLogger)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -462,7 +465,7 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
 		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
 		//pvillalobos - gateway should not be hitting data service health endpoint, all business services do that already
-		dataHealthy := checkServiceHealth("http://icecream_data_service:8086/api/v1/data/p/health", logger) // For UI monitoring
+		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger) // For UI monitoring
 
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
@@ -906,4 +909,116 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// loadConfigFromDataService loads configuration from the data service API
+func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (*Config, error) {
+	// Get settings from data service
+	settings, err := getSettingsFromDataService("Gateway", logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
+	}
+
+	// Create config with defaults
+	config := &Config{
+		Port:                "8082",
+		SessionServiceURL:   "http://localhost:8081",
+		OrdersServiceURL:    "http://localhost:8083",
+		InventoryServiceURL: "http://localhost:8084",
+		InvoiceServiceURL:   "http://localhost:8085",
+		DataServiceURL:      bootstrapConfig.DataServiceURL, // Use bootstrap value
+	}
+
+	// Populate config from settings
+	populateConfigFromSettings(config, settings, logger)
+
+	return config, nil
+}
+
+// getSettingsFromDataService calls the data service API to get settings
+func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
+	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
+	
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	// Create request body
+	requestBody := map[string]string{
+		"service": serviceName,
+	}
+
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
+	}
+
+	// Make request to data service
+	resp, err := client.Post(
+		dataServiceURL+"/api/v1/data/settings/by-service",
+		"application/json",
+		bytes.NewBuffer(jsonBody),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("data service returned status %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var response struct {
+		Success bool     `json:"success"`
+		Data    []Setting `json:"data"`
+		Message string   `json:"message"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !response.Success {
+		return nil, fmt.Errorf("data service error: %s", response.Message)
+	}
+
+	return response.Data, nil
+}
+
+// Setting represents a setting from the data service
+type Setting struct {
+	Service     string `json:"service"`
+	Key         string `json:"key"`
+	Value       string `json:"value"`
+	Description string `json:"description"`
+}
+
+// populateConfigFromSettings populates the config struct from settings
+func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
+	for _, setting := range settings {
+		switch setting.Key {
+		case "SESSION_SERVICE_URL":
+			config.SessionServiceURL = setting.Value
+		case "ORDERS_SERVICE_URL":
+			config.OrdersServiceURL = setting.Value
+		case "INVENTORY_SERVICE_URL":
+			config.InventoryServiceURL = setting.Value
+		case "INVOICE_SERVICE_URL":
+			config.InvoiceServiceURL = setting.Value
+		case "DATA_SERVICE_URL":
+			config.DataServiceURL = setting.Value
+		case "GATEWAY_PORT":
+			config.Port = setting.Value
+		}
+	}
+
+	logger.WithFields(logrus.Fields{
+		"session_service":   config.SessionServiceURL,
+		"orders_service":    config.OrdersServiceURL,
+		"inventory_service": config.InventoryServiceURL,
+		"invoice_service":   config.InvoiceServiceURL,
+		"data_service":      config.DataServiceURL,
+		"port":              config.Port,
+	}).Info("Configuration loaded from data service")
 }

@@ -90,11 +90,6 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 // checkDataServiceHealth checks if the data-service is healthy
 func (h *MainHTTPHandler) checkDataServiceHealth() bool {
-	// Skip data-service health check in unit tests
-	if os.Getenv("SKIP_DATA_SERVICE_HEALTH_CHECK") == "true" {
-		return true
-	}
-
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}

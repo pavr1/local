@@ -1198,7 +1198,7 @@
 
      // Simple service status update function
      function updateArchitectureStatus(servicesStatus, overallStatus = 'healthy') {
-         console.log('🔄 Updating services dashboard...', { servicesStatus, overallStatus });
+         //console.log('🔄 Updating services dashboard...', { servicesStatus, overallStatus });
          
          const serviceMapping = {
              'data-service': 'data-status',
@@ -1246,11 +1246,13 @@
                     
                     if (onlineBusinessServices === totalBusinessServices) {
                         status = 'healthy'; // Gateway healthy + all business services healthy = online
+                        console.log(`✅`);
                     } else {
                         status = 'degraded'; // Gateway healthy but business services down = degraded (recovery mode)
+                        console.log(`⚠️`);
                     }
                     
-                    console.log(`🚪 Gateway card: Service healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${status}`);
+                    //console.log(`🚪 Gateway card: Service healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${status}`);
                 }
             } else {
                 status = serviceStatus;
@@ -1284,7 +1286,7 @@
              if (!gatewayServiceHealthy) {
                  // Gateway service itself is down = UI offline (can't reach gateway)
                  uiStatus = 'unhealthy';
-                 console.log('🖥️  UI status: Gateway unreachable - showing offline');
+                 //console.log('🖥️  UI status: Gateway unreachable - showing offline');
              } else {
                  // Gateway service is healthy - check business services for UI status
                  let onlineBusinessServices = 0;
@@ -1306,7 +1308,7 @@
                      uiStatus = 'degraded'; // Some business services down = UI degraded
                  }
                  
-                 console.log(`🖥️  UI status: Gateway healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${uiStatus}`);
+                 //console.log(`🖥️  UI status: Gateway healthy, business services ${onlineBusinessServices}/${totalBusinessServices} → ${uiStatus}`);
              }
              
              if (uiStatus === 'healthy') {
@@ -1328,7 +1330,7 @@
              }
          }
          
-                 console.log('✅ Services dashboard updated');
+                 //console.log('✅ Services dashboard updated');
     }
 
          // Update connection line colors based on service health
