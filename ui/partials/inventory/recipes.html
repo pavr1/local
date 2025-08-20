@@ -316,9 +316,14 @@
                             <label for="editRecipeCategoryId" class="form-label">
                                 Category <span class="text-danger">*</span>
                             </label>
-                            <select class="form-control" id="editRecipeCategoryId" name="recipe_category_id" required>
-                                <option value="">Select a category</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="editRecipeCategoryDisplay" 
+                                       readonly placeholder="Select a category" style="background: white;">
+                                <input type="hidden" id="editRecipeCategoryId" name="recipe_category_id">
+                                <button type="button" class="btn btn-outline-info" onclick="openEditRecipeCategoryPicker()" title="Select Category">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">
                                 Please select a recipe category.
                             </div>
@@ -336,7 +341,7 @@
                         <div class="col-md-6 mb-3">
                             <label for="editRecipeTotalCost" class="form-label">Total Cost</label>
                             <input type="number" min="0" step="0.01" class="form-control" id="editRecipeTotalCost" name="total_recipe_cost" 
-                                   placeholder="0.00">
+                                   placeholder="0.00" readonly style="background: #f8f9fa;">
                             <div class="invalid-feedback">
                                 Please provide a valid total cost.
                             </div>
@@ -1263,10 +1268,9 @@
             document.getElementById('editRecipeDescription').value = recipe.recipe_description || '';
             document.getElementById('editRecipeTotalCost').value = recipe.total_recipe_cost || '';
             
-            // Populate category dropdown
-            await loadRecipeCategories();
-            populateCategoryDropdowns();
+            // Populate category display
             document.getElementById('editRecipeCategoryId').value = recipe.recipe_category_id;
+            document.getElementById('editRecipeCategoryDisplay').value = recipe.recipe_category_name || '';
             
             currentRecipe = recipe;
             
@@ -1347,6 +1351,12 @@
         updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
         
         try {
+            // Add ingredients to the request
+            recipeData.ingredients = recipeIngredients.map(ingredient => ({
+                ingredient_id: ingredient.id,
+                number_of_units: ingredient.quantity
+            }));
+            
             const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
             
             const result = await response.json();
@@ -1420,10 +1430,16 @@
     window.editRecipeFromView = editRecipeFromView;
     window.updateRecipe = updateRecipe;
     window.deleteRecipe = deleteRecipe;
+    window.openEditRecipeCategoryPicker = openEditRecipeCategoryPicker;
     window.addEditRecipeIngredient = addEditRecipeIngredient;
     window.filterRecipeIngredients = filterRecipeIngredients;
     window.toggleSelectAllIngredients = toggleSelectAllIngredients;
     window.addSelectedIngredients = addSelectedIngredients;
     window.updateRecipeIngredientQuantity = updateRecipeIngredientQuantity;
     window.removeRecipeIngredient = removeRecipeIngredient;
+
+    function openEditRecipeCategoryPicker() {
+        // The modal will be opened by the dashboard.html function
+        window.openRecipeCategoryPicker();
+    }
 </script> 

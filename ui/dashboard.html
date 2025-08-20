@@ -6538,12 +6538,15 @@
                 return;
             }
 
+            // Determine if we're in edit mode by checking if editRecipeCategoryDisplay exists
+            const isEditMode = document.getElementById('editRecipeCategoryDisplay') !== null;
+
             tbody.innerHTML = filteredRecipeCategories.map(category => `
                 <tr>
                     <td><strong>${category.name || 'N/A'}</strong></td>
                     <td>${category.description || 'N/A'}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="selectRecipeCategory('${category.id}', '${category.name}')">
+                        <button class="btn btn-sm btn-primary" onclick="${isEditMode ? 'selectEditRecipeCategory' : 'selectRecipeCategory'}('${category.id}', '${category.name}')">
                             <i class="fas fa-check"></i>
                         </button>
                     </td>
@@ -6565,6 +6568,18 @@
         window.selectRecipeCategory = function(categoryId, categoryName) {
             document.getElementById('recipeCategoryId').value = categoryId;
             document.getElementById('recipeCategoryDisplay').value = categoryName;
+            
+            // Hide modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('recipeCategoryPickerModal'));
+            modal.hide();
+            
+            // Clear search
+            document.getElementById('recipeCategorySearchInput').value = '';
+        };
+
+        window.selectEditRecipeCategory = function(categoryId, categoryName) {
+            document.getElementById('editRecipeCategoryId').value = categoryId;
+            document.getElementById('editRecipeCategoryDisplay').value = categoryName;
             
             // Hide modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('recipeCategoryPickerModal'));

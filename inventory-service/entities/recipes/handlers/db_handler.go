@@ -213,8 +213,16 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 }
 
 func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*models.Recipe, error) {
+	// Start a transaction
+	tx, err := h.db.Begin()
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to begin transaction")
+		return nil, err
+	}
+	defer tx.Rollback() // Rollback if not committed
+
 	var recipe models.Recipe
-	err := h.db.QueryRow(
+	err = tx.QueryRow(
 		recipeSQL.UpdateRecipeQuery,
 		id,
 		req.RecipeName,
@@ -243,6 +251,41 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 		h.logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Error("Failed to update recipe in database")
+		return nil, err
+	}
+
+	// Update ingredients if provided
+	if req.Ingredients != nil {
+		// Delete existing ingredients
+		_, err = tx.Exec(recipeIngredientsSQL.DeleteRecipeIngredientsByRecipeIDQuery, id)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id": id,
+			}).Error("Failed to delete existing recipe ingredients")
+			return nil, err
+		}
+
+		// Create new ingredients
+		for _, ingredient := range req.Ingredients {
+			_, err = tx.Exec(
+				recipeIngredientsSQL.CreateRecipeIngredientQuery,
+				id,
+				ingredient.IngredientID,
+				ingredient.NumberOfUnits,
+			)
+			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"recipe_id":     id,
+					"ingredient_id": ingredient.IngredientID,
+				}).Error("Failed to create recipe ingredient in database")
+				return nil, err
+			}
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		h.logger.WithError(err).Error("Failed to commit transaction")
 		return nil, err
 	}
 

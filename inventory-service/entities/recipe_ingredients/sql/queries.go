@@ -18,3 +18,6 @@ var UpdateRecipeIngredientQuery string
 
 //go:embed scripts/delete_recipe_ingredient.sql
 var DeleteRecipeIngredientQuery string
+
+//go:embed scripts/delete_recipe_ingredients_by_recipe_id.sql
+var DeleteRecipeIngredientsByRecipeIDQuery string

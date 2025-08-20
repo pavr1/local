@@ -38,11 +38,12 @@ type CreateRecipeRequest struct {
 
 // UpdateRecipeRequest represents the request to update a recipe
 type UpdateRecipeRequest struct {
-	RecipeName        *string  `json:"recipe_name,omitempty" validate:"omitempty,min=1,max=255"`
-	RecipeDescription *string  `json:"recipe_description,omitempty"`
-	PictureURL        *string  `json:"picture_url,omitempty"`
-	RecipeCategoryID  *string  `json:"recipe_category_id,omitempty" validate:"omitempty,uuid"`
-	TotalRecipeCost   *float64 `json:"total_recipe_cost,omitempty" validate:"omitempty,min=0"`
+	RecipeName        *string            `json:"recipe_name,omitempty" validate:"omitempty,min=1,max=255"`
+	RecipeDescription *string            `json:"recipe_description,omitempty"`
+	PictureURL        *string            `json:"picture_url,omitempty"`
+	RecipeCategoryID  *string            `json:"recipe_category_id,omitempty" validate:"omitempty,uuid"`
+	TotalRecipeCost   *float64           `json:"total_recipe_cost,omitempty" validate:"omitempty,min=0"`
+	Ingredients       []RecipeIngredient `json:"ingredients,omitempty"`
 }
 
 // GetRecipeRequest represents the request to get a recipe by ID
