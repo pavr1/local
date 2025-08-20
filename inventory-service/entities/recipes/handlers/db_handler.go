@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
 	"inventory-service/entities/recipes/models"
 	recipeSQL "inventory-service/entities/recipes/sql"
 
@@ -23,8 +24,16 @@ func NewRecipeDBHandler(db *sql.DB, logger *logrus.Logger) *RecipeDBHandler {
 }
 
 func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe, error) {
+	// Start a transaction
+	tx, err := h.db.Begin()
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to begin transaction")
+		return nil, err
+	}
+	defer tx.Rollback() // Rollback if not committed
+
 	var recipe models.Recipe
-	err := h.db.QueryRow(
+	err = tx.QueryRow(
 		recipeSQL.CreateRecipeQuery,
 		req.RecipeName,
 		req.RecipeDescription,
@@ -49,10 +58,35 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 		return nil, err
 	}
 
+	// Create recipe ingredients
+	for _, ingredient := range req.Ingredients {
+		_, err = tx.Exec(
+			recipeIngredientsSQL.CreateRecipeIngredientQuery,
+			recipe.ID,
+			ingredient.IngredientID,
+			ingredient.NumberOfUnits,
+			ingredient.UnitType,
+		)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id":     recipe.ID,
+				"ingredient_id": ingredient.IngredientID,
+			}).Error("Failed to create recipe ingredient in database")
+			return nil, err
+		}
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		h.logger.WithError(err).Error("Failed to commit transaction")
+		return nil, err
+	}
+
 	h.logger.WithFields(logrus.Fields{
-		"recipe_id":   recipe.ID,
-		"recipe_name": recipe.RecipeName,
-	}).Info("Recipe created successfully")
+		"recipe_id":         recipe.ID,
+		"recipe_name":       recipe.RecipeName,
+		"ingredients_count": len(req.Ingredients),
+	}).Info("Recipe and ingredients created successfully")
 
 	return &recipe, nil
 }
