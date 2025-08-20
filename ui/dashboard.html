@@ -852,6 +852,55 @@
         .log-line.debug {
             color: #74c0fc;
         }
+
+        /* Settings table styling */
+        #settingsTable th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        #settingsTable th:hover {
+            background-color: #e9ecef;
+        }
+
+        .setting-value {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .setting-description {
+            max-width: 250px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Modal styling */
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .modal-header .btn-close {
+            filter: invert(1);
+        }
+
+        /* Sort indicators */
+        .fa-sort-up {
+            color: #28a745;
+        }
+
+        .fa-sort-down {
+            color: #dc3545;
+        }
+
+        .fa-sort {
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -5718,6 +5767,9 @@
             }
         }
 
+        // Global variable to store settings data for sorting
+        let currentSettings = [];
+
         function displaySettings(settings) {
             const tbody = document.getElementById('settingsTableBody');
             
@@ -5726,6 +5778,15 @@
                 return;
             }
 
+            // Store settings globally for sorting
+            currentSettings = [...settings];
+            
+            // Apply initial sort by service
+            sortSettings('service');
+        }
+
+        function renderSettingsTable(settings) {
+            const tbody = document.getElementById('settingsTableBody');
             tbody.innerHTML = '';
             
             settings.forEach(setting => {
@@ -5757,6 +5818,62 @@
             });
         }
 
+        // Sorting functionality
+        let currentSortField = 'service';
+        let currentSortDirection = 'asc';
+
+        function sortSettings(field) {
+            if (currentSortField === field) {
+                // Toggle direction if same field
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // New field, default to ascending
+                currentSortField = field;
+                currentSortDirection = 'asc';
+            }
+
+            // Update sort indicators
+            updateSortIndicators(field, currentSortDirection);
+
+            // Sort the settings
+            const sortedSettings = [...currentSettings].sort((a, b) => {
+                let aValue = a[field] || '';
+                let bValue = b[field] || '';
+
+                // Convert to lowercase for case-insensitive sorting
+                aValue = aValue.toString().toLowerCase();
+                bValue = bValue.toString().toLowerCase();
+
+                if (currentSortDirection === 'asc') {
+                    return aValue.localeCompare(bValue);
+                } else {
+                    return bValue.localeCompare(aValue);
+                }
+            });
+
+            renderSettingsTable(sortedSettings);
+        }
+
+        function updateSortIndicators(field, direction) {
+            // Remove all sort indicators
+            const headers = document.querySelectorAll('#settingsTable th');
+            headers.forEach(header => {
+                const icon = header.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-sort ms-1';
+                }
+            });
+
+            // Add sort indicator to current field
+            const currentHeader = document.querySelector(`#settingsTable th[onclick*="${field}"]`);
+            if (currentHeader) {
+                const icon = currentHeader.querySelector('i');
+                if (icon) {
+                    icon.className = direction === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                }
+            }
+        }
+
         function displaySettingsError(message) {
             const tbody = document.getElementById('settingsTableBody');
             tbody.innerHTML = `
@@ -5784,9 +5901,122 @@
             `;
         }
 
+        // Modal handling variables
+        let currentEditingSetting = null;
+
         function editSetting(service, key, value, description) {
-            // For now, just show an alert. This can be enhanced with a modal later
-            alert(`Edit Setting:\nService: ${service}\nKey: ${key}\nCurrent Value: ${value}\nDescription: ${description}`);
+            // Store the current setting being edited
+            currentEditingSetting = { service, key, value, description };
+            
+            // Populate the modal fields
+            document.getElementById('editService').value = service;
+            document.getElementById('editKey').value = key;
+            document.getElementById('editValue').value = value;
+            document.getElementById('editDescription').value = description || '';
+            
+            // Clear any previous validation errors
+            document.getElementById('editValue').classList.remove('is-invalid');
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('editSettingModal'));
+            modal.show();
+        }
+
+        function saveSetting() {
+            const valueInput = document.getElementById('editValue');
+            const value = valueInput.value.trim();
+            
+            // Validate the value
+            if (!value) {
+                valueInput.classList.add('is-invalid');
+                return;
+            }
+            
+            // Clear validation error
+            valueInput.classList.remove('is-invalid');
+            
+            // Show confirmation modal
+            document.getElementById('confirmService').textContent = currentEditingSetting.service;
+            document.getElementById('confirmKey').textContent = currentEditingSetting.key;
+            document.getElementById('confirmValue').textContent = value;
+            document.getElementById('confirmDescription').textContent = document.getElementById('editDescription').value.trim() || 'No description';
+            
+            // Hide edit modal and show confirmation modal
+            const editModal = bootstrap.Modal.getInstance(document.getElementById('editSettingModal'));
+            editModal.hide();
+            
+            const confirmModal = new bootstrap.Modal(document.getElementById('confirmUpdateModal'));
+            confirmModal.show();
+        }
+
+        async function confirmUpdateSetting() {
+            try {
+                const value = document.getElementById('editValue').value.trim();
+                const description = document.getElementById('editDescription').value.trim();
+                
+                const updateData = {
+                    service: currentEditingSetting.service,
+                    key: currentEditingSetting.key,
+                    value: value,
+                    description: description || currentEditingSetting.description || ''
+                };
+                
+                const response = await authenticatedPost(
+                    `${CONFIG.GATEWAY_URL}/api/v1/data/settings/update-setting`,
+                    updateData
+                );
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    showAlert('Setting updated successfully!', 'success');
+                    
+                    // Reload settings data
+                    await loadSettingsData();
+                    
+                    // Close confirmation modal
+                    const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmUpdateModal'));
+                    confirmModal.hide();
+                    
+                    // Reset current editing setting
+                    currentEditingSetting = null;
+                } else {
+                    throw new Error(result.message || 'Failed to update setting');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error updating setting:', error);
+                showAlert(`Failed to update setting: ${error.message}`, 'error');
+                
+                // Close confirmation modal
+                const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmUpdateModal'));
+                confirmModal.hide();
+            }
+        }
+
+        // Alert function for showing messages
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
         }
 
         async function loadRecipesData() {

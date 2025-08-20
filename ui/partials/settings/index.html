@@ -1,12 +1,5 @@
 <!DOCTYPE html>
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2><i class="fas fa-cog me-2"></i>System Settings</h2>
-            <p class="text-muted">Manage system configuration and settings</p>
-        </div>
-    </div>
-    
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -15,8 +8,12 @@
                         <table class="table table-hover" id="settingsTable">
                             <thead>
                                 <tr>
-                                    <th>Service</th>
-                                    <th>Key</th>
+                                    <th style="cursor: pointer;" onclick="sortSettings('service')">
+                                        Service <i class="fas fa-sort ms-1"></i>
+                                    </th>
+                                    <th style="cursor: pointer;" onclick="sortSettings('key')">
+                                        Key <i class="fas fa-sort ms-1"></i>
+                                    </th>
                                     <th>Value</th>
                                     <th>Description</th>
                                     <th>Actions</th>
@@ -28,6 +25,88 @@
                         </table>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Setting Modal -->
+<div class="modal fade" id="editSettingModal" tabindex="-1" aria-labelledby="editSettingModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSettingModalLabel">
+                    <i class="fas fa-edit me-2"></i>Edit Setting
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editSettingForm">
+                    <div class="mb-3">
+                        <label for="editService" class="form-label">Service</label>
+                        <input type="text" class="form-control" id="editService" readonly disabled>
+                        <div class="form-text text-muted">Service cannot be modified</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editKey" class="form-label">Key</label>
+                        <input type="text" class="form-control" id="editKey" readonly disabled>
+                        <div class="form-text text-muted">Key cannot be modified</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editValue" class="form-label">Value <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editValue" required>
+                        <div class="invalid-feedback" id="editValueError">
+                            Value is required and cannot be empty.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveSetting()">
+                    <i class="fas fa-save me-1"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmUpdateModal" tabindex="-1" aria-labelledby="confirmUpdateModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmUpdateModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Confirm Update
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to update this setting?</p>
+                <div class="alert alert-info">
+                    <strong>Service:</strong> <span id="confirmService"></span><br>
+                    <strong>Key:</strong> <span id="confirmKey"></span><br>
+                    <strong>New Value:</strong> <span id="confirmValue"></span><br>
+                    <strong>Description:</strong> <span id="confirmDescription"></span>
+                </div>
+                <p class="text-muted small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    This action will update the setting immediately and may affect system behavior.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-warning" onclick="confirmUpdateSetting()">
+                    <i class="fas fa-check me-1"></i>Yes, Update Setting
+                </button>
             </div>
         </div>
     </div>
