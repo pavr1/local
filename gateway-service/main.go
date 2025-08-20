@@ -227,6 +227,7 @@ func main() {
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
+	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Settings endpoints (authenticated)
 	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logrusLogger)).Methods("GET")
@@ -237,7 +238,6 @@ func main() {
 
 	// Other data service endpoints
 	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
-	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)
@@ -693,7 +693,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		logrusLogger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Warn("Service is already running, stopping it first")
-		
+
 		finalOutput.WriteString(fmt.Sprintf("Service %s was already running, stopping first...\n", serviceName))
 
 		// Stop the service first
@@ -706,7 +706,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 				"service_name": serviceName,
 				"stop_output":  stopOutput,
 			}).Error("Failed to stop running service")
-			
+
 			finalSuccess = false
 			finalError = fmt.Errorf("failed to stop running service: %v", stopErr)
 		} else {
@@ -1179,9 +1179,9 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	}
 
 	logger.WithFields(logrus.Fields{
-		"success":       response.Success,
-		"data_count":    len(response.Data),
-		"message":       response.Message,
+		"success":    response.Success,
+		"data_count": len(response.Data),
+		"message":    response.Message,
 	}).Info("Parsed data service response")
 
 	if !response.Success {
@@ -1224,7 +1224,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.SessionServiceURL
 			config.SessionServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated session service URL")
@@ -1232,7 +1232,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.OrdersServiceURL
 			config.OrdersServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated orders service URL")
@@ -1240,7 +1240,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.InventoryServiceURL
 			config.InventoryServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated inventory service URL")
@@ -1248,7 +1248,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.InvoiceServiceURL
 			config.InvoiceServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated invoice service URL")
@@ -1256,7 +1256,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.DataServiceURL
 			config.DataServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated data service URL")
@@ -1264,7 +1264,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			oldValue := config.Port
 			config.Port = setting.Value
 			logger.WithFields(logrus.Fields{
-				"key":      setting.Key,
+				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated gateway port")

@@ -60,17 +60,21 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 
 // HealthCheck handles health check requests
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	h.logger.WithFields(logrus.Fields{
-		"endpoint": "/api/v1/sessions/p/health",
-		"method":   r.Method,
-		"remote":   r.RemoteAddr,
-	}).Info("Health check requested")
+	if h.logger != nil {
+		h.logger.WithFields(logrus.Fields{
+			"endpoint": "/api/v1/sessions/p/health",
+			"method":   r.Method,
+			"remote":   r.RemoteAddr,
+		}).Info("Health check requested")
+	}
 
 	// Check data-service health
 	dataServiceHealthy := h.checkDataServiceHealth()
 
 	if !dataServiceHealthy {
-		h.logger.Error("Data-service health check failed")
+		if h.logger != nil {
+			h.logger.Error("Data-service health check failed")
+		}
 		h.writeJSONResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
 			"status":  "unhealthy",
 			"service": "session-service",
@@ -96,7 +100,9 @@ func (h *MainHTTPHandler) checkDataServiceHealth() bool {
 
 	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to connect to data-service")
+		if h.logger != nil {
+			h.logger.WithError(err).Error("Failed to connect to data-service")
+		}
 		return false
 	}
 	defer resp.Body.Close()
@@ -110,6 +116,8 @@ func (h *MainHTTPHandler) writeJSONResponse(w http.ResponseWriter, statusCode in
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.WithError(err).Error("Failed to encode JSON response")
+		if h.logger != nil {
+			h.logger.WithError(err).Error("Failed to encode JSON response")
+		}
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	sessionmanager "gateway-service/middleware/session-manager"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -175,11 +174,11 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		sessionId := extractSessionIdFromHeader(r)
 		if sessionId != "" {
 			sm.logger.WithFields(logrus.Fields{
-				"session_id": sessionId,
-				"method":     r.Method,
+				"session_id":  sessionId,
+				"method":      r.Method,
 				"remote_addr": r.RemoteAddr,
 			}).Info("Attempting to revoke session")
-			
+
 			// Revoke session in session service
 			if err := sm.sessionManager.LogoutSession(sessionId); err != nil {
 				sm.logger.WithError(err).WithFields(logrus.Fields{
@@ -192,7 +191,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 			}
 		} else {
 			sm.logger.WithFields(logrus.Fields{
-				"method":     r.Method,
+				"method":      r.Method,
 				"remote_addr": r.RemoteAddr,
 			}).Warn("Logout request without session ID")
 		}

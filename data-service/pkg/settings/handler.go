@@ -252,7 +252,7 @@ func (h *SettingsHandler) validateGatewayRequest(r *http.Request) bool {
 	userRole := r.Header.Get("X-User-Role")
 
 	// Request must come from gateway and have user context
-	return gatewayService == "gateway" &&
+	return gatewayService == "ice-cream-gateway" &&
 		gatewaySessionManaged == "true" &&
 		userID != "" &&
 		username != "" &&
