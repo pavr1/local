@@ -6,12 +6,14 @@ import (
 
 // RecipeIngredient represents a recipe ingredient
 type RecipeIngredient struct {
-	ID           string    `json:"id" db:"id"`
-	RecipeID     string    `json:"recipe_id" db:"recipe_id"`
-	IngredientID string    `json:"ingredient_id" db:"ingredient_id"`
-	Quantity     float64   `json:"quantity" db:"quantity"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	ID             string    `json:"id" db:"id"`
+	RecipeID       string    `json:"recipe_id" db:"recipe_id"`
+	IngredientID   string    `json:"ingredient_id" db:"ingredient_id"`
+	Quantity       float64   `json:"quantity" db:"quantity"`
+	IngredientName string    `json:"ingredient_name,omitempty" db:"ingredient_name"`
+	FinalPrice     float64   `json:"final_price,omitempty" db:"final_price"`
+	CreatedAt      time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // CreateRecipeIngredientRequest represents the request to create a new recipe ingredient

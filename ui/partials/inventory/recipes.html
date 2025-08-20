@@ -164,7 +164,6 @@
     <div class="table-container" id="recipesTableContainer">
         <div class="loading-table text-center py-5">
             <div class="loading-spinner"></div>
-            <p>Loading recipes...</p>
         </div>
     </div>
 </div>
@@ -343,6 +342,22 @@
                             </div>
                         </div>
                     </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Recipe Ingredients <span class="text-danger">*</span></label>
+                            <div class="ingredients-container">
+                                <div id="editRecipeIngredientsList" class="mb-3">
+                                    <!-- Ingredients will be added here -->
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" onclick="addEditRecipeIngredient()">
+                                    <i class="fas fa-plus me-2"></i>Add Ingredient
+                                </button>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please add at least one ingredient to the recipe.
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -479,6 +494,9 @@
     let recipes = [];
     let recipeCategories = []; // Only needed for form dropdowns
     let currentRecipe = null;
+    let recipeIngredients = []; // For managing recipe ingredients
+    let allIngredients = []; // All available ingredients
+    let filteredIngredients = []; // Filtered ingredients for picker
 
     // Initialize recipes content
     async function initRecipesContent() {
@@ -537,7 +555,6 @@
                 <div class="d-flex justify-content-center align-items-center py-5">
                     <div class="loading-spinner">
                         <i class="fas fa-spinner fa-spin me-2"></i>
-                        Loading recipes...
                     </div>
                 </div>
             `;
@@ -785,6 +802,374 @@
         }
     }
 
+    // Ingredients Management Functions
+    function addEditRecipeIngredient() {
+        openRecipeIngredientPicker();
+    }
+
+    async function openRecipeIngredientPicker() {
+        await loadIngredientsForRecipe();
+        
+        // Reset checkboxes and search
+        const selectAllCheckbox = document.getElementById('selectAllIngredients');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+        document.getElementById('recipeIngredientSearchInput').value = '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('recipeIngredientPickerModal'));
+        modal.show();
+    }
+
+    async function loadIngredientsForRecipe() {
+        try {
+            // Load ingredients
+            const ingredientsResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients?limit=1000`);
+            
+            if (!ingredientsResponse.ok) {
+                throw new Error(`HTTP ${ingredientsResponse.status}: ${ingredientsResponse.statusText}`);
+            }
+            
+            const ingredientsResult = await ingredientsResponse.json();
+            const ingredients = ingredientsResult.data || [];
+            
+            // Load existences to get pricing information
+            const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
+            
+            if (!existencesResponse.ok) {
+                throw new Error(`HTTP ${existencesResponse.status}: ${existencesResponse.statusText}`);
+            }
+            
+            const existencesResult = await existencesResponse.json();
+            const existences = existencesResult.data || [];
+            
+            // Create a map of ingredient ID to most recent final price
+            const ingredientPrices = new Map();
+            existences.forEach(existence => {
+                if (existence.final_price && existence.final_price > 0) {
+                    const currentPrice = ingredientPrices.get(existence.ingredient_id);
+                    if (!currentPrice || existence.created_at > currentPrice.created_at) {
+                        ingredientPrices.set(existence.ingredient_id, {
+                            final_price: existence.final_price,
+                            created_at: existence.created_at
+                        });
+                    }
+                }
+            });
+            
+            // Merge ingredients with pricing information
+            allIngredients = ingredients.map(ingredient => {
+                const priceInfo = ingredientPrices.get(ingredient.id);
+                return {
+                    ...ingredient,
+                    final_price: priceInfo ? priceInfo.final_price : null
+                };
+            });
+            
+            filteredIngredients = [...allIngredients];
+            
+            displayIngredientsForRecipe();
+            
+        } catch (error) {
+            console.error('❌ Error loading ingredients for recipe:', error);
+            Alert.error('Failed to load ingredients. Please try again.');
+        }
+    }
+
+    function displayIngredientsForRecipe() {
+        const tbody = document.getElementById('recipeIngredientPickerTableBody');
+        
+        if (!filteredIngredients || filteredIngredients.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">
+                        <i class="fas fa-search me-2"></i>No ingredients found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filteredIngredients.map(ingredient => `
+            <tr>
+                <td>
+                    <input type="checkbox" class="form-check-input ingredient-checkbox" 
+                           value="${ingredient.id}" 
+                           data-name="${ingredient.name || 'N/A'}" 
+                           data-unit="${ingredient.unit_type || 'N/A'}">
+                </td>
+                <td><strong>${ingredient.name || 'N/A'}</strong></td>
+                <td>${ingredient.category_name || 'N/A'}</td>
+                <td>
+                    <span class="badge bg-success">
+                        ₡${ingredient.final_price ? ingredient.final_price.toFixed(2) : 'N/A'}
+                    </span>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function filterRecipeIngredients() {
+        const searchTerm = document.getElementById('recipeIngredientSearchInput').value.toLowerCase();
+        
+        filteredIngredients = allIngredients.filter(ingredient => 
+            (ingredient.name && ingredient.name.toLowerCase().includes(searchTerm)) ||
+            (ingredient.category_name && ingredient.category_name.toLowerCase().includes(searchTerm))
+        );
+        
+        displayIngredientsForRecipe();
+        
+        // Reset select all checkbox when filtering
+        const selectAllCheckbox = document.getElementById('selectAllIngredients');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = false;
+        }
+    }
+
+    function toggleSelectAllIngredients() {
+        const selectAllCheckbox = document.getElementById('selectAllIngredients');
+        const ingredientCheckboxes = document.querySelectorAll('.ingredient-checkbox');
+        
+        ingredientCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    }
+
+    function addSelectedIngredients() {
+        const selectedCheckboxes = document.querySelectorAll('.ingredient-checkbox:checked');
+        
+        if (selectedCheckboxes.length === 0) {
+            Alert.warning('Please select at least one ingredient.');
+            return;
+        }
+        
+        selectedCheckboxes.forEach(checkbox => {
+            const ingredientId = checkbox.value;
+            const ingredientName = checkbox.getAttribute('data-name');
+            
+            // Check if ingredient is already added
+            const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
+            if (!existingIngredient) {
+                // Find the ingredient with pricing information
+                const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
+                
+                const ingredient = {
+                    id: ingredientId,
+                    name: ingredientName,
+                    quantity: 1,
+                    final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
+                };
+                
+                recipeIngredients.push(ingredient);
+            }
+        });
+        
+        displayRecipeIngredients();
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('recipeIngredientPickerModal'));
+        modal.hide();
+        
+        // Clear search and reset checkboxes
+        document.getElementById('recipeIngredientSearchInput').value = '';
+        document.getElementById('selectAllIngredients').checked = false;
+        document.querySelectorAll('.ingredient-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        Alert.success(`Added ${selectedCheckboxes.length} ingredient(s) to the recipe.`);
+    }
+
+    function displayRecipeIngredients(containerId = 'editRecipeIngredientsList') {
+        const container = document.getElementById(containerId);
+        
+        if (!recipeIngredients || recipeIngredients.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-info-circle me-2"></i>No ingredients added yet
+                </div>
+            `;
+            return;
+        }
+
+        let totalCost = 0;
+
+        const ingredientsHtml = recipeIngredients.map((ingredient, index) => {
+            const pricePerItem = ingredient.final_price || 0;
+            const subtotal = pricePerItem * ingredient.quantity;
+            totalCost += subtotal;
+
+            const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
+
+            return `
+            <div class="card mb-2">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <strong>${ingredient.name}</strong>
+                            <br><small class="text-muted">${priceDisplay}</small>
+                        </div>
+                        <div class="col-md-2">
+                            <input type="number" step="0.001" min="0.001" class="form-control form-control-sm" 
+                                   value="${ingredient.quantity}" 
+                                   onchange="updateRecipeIngredientQuantity(${index}, this.value)"
+                                   onkeyup="updateRecipeIngredientQuantity(${index}, this.value)"
+                                   onclick="this.select()">
+                        </div>
+                        <div class="col-md-2">
+                            <span class="text-muted">units</span>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-info">₡${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeRecipeIngredient(${index})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        // Add total row
+        const totalRow = `
+            <div class="card mb-2 border-success">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <strong class="text-success">Total Recipe Cost</strong>
+                        </div>
+                        <div class="col-md-5 text-end">
+                            <span class="badge bg-success fs-6">₡${totalCost.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = ingredientsHtml + totalRow;
+    }
+
+
+
+    async function loadIngredientsPricing(ingredients) {
+        try {
+            // Load existences to get pricing information
+            const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
+            
+            if (!existencesResponse.ok) {
+                return ingredients;
+            }
+            
+            const existencesResult = await existencesResponse.json();
+            const existences = existencesResult.data || [];
+            
+            // Create a map of ingredient ID to most recent final price
+            const ingredientPrices = new Map();
+            existences.forEach(existence => {
+                if (existence.final_price && existence.final_price > 0) {
+                    const currentPrice = ingredientPrices.get(existence.ingredient_id);
+                    if (!currentPrice || existence.created_at > currentPrice.created_at) {
+                        ingredientPrices.set(existence.ingredient_id, {
+                            final_price: existence.final_price,
+                            created_at: existence.created_at
+                        });
+                    }
+                }
+            });
+            
+            // Add pricing information to ingredients
+            return ingredients.map(ingredient => {
+                const priceInfo = ingredientPrices.get(ingredient.ingredient_id);
+                return {
+                    ...ingredient,
+                    final_price: priceInfo ? priceInfo.final_price : 0
+                };
+            });
+        } catch (error) {
+            console.error('❌ Error loading ingredients pricing:', error);
+            return ingredients;
+        }
+    }
+
+
+
+    function updateRecipeIngredientQuantity(index, quantity) {
+        if (recipeIngredients[index]) {
+            recipeIngredients[index].quantity = parseFloat(quantity) || 1;
+            // Redisplay to update subtotals and total
+            displayRecipeIngredients();
+        }
+    }
+
+    function removeRecipeIngredient(index) {
+        recipeIngredients.splice(index, 1);
+        // Redisplay to update subtotals and total
+        displayRecipeIngredients();
+    }
+
+    function displayViewRecipeIngredients(ingredients) {
+        const container = document.getElementById('viewRecipeIngredientsList');
+        
+        if (!ingredients || ingredients.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-info-circle me-2"></i>No ingredients in this recipe
+                </div>
+            `;
+            return;
+        }
+
+        let totalCost = 0;
+
+        const ingredientsHtml = ingredients.map((ingredient) => {
+            const pricePerItem = ingredient.final_price || 0;
+            const subtotal = pricePerItem * ingredient.number_of_units;
+            totalCost += subtotal;
+
+            const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
+
+            return `
+            <div class="card mb-2">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <strong>${ingredient.ingredient_name}</strong>
+                            <br><small class="text-muted">${priceDisplay}</small>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="text-muted">${ingredient.number_of_units} units</span>
+                        </div>
+                        <div class="col-md-3">
+                            <span class="badge bg-info">₡${subtotal.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }).join('');
+
+        // Add total row
+        const totalRow = `
+            <div class="card mb-2 border-success">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <strong class="text-success">Total Recipe Cost</strong>
+                        </div>
+                        <div class="col-md-5 text-end">
+                            <span class="badge bg-success fs-6">₡${totalCost.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = ingredientsHtml + totalRow;
+    }
+
     async function loadRecipeForView(recipeId) {
         try {
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
@@ -796,8 +1181,7 @@
             const result = await response.json();
             const recipe = result.data;
             
-            const category = recipeCategories.find(c => c.id === recipe.recipe_category_id);
-            const categoryName = category ? category.name : 'Unknown';
+            const categoryName = recipe.recipe_category_name || 'Unknown';
             
             // Populate view modal
             document.getElementById('viewRecipeContent').innerHTML = `
@@ -838,9 +1222,20 @@
                         </div>
                     </div>
                 </div>
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h6 class="fw-bold">Recipe Ingredients</h6>
+                        <div id="viewRecipeIngredientsList" class="border rounded p-3 bg-light">
+                            <!-- Ingredients will be loaded here -->
+                        </div>
+                    </div>
+                </div>
             `;
             
             currentRecipe = recipe;
+            
+            // Display recipe ingredients
+            displayViewRecipeIngredients(recipe.ingredients || []);
             
             const modal = new bootstrap.Modal(document.getElementById('viewRecipeModal'));
             modal.show();
@@ -874,6 +1269,16 @@
             document.getElementById('editRecipeCategoryId').value = recipe.recipe_category_id;
             
             currentRecipe = recipe;
+            
+            // Convert recipe ingredients to the format expected by the edit form
+            recipeIngredients = (recipe.ingredients || []).map(ingredient => ({
+                id: ingredient.ingredient_id,
+                name: ingredient.ingredient_name || 'Unknown Ingredient',
+                quantity: ingredient.number_of_units,
+                final_price: ingredient.final_price || 0
+            }));
+            
+            displayRecipeIngredients('editRecipeIngredientsList');
             
             const modal = new bootstrap.Modal(document.getElementById('editRecipeModal'));
             modal.show();
@@ -1014,4 +1419,10 @@
     window.editRecipe = editRecipe;
     window.editRecipeFromView = editRecipeFromView;
     window.deleteRecipe = deleteRecipe;
+    window.addEditRecipeIngredient = addEditRecipeIngredient;
+    window.filterRecipeIngredients = filterRecipeIngredients;
+    window.toggleSelectAllIngredients = toggleSelectAllIngredients;
+    window.addSelectedIngredients = addSelectedIngredients;
+    window.updateRecipeIngredientQuantity = updateRecipeIngredientQuantity;
+    window.removeRecipeIngredient = removeRecipeIngredient;
 </script> 

@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"database/sql"
+	recipeIngredientsHandler "inventory-service/entities/recipe_ingredients/handlers"
+	recipeIngredientsModels "inventory-service/entities/recipe_ingredients/models"
 	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
 	"inventory-service/entities/recipes/models"
 	recipeSQL "inventory-service/entities/recipes/sql"
@@ -115,6 +117,34 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 			"recipe_id": req.ID,
 		}).Error("Failed to get recipe from database")
 		return nil, err
+	}
+
+	// Load ingredients for the recipe using the recipe ingredients handler
+	riHandler := recipeIngredientsHandler.NewDBHandler(h.db, h.logger)
+	recipeID := recipe.ID
+	riReq := recipeIngredientsModels.ListRecipeIngredientsRequest{
+		RecipeID: &recipeID,
+	}
+
+	recipeIngredientsList, err := riHandler.List(riReq)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": recipe.ID,
+		}).Warn("Failed to load recipe ingredients, continuing without ingredients")
+		// Don't fail the entire request if ingredients fail to load
+		recipe.Ingredients = []models.RecipeIngredient{}
+	} else {
+		// Convert recipe ingredients to the format expected by the recipe model
+		ingredients := make([]models.RecipeIngredient, len(recipeIngredientsList))
+		for i, ri := range recipeIngredientsList {
+			ingredients[i] = models.RecipeIngredient{
+				IngredientID:   ri.IngredientID,
+				NumberOfUnits:  ri.Quantity,
+				IngredientName: ri.IngredientName,
+				FinalPrice:     ri.FinalPrice,
+			}
+		}
+		recipe.Ingredients = ingredients
 	}
 
 	return &recipe, nil

@@ -114,6 +114,8 @@ func (h *RecipeIngredientDBHandler) List(req models.ListRecipeIngredientsRequest
 			&recipeIngredient.RecipeID,
 			&recipeIngredient.IngredientID,
 			&recipeIngredient.Quantity,
+			&recipeIngredient.IngredientName,
+			&recipeIngredient.FinalPrice,
 			&recipeIngredient.CreatedAt,
 			&recipeIngredient.UpdatedAt,
 		)
