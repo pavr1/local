@@ -474,14 +474,13 @@
 <script>
     // Global variables
     let recipes = [];
-    let recipeCategories = [];
+    let recipeCategories = []; // Only needed for form dropdowns
     let currentRecipe = null;
 
     // Initialize recipes content
     async function initRecipesContent() {
         console.log('🔧 Initializing Recipes content...');
         await loadRecipesData();
-        await loadRecipeCategories();
         console.log('✅ Recipes content initialized');
     }
 
@@ -511,7 +510,7 @@
         }
     }
 
-    // Load recipe categories for dropdowns
+    // Load recipe categories for dropdowns (only needed for forms)
     async function loadRecipeCategories() {
         try {
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
@@ -603,13 +602,10 @@
                     </thead>
                     <tbody>
                         ${recipesData.map(item => {
-                            const category = recipeCategories.find(c => c.id === item.recipe_category_id);
-                            const categoryName = category ? category.name : 'Unknown';
-                            
                             return `
                                 <tr>
                                     <td><strong>${item.recipe_name}</strong></td>
-                                    <td><span class="badge bg-info">${categoryName}</span></td>
+                                    <td><span class="badge bg-info">${item.recipe_category_name || 'Unknown'}</span></td>
                                     <td>${item.recipe_description ? item.recipe_description.substring(0, 50) + '...' : '-'}</td>
                                     <td>$${item.total_recipe_cost ? item.total_recipe_cost.toFixed(2) : '0.00'}</td>
                                     <td>
@@ -795,10 +791,6 @@
                     <div class="col-md-6">
                         <h6 class="fw-bold">Recipe Information</h6>
                         <table class="table table-borderless">
-                            <tr>
-                                <td class="fw-bold">ID:</td>
-                                <td><code>${recipe.id}</code></td>
-                            </tr>
                             <tr>
                                 <td class="fw-bold">Name:</td>
                                 <td><strong>${recipe.recipe_name}</strong></td>
