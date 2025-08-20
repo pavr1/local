@@ -281,6 +281,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-save-recipe" onclick="editRecipeFromView()">
+                    <i class="fas fa-edit me-2"></i>Edit Recipe
+                </button>
             </div>
         </div>
     </div>
@@ -771,6 +774,17 @@
         loadRecipeForEdit(recipeId);
     }
 
+    function editRecipeFromView() {
+        if (currentRecipe) {
+            // Close the view modal
+            const viewModal = bootstrap.Modal.getInstance(document.getElementById('viewRecipeModal'));
+            viewModal.hide();
+            
+            // Open the edit modal
+            loadRecipeForEdit(currentRecipe.id);
+        }
+    }
+
     async function loadRecipeForView(recipeId) {
         try {
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${recipeId}`);
@@ -998,5 +1012,6 @@
     window.openAddRecipeModal = openAddRecipeModal;
     window.viewRecipe = viewRecipe;
     window.editRecipe = editRecipe;
+    window.editRecipeFromView = editRecipeFromView;
     window.deleteRecipe = deleteRecipe;
 </script> 

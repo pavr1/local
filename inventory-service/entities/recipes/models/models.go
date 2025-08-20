@@ -6,15 +6,15 @@ import (
 
 // Recipe represents a recipe
 type Recipe struct {
-	ID                string    `json:"id" db:"id"`
-	RecipeName        string    `json:"recipe_name" db:"recipe_name"`
-	RecipeDescription *string   `json:"recipe_description" db:"recipe_description"`
-	PictureURL        *string   `json:"picture_url" db:"picture_url"`
-	RecipeCategoryID  string    `json:"recipe_category_id" db:"recipe_category_id"`
-	RecipeCategoryName string   `json:"recipe_category_name" db:"recipe_category_name"`
-	TotalRecipeCost   float64   `json:"total_recipe_cost" db:"total_recipe_cost"`
-	CreatedAt         time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt         time.Time `json:"updated_at" db:"updated_at"`
+	ID                 string    `json:"id" db:"id"`
+	RecipeName         string    `json:"recipe_name" db:"recipe_name"`
+	RecipeDescription  *string   `json:"recipe_description" db:"recipe_description"`
+	PictureURL         *string   `json:"picture_url" db:"picture_url"`
+	RecipeCategoryID   string    `json:"recipe_category_id" db:"recipe_category_id"`
+	RecipeCategoryName string    `json:"recipe_category_name" db:"recipe_category_name"`
+	TotalRecipeCost    float64   `json:"total_recipe_cost" db:"total_recipe_cost"`
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // RecipeIngredient represents a recipe ingredient with quantity

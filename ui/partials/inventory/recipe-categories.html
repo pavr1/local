@@ -201,15 +201,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="categoryIsActive" class="form-label">Status</label>
-                            <select class="form-control" id="categoryIsActive" name="is_active">
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
+
                 </form>
             </div>
             <div class="modal-footer">
@@ -275,15 +267,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="editCategoryIsActive" class="form-label">Status</label>
-                            <select class="form-control" id="editCategoryIsActive" name="is_active">
-                                <option value="true">Active</option>
-                                <option value="false">Inactive</option>
-                            </select>
-                        </div>
-                    </div>
+
                 </form>
             </div>
             <div class="modal-footer">
@@ -403,7 +387,6 @@
                         <tr>
                             <th>Name</th>
                             <th>Description</th>
-                            <th>Status</th>
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
@@ -413,11 +396,6 @@
                             <tr>
                                 <td><strong>${item.name}</strong></td>
                                 <td>${item.description || '-'}</td>
-                                <td>
-                                    <span class="status-badge ${item.is_active ? 'status-active' : 'status-inactive'}">
-                                        ${item.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </td>
                                 <td>${new Date(item.created_at).toLocaleDateString()}</td>
                                 <td>
                                     <div class="btn-group" role="group">
@@ -494,8 +472,7 @@
             }
         }
         
-        // Handle boolean field
-        recipeCategoryData.is_active = document.getElementById('categoryIsActive').value === 'true';
+
         
         // Validate required fields
         let isValid = true;
@@ -582,14 +559,7 @@
                                 <td class="fw-bold">Description:</td>
                                 <td>${category.description || 'No description'}</td>
                             </tr>
-                            <tr>
-                                <td class="fw-bold">Status:</td>
-                                <td>
-                                    <span class="status-badge ${category.is_active ? 'status-active' : 'status-inactive'}">
-                                        ${category.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                </td>
-                            </tr>
+
                             <tr>
                                 <td class="fw-bold">Created:</td>
                                 <td>${new Date(category.created_at).toLocaleString()}</td>
@@ -629,7 +599,7 @@
             document.getElementById('editRecipeCategoryId').value = category.id;
             document.getElementById('editCategoryName').value = category.name;
             document.getElementById('editCategoryDescription').value = category.description || '';
-            document.getElementById('editCategoryIsActive').value = category.is_active.toString();
+
             
             currentRecipeCategory = category;
             
@@ -667,8 +637,7 @@
             }
         }
         
-        // Handle boolean field
-        recipeCategoryData.is_active = document.getElementById('editCategoryIsActive').value === 'true';
+
         
         // Validate required fields
         let isValid = true;
