@@ -866,17 +866,13 @@
         }
 
         .setting-value {
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            word-break: break-all;
+            word-wrap: break-word;
         }
 
         .setting-description {
-            max-width: 250px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            word-break: break-all;
+            word-wrap: break-word;
         }
 
         /* Modal styling */
@@ -5809,8 +5805,8 @@
                         </div>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.service}', '${setting.key}', '${setting.value}', '${setting.description || ''}')">
-                            <i class="fas fa-edit me-1"></i>Edit
+                        <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.service}', '${setting.key}', '${setting.value}', '${setting.description || ''}')" title="Edit setting">
+                            <i class="fas fa-edit"></i>
                         </button>
                     </td>
                 `;
@@ -6003,7 +5999,7 @@
         function showAlert(message, type = 'info') {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; max-width: 90vw;';
             alertDiv.innerHTML = `
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

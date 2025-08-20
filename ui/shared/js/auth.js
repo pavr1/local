@@ -36,12 +36,7 @@ class AuthService {
             throw new Error('CONFIG must be loaded before AuthService');
         }
         
-        // Debug: Log the raw CONFIG values
-        console.log('🔍 Raw CONFIG in AuthService:', {
-            GATEWAY_URL: CONFIG.GATEWAY_URL,
-            API: CONFIG.API,
-            AUTH: CONFIG.AUTH
-        });
+
         
         // Ensure CONFIG.AUTH exists with defaults
         if (!CONFIG.AUTH) {
@@ -59,19 +54,13 @@ class AuthService {
         this.userKey = CONFIG.AUTH.USER_KEY || CONFIG.AUTH.userKey;
         this.rememberKey = CONFIG.AUTH.REMEMBER_KEY || CONFIG.AUTH.rememberKey;
         
-        console.log('🔧 AuthService initialized with:', {
-            baseURL: this.baseURL,
-            sessionIdKey: this.sessionIdKey,
-            userKey: this.userKey,
-            rememberKey: this.rememberKey
-        });
+
     }
 
     // === MAIN LOGIN METHOD ===
     
     async login(username, password, rememberMe = false) {
         try {
-            console.log('🔑 Attempting login for:', username);
             
             const response = await fetch(`${this.baseURL}${CONFIG.API.LOGIN}`, {
                 method: 'POST',
@@ -81,7 +70,7 @@ class AuthService {
                 body: JSON.stringify({ username, password })
             });
 
-            console.log('📡 Login response status:', response.status);
+
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -90,7 +79,7 @@ class AuthService {
             }
 
             const data = await response.json();
-            console.log('✅ Login successful:', { user: data.user?.username, hasSessionId: !!data.session_id });
+
             
             // Store authentication data
             this.setSessionId(data.session_id, rememberMe);
@@ -104,7 +93,6 @@ class AuthService {
             };
             
         } catch (error) {
-            console.error('❌ Login error:', error);
             throw error;
         }
     }
@@ -113,11 +101,9 @@ class AuthService {
     
     async logout() {
         try {
-            console.log('🚪 Attempting logout...');
             
             const sessionId = this.getSessionId();
             if (!sessionId) {
-                console.log('⚠️ No session ID found, clearing local data only');
                 this.clearAuthData();
                 return { success: true };
             }
@@ -126,21 +112,18 @@ class AuthService {
                 method: 'POST'
             });
 
-            console.log('📡 Logout response status:', response.status);
+
 
             // Always clear local data regardless of server response
             this.clearAuthData();
             
             if (response.ok) {
-                console.log('✅ Logout successful');
                 return { success: true };
             } else {
-                console.warn('⚠️ Server logout failed, but local data cleared');
                 return { success: true, warning: 'Server logout failed' };
             }
             
         } catch (error) {
-            console.error('❌ Logout error:', error);
             // Always clear local data even if request fails
             this.clearAuthData();
             throw error;
@@ -160,7 +143,7 @@ class AuthService {
             localStorage.removeItem(this.rememberKey);
         }
         
-        console.log('💾 Session ID stored:', { sessionId: sessionId ? '***' : null, rememberMe });
+
     }
 
     getSessionId() {
@@ -264,9 +247,9 @@ async function makeAuthenticatedRequest(url, options = {}) {
     }
     
     if (!authService.isAuthenticated()) {
-        console.warn('⚠️ User not authenticated, but continuing for testing');
-        // redirectToLogin();
-        // throw new Error('User not authenticated');
+        console.warn('⚠️ User not authenticated, redirecting to login');
+        redirectToLogin();
+        throw new Error('User not authenticated');
     }
     
     const sessionId = authService.getSessionId();
@@ -293,10 +276,10 @@ async function makeAuthenticatedRequest(url, options = {}) {
     
     // Handle authentication errors
     if (response.status === 401) {
-        console.warn('⚠️ Session expired, but redirection disabled for testing');
-        // authService.clearAuthData();
-        // redirectToLogin();
-        // throw new Error('Session expired');
+        console.warn('⚠️ Session expired, redirecting to login');
+        authService.clearAuthData();
+        redirectToLogin();
+        throw new Error('Session expired');
     }
     
     return response;
