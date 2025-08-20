@@ -29,13 +29,11 @@ func (h *RecipeIngredientDBHandler) Create(req models.CreateRecipeIngredientRequ
 		req.RecipeID,
 		req.IngredientID,
 		req.Quantity,
-		req.UnitType,
 	).Scan(
 		&recipeIngredient.ID,
 		&recipeIngredient.RecipeID,
 		&recipeIngredient.IngredientID,
 		&recipeIngredient.Quantity,
-		&recipeIngredient.UnitType,
 		&recipeIngredient.CreatedAt,
 		&recipeIngredient.UpdatedAt,
 	)
@@ -64,7 +62,6 @@ func (h *RecipeIngredientDBHandler) GetByID(req models.GetRecipeIngredientReques
 		&recipeIngredient.RecipeID,
 		&recipeIngredient.IngredientID,
 		&recipeIngredient.Quantity,
-		&recipeIngredient.UnitType,
 		&recipeIngredient.CreatedAt,
 		&recipeIngredient.UpdatedAt,
 	)
@@ -117,7 +114,6 @@ func (h *RecipeIngredientDBHandler) List(req models.ListRecipeIngredientsRequest
 			&recipeIngredient.RecipeID,
 			&recipeIngredient.IngredientID,
 			&recipeIngredient.Quantity,
-			&recipeIngredient.UnitType,
 			&recipeIngredient.CreatedAt,
 			&recipeIngredient.UpdatedAt,
 		)
@@ -153,13 +149,11 @@ func (h *RecipeIngredientDBHandler) Update(req models.UpdateRecipeIngredientRequ
 		req.RecipeID,
 		req.IngredientID,
 		req.Quantity,
-		req.UnitType,
 	).Scan(
 		&recipeIngredient.ID,
 		&recipeIngredient.RecipeID,
 		&recipeIngredient.IngredientID,
 		&recipeIngredient.Quantity,
-		&recipeIngredient.UnitType,
 		&recipeIngredient.CreatedAt,
 		&recipeIngredient.UpdatedAt,
 	)

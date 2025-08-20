@@ -65,7 +65,6 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 			recipe.ID,
 			ingredient.IngredientID,
 			ingredient.NumberOfUnits,
-			ingredient.UnitType,
 		)
 		if err != nil {
 			h.logger.WithError(err).WithFields(logrus.Fields{

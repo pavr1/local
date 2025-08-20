@@ -74,7 +74,10 @@ func (h *RecipeIngredientHTTPHandler) GetRecipeIngredient(w http.ResponseWriter,
 	req := models.GetRecipeIngredientRequest{ID: id}
 	recipeIngredient, err := h.dbHandler.GetByID(req)
 	if err != nil {
-		if err.Error() == "recipe ingredient not found" {
+		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"recipe_ingredient_id": id,
+			}).Warn("Recipe ingredient not found")
 			response := models.RecipeIngredientResponse{
 				Success: false,
 				Data:    models.RecipeIngredient{},
@@ -166,7 +169,10 @@ func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWrit
 
 	recipeIngredient, err := h.dbHandler.Update(req, id)
 	if err != nil {
-		if err.Error() == "recipe ingredient not found" {
+		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"recipe_ingredient_id": id,
+			}).Warn("Recipe ingredient not found for update")
 			response := models.RecipeIngredientResponse{
 				Success: false,
 				Data:    models.RecipeIngredient{},
@@ -207,7 +213,10 @@ func (h *RecipeIngredientHTTPHandler) DeleteRecipeIngredient(w http.ResponseWrit
 	req := models.DeleteRecipeIngredientRequest{ID: id}
 	err := h.dbHandler.Delete(req)
 	if err != nil {
-		if err.Error() == "recipe ingredient not found" {
+		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"recipe_ingredient_id": id,
+			}).Warn("No recipe ingredient found to delete")
 			response := models.GenericResponse{
 				Success: false,
 				Message: "Recipe ingredient not found",

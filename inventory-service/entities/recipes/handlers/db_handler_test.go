@@ -45,6 +45,12 @@ func TestRecipeDBHandler_Create(t *testing.T) {
 		PictureURL:        &pictureURL,
 		RecipeCategoryID:  "550e8400-e29b-41d4-a716-446655440000",
 		TotalRecipeCost:   15.50,
+		Ingredients: []models.RecipeIngredient{
+			{
+				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
+				NumberOfUnits: 2.5,
+			},
+		},
 	}
 
 	now := time.Now()
@@ -72,9 +78,23 @@ func TestRecipeDBHandler_Create(t *testing.T) {
 		expectedRecipe.UpdatedAt,
 	)
 
+	// Expect transaction to begin
+	mock.ExpectBegin()
+	
+	// Expect recipe creation
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnRows(rows)
+	
+	// Expect ingredient creation
+	for _, ingredient := range req.Ingredients {
+		mock.ExpectExec("INSERT INTO recipe_ingredients").
+			WithArgs(expectedRecipe.ID, ingredient.IngredientID, ingredient.NumberOfUnits).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+	}
+	
+	// Expect transaction to commit
+	mock.ExpectCommit()
 
 	result, err := handler.Create(req)
 	require.NoError(t, err)
@@ -102,16 +122,29 @@ func TestRecipeDBHandler_Create_Error(t *testing.T) {
 		PictureURL:        nil,
 		RecipeCategoryID:  "550e8400-e29b-41d4-a716-446655440000",
 		TotalRecipeCost:   15.50,
+		Ingredients: []models.RecipeIngredient{
+			{
+				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
+				NumberOfUnits: 1.0,
+			},
+		},
 	}
 
+	// Expect transaction to begin
+	mock.ExpectBegin()
+	
+	// Expect recipe creation to fail
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnError(sql.ErrConnDone)
+		
+	// Expect transaction to rollback
+	mock.ExpectRollback()
 
 	result, err := handler.Create(req)
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "failed to create recipe")
+	assert.Contains(t, err.Error(), "sql: connection is already closed")
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
@@ -184,7 +217,7 @@ func TestRecipeDBHandler_GetByID_NotFound(t *testing.T) {
 	result, err := handler.GetByID(req)
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "recipe not found")
+	assert.Equal(t, sql.ErrNoRows, err)
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
@@ -371,7 +404,7 @@ func TestRecipeDBHandler_Update_NotFound(t *testing.T) {
 	result, err := handler.Update(req, "non-existent-id")
 	assert.Error(t, err)
 	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "recipe not found")
+	assert.Equal(t, sql.ErrNoRows, err)
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
@@ -412,7 +445,7 @@ func TestRecipeDBHandler_Delete_NotFound(t *testing.T) {
 
 	err = handler.Delete(req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "recipe not found")
+	assert.Equal(t, sql.ErrNoRows, err)
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)
@@ -433,7 +466,7 @@ func TestRecipeDBHandler_Delete_Error(t *testing.T) {
 
 	err = handler.Delete(req)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to delete recipe")
+	assert.Contains(t, err.Error(), "sql: connection is already closed")
 
 	err = mock.ExpectationsWereMet()
 	assert.NoError(t, err)

@@ -197,23 +197,7 @@
                                 Please provide a valid quantity (must be positive).
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="unitType" class="form-label">
-                                Unit Type <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-control" id="unitType" name="unit_type" required>
-                                <option value="">Select unit type</option>
-                                <option value="kg">Kilograms (kg)</option>
-                                <option value="g">Grams (g)</option>
-                                <option value="l">Liters (l)</option>
-                                <option value="ml">Milliliters (ml)</option>
-                                <option value="pcs">Pieces (pcs)</option>
-                                <option value="units">Units</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                Please select a unit type.
-                            </div>
-                        </div>
+
                     </div>
                 </form>
             </div>
@@ -295,23 +279,7 @@
                                 Please provide a valid quantity (must be positive).
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="editUnitType" class="form-label">
-                                Unit Type <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-control" id="editUnitType" name="unit_type" required>
-                                <option value="">Select unit type</option>
-                                <option value="kg">Kilograms (kg)</option>
-                                <option value="g">Grams (g)</option>
-                                <option value="l">Liters (l)</option>
-                                <option value="ml">Milliliters (ml)</option>
-                                <option value="pcs">Pieces (pcs)</option>
-                                <option value="units">Units</option>
-                            </select>
-                            <div class="invalid-feedback">
-                                Please select a unit type.
-                            </div>
-                        </div>
+
                     </div>
                 </form>
             </div>
@@ -470,7 +438,7 @@
                             <th>Recipe</th>
                             <th>Ingredient</th>
                             <th>Quantity</th>
-                            <th>Unit Type</th>
+
                             <th>Created</th>
                             <th>Actions</th>
                         </tr>
@@ -488,7 +456,6 @@
                                     <td><strong>${recipeName}</strong></td>
                                     <td><span class="badge bg-info">${ingredientName}</span></td>
                                     <td><strong>${item.quantity}</strong></td>
-                                    <td><span class="badge bg-secondary">${item.unit_type}</span></td>
                                     <td>${new Date(item.created_at).toLocaleDateString()}</td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -562,7 +529,7 @@
             form.classList.remove('was-validated');
             
             // Remove validation classes
-            const fields = ['recipeId', 'ingredientId', 'quantity', 'unitType'];
+            const fields = ['recipeId', 'ingredientId', 'quantity'];
             fields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) field.classList.remove('is-invalid', 'is-valid');
@@ -716,10 +683,7 @@
                                 <td class="fw-bold">Quantity:</td>
                                 <td><strong>${recipeIngredient.quantity}</strong></td>
                             </tr>
-                            <tr>
-                                <td class="fw-bold">Unit Type:</td>
-                                <td><span class="badge bg-secondary">${recipeIngredient.unit_type}</span></td>
-                            </tr>
+
                             <tr>
                                 <td class="fw-bold">Created:</td>
                                 <td>${new Date(recipeIngredient.created_at).toLocaleString()}</td>
@@ -758,7 +722,6 @@
             // Populate edit form
             document.getElementById('editRecipeIngredientId').value = recipeIngredient.id;
             document.getElementById('editQuantity').value = recipeIngredient.quantity;
-            document.getElementById('editUnitType').value = recipeIngredient.unit_type;
             
             // Populate dropdowns
             await loadRecipes();
@@ -828,10 +791,7 @@
             isValid = false;
         }
         
-        if (!recipeIngredientData.unit_type) {
-            document.getElementById('editUnitType').classList.add('is-invalid');
-            isValid = false;
-        }
+
         
         if (!isValid) {
             form.classList.add('was-validated');

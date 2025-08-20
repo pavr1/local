@@ -10,7 +10,6 @@ type RecipeIngredient struct {
 	RecipeID     string    `json:"recipe_id" db:"recipe_id"`
 	IngredientID string    `json:"ingredient_id" db:"ingredient_id"`
 	Quantity     float64   `json:"quantity" db:"quantity"`
-	UnitType     string    `json:"unit_type" db:"unit_type"`
 	CreatedAt    time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
 }
@@ -20,7 +19,6 @@ type CreateRecipeIngredientRequest struct {
 	RecipeID     string  `json:"recipe_id" validate:"required,uuid"`
 	IngredientID string  `json:"ingredient_id" validate:"required,uuid"`
 	Quantity     float64 `json:"quantity" validate:"required,min=0"`
-	UnitType     string  `json:"unit_type" validate:"required,min=1,max=50"`
 }
 
 // UpdateRecipeIngredientRequest represents the request to update a recipe ingredient
@@ -28,7 +26,6 @@ type UpdateRecipeIngredientRequest struct {
 	RecipeID     *string  `json:"recipe_id,omitempty" validate:"omitempty,uuid"`
 	IngredientID *string  `json:"ingredient_id,omitempty" validate:"omitempty,uuid"`
 	Quantity     *float64 `json:"quantity,omitempty" validate:"omitempty,min=0"`
-	UnitType     *string  `json:"unit_type,omitempty" validate:"omitempty,min=1,max=50"`
 }
 
 // GetRecipeIngredientRequest represents the request to get a recipe ingredient by ID

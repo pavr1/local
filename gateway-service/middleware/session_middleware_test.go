@@ -75,7 +75,7 @@ func createTestLogger() *logrus.Logger {
 func TestSessionMiddlewareStructure(t *testing.T) {
 	logger := createTestLogger()
 	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
-	middleware := NewSessionMiddleware(sessionManager)
+	middleware := NewSessionMiddleware(sessionManager, logger)
 
 	assert.NotNil(t, middleware)
 	assert.Equal(t, sessionManager, middleware.sessionManager)
@@ -85,7 +85,7 @@ func TestSessionMiddlewareStructure(t *testing.T) {
 func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 	logger := createTestLogger()
 	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
-	middleware := NewSessionMiddleware(sessionManager)
+	middleware := NewSessionMiddleware(sessionManager, logger)
 
 	// Create a test handler
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +145,7 @@ func TestSessionMiddlewareBasicFunctionality(t *testing.T) {
 func TestSessionMiddlewareEdgeCasesSimple(t *testing.T) {
 	logger := createTestLogger()
 	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
-	middleware := NewSessionMiddleware(sessionManager)
+	middleware := NewSessionMiddleware(sessionManager, logger)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -203,7 +203,7 @@ func BenchmarkExtractTokenFromHeaderSimple(b *testing.B) {
 func BenchmarkSessionMiddleware(b *testing.B) {
 	logger := createTestLogger()
 	sessionManager := sessionmanager.NewSessionManager("http://localhost:8081", logger)
-	middleware := NewSessionMiddleware(sessionManager)
+	middleware := NewSessionMiddleware(sessionManager, logger)
 
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

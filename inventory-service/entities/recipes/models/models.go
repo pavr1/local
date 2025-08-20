@@ -21,7 +21,6 @@ type RecipeIngredient struct {
 	IngredientID   string  `json:"ingredient_id" validate:"required,uuid"`
 	NumberOfUnits  float64 `json:"number_of_units" validate:"required,min=0.001"`
 	IngredientName string  `json:"ingredient_name,omitempty"` // For display purposes
-	UnitType       string  `json:"unit_type,omitempty"`       // For display purposes
 }
 
 // CreateRecipeRequest represents the request to create a new recipe

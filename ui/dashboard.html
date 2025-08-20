@@ -6664,8 +6664,7 @@
             const ingredients = recipeIngredients.map(ingredient => ({
                 ingredient_id: ingredient.id,
                 number_of_units: ingredient.quantity,
-                ingredient_name: ingredient.name,
-                unit_type: ingredient.unit_type
+                ingredient_name: ingredient.name
             }));
             
             // Prepare final recipe data
@@ -6866,7 +6865,7 @@
             }
         };
 
-        window.selectRecipeIngredient = function(ingredientId, ingredientName, unitType) {
+        window.selectRecipeIngredient = function(ingredientId, ingredientName) {
             // Find the ingredient with pricing information
             const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
             
@@ -6874,7 +6873,6 @@
             const ingredient = {
                 id: ingredientId,
                 name: ingredientName,
-                unit_type: unitType,
                 quantity: 1,
                 final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
             };
@@ -6911,7 +6909,6 @@
             selectedCheckboxes.forEach(checkbox => {
                 const ingredientId = checkbox.value;
                 const ingredientName = checkbox.getAttribute('data-name');
-                const unitType = checkbox.getAttribute('data-unit');
                 
                 // Check if ingredient is already added
                 const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
@@ -6922,7 +6919,6 @@
                     const ingredient = {
                         id: ingredientId,
                         name: ingredientName,
-                        unit_type: unitType,
                         quantity: 1,
                         final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
                     };

@@ -42,7 +42,6 @@ func TestRecipeIngredientHTTPHandler_CreateRecipeIngredient(t *testing.T) {
 		RecipeID:     "550e8400-e29b-41d4-a716-446655440000",
 		IngredientID: "550e8400-e29b-41d4-a716-446655440001",
 		Quantity:     2.5,
-		UnitType:     "cups",
 	}
 
 	now := time.Now()
@@ -51,25 +50,23 @@ func TestRecipeIngredientHTTPHandler_CreateRecipeIngredient(t *testing.T) {
 		RecipeID:     req.RecipeID,
 		IngredientID: req.IngredientID,
 		Quantity:     req.Quantity,
-		UnitType:     req.UnitType,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 
 	rows := sqlmock.NewRows([]string{
-		"id", "recipe_id", "ingredient_id", "quantity", "unit_type", "created_at", "updated_at",
+		"id", "recipe_id", "ingredient_id", "quantity", "created_at", "updated_at",
 	}).AddRow(
 		expectedRecipeIngredient.ID,
 		expectedRecipeIngredient.RecipeID,
 		expectedRecipeIngredient.IngredientID,
 		expectedRecipeIngredient.Quantity,
-		expectedRecipeIngredient.UnitType,
 		expectedRecipeIngredient.CreatedAt,
 		expectedRecipeIngredient.UpdatedAt,
 	)
 
 	mock.ExpectQuery("INSERT INTO recipe_ingredients").
-		WithArgs(req.RecipeID, req.IngredientID, req.Quantity, req.UnitType).
+		WithArgs(req.RecipeID, req.IngredientID, req.Quantity).
 		WillReturnRows(rows)
 
 	body, _ := json.Marshal(req)
@@ -90,7 +87,7 @@ func TestRecipeIngredientHTTPHandler_CreateRecipeIngredient(t *testing.T) {
 	assert.Equal(t, expectedRecipeIngredient.RecipeID, result.Data.RecipeID)
 	assert.Equal(t, expectedRecipeIngredient.IngredientID, result.Data.IngredientID)
 	assert.Equal(t, expectedRecipeIngredient.Quantity, result.Data.Quantity)
-	assert.Equal(t, expectedRecipeIngredient.UnitType, result.Data.UnitType)
+
 	assert.Contains(t, result.Message, "created successfully")
 
 	err = mock.ExpectationsWereMet()
@@ -126,11 +123,10 @@ func TestRecipeIngredientHTTPHandler_CreateRecipeIngredient_DBError(t *testing.T
 		RecipeID:     "550e8400-e29b-41d4-a716-446655440000",
 		IngredientID: "550e8400-e29b-41d4-a716-446655440001",
 		Quantity:     2.5,
-		UnitType:     "cups",
 	}
 
 	mock.ExpectQuery("INSERT INTO recipe_ingredients").
-		WithArgs(req.RecipeID, req.IngredientID, req.Quantity, req.UnitType).
+		WithArgs(req.RecipeID, req.IngredientID, req.Quantity).
 		WillReturnError(sql.ErrConnDone)
 
 	body, _ := json.Marshal(req)
@@ -166,24 +162,22 @@ func TestRecipeIngredientHTTPHandler_GetRecipeIngredient(t *testing.T) {
 		RecipeID:     "550e8400-e29b-41d4-a716-446655440001",
 		IngredientID: "550e8400-e29b-41d4-a716-446655440002",
 		Quantity:     2.5,
-		UnitType:     "cups",
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 
 	rows := sqlmock.NewRows([]string{
-		"id", "recipe_id", "ingredient_id", "quantity", "unit_type", "created_at", "updated_at",
+		"id", "recipe_id", "ingredient_id", "quantity", "created_at", "updated_at",
 	}).AddRow(
 		expectedRecipeIngredient.ID,
 		expectedRecipeIngredient.RecipeID,
 		expectedRecipeIngredient.IngredientID,
 		expectedRecipeIngredient.Quantity,
-		expectedRecipeIngredient.UnitType,
 		expectedRecipeIngredient.CreatedAt,
 		expectedRecipeIngredient.UpdatedAt,
 	)
 
-	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, unit_type, created_at, updated_at").
+	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, created_at, updated_at").
 		WithArgs(expectedRecipeIngredient.ID).
 		WillReturnRows(rows)
 
@@ -205,7 +199,7 @@ func TestRecipeIngredientHTTPHandler_GetRecipeIngredient(t *testing.T) {
 	assert.Equal(t, expectedRecipeIngredient.RecipeID, result.Data.RecipeID)
 	assert.Equal(t, expectedRecipeIngredient.IngredientID, result.Data.IngredientID)
 	assert.Equal(t, expectedRecipeIngredient.Quantity, result.Data.Quantity)
-	assert.Equal(t, expectedRecipeIngredient.UnitType, result.Data.UnitType)
+
 	assert.Contains(t, result.Message, "retrieved successfully")
 
 	err = mock.ExpectationsWereMet()
@@ -220,7 +214,7 @@ func TestRecipeIngredientHTTPHandler_GetRecipeIngredient_NotFound(t *testing.T) 
 	logger := logrus.New()
 	handler := NewRecipeIngredientHTTPHandler(db, logger)
 
-	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, unit_type, created_at, updated_at").
+	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, created_at, updated_at").
 		WithArgs("non-existent-id").
 		WillReturnError(sql.ErrNoRows)
 
@@ -275,22 +269,21 @@ func TestRecipeIngredientHTTPHandler_ListRecipeIngredients(t *testing.T) {
 			RecipeID:     "550e8400-e29b-41d4-a716-446655440001",
 			IngredientID: "550e8400-e29b-41d4-a716-446655440002",
 			Quantity:     2.5,
-			UnitType:     "cups",
 			CreatedAt:    now,
 			UpdatedAt:    now,
 		},
 	}
 
 	rows := sqlmock.NewRows([]string{
-		"id", "recipe_id", "ingredient_id", "quantity", "unit_type", "created_at", "updated_at",
+		"id", "recipe_id", "ingredient_id", "quantity", "created_at", "updated_at",
 	})
 	for _, ri := range expectedRecipeIngredients {
 		rows.AddRow(
-			ri.ID, ri.RecipeID, ri.IngredientID, ri.Quantity, ri.UnitType, ri.CreatedAt, ri.UpdatedAt,
+			ri.ID, ri.RecipeID, ri.IngredientID, ri.Quantity, ri.CreatedAt, ri.UpdatedAt,
 		)
 	}
 
-	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, unit_type, created_at, updated_at").
+	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, created_at, updated_at").
 		WithArgs(nil, nil, 50, 0).
 		WillReturnRows(rows)
 
@@ -312,7 +305,7 @@ func TestRecipeIngredientHTTPHandler_ListRecipeIngredients(t *testing.T) {
 		assert.Equal(t, expected.RecipeID, result.Data[i].RecipeID)
 		assert.Equal(t, expected.IngredientID, result.Data[i].IngredientID)
 		assert.Equal(t, expected.Quantity, result.Data[i].Quantity)
-		assert.Equal(t, expected.UnitType, result.Data[i].UnitType)
+
 	}
 	assert.Equal(t, 1, result.Total)
 	assert.Contains(t, result.Message, "retrieved successfully")
@@ -330,10 +323,10 @@ func TestRecipeIngredientHTTPHandler_ListRecipeIngredients_WithFilters(t *testin
 	handler := NewRecipeIngredientHTTPHandler(db, logger)
 
 	rows := sqlmock.NewRows([]string{
-		"id", "recipe_id", "ingredient_id", "quantity", "unit_type", "created_at", "updated_at",
+		"id", "recipe_id", "ingredient_id", "quantity", "created_at", "updated_at",
 	})
 
-	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, unit_type, created_at, updated_at").
+	mock.ExpectQuery("SELECT id, recipe_id, ingredient_id, quantity, created_at, updated_at").
 		WithArgs("550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001", 10, 5).
 		WillReturnRows(rows)
 
@@ -367,12 +360,10 @@ func TestRecipeIngredientHTTPHandler_UpdateRecipeIngredient(t *testing.T) {
 	recipeID := "550e8400-e29b-41d4-a716-446655440001"
 	ingredientID := "550e8400-e29b-41d4-a716-446655440002"
 	quantity := 3.0
-	unitType := "tablespoons"
 	req := models.UpdateRecipeIngredientRequest{
 		RecipeID:     &recipeID,
 		IngredientID: &ingredientID,
 		Quantity:     &quantity,
-		UnitType:     &unitType,
 	}
 
 	expectedRecipeIngredient := models.RecipeIngredient{
@@ -380,25 +371,23 @@ func TestRecipeIngredientHTTPHandler_UpdateRecipeIngredient(t *testing.T) {
 		RecipeID:     recipeID,
 		IngredientID: ingredientID,
 		Quantity:     quantity,
-		UnitType:     unitType,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
 
 	rows := sqlmock.NewRows([]string{
-		"id", "recipe_id", "ingredient_id", "quantity", "unit_type", "created_at", "updated_at",
+		"id", "recipe_id", "ingredient_id", "quantity", "created_at", "updated_at",
 	}).AddRow(
 		expectedRecipeIngredient.ID,
 		expectedRecipeIngredient.RecipeID,
 		expectedRecipeIngredient.IngredientID,
 		expectedRecipeIngredient.Quantity,
-		expectedRecipeIngredient.UnitType,
 		expectedRecipeIngredient.CreatedAt,
 		expectedRecipeIngredient.UpdatedAt,
 	)
 
 	mock.ExpectQuery("UPDATE recipe_ingredients").
-		WithArgs(expectedRecipeIngredient.ID, &recipeID, &ingredientID, &quantity, &unitType).
+		WithArgs(expectedRecipeIngredient.ID, &recipeID, &ingredientID, &quantity).
 		WillReturnRows(rows)
 
 	body, _ := json.Marshal(req)
@@ -421,7 +410,7 @@ func TestRecipeIngredientHTTPHandler_UpdateRecipeIngredient(t *testing.T) {
 	assert.Equal(t, expectedRecipeIngredient.RecipeID, result.Data.RecipeID)
 	assert.Equal(t, expectedRecipeIngredient.IngredientID, result.Data.IngredientID)
 	assert.Equal(t, expectedRecipeIngredient.Quantity, result.Data.Quantity)
-	assert.Equal(t, expectedRecipeIngredient.UnitType, result.Data.UnitType)
+
 	assert.Contains(t, result.Message, "updated successfully")
 
 	err = mock.ExpectationsWereMet()
@@ -442,7 +431,7 @@ func TestRecipeIngredientHTTPHandler_UpdateRecipeIngredient_NotFound(t *testing.
 	}
 
 	mock.ExpectQuery("UPDATE recipe_ingredients").
-		WithArgs("non-existent-id", nil, nil, &quantity, nil).
+		WithArgs("non-existent-id", nil, nil, &quantity).
 		WillReturnError(sql.ErrNoRows)
 
 	body, _ := json.Marshal(req)

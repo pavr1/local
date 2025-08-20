@@ -46,6 +46,12 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 		PictureURL:        &pictureURL,
 		RecipeCategoryID:  "550e8400-e29b-41d4-a716-446655440000",
 		TotalRecipeCost:   15.50,
+		Ingredients: []models.RecipeIngredient{
+			{
+				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
+				NumberOfUnits: 2.5,
+			},
+		},
 	}
 
 	now := time.Now()
@@ -73,9 +79,23 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 		expectedRecipe.UpdatedAt,
 	)
 
+	// Expect transaction to begin
+	mock.ExpectBegin()
+	
+	// Expect recipe creation
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnRows(rows)
+	
+	// Expect ingredient creation
+	for _, ingredient := range req.Ingredients {
+		mock.ExpectExec("INSERT INTO recipe_ingredients").
+			WithArgs(expectedRecipe.ID, ingredient.IngredientID, ingredient.NumberOfUnits).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+	}
+	
+	// Expect transaction to commit
+	mock.ExpectCommit()
 
 	body, _ := json.Marshal(req)
 	request := httptest.NewRequest("POST", "/recipes", bytes.NewBuffer(body))
@@ -134,11 +154,24 @@ func TestRecipeHTTPHandler_CreateRecipe_DBError(t *testing.T) {
 		PictureURL:        nil,
 		RecipeCategoryID:  "550e8400-e29b-41d4-a716-446655440000",
 		TotalRecipeCost:   15.50,
+		Ingredients: []models.RecipeIngredient{
+			{
+				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
+				NumberOfUnits: 1.0,
+			},
+		},
 	}
 
+	// Expect transaction to begin
+	mock.ExpectBegin()
+	
+	// Expect recipe creation to fail
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnError(sql.ErrConnDone)
+		
+	// Expect transaction to rollback
+	mock.ExpectRollback()
 
 	body, _ := json.Marshal(req)
 	request := httptest.NewRequest("POST", "/recipes", bytes.NewBuffer(body))
