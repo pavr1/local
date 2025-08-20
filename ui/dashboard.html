@@ -932,8 +932,13 @@
                         </button>
                         <ul class="nav flex-column ms-3 nav-submenu" id="orders-submenu">
                             <li class="nav-item">
-                                <button class="nav-link nav-sub" onclick="loadContent('orders')" data-page="orders">
+                                <button class="nav-link nav-sub" onclick="loadContent('orders-overview')" data-page="orders-overview">
                                     <i class="fas fa-th-large me-2"></i>Overview
+                                </button>
+                            </li>
+                            <li class="nav-item">
+                                <button class="nav-link nav-sub" onclick="loadContent('orders-create-order')" data-page="orders-create-order">
+                                    <i class="fas fa-plus me-2"></i>Create Order
                                 </button>
                             </li>
                         </ul>
@@ -1257,6 +1262,8 @@
                     const contentMap = {
             'dashboard': 'partials/dashboard/index.html',
             'orders': 'partials/orders/index.html',
+            'orders-overview': 'partials/orders/overview.html',
+            'orders-create-order': 'partials/orders/create-order.html',
             'inventory': 'partials/inventory/index.html',
             'inventory-overview': 'partials/inventory/overview.html',
             'inventory-suppliers': 'partials/inventory/suppliers.html',
@@ -1280,6 +1287,8 @@
             const initMap = {
                 'dashboard': 'initDashboardContent',
                 'orders': 'initOrdersContent',
+                'orders-overview': 'initOrdersOverviewContent',
+                'orders-create-order': 'initCreateOrderContent',
                 'inventory': 'initInventoryContent',
                 'inventory-overview': 'initInventoryOverviewContent',
                 'inventory-suppliers': 'initSuppliersContent',
