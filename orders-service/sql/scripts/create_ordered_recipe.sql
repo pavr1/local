@@ -1,7 +1,6 @@
 -- Create an ordered recipe item
 INSERT INTO ordered_receipes (
-    id, order_id, recipe_id, quantity, unit_price, total_price,
-    special_instructions, created_at
+    id, order_id, recipe_id, product_name, quantity, receipe_price, subtotal
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7
 ); 

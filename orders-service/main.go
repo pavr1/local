@@ -192,6 +192,11 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 		// Removed authMiddleware.RequireOrdersPermission("read") - gateway handles all auth
 		http.HandlerFunc(ordersHandler.ListOrders)).Methods("GET")
 
+	// Get orders by date range - requires orders-read permission
+	protectedRouter.Handle("/orders/by-date-range",
+		// Removed authMiddleware.RequireOrdersPermission("read") - gateway handles all auth
+		http.HandlerFunc(ordersHandler.GetOrdersByDateRange)).Methods("GET")
+
 	// Statistics endpoints - admin only
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
 	// Removed adminRouter.Use(authMiddleware.AdminOnly) - gateway handles all auth

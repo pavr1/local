@@ -130,27 +130,29 @@ func (r *Repository) CreateOrder(order *models.Order, items []models.OrderedReci
 	// Insert order
 	orderQuery := r.queries.MustGet("create_order")
 	_, err = tx.Exec(orderQuery,
-		order.ID, order.CustomerID, order.OrderDate, order.TotalAmount,
-		order.TaxAmount, order.DiscountAmount, order.FinalAmount, order.PaymentMethod,
-		order.OrderStatus, order.Notes, order.CreatedAt, order.UpdatedAt,
+		order.ID, order.OrderNumber, order.CustomerID, order.SalesRepresentativeID,
+		order.Status, order.PaymentMethod, order.TransactionReference, order.SinpeScreenshotURL,
+		order.SubtotalAmount, order.DiscountAmount, order.IvaAmount, order.ServiceTaxAmount,
+		order.TotalAmount, order.InvoiceNumber, order.InvoiceURL, order.TransactionTimestamp,
+		order.CompletedAt, order.CreatedAt, order.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to insert order: %w", err)
 	}
 
-	// Insert ordered recipes
-	if len(items) > 0 {
-		itemQuery := r.queries.MustGet("create_ordered_recipe")
-		for _, item := range items {
-			_, err = tx.Exec(itemQuery,
-				item.ID, item.OrderID, item.RecipeID, item.Quantity,
-				item.UnitPrice, item.TotalPrice, item.SpecialInstructions, item.CreatedAt,
-			)
-			if err != nil {
-				return fmt.Errorf("failed to insert ordered recipe: %w", err)
+			// Insert ordered recipes
+		if len(items) > 0 {
+			itemQuery := r.queries.MustGet("create_ordered_recipe")
+			for _, item := range items {
+				_, err = tx.Exec(itemQuery,
+					item.ID, item.OrderID, item.RecipeID, item.ProductName,
+					item.Quantity, item.ReceipePrice, item.Subtotal,
+				)
+				if err != nil {
+					return fmt.Errorf("failed to insert ordered recipe: %w", err)
+				}
 			}
 		}
-	}
 
 	return tx.Commit()
 }
@@ -161,10 +163,11 @@ func (r *Repository) GetOrderByID(id uuid.UUID) (*models.Order, error) {
 
 	var order models.Order
 	err := r.db.QueryRow(query, id).Scan(
-		&order.ID, &order.CustomerID, &order.OrderDate, &order.TotalAmount,
-		&order.TaxAmount, &order.DiscountAmount, &order.FinalAmount,
-		&order.PaymentMethod, &order.OrderStatus, &order.Notes,
-		&order.CreatedAt, &order.UpdatedAt,
+		&order.ID, &order.OrderNumber, &order.CustomerID, &order.SalesRepresentativeID,
+		&order.Status, &order.PaymentMethod, &order.TransactionReference, &order.SinpeScreenshotURL,
+		&order.SubtotalAmount, &order.DiscountAmount, &order.IvaAmount, &order.ServiceTaxAmount,
+		&order.TotalAmount, &order.InvoiceNumber, &order.InvoiceURL, &order.TransactionTimestamp,
+		&order.CompletedAt, &order.CreatedAt, &order.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -208,9 +211,8 @@ func (r *Repository) GetOrderedRecipesByOrderID(orderID uuid.UUID) ([]models.Ord
 	for rows.Next() {
 		var item models.OrderedRecipe
 		err := rows.Scan(
-			&item.ID, &item.OrderID, &item.RecipeID, &item.Quantity,
-			&item.UnitPrice, &item.TotalPrice, &item.SpecialInstructions,
-			&item.CreatedAt,
+			&item.ID, &item.OrderID, &item.RecipeID, &item.ProductName,
+			&item.Quantity, &item.ReceipePrice, &item.Subtotal,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan ordered recipe: %w", err)
@@ -233,9 +235,9 @@ func (r *Repository) UpdateOrder(id uuid.UUID, updates *models.UpdateOrderReques
 		argIndex++
 	}
 
-	if updates.OrderStatus != nil {
-		setParts = append(setParts, fmt.Sprintf("order_status = $%d", argIndex))
-		args = append(args, *updates.OrderStatus)
+	if updates.Status != nil {
+		setParts = append(setParts, fmt.Sprintf("status = $%d", argIndex))
+		args = append(args, *updates.Status)
 		argIndex++
 	}
 
@@ -248,6 +250,18 @@ func (r *Repository) UpdateOrder(id uuid.UUID, updates *models.UpdateOrderReques
 	if updates.DiscountAmount != nil {
 		setParts = append(setParts, fmt.Sprintf("discount_amount = $%d", argIndex))
 		args = append(args, *updates.DiscountAmount)
+		argIndex++
+	}
+
+	if updates.InvoiceNumber != nil {
+		setParts = append(setParts, fmt.Sprintf("invoice_number = $%d", argIndex))
+		args = append(args, *updates.InvoiceNumber)
+		argIndex++
+	}
+
+	if updates.InvoiceURL != nil {
+		setParts = append(setParts, fmt.Sprintf("invoice_url = $%d", argIndex))
+		args = append(args, *updates.InvoiceURL)
 		argIndex++
 	}
 
@@ -320,9 +334,9 @@ func (r *Repository) ListOrders(filter *models.OrderFilter) ([]models.Order, int
 		argIndex++
 	}
 
-	if filter.OrderStatus != nil {
-		whereParts = append(whereParts, fmt.Sprintf("order_status = $%d", argIndex))
-		args = append(args, *filter.OrderStatus)
+	if filter.Status != nil {
+		whereParts = append(whereParts, fmt.Sprintf("status = $%d", argIndex))
+		args = append(args, *filter.Status)
 		argIndex++
 	}
 
@@ -333,25 +347,25 @@ func (r *Repository) ListOrders(filter *models.OrderFilter) ([]models.Order, int
 	}
 
 	if filter.DateFrom != nil {
-		whereParts = append(whereParts, fmt.Sprintf("order_date >= $%d", argIndex))
+		whereParts = append(whereParts, fmt.Sprintf("transaction_timestamp >= $%d", argIndex))
 		args = append(args, *filter.DateFrom)
 		argIndex++
 	}
 
 	if filter.DateTo != nil {
-		whereParts = append(whereParts, fmt.Sprintf("order_date <= $%d", argIndex))
+		whereParts = append(whereParts, fmt.Sprintf("transaction_timestamp <= $%d", argIndex))
 		args = append(args, *filter.DateTo)
 		argIndex++
 	}
 
 	if filter.MinAmount != nil {
-		whereParts = append(whereParts, fmt.Sprintf("final_amount >= $%d", argIndex))
+		whereParts = append(whereParts, fmt.Sprintf("total_amount >= $%d", argIndex))
 		args = append(args, *filter.MinAmount)
 		argIndex++
 	}
 
 	if filter.MaxAmount != nil {
-		whereParts = append(whereParts, fmt.Sprintf("final_amount <= $%d", argIndex))
+		whereParts = append(whereParts, fmt.Sprintf("total_amount <= $%d", argIndex))
 		args = append(args, *filter.MaxAmount)
 		argIndex++
 	}
@@ -372,7 +386,7 @@ func (r *Repository) ListOrders(filter *models.OrderFilter) ([]models.Order, int
 	}
 
 	// Build ORDER BY clause
-	orderBy := "order_date DESC"
+	orderBy := "transaction_timestamp DESC"
 	if filter.SortBy != "" {
 		sortOrder := "ASC"
 		if filter.SortOrder == "desc" {
@@ -412,10 +426,11 @@ func (r *Repository) ListOrders(filter *models.OrderFilter) ([]models.Order, int
 	for rows.Next() {
 		var order models.Order
 		err := rows.Scan(
-			&order.ID, &order.CustomerID, &order.OrderDate, &order.TotalAmount,
-			&order.TaxAmount, &order.DiscountAmount, &order.FinalAmount,
-			&order.PaymentMethod, &order.OrderStatus, &order.Notes,
-			&order.CreatedAt, &order.UpdatedAt,
+			&order.ID, &order.OrderNumber, &order.CustomerID, &order.SalesRepresentativeID,
+			&order.Status, &order.PaymentMethod, &order.TransactionReference, &order.SinpeScreenshotURL,
+			&order.SubtotalAmount, &order.DiscountAmount, &order.IvaAmount, &order.ServiceTaxAmount,
+			&order.TotalAmount, &order.InvoiceNumber, &order.InvoiceURL, &order.TransactionTimestamp,
+			&order.CompletedAt, &order.CreatedAt, &order.UpdatedAt,
 		)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to scan order: %w", err)

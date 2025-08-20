@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,6 +30,7 @@ type OrdersHandler interface {
 	UpdateOrder(w http.ResponseWriter, r *http.Request)
 	CancelOrder(w http.ResponseWriter, r *http.Request)
 	ListOrders(w http.ResponseWriter, r *http.Request)
+	GetOrdersByDateRange(w http.ResponseWriter, r *http.Request)
 
 	// Statistics and reports
 	GetOrderSummary(w http.ResponseWriter, r *http.Request)
@@ -59,6 +63,8 @@ type ordersHandler struct {
 	logger *logrus.Logger
 	// Removed jwtManager - gateway handles all auth
 	repo OrderRepository
+	// Invoice service client
+	httpClient *http.Client
 }
 
 // New creates a new orders handler instance
@@ -71,11 +77,12 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (OrdersHandler, 
 	}
 
 	return &ordersHandler{
-		db:     db,
-		config: cfg,
-		logger: logger,
+		db:         db,
+		config:     cfg,
+		logger:     logger,
 		// Removed jwtManager - gateway handles all auth
-		repo: repo,
+		repo:       repo,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}, nil
 }
 
@@ -101,48 +108,96 @@ func (h *ordersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		totalAmount += float64(item.Quantity) * item.UnitPrice
 	}
 
-	// Calculate tax
-	taxAmount := totalAmount * (h.config.DefaultTaxRate / 100)
+	// Calculate tax and service tax
+	ivaAmount := totalAmount * (h.config.DefaultTaxRate / 100)
+	serviceTaxAmount := totalAmount * 0.10 // 10% service tax
+	subtotalAmount := totalAmount
+
+	// Generate order number
+	orderNumber := generateOrderNumber()
 
 	// Create order
 	order := &models.Order{
-		ID:             uuid.New(),
-		CustomerID:     req.CustomerID,
-		OrderDate:      time.Now(),
-		TotalAmount:    totalAmount,
-		TaxAmount:      taxAmount,
-		DiscountAmount: req.DiscountAmount,
-		PaymentMethod:  req.PaymentMethod,
-		OrderStatus:    models.OrderStatusPending,
-		Notes:          req.Notes,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		ID:                    uuid.New(),
+		OrderNumber:           orderNumber,
+		CustomerID:            req.CustomerID,
+		SalesRepresentativeID: nil, // Will be set from authenticated user
+		Status:                models.OrderStatusPending,
+		PaymentMethod:         req.PaymentMethod,
+		TransactionReference:  req.TransactionReference,
+		SinpeScreenshotURL:    req.SinpeScreenshotURL,
+		SubtotalAmount:        subtotalAmount,
+		DiscountAmount:        req.DiscountAmount,
+		IvaAmount:             ivaAmount,
+		ServiceTaxAmount:      serviceTaxAmount,
+		TotalAmount:           totalAmount + ivaAmount + serviceTaxAmount - req.DiscountAmount,
+		InvoiceNumber:         nil, // Will be set after invoice creation
+		InvoiceURL:            nil, // Will be set after invoice creation
+		TransactionTimestamp:  time.Now(),
+		CompletedAt:           nil,
+		CreatedAt:             time.Now(),
+		UpdatedAt:             time.Now(),
 	}
 
 	// Create ordered recipes
 	var items []models.OrderedRecipe
 	for _, reqItem := range req.Items {
-		totalPrice := float64(reqItem.Quantity) * reqItem.UnitPrice
+		subtotal := float64(reqItem.Quantity) * reqItem.UnitPrice
 		item := models.OrderedRecipe{
-			ID:                  uuid.New(),
-			OrderID:             order.ID,
-			RecipeID:            reqItem.RecipeID,
-			Quantity:            reqItem.Quantity,
-			UnitPrice:           reqItem.UnitPrice,
-			TotalPrice:          totalPrice,
-			SpecialInstructions: reqItem.SpecialInstructions,
-			CreatedAt:           time.Now(),
+			ID:           uuid.New(),
+			OrderID:      order.ID,
+			RecipeID:     reqItem.RecipeID,
+			ProductName:  "", // Will be populated from recipe data
+			Quantity:     reqItem.Quantity,
+			ReceipePrice: reqItem.UnitPrice,
+			Subtotal:     subtotal,
 		}
 		items = append(items, item)
 	}
-
-	// Calculate final amount (total + tax - discount)
-	order.FinalAmount = order.TotalAmount + order.TaxAmount - order.DiscountAmount
 
 	// Save to database
 	if err := h.repo.CreateOrder(order, items); err != nil {
 		h.respondWithError(w, http.StatusInternalServerError, "Failed to create order", err)
 		return
+	}
+
+	// Create income invoice
+	invoiceData := map[string]interface{}{
+		"invoice_type":        "income",
+		"transaction_date":    order.TransactionTimestamp,
+		"subtotal_amount":     order.SubtotalAmount,
+		"discount_amount":     order.DiscountAmount,
+		"iva_amount":          order.IvaAmount,
+		"service_tax_amount":  order.ServiceTaxAmount,
+		"total_amount":        order.TotalAmount,
+		"payment_method":      order.PaymentMethod,
+		"transaction_reference": order.TransactionReference,
+		"sinpe_screenshot_url": order.SinpeScreenshotURL,
+		"notes":               fmt.Sprintf("Invoice for order %s", order.OrderNumber),
+		"expense_category_id": nil, // Income invoices don't have expense categories
+	}
+
+	// Call invoice service to create income invoice
+	invoiceResp, err := h.createIncomeInvoice(invoiceData)
+	if err != nil {
+		h.logger.WithError(err).WithField("order_id", order.ID).Error("Failed to create income invoice")
+		// Don't fail the order creation if invoice creation fails
+		// The order will be created without invoice details
+	} else {
+		// Update order with invoice details
+		if invoiceResp != nil {
+			order.InvoiceNumber = &invoiceResp.InvoiceNumber
+			order.InvoiceURL = &invoiceResp.InvoiceURL
+			
+			// Update the order with invoice details
+			updateReq := &models.UpdateOrderRequest{
+				InvoiceNumber: order.InvoiceNumber,
+				InvoiceURL:    order.InvoiceURL,
+			}
+			if err := h.repo.UpdateOrder(order.ID, updateReq); err != nil {
+				h.logger.WithError(err).WithField("order_id", order.ID).Warn("Failed to update order with invoice details")
+			}
+		}
 	}
 
 	// Get the complete order with calculated final_amount
@@ -154,9 +209,10 @@ func (h *ordersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.WithFields(logrus.Fields{
 		"order_id":     order.ID,
-		"total_amount": totalAmount,
-		"tax_amount":   taxAmount,
-		"final_amount": createdOrder.Order.FinalAmount,
+		"order_number": order.OrderNumber,
+		"total_amount": order.TotalAmount,
+		"iva_amount":   order.IvaAmount,
+		"service_tax":  order.ServiceTaxAmount,
 	}).Info("Order created successfully")
 
 	h.respondWithSuccess(w, http.StatusCreated, "Order created successfully", createdOrder)
@@ -216,11 +272,11 @@ func (h *ordersHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate order status if provided
-	if req.OrderStatus != nil {
-		validStatuses := []string{models.OrderStatusPending, models.OrderStatusCompleted, models.OrderStatusCancelled}
+	if req.Status != nil {
+		validStatuses := []string{models.OrderStatusPending, models.OrderStatusCompleted, models.OrderStatusCancelled, models.OrderStatusSinpePending}
 		valid := false
 		for _, status := range validStatuses {
-			if *req.OrderStatus == status {
+			if *req.Status == status {
 				valid = true
 				break
 			}
@@ -302,7 +358,7 @@ func (h *ordersHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	// Order status filter
 	if status := query.Get("status"); status != "" {
-		filter.OrderStatus = &status
+		filter.Status = &status
 	}
 
 	// Payment method filter
@@ -414,6 +470,80 @@ func (h *ordersHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	h.respondWithSuccess(w, http.StatusOK, "Orders retrieved successfully", response)
 }
 
+// GetOrdersByDateRange handles GET /orders/by-date-range
+func (h *ordersHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Request) {
+	h.logger.WithFields(logrus.Fields{
+		"endpoint": "/orders/by-date-range",
+		"method":   r.Method,
+		"remote":   r.RemoteAddr,
+	}).Info("Get orders by date range requested")
+
+	// Parse query parameters
+	dateFromStr := r.URL.Query().Get("date_from")
+	dateToStr := r.URL.Query().Get("date_to")
+
+	if dateFromStr == "" || dateToStr == "" {
+		h.respondWithError(w, http.StatusBadRequest, "Both date_from and date_to parameters are required", nil)
+		return
+	}
+
+	// Parse dates
+	dateFrom, err := time.Parse("2006-01-02", dateFromStr)
+	if err != nil {
+		h.logger.WithError(err).WithField("date_from", dateFromStr).Warn("Invalid date_from format")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid date_from format. Use YYYY-MM-DD", err)
+		return
+	}
+
+	dateTo, err := time.Parse("2006-01-02", dateToStr)
+	if err != nil {
+		h.logger.WithError(err).WithField("date_to", dateToStr).Warn("Invalid date_to format")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid date_to format. Use YYYY-MM-DD", err)
+		return
+	}
+
+	// Set time to start and end of day for inclusive range
+	dateFrom = time.Date(dateFrom.Year(), dateFrom.Month(), dateFrom.Day(), 0, 0, 0, 0, time.UTC)
+	dateTo = time.Date(dateTo.Year(), dateTo.Month(), dateTo.Day(), 23, 59, 59, 999999999, time.UTC)
+
+	// Create filter
+	filter := &models.OrderFilter{
+		DateFrom:  &dateFrom,
+		DateTo:    &dateTo,
+		Limit:     1000, // Large limit for date range queries
+		SortBy:    "transaction_timestamp",
+		SortOrder: "DESC",
+	}
+
+	// Get orders
+	orders, total, err := h.repo.ListOrders(filter)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to get orders by date range")
+		h.respondWithError(w, http.StatusInternalServerError, "Failed to get orders", err)
+		return
+	}
+
+	// Create response
+	response := map[string]interface{}{
+		"success": true,
+		"data":    orders,
+		"total":   total,
+		"filters": map[string]interface{}{
+			"date_from": dateFromStr,
+			"date_to":   dateToStr,
+		},
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"orders_count": len(orders),
+		"total":        total,
+		"date_from":    dateFromStr,
+		"date_to":      dateToStr,
+	}).Info("Successfully retrieved orders by date range")
+
+	h.respondWithSuccess(w, http.StatusOK, "Orders retrieved successfully", response)
+}
+
 // === STATISTICS ENDPOINTS ===
 
 // GetOrderSummary retrieves order statistics
@@ -471,6 +601,52 @@ func (h *ordersHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // === HELPER METHODS ===
+
+// generateOrderNumber generates a unique order number
+func generateOrderNumber() string {
+	timestamp := time.Now().Format("20060102150405")
+	random := fmt.Sprintf("%04d", rand.Intn(10000))
+	return fmt.Sprintf("ORD-%s-%s", timestamp, random)
+}
+
+// InvoiceResponse represents the response from invoice service
+type InvoiceResponse struct {
+	InvoiceNumber string `json:"invoice_number"`
+	InvoiceURL    string `json:"invoice_url"`
+}
+
+// createIncomeInvoice calls the invoice service to create an income invoice
+func (h *ordersHandler) createIncomeInvoice(invoiceData map[string]interface{}) (*InvoiceResponse, error) {
+	// Convert data to JSON
+	jsonData, err := json.Marshal(invoiceData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal invoice data: %w", err)
+	}
+
+	// Call invoice service
+	resp, err := h.httpClient.Post(
+		"http://icecream_invoice_service:8084/api/v1/invoices",
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call invoice service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("invoice service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	// Parse response
+	var invoiceResp InvoiceResponse
+	if err := json.NewDecoder(resp.Body).Decode(&invoiceResp); err != nil {
+		return nil, fmt.Errorf("failed to decode invoice response: %w", err)
+	}
+
+	return &invoiceResp, nil
+}
 
 func (h *ordersHandler) respondWithSuccess(w http.ResponseWriter, status int, message string, data interface{}) {
 	response := map[string]interface{}{

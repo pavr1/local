@@ -8,55 +8,63 @@ import (
 
 // Order represents an ice cream order
 type Order struct {
-	ID             uuid.UUID  `json:"id" db:"id"`
-	CustomerID     *uuid.UUID `json:"customer_id" db:"customer_id"`
-	OrderDate      time.Time  `json:"order_date" db:"order_date"`
-	TotalAmount    float64    `json:"total_amount" db:"total_amount"`
-	TaxAmount      float64    `json:"tax_amount" db:"tax_amount"`
-	DiscountAmount float64    `json:"discount_amount" db:"discount_amount"`
-	FinalAmount    float64    `json:"final_amount" db:"final_amount"`
-	PaymentMethod  string     `json:"payment_method" db:"payment_method"`
-	OrderStatus    string     `json:"order_status" db:"order_status"`
-	Notes          *string    `json:"notes" db:"notes"`
-	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
+	ID                    uuid.UUID  `json:"id" db:"id"`
+	OrderNumber           string     `json:"order_number" db:"order_number"`
+	CustomerID            *uuid.UUID `json:"customer_id" db:"customer_id"`
+	SalesRepresentativeID *uuid.UUID `json:"sales_representative_id" db:"sales_representative_id"`
+	Status                string     `json:"status" db:"status"`
+	PaymentMethod         string     `json:"payment_method" db:"payment_method"`
+	TransactionReference  *string    `json:"transaction_reference" db:"transaction_reference"`
+	SinpeScreenshotURL    *string    `json:"sinpe_screenshot_url" db:"sinpe_screenshot_url"`
+	SubtotalAmount        float64    `json:"subtotal_amount" db:"subtotal_amount"`
+	DiscountAmount        float64    `json:"discount_amount" db:"discount_amount"`
+	IvaAmount             float64    `json:"iva_amount" db:"iva_amount"`
+	ServiceTaxAmount      float64    `json:"service_tax_amount" db:"service_tax_amount"`
+	TotalAmount           float64    `json:"total_amount" db:"total_amount"`
+	InvoiceNumber         *string    `json:"invoice_number" db:"invoice_number"`
+	InvoiceURL            *string    `json:"invoice_url" db:"invoice_url"`
+	TransactionTimestamp  time.Time  `json:"transaction_timestamp" db:"transaction_timestamp"`
+	CompletedAt           *time.Time `json:"completed_at" db:"completed_at"`
+	CreatedAt             time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // OrderedRecipe represents a recipe item within an order
 type OrderedRecipe struct {
-	ID                  uuid.UUID `json:"id" db:"id"`
-	OrderID             uuid.UUID `json:"order_id" db:"order_id"`
-	RecipeID            uuid.UUID `json:"recipe_id" db:"recipe_id"`
-	Quantity            int       `json:"quantity" db:"quantity"`
-	UnitPrice           float64   `json:"unit_price" db:"unit_price"`
-	TotalPrice          float64   `json:"total_price" db:"total_price"`
-	SpecialInstructions *string   `json:"special_instructions" db:"special_instructions"`
-	CreatedAt           time.Time `json:"created_at" db:"created_at"`
+	ID            uuid.UUID `json:"id" db:"id"`
+	OrderID       uuid.UUID `json:"order_id" db:"order_id"`
+	RecipeID      uuid.UUID `json:"recipe_id" db:"recipe_id"`
+	ProductName   string    `json:"product_name" db:"product_name"`
+	Quantity      int       `json:"quantity" db:"quantity"`
+	ReceipePrice  float64   `json:"receipe_price" db:"receipe_price"`
+	Subtotal      float64   `json:"subtotal" db:"subtotal"`
 }
 
 // CreateOrderRequest represents the request to create a new order
 type CreateOrderRequest struct {
-	CustomerID     *uuid.UUID                   `json:"customer_id"`
-	PaymentMethod  string                       `json:"payment_method"`
-	Notes          *string                      `json:"notes"`
-	DiscountAmount float64                      `json:"discount_amount"`
-	Items          []CreateOrderedRecipeRequest `json:"items"`
+	CustomerID            *uuid.UUID                   `json:"customer_id"`
+	PaymentMethod         string                       `json:"payment_method" validate:"required,oneof=cash card sinpe"`
+	TransactionReference  *string                      `json:"transaction_reference"`
+	SinpeScreenshotURL    *string                      `json:"sinpe_screenshot_url"`
+	DiscountAmount        float64                      `json:"discount_amount"`
+	Items                 []CreateOrderedRecipeRequest `json:"items" validate:"required,min=1"`
 }
 
 // CreateOrderedRecipeRequest represents a recipe item in the order creation request
 type CreateOrderedRecipeRequest struct {
-	RecipeID            uuid.UUID `json:"recipe_id"`
-	Quantity            int       `json:"quantity"`
-	UnitPrice           float64   `json:"unit_price"`
-	SpecialInstructions *string   `json:"special_instructions"`
+	RecipeID   uuid.UUID `json:"recipe_id" validate:"required,uuid"`
+	Quantity   int       `json:"quantity" validate:"required,min=1"`
+	UnitPrice  float64   `json:"unit_price" validate:"required,min=0"`
 }
 
 // UpdateOrderRequest represents the request to update an order
 type UpdateOrderRequest struct {
 	PaymentMethod  *string  `json:"payment_method"`
-	OrderStatus    *string  `json:"order_status"`
+	Status         *string  `json:"status"`
 	Notes          *string  `json:"notes"`
 	DiscountAmount *float64 `json:"discount_amount"`
+	InvoiceNumber  *string  `json:"invoice_number"`
+	InvoiceURL     *string  `json:"invoice_url"`
 }
 
 // OrderWithItems represents an order with its ordered recipes
@@ -86,7 +94,7 @@ type PaymentMethodStats struct {
 // OrderFilter represents filters for order queries
 type OrderFilter struct {
 	CustomerID    *uuid.UUID `json:"customer_id"`
-	OrderStatus   *string    `json:"order_status"`
+	Status        *string    `json:"status"`
 	PaymentMethod *string    `json:"payment_method"`
 	DateFrom      *time.Time `json:"date_from"`
 	DateTo        *time.Time `json:"date_to"`
@@ -113,9 +121,9 @@ func (o *Order) ValidatePaymentMethod() bool {
 
 // ValidateOrderStatus checks if order status is valid
 func (o *Order) ValidateOrderStatus() bool {
-	validStatuses := []string{"pending", "completed", "cancelled"}
+	validStatuses := []string{"pending", "completed", "cancelled", "sinpe_pending"}
 	for _, status := range validStatuses {
-		if o.OrderStatus == status {
+		if o.Status == status {
 			return true
 		}
 	}
@@ -179,6 +187,7 @@ const (
 	OrderStatusPending   = "pending"
 	OrderStatusCompleted = "completed"
 	OrderStatusCancelled = "cancelled"
+	OrderStatusSinpePending = "sinpe_pending"
 
 	PaymentMethodCash  = "cash"
 	PaymentMethodCard  = "card"
