@@ -1118,6 +1118,18 @@
     <script src="shared/js/status.js?v=1.2"></script>
     
     <script>
+        // === HELPER FUNCTIONS ===
+        
+        // Helper function to handle authentication errors consistently
+        function handleAuthError(error) {
+            // Check if this is an authentication error
+            if (error.message === 'Session expired' || error.message === 'User not authenticated') {
+                // Let the authentication error propagate to trigger redirection
+                throw error;
+            }
+            return false; // Not an auth error, let caller handle it
+        }
+
         let currentPage = 'dashboard';
         let auth = null;
 
@@ -1137,6 +1149,11 @@
                 await loadContent('dashboard');
                 
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Dashboard initialization failed:', error);
                 showError('Failed to initialize dashboard. Please refresh the page.');
             }
@@ -1144,36 +1161,46 @@
 
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', async function() {
-            // Initialize authentication
-            auth = new AuthService();
-            if (!auth.isAuthenticated()) {
-                window.location.href = 'login.html';
-                return;
+            try {
+                // Initialize authentication
+                auth = new AuthService();
+                if (!auth.isAuthenticated()) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                
+                // Load user info
+                loadUserInfo();
+                
+                // Load initial dashboard content
+                await loadContent('dashboard');
+                
+                // Initialize dynamic connections for architecture diagram
+                if (window.initializeDynamicConnections) {
+                    window.initializeDynamicConnections();
+                }
+                
+                // Start automatic health monitoring
+                startHealthMonitoring();
+                
+                // Additional health check to ensure proper button states after content load
+                setTimeout(() => {
+                    updateSystemStatus(false);
+                }, 2000);
+                
+                // Test SweetAlert2 system
+                setTimeout(() => {
+                    Alert.success('Dashboard Ready', 'Welcome to your Ice Cream Store management system!');
+                }, 1000);
+            } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
+                console.error('❌ Dashboard initialization failed:', error);
+                showError('Failed to initialize dashboard. Please refresh the page.');
             }
-            
-            // Load user info
-            loadUserInfo();
-            
-            // Load initial dashboard content
-            await loadContent('dashboard');
-            
-            // Initialize dynamic connections for architecture diagram
-            if (window.initializeDynamicConnections) {
-                window.initializeDynamicConnections();
-            }
-            
-            // Start automatic health monitoring
-            startHealthMonitoring();
-            
-            // Additional health check to ensure proper button states after content load
-            setTimeout(() => {
-                updateSystemStatus(false);
-            }, 2000);
-            
-            // Test SweetAlert2 system
-            setTimeout(() => {
-                Alert.success('Dashboard Ready', 'Welcome to your Ice Cream Store management system!');
-            }, 1000);
         });
 
         // Content loading function
@@ -1216,6 +1243,11 @@
                 currentPage = page;
                 
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading content:', error);
                 showError('Failed to load page content. Please try again.');
             }
@@ -2531,6 +2563,11 @@
                 displaySuppliers(suppliers);
                 
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading suppliers:', error);
                 displaySuppliersError('Failed to load suppliers. Please check your connection and try again.');
             }
@@ -3023,6 +3060,11 @@
                     throw new Error(result.message || 'Failed to load categories');
                 }
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading categories:', error);
                 displayCategoriesError('Failed to load categories. Please check your connection and try again.');
             }
@@ -3417,6 +3459,11 @@
                     throw new Error(result.message || 'Failed to load expense categories');
                 }
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading expense categories:', error);
                 displayExpenseCategoriesError('Failed to load expense categories. Please check your connection and try again.');
             }
@@ -3564,6 +3611,11 @@
                     throw new Error(result.message || 'Failed to load ingredients');
                 }
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading ingredients:', error);
                 displayIngredientsError('Failed to load ingredients. Please check your connection and try again.');
             }
@@ -5758,6 +5810,11 @@
                 displaySettings(settings);
                 
             } catch (error) {
+                // Check if this is an authentication error
+                if (handleAuthError(error)) {
+                    return; // handleAuthError will throw if it's an auth error
+                }
+                
                 console.error('❌ Error loading settings:', error);
                 displaySettingsError('Failed to load settings. Please check your connection and try again.');
             }

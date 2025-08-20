@@ -217,17 +217,13 @@ class AuthService {
 
 function initializeAuthService() {
     try {
-        console.log('🔧 Initializing global AuthService...');
-        
         if (window.authService) {
-            console.log('⚠️ AuthService already exists, reusing...');
             return window.authService;
         }
         
         const authService = new AuthService();
         window.authService = authService;
         
-        console.log('✅ Global AuthService initialized');
         return authService;
         
     } catch (error) {
@@ -254,19 +250,12 @@ async function makeAuthenticatedRequest(url, options = {}) {
     
     const sessionId = authService.getSessionId();
     
-    console.log('🔍 Debug - Session ID:', sessionId);
-    console.log('🔍 Debug - Is authenticated:', authService.isAuthenticated());
-    console.log('🔍 Debug - LocalStorage session:', localStorage.getItem('icecream_session_id'));
-    console.log('🔍 Debug - LocalStorage user:', localStorage.getItem('icecream_user_data'));
-    
     // Set up headers
     const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${sessionId}`,
         ...options.headers
     };
-    
-    console.log('🔍 Debug - Request headers:', headers);
     
     // Make the request
     const response = await fetch(url, {
@@ -288,7 +277,6 @@ async function makeAuthenticatedRequest(url, options = {}) {
 // === UTILITY FUNCTIONS ===
 
 function redirectToLogin() {
-    console.log('🔄 Redirecting to login page...');
     window.location.href = 'login.html';
 }
 
@@ -322,7 +310,7 @@ async function authenticatedDelete(url) {
 if (typeof CONFIG !== 'undefined') {
     initializeAuthService();
 } else {
-    console.log('⏳ Waiting for CONFIG to load before initializing AuthService...');
+    
     window.addEventListener('load', () => {
         if (typeof CONFIG !== 'undefined') {
             initializeAuthService();
