@@ -352,24 +352,71 @@ window.hideServiceUnavailable = function() {
 // Load create order modal content
 async function loadCreateOrderModal() {
     try {
+        console.log('🔄 Loading create order modal content...');
         const response = await fetch('partials/orders/create-order.html');
         const content = await response.text();
-        document.getElementById('createOrderModalContainer').innerHTML = content;
+        console.log('📄 Modal content loaded, length:', content.length);
+        
+        const container = document.getElementById('createOrderModalContainer');
+        if (container) {
+            container.innerHTML = content;
+            console.log('✅ Modal content inserted into container');
+            
+            // Extract and execute script content
+            const scriptMatch = content.match(/<script>([\s\S]*?)<\/script>/);
+            if (scriptMatch) {
+                console.log('📜 Found script content, executing...');
+                try {
+                    eval(scriptMatch[1]);
+                    console.log('✅ Script executed successfully');
+                } catch (scriptError) {
+                    console.error('❌ Error executing script:', scriptError);
+                }
+            } else {
+                console.error('❌ No script content found in modal HTML');
+            }
+            
+            // Check if functions are available after loading
+            setTimeout(() => {
+                console.log('🔍 Checking available functions after loading:');
+                console.log('- window.initCreateOrder:', typeof window.initCreateOrder);
+                console.log('- window.filterRecipes:', typeof window.filterRecipes);
+                console.log('- window.selectRecipe:', typeof window.selectRecipe);
+            }, 50);
+        } else {
+            console.error('❌ createOrderModalContainer not found!');
+        }
     } catch (error) {
         console.error('❌ Error loading create order modal:', error);
     }
 }
 
 // Open create order modal
-function openCreateOrderModal() {
-    // Initialize the create order functionality
-    if (typeof initCreateOrder === 'function') {
-        initCreateOrder();
-    }
+async function openCreateOrderModal() {
+    console.log('🛒 Opening Create Order Modal...');
     
-    // Show the modal
-    const modal = new bootstrap.Modal(document.getElementById('createOrderModal'));
-    modal.show();
+    try {
+        // Load modal content first
+        await loadCreateOrderModal();
+        
+        // Small delay to ensure content is loaded
+        setTimeout(() => {
+            // Initialize the create order functionality
+            if (typeof window.initCreateOrder === 'function') {
+                console.log('🔧 Calling initCreateOrder...');
+                window.initCreateOrder();
+            } else {
+                console.error('❌ initCreateOrder function not found!');
+            }
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('createOrderModal'));
+            modal.show();
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Error opening create order modal:', error);
+    }
 }
 
 // Expose the local function globally with a different name
