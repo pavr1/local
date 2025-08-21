@@ -765,6 +765,17 @@
             return;
         }
         
+        // Calculate total recipe cost from ingredients
+        let totalRecipeCost = 0;
+        if (recipeIngredients && recipeIngredients.length > 0) {
+            totalRecipeCost = recipeIngredients.reduce((total, ingredient) => {
+                const pricePerItem = ingredient.final_price || 0;
+                const subtotal = pricePerItem * ingredient.quantity;
+                return total + subtotal;
+            }, 0);
+        }
+        recipeData.total_recipe_cost = totalRecipeCost;
+        
         // Update button state
         saveBtn.disabled = true;
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
@@ -1525,6 +1536,17 @@
             form.classList.add('was-validated');
             return;
         }
+        
+        // Calculate total recipe cost from ingredients
+        let totalRecipeCost = 0;
+        if (recipeIngredients && recipeIngredients.length > 0) {
+            totalRecipeCost = recipeIngredients.reduce((total, ingredient) => {
+                const pricePerItem = ingredient.final_price || 0;
+                const subtotal = pricePerItem * ingredient.quantity;
+                return total + subtotal;
+            }, 0);
+        }
+        recipeData.total_recipe_cost = totalRecipeCost;
         
         // Update button state
         updateBtn.disabled = true;
