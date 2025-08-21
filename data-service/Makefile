@@ -15,6 +15,16 @@ RESET := \033[0m
 
 ## 🚀 Database Management Commands
 
+create-network: ## Create the shared Docker network for all services
+	@echo "$(CYAN)📡 Creating shared Docker network...$(RESET)"
+	@if ! docker network ls | grep -q "docker_icecream_network"; then \
+		echo "$(YELLOW)🔄 Creating docker_icecream_network...$(RESET)"; \
+		docker network create docker_icecream_network; \
+		echo "$(GREEN)✅ Network docker_icecream_network created$(RESET)"; \
+	else \
+		echo "$(GREEN)✅ Network docker_icecream_network already exists$(RESET)"; \
+	fi
+
 migrate-up: ## Apply all pending database migrations
 	@echo "$(CYAN)📈 Applying database migrations...$(RESET)"
 	@./scripts/migrate.sh up
@@ -59,7 +69,7 @@ migrate-reset: ## Reset migrations and reapply (⚠️  DESTRUCTIVE - removes mi
 	@./scripts/migrate.sh up
 	@echo "$(GREEN)✅ Migration reset completed!$(RESET)"
 
-fresh: clean deps remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
+fresh: create-network clean deps remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
 	@echo "$(CYAN)📋 Quick verification:$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Fresh install verified!' as status, COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "$(RED)❌ Database verification failed$(RESET)"
@@ -91,7 +101,7 @@ fresh: clean deps remove-volumes reset start init-manual migrate-up test status 
 
 ## 🐳 Container Management Commands (Data Service Always Uses Containers)
 
-start: ## Start PostgreSQL and PgAdmin containers
+start: create-network ## Start PostgreSQL and PgAdmin containers
 	@echo "$(CYAN)🍦 Starting Ice Cream Store Data Service...$(RESET)"
 	@./scripts/start.sh
 
