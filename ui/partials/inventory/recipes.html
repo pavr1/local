@@ -169,7 +169,7 @@
 </div>
 
 <!-- Add Recipe Modal -->
-<div class="modal fade" id="addRecipeModal" tabindex="-1" aria-labelledby="addRecipeModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="addRecipeModal" tabindex="-1" aria-labelledby="addRecipeModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -182,23 +182,23 @@
                 <form id="addRecipeForm" novalidate>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="recipeName" class="form-label">
+                            <label for="addRecipeName" class="form-label">
                                 Recipe Name <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="recipeName" name="recipe_name" 
+                            <input type="text" class="form-control" id="addRecipeName" name="recipe_name" 
                                    maxlength="255" required>
                             <div class="invalid-feedback">
                                 Please provide a valid recipe name (1-255 characters).
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="recipeCategoryDisplay" class="form-label">
+                            <label for="addRecipeCategoryDisplay" class="form-label">
                                 Category <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="recipeCategoryDisplay" 
+                                <input type="text" class="form-control" id="addRecipeCategoryDisplay" 
                                        placeholder="Search categories..." readonly>
-                                <input type="hidden" id="recipeCategoryId" name="recipe_category_id">
+                                <input type="hidden" id="addRecipeCategoryId" name="recipe_category_id">
                                 <button type="button" class="btn btn-outline-secondary" onclick="openRecipeCategoryPicker()">
                                     <i class="fas fa-search"></i>
                                 </button>
@@ -213,8 +213,8 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label for="recipeDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="recipeDescription" name="recipe_description" 
+                            <label for="addRecipeDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="addRecipeDescription" name="recipe_description" 
                                       rows="3" maxlength="500" placeholder="Brief description of this recipe"></textarea>
                             <div class="invalid-feedback">
                                 Please provide a valid description (max 500 characters).
@@ -223,11 +223,11 @@
                     </div>
                     <div class="row">
                         <div class="col-md-12 mb-3">
-                            <label for="recipeImageDisplay" class="form-label">Recipe Image</label>
+                            <label for="addRecipeImageDisplay" class="form-label">Recipe Image</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="recipeImageDisplay" 
+                                <input type="text" class="form-control" id="addRecipeImageDisplay" 
                                        readonly placeholder="Select an image" style="background: white;">
-                                <input type="hidden" id="recipePictureUrl" name="picture_url">
+                                <input type="hidden" id="addRecipePictureUrl" name="picture_url">
                                 <button type="button" class="btn btn-outline-primary" onclick="openRecipeImagePicker()" title="Select Image">
                                     <i class="fas fa-image"></i>
                                 </button>
@@ -241,7 +241,7 @@
                         <div class="col-md-12 mb-3">
                             <label class="form-label">Recipe Ingredients <span class="text-danger">*</span></label>
                             <div class="ingredients-container">
-                                <div id="recipeIngredientsList" class="mb-3">
+                                <div id="addRecipeIngredientsList" class="mb-3">
                                     <!-- Ingredients will be added here -->
                                 </div>
                                 <button type="button" class="btn btn-outline-primary" onclick="addRecipeIngredient()">
@@ -266,7 +266,7 @@
 </div>
 
 <!-- View Recipe Modal -->
-<div class="modal fade" id="viewRecipeModal" tabindex="-1" aria-labelledby="viewRecipeModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="viewRecipeModal" tabindex="-1" aria-labelledby="viewRecipeModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -289,7 +289,7 @@
 </div>
 
 <!-- Edit Recipe Modal -->
-<div class="modal fade" id="editRecipeModal" tabindex="-1" aria-labelledby="editRecipeModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="editRecipeModal" tabindex="-1" aria-labelledby="editRecipeModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -313,7 +313,7 @@
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="editRecipeCategoryId" class="form-label">
+                            <label for="editRecipeCategoryDisplay" class="form-label">
                                 Category <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
@@ -376,7 +376,7 @@
 </div>
 
 <!-- Recipe Category Picker Modal -->
-<div class="modal fade" id="recipeCategoryPickerModal" tabindex="-1" aria-labelledby="recipeCategoryPickerModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="recipeCategoryPickerModal" tabindex="-1" aria-labelledby="recipeCategoryPickerModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -413,7 +413,7 @@
 </div>
 
 <!-- Recipe Image Picker Modal -->
-<div class="modal fade" id="recipeImagePickerModal" tabindex="-1" aria-labelledby="recipeImagePickerModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="recipeImagePickerModal" tabindex="-1" aria-labelledby="recipeImagePickerModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -452,7 +452,7 @@
 </div>
 
 <!-- Recipe Ingredient Picker Modal -->
-<div class="modal fade" id="recipeIngredientPickerModal" tabindex="-1" aria-labelledby="recipeIngredientPickerModalLabel" aria-hidden="true">
+<div class="modal fade" role="dialog" id="recipeIngredientPickerModal" tabindex="-1" aria-labelledby="recipeIngredientPickerModalLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
@@ -659,7 +659,7 @@
 
     // Populate category dropdowns
     function populateCategoryDropdowns() {
-        const categorySelects = ['recipeCategoryId', 'editRecipeCategoryId'];
+        const categorySelects = ['addRecipeCategoryId', 'editRecipeCategoryId'];
         
         categorySelects.forEach(selectId => {
             const select = document.getElementById(selectId);
@@ -691,7 +691,7 @@
             form.classList.remove('was-validated');
             
             // Remove validation classes
-            const fields = ['recipeName', 'recipeCategoryId', 'recipeDescription'];
+            const fields = ['addRecipeName', 'addRecipeCategoryId', 'addRecipeDescription'];
             fields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) field.classList.remove('is-invalid', 'is-valid');
@@ -704,6 +704,10 @@
                 saveBtn.innerHTML = '<i class="fas fa-save me-2"></i>Save Recipe';
             }
         }
+        
+        // Clear recipe ingredients when opening add recipe modal
+        recipeIngredients = [];
+                    displayRecipeIngredients('addRecipeIngredientsList');
     }
 
     async function saveRecipe() {
@@ -735,17 +739,23 @@
         let isValid = true;
         
         if (!recipeData.recipe_name || recipeData.recipe_name.length < 1 || recipeData.recipe_name.length > 255) {
-            document.getElementById('recipeName').classList.add('is-invalid');
+                            document.getElementById('addRecipeName').classList.add('is-invalid');
             isValid = false;
         }
         
         if (!recipeData.recipe_category_id) {
-            document.getElementById('recipeCategoryId').classList.add('is-invalid');
+            document.getElementById('addRecipeCategoryId').classList.add('is-invalid');
             isValid = false;
         }
         
         if (recipeData.recipe_description && recipeData.recipe_description.length > 500) {
-            document.getElementById('recipeDescription').classList.add('is-invalid');
+            document.getElementById('addRecipeDescription').classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Validate that at least one ingredient is added
+        if (!recipeIngredients || recipeIngredients.length === 0) {
+            Alert.warning('Please add at least one ingredient to the recipe.');
             isValid = false;
         }
         
@@ -759,7 +769,13 @@
         saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
         
         try {
-                    const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
+            // Add ingredients to the request
+            recipeData.ingredients = recipeIngredients.map(ingredient => ({
+                ingredient_id: ingredient.id,
+                number_of_units: ingredient.quantity
+            }));
+            
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
             
             const result = await response.json();
             
@@ -851,11 +867,11 @@
             // Create a map of ingredient ID to most recent final price
             const ingredientPrices = new Map();
             existences.forEach(existence => {
-                if (existence.final_price && existence.final_price > 0) {
+                if (existence.final_price !== null && existence.final_price !== undefined && existence.final_price >= 0) {
                     const currentPrice = ingredientPrices.get(existence.ingredient_id);
                     if (!currentPrice || existence.created_at > currentPrice.created_at) {
                         ingredientPrices.set(existence.ingredient_id, {
-                            final_price: existence.final_price,
+                            final_price: parseFloat(existence.final_price),
                             created_at: existence.created_at
                         });
                     }
@@ -948,28 +964,30 @@
             return;
         }
         
-        selectedCheckboxes.forEach(checkbox => {
-            const ingredientId = checkbox.value;
-            const ingredientName = checkbox.getAttribute('data-name');
-            
-            // Check if ingredient is already added
-            const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
-            if (!existingIngredient) {
-                // Find the ingredient with pricing information
-                const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
+                    selectedCheckboxes.forEach(checkbox => {
+                const ingredientId = checkbox.value;
+                const ingredientName = checkbox.getAttribute('data-name');
                 
-                const ingredient = {
-                    id: ingredientId,
-                    name: ingredientName,
-                    quantity: 1,
-                    final_price: ingredientWithPrice ? ingredientWithPrice.final_price : 0
-                };
-                
-                recipeIngredients.push(ingredient);
-            }
-        });
+                // Check if ingredient is already added
+                const existingIngredient = recipeIngredients.find(ing => ing.id === ingredientId);
+                if (!existingIngredient) {
+                    // Find the ingredient with pricing information
+                    const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
+                    
+                    const ingredient = {
+                        id: ingredientId,
+                        name: ingredientName,
+                        quantity: 1,
+                        final_price: ingredientWithPrice && ingredientWithPrice.final_price !== null && ingredientWithPrice.final_price !== undefined ? parseFloat(ingredientWithPrice.final_price) : 0
+                    };
+                    
+                    recipeIngredients.push(ingredient);
+                }
+            });
         
-        displayRecipeIngredients();
+        // Determine which modal is open and use the correct container
+        const containerId = getCurrentRecipeModalContainer();
+        displayRecipeIngredients(containerId);
         
         // Hide modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('recipeIngredientPickerModal'));
@@ -1000,11 +1018,11 @@
         let totalCost = 0;
 
         const ingredientsHtml = recipeIngredients.map((ingredient, index) => {
-            const pricePerItem = ingredient.final_price || 0;
+            const pricePerItem = ingredient.final_price !== null && ingredient.final_price !== undefined ? parseFloat(ingredient.final_price) : 0;
             const subtotal = pricePerItem * ingredient.quantity;
             totalCost += subtotal;
 
-            const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
+            const priceDisplay = pricePerItem !== null && pricePerItem !== undefined && pricePerItem >= 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
 
             return `
             <div class="card mb-2">
@@ -1059,45 +1077,7 @@
 
 
 
-    async function loadIngredientsPricing(ingredients) {
-        try {
-            // Load existences to get pricing information
-            const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
-            
-            if (!existencesResponse.ok) {
-                return ingredients;
-            }
-            
-            const existencesResult = await existencesResponse.json();
-            const existences = existencesResult.data || [];
-            
-            // Create a map of ingredient ID to most recent final price
-            const ingredientPrices = new Map();
-            existences.forEach(existence => {
-                if (existence.final_price && existence.final_price > 0) {
-                    const currentPrice = ingredientPrices.get(existence.ingredient_id);
-                    if (!currentPrice || existence.created_at > currentPrice.created_at) {
-                        ingredientPrices.set(existence.ingredient_id, {
-                            final_price: existence.final_price,
-                            created_at: existence.created_at
-                        });
-                    }
-                }
-            });
-            
-            // Add pricing information to ingredients
-            return ingredients.map(ingredient => {
-                const priceInfo = ingredientPrices.get(ingredient.ingredient_id);
-                return {
-                    ...ingredient,
-                    final_price: priceInfo ? priceInfo.final_price : 0
-                };
-            });
-        } catch (error) {
-            console.error('❌ Error loading ingredients pricing:', error);
-            return ingredients;
-        }
-    }
+
 
 
 
@@ -1105,14 +1085,29 @@
         if (recipeIngredients[index]) {
             recipeIngredients[index].quantity = parseFloat(quantity) || 1;
             // Redisplay to update subtotals and total
-            displayRecipeIngredients();
+            const containerId = getCurrentRecipeModalContainer();
+            displayRecipeIngredients(containerId);
         }
     }
 
     function removeRecipeIngredient(index) {
         recipeIngredients.splice(index, 1);
         // Redisplay to update subtotals and total
-        displayRecipeIngredients();
+        const containerId = getCurrentRecipeModalContainer();
+        displayRecipeIngredients(containerId);
+    }
+
+    function getCurrentRecipeModalContainer() {
+        const addRecipeModal = document.getElementById('addRecipeModal');
+        const editRecipeModal = document.getElementById('editRecipeModal');
+        
+        if (addRecipeModal && addRecipeModal.classList.contains('show')) {
+            return 'addRecipeIngredientsList'; // for add recipe modal
+        } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
+            return 'editRecipeIngredientsList'; // for edit recipe modal
+        }
+        
+        return 'editRecipeIngredientsList'; // default
     }
 
     function displayViewRecipeIngredients(ingredients) {
