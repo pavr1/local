@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -93,11 +94,14 @@ func (m *mockOrderRepository) UpdateOrder(id uuid.UUID, updates *models.UpdateOr
 	if updates.PaymentMethod != nil {
 		order.PaymentMethod = *updates.PaymentMethod
 	}
-	if updates.OrderStatus != nil {
-		order.OrderStatus = *updates.OrderStatus
+	if updates.Status != nil {
+		order.Status = *updates.Status
 	}
-	if updates.Notes != nil {
-		order.Notes = updates.Notes
+	if updates.InvoiceNumber != nil {
+		order.InvoiceNumber = updates.InvoiceNumber
+	}
+	if updates.InvoiceURL != nil {
+		order.InvoiceURL = updates.InvoiceURL
 	}
 	if updates.DiscountAmount != nil {
 		order.DiscountAmount = *updates.DiscountAmount
@@ -115,7 +119,7 @@ func (m *mockOrderRepository) CancelOrder(id uuid.UUID) error {
 	if !exists {
 		return fmt.Errorf("order not found")
 	}
-	order.OrderStatus = "cancelled"
+	order.Status = "cancelled"
 	order.UpdatedAt = time.Now()
 	return nil
 }
@@ -148,12 +152,12 @@ func (m *mockOrderRepository) GetOrderSummary() (*models.OrderSummary, error) {
 	}
 
 	for _, order := range m.orders {
-		switch order.OrderStatus {
+		switch order.Status {
 		case "pending":
 			summary.PendingOrders++
 		case "completed":
 			summary.CompletedOrders++
-			summary.TotalRevenue += order.FinalAmount
+			summary.TotalRevenue += order.TotalAmount
 		case "cancelled":
 			summary.CancelledOrders++
 		}
@@ -187,6 +191,51 @@ func (m *mockOrderRepository) HealthCheck() error {
 	return nil
 }
 
+func (m *mockOrderRepository) CreateOrderWithTx(tx *sql.Tx, order *models.Order, items []models.OrderedRecipe) error {
+	if m.shouldError {
+		return fmt.Errorf(m.errorMessage)
+	}
+
+	// Simulate the transaction-based creation
+	order.ID = uuid.New()
+	order.CreatedAt = time.Now()
+	order.UpdatedAt = time.Now()
+	m.orders[order.ID] = order
+
+	return nil
+}
+
+func (m *mockOrderRepository) UpdateOrderWithTx(tx *sql.Tx, id uuid.UUID, updates *models.UpdateOrderRequest) error {
+	if m.shouldError {
+		return fmt.Errorf(m.errorMessage)
+	}
+
+	order, exists := m.orders[id]
+	if !exists {
+		return fmt.Errorf("order not found")
+	}
+
+	// Apply updates
+	if updates.PaymentMethod != nil {
+		order.PaymentMethod = *updates.PaymentMethod
+	}
+	if updates.Status != nil {
+		order.Status = *updates.Status
+	}
+	if updates.InvoiceNumber != nil {
+		order.InvoiceNumber = updates.InvoiceNumber
+	}
+	if updates.InvoiceURL != nil {
+		order.InvoiceURL = updates.InvoiceURL
+	}
+	if updates.DiscountAmount != nil {
+		order.DiscountAmount = *updates.DiscountAmount
+	}
+	order.UpdatedAt = time.Now()
+
+	return nil
+}
+
 // setupTestHandler creates a test handler with mock dependencies
 func setupTestHandler() (*ordersHandler, *mockOrderRepository) {
 	db, _, _ := sqlmock.New()
@@ -217,6 +266,18 @@ func TestHealthCheck(t *testing.T) {
 	handler, mockRepo := setupTestHandler()
 
 	t.Run("successful health check", func(t *testing.T) {
+		// Mock the data service health check by setting up a mock HTTP server
+		mockDataService := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status":"healthy"}`))
+		}))
+		defer mockDataService.Close()
+
+		// Temporarily override the data service URL for this test
+		originalDataServiceURL := os.Getenv("DATA_SERVICE_URL")
+		os.Setenv("DATA_SERVICE_URL", mockDataService.URL)
+		defer os.Setenv("DATA_SERVICE_URL", originalDataServiceURL)
+
 		req := httptest.NewRequest("GET", "/health", nil)
 		w := httptest.NewRecorder()
 
@@ -353,13 +414,13 @@ func TestGetOrder(t *testing.T) {
 	// Create a test order
 	orderID := uuid.New()
 	testOrder := &models.Order{
-		ID:            orderID,
-		OrderDate:     time.Now(),
-		TotalAmount:   100.0,
-		PaymentMethod: "card",
-		OrderStatus:   "pending",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:                   orderID,
+		TransactionTimestamp: time.Now(),
+		TotalAmount:          100.0,
+		PaymentMethod:        "card",
+		Status:               "pending",
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 	mockRepo.orders[orderID] = testOrder
 
@@ -418,13 +479,13 @@ func TestUpdateOrder(t *testing.T) {
 	// Create a test order
 	orderID := uuid.New()
 	testOrder := &models.Order{
-		ID:            orderID,
-		OrderDate:     time.Now(),
-		TotalAmount:   100.0,
-		PaymentMethod: "cash",
-		OrderStatus:   "pending",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:                   orderID,
+		TransactionTimestamp: time.Now(),
+		TotalAmount:          100.0,
+		PaymentMethod:        "cash",
+		Status:               "pending",
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 	mockRepo.orders[orderID] = testOrder
 
@@ -481,13 +542,13 @@ func TestCancelOrder(t *testing.T) {
 	// Create a test order
 	orderID := uuid.New()
 	testOrder := &models.Order{
-		ID:            orderID,
-		OrderDate:     time.Now(),
-		TotalAmount:   100.0,
-		PaymentMethod: "cash",
-		OrderStatus:   "pending",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:                   orderID,
+		TransactionTimestamp: time.Now(),
+		TotalAmount:          100.0,
+		PaymentMethod:        "cash",
+		Status:               "pending",
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 	mockRepo.orders[orderID] = testOrder
 
@@ -499,7 +560,7 @@ func TestCancelOrder(t *testing.T) {
 		handler.CancelOrder(w, req)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, "cancelled", testOrder.OrderStatus)
+		assert.Equal(t, "cancelled", testOrder.Status)
 	})
 
 	t.Run("invalid order ID", func(t *testing.T) {
@@ -521,13 +582,13 @@ func TestListOrders(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		orderID := uuid.New()
 		testOrder := &models.Order{
-			ID:            orderID,
-			OrderDate:     time.Now(),
-			TotalAmount:   float64(100 * (i + 1)),
-			PaymentMethod: "cash",
-			OrderStatus:   "pending",
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
+			ID:                   orderID,
+			TransactionTimestamp: time.Now(),
+			TotalAmount:          float64(100 * (i + 1)),
+			PaymentMethod:        "cash",
+			Status:               "pending",
+			CreatedAt:            time.Now(),
+			UpdatedAt:            time.Now(),
 		}
 		mockRepo.orders[orderID] = testOrder
 	}
@@ -662,13 +723,13 @@ func BenchmarkGetOrder(b *testing.B) {
 	// Create a test order
 	orderID := uuid.New()
 	testOrder := &models.Order{
-		ID:            orderID,
-		OrderDate:     time.Now(),
-		TotalAmount:   100.0,
-		PaymentMethod: "card",
-		OrderStatus:   "pending",
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:                   orderID,
+		TransactionTimestamp: time.Now(),
+		TotalAmount:          100.0,
+		PaymentMethod:        "card",
+		Status:               "pending",
+		CreatedAt:            time.Now(),
+		UpdatedAt:            time.Now(),
 	}
 	mockRepo.orders[orderID] = testOrder
 

@@ -117,6 +117,107 @@ func NewRepository(db *sql.DB) (*Repository, error) {
 	}, nil
 }
 
+// CreateOrderWithTx creates a new order with its items using the provided transaction
+func (r *Repository) CreateOrderWithTx(tx *sql.Tx, order *models.Order, items []models.OrderedRecipe) error {
+	// Insert order
+	orderQuery := r.queries.MustGet("create_order")
+	_, err := tx.Exec(orderQuery,
+		order.ID, order.OrderNumber, order.CustomerID, order.SalesRepresentativeID,
+		order.Status, order.PaymentMethod, order.TransactionReference, order.SinpeScreenshotURL,
+		order.SubtotalAmount, order.DiscountAmount, order.IvaAmount, order.ServiceTaxAmount,
+		order.TotalAmount, order.InvoiceNumber, order.InvoiceURL, order.TransactionTimestamp,
+		order.CompletedAt, order.CreatedAt, order.UpdatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert order: %w", err)
+	}
+
+	// Insert ordered recipes
+	if len(items) > 0 {
+		itemQuery := r.queries.MustGet("create_ordered_recipe")
+		for _, item := range items {
+			_, err = tx.Exec(itemQuery,
+				item.ID, item.OrderID, item.RecipeID, item.ProductName,
+				item.Quantity, item.ReceipePrice, item.Subtotal,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to insert ordered recipe: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateOrderWithTx updates an order using the provided transaction
+func (r *Repository) UpdateOrderWithTx(tx *sql.Tx, id uuid.UUID, updates *models.UpdateOrderRequest) error {
+	query := r.queries.MustGet("update_order")
+
+	// Build dynamic query parts
+	var setParts []string
+	var args []interface{}
+	argIndex := 1
+
+	if updates.Status != nil {
+		setParts = append(setParts, fmt.Sprintf("status = $%d", argIndex))
+		args = append(args, *updates.Status)
+		argIndex++
+	}
+
+	if updates.PaymentMethod != nil {
+		setParts = append(setParts, fmt.Sprintf("payment_method = $%d", argIndex))
+		args = append(args, *updates.PaymentMethod)
+		argIndex++
+	}
+
+	if updates.Notes != nil {
+		setParts = append(setParts, fmt.Sprintf("notes = $%d", argIndex))
+		args = append(args, *updates.Notes)
+		argIndex++
+	}
+
+	if updates.DiscountAmount != nil {
+		setParts = append(setParts, fmt.Sprintf("discount_amount = $%d", argIndex))
+		args = append(args, *updates.DiscountAmount)
+		argIndex++
+	}
+
+	if updates.InvoiceNumber != nil {
+		setParts = append(setParts, fmt.Sprintf("invoice_number = $%d", argIndex))
+		args = append(args, *updates.InvoiceNumber)
+		argIndex++
+	}
+
+	if updates.InvoiceURL != nil {
+		setParts = append(setParts, fmt.Sprintf("invoice_url = $%d", argIndex))
+		args = append(args, *updates.InvoiceURL)
+		argIndex++
+	}
+
+	if len(setParts) == 0 {
+		return fmt.Errorf("no fields to update")
+	}
+
+	// Add updated_at timestamp
+	setParts = append(setParts, fmt.Sprintf("updated_at = $%d", argIndex))
+	args = append(args, time.Now())
+	argIndex++
+
+	// Add WHERE clause
+	args = append(args, id)
+
+	// Build final query
+	finalQuery := strings.Replace(query, "SET_PLACEHOLDER", strings.Join(setParts, ", "), 1)
+	finalQuery = strings.Replace(finalQuery, "WHERE_PLACEHOLDER", fmt.Sprintf("WHERE id = $%d", argIndex), 1)
+
+	_, err := tx.Exec(finalQuery, args...)
+	if err != nil {
+		return fmt.Errorf("failed to update order: %w", err)
+	}
+
+	return nil
+}
+
 // === ORDER QUERIES ===
 
 // CreateOrder creates a new order with its items in a transaction
@@ -140,19 +241,19 @@ func (r *Repository) CreateOrder(order *models.Order, items []models.OrderedReci
 		return fmt.Errorf("failed to insert order: %w", err)
 	}
 
-			// Insert ordered recipes
-		if len(items) > 0 {
-			itemQuery := r.queries.MustGet("create_ordered_recipe")
-			for _, item := range items {
-				_, err = tx.Exec(itemQuery,
-					item.ID, item.OrderID, item.RecipeID, item.ProductName,
-					item.Quantity, item.ReceipePrice, item.Subtotal,
-				)
-				if err != nil {
-					return fmt.Errorf("failed to insert ordered recipe: %w", err)
-				}
+	// Insert ordered recipes
+	if len(items) > 0 {
+		itemQuery := r.queries.MustGet("create_ordered_recipe")
+		for _, item := range items {
+			_, err = tx.Exec(itemQuery,
+				item.ID, item.OrderID, item.RecipeID, item.ProductName,
+				item.Quantity, item.ReceipePrice, item.Subtotal,
+			)
+			if err != nil {
+				return fmt.Errorf("failed to insert ordered recipe: %w", err)
 			}
 		}
+	}
 
 	return tx.Commit()
 }

@@ -22,7 +22,8 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="customerId" class="form-label">Customer ID (Optional)</label>
-                                <input type="text" class="form-control" id="customerId" placeholder="Enter customer ID">
+                                <input type="text" class="form-control" id="customerId" placeholder="Enter customer UUID">
+                                <div class="form-text">Leave empty for walk-in customers</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="paymentMethod" class="form-label">Payment Method *</label>
@@ -39,10 +40,12 @@
                             <div class="col-md-6 mb-3">
                                 <label for="transactionReference" class="form-label">Transaction Reference</label>
                                 <input type="text" class="form-control" id="transactionReference" placeholder="Transaction reference">
+                                <div class="form-text">Required for card and SINPE payments</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="sinpeScreenshot" class="form-label">SINPE Screenshot URL</label>
                                 <input type="url" class="form-control" id="sinpeScreenshot" placeholder="Screenshot URL">
+                                <div class="form-text">Required for SINPE payments</div>
                             </div>
                         </div>
 
@@ -53,6 +56,7 @@
                                     <span class="input-group-text">₡</span>
                                     <input type="number" class="form-control" id="discountAmount" value="0" min="0" step="0.01">
                                 </div>
+                                <div class="form-text">Total discount applied from promotions</div>
                             </div>
                         </div>
                     </form>
@@ -66,7 +70,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row mb-3">
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <label for="recipeSelect" class="form-label">Select Recipe</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" id="recipeSelect" placeholder="Search recipes..." readonly>
@@ -81,16 +85,19 @@
                             <input type="number" class="form-control" id="recipeQuantity" value="1" min="1">
                         </div>
                         <div class="col-md-2">
-                            <label for="recipePrice" class="form-label">Price</label>
+                            <label for="recipePrice" class="form-label">Unit Price</label>
                             <div class="input-group">
                                 <span class="input-group-text">₡</span>
                                 <input type="number" class="form-control" id="recipePrice" min="0" step="0.01">
                             </div>
                         </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-success w-100" onclick="addRecipeToOrder()">
+                                <i class="fas fa-plus me-2"></i>Add
+                            </button>
+                        </div>
                     </div>
-                    <button class="btn btn-success" onclick="addRecipeToOrder()">
-                        <i class="fas fa-plus me-2"></i>Add to Order
-                    </button>
                 </div>
             </div>
 
@@ -106,7 +113,7 @@
                                 <tr>
                                     <th>Recipe</th>
                                     <th>Quantity</th>
-                                    <th>Price</th>
+                                    <th>Unit Price</th>
                                     <th>Subtotal</th>
                                     <th>Actions</th>
                                 </tr>
@@ -176,7 +183,7 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <input type="text" class="form-control" id="recipeSearchInput" placeholder="Search recipes...">
+                    <input type="text" class="form-control" id="recipeSearchInput" placeholder="Search recipes by name or category...">
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
@@ -206,9 +213,14 @@ let filteredRecipes = [];
 
 // Initialize the create order page
 async function initCreateOrderContent() {
-    await loadRecipes();
-    updateOrderSummary();
-    setupEventListeners();
+    try {
+        await loadRecipes();
+        updateOrderSummary();
+        setupEventListeners();
+    } catch (error) {
+        console.error('Error initializing create order content:', error);
+        showError('Failed to initialize create order page');
+    }
 }
 
 // Load all recipes for the picker
@@ -230,13 +242,69 @@ async function loadRecipes() {
 // Setup event listeners
 function setupEventListeners() {
     // Discount amount change
-    document.getElementById('discountAmount').addEventListener('input', updateOrderSummary);
+    const discountElement = document.getElementById('discountAmount');
+    if (discountElement) {
+        discountElement.addEventListener('input', updateOrderSummary);
+    }
     
     // Recipe search
-    document.getElementById('recipeSearchInput').addEventListener('input', filterRecipes);
+    const searchElement = document.getElementById('recipeSearchInput');
+    if (searchElement) {
+        searchElement.addEventListener('input', filterRecipes);
+    }
     
     // Payment method change
-    document.getElementById('paymentMethod').addEventListener('change', validateForm);
+    const paymentElement = document.getElementById('paymentMethod');
+    if (paymentElement) {
+        paymentElement.addEventListener('change', validateForm);
+    }
+    
+    // Transaction reference validation
+    const transactionElement = document.getElementById('transactionReference');
+    if (transactionElement) {
+        transactionElement.addEventListener('input', validateTransactionReference);
+    }
+    
+    const screenshotElement = document.getElementById('sinpeScreenshot');
+    if (screenshotElement) {
+        screenshotElement.addEventListener('input', validateSinpeScreenshot);
+    }
+}
+
+// Validate transaction reference based on payment method
+function validateTransactionReference() {
+    const paymentMethodElement = document.getElementById('paymentMethod');
+    const transactionRefElement = document.getElementById('transactionReference');
+    
+    if (!paymentMethodElement || !transactionRefElement) return;
+    
+    const paymentMethod = paymentMethodElement.value;
+    const transactionRef = transactionRefElement.value;
+    
+    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
+        transactionRefElement.classList.add('is-invalid');
+    } else {
+        transactionRefElement.classList.remove('is-invalid');
+    }
+    validateForm();
+}
+
+// Validate SINPE screenshot
+function validateSinpeScreenshot() {
+    const paymentMethodElement = document.getElementById('paymentMethod');
+    const screenshotElement = document.getElementById('sinpeScreenshot');
+    
+    if (!paymentMethodElement || !screenshotElement) return;
+    
+    const paymentMethod = paymentMethodElement.value;
+    const screenshot = screenshotElement.value;
+    
+    if (paymentMethod === 'sinpe' && !screenshot) {
+        screenshotElement.classList.add('is-invalid');
+    } else {
+        screenshotElement.classList.remove('is-invalid');
+    }
+    validateForm();
 }
 
 // Open recipe picker modal
@@ -269,7 +337,10 @@ function displayRecipesInPicker() {
 
 // Filter recipes in picker
 function filterRecipes() {
-    const searchTerm = document.getElementById('recipeSearchInput').value.toLowerCase();
+    const searchElement = document.getElementById('recipeSearchInput');
+    if (!searchElement) return;
+    
+    const searchTerm = searchElement.value.toLowerCase();
     filteredRecipes = allRecipes.filter(recipe => 
         recipe.recipe_name.toLowerCase().includes(searchTerm) ||
         (recipe.recipe_category_name && recipe.recipe_category_name.toLowerCase().includes(searchTerm))
@@ -279,16 +350,24 @@ function filterRecipes() {
 
 // Select a recipe from the picker
 function selectRecipe(recipeId, recipeName, recipeCost) {
-    document.getElementById('selectedRecipeId').value = recipeId;
-    document.getElementById('recipeSelect').value = recipeName;
-    document.getElementById('recipePrice').value = recipeCost.toFixed(2);
+    const selectedRecipeIdElement = document.getElementById('selectedRecipeId');
+    const recipeSelectElement = document.getElementById('recipeSelect');
+    const recipePriceElement = document.getElementById('recipePrice');
+    const recipeSearchInputElement = document.getElementById('recipeSearchInput');
+    const modalElement = document.getElementById('recipePickerModal');
+    
+    if (selectedRecipeIdElement) selectedRecipeIdElement.value = recipeId;
+    if (recipeSelectElement) recipeSelectElement.value = recipeName;
+    if (recipePriceElement) recipePriceElement.value = recipeCost.toFixed(2);
     
     // Close modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('recipePickerModal'));
-    modal.hide();
+    if (modalElement) {
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) modal.hide();
+    }
     
     // Clear search
-    document.getElementById('recipeSearchInput').value = '';
+    if (recipeSearchInputElement) recipeSearchInputElement.value = '';
 }
 
 // Add recipe to order
@@ -296,7 +375,7 @@ function addRecipeToOrder() {
     const recipeId = document.getElementById('selectedRecipeId').value;
     const recipeName = document.getElementById('recipeSelect').value;
     const quantity = parseInt(document.getElementById('recipeQuantity').value);
-    const price = parseFloat(document.getElementById('recipePrice').value);
+    const unitPrice = parseFloat(document.getElementById('recipePrice').value);
     
     if (!recipeId || !recipeName) {
         showError('Please select a recipe first');
@@ -308,12 +387,12 @@ function addRecipeToOrder() {
         return;
     }
     
-    if (price < 0) {
-        showError('Price cannot be negative');
+    if (unitPrice < 0) {
+        showError('Unit price cannot be negative');
         return;
     }
     
-    const subtotal = quantity * price;
+    const subtotal = quantity * unitPrice;
     
     // Add to order items
     const item = {
@@ -321,7 +400,7 @@ function addRecipeToOrder() {
         recipeId: recipeId,
         recipeName: recipeName,
         quantity: quantity,
-        price: price,
+        unitPrice: unitPrice,
         subtotal: subtotal
     };
     
@@ -362,7 +441,7 @@ function displayOrderItems() {
                        value="${item.quantity}" min="1" 
                        onchange="updateItemQuantity(${index}, this.value)">
             </td>
-            <td>₡${item.price.toFixed(2)}</td>
+            <td>₡${item.unitPrice.toFixed(2)}</td>
             <td>₡${item.subtotal.toFixed(2)}</td>
             <td>
                 <button class="btn btn-sm btn-danger" onclick="removeOrderItem(${index})">
@@ -383,7 +462,7 @@ function updateItemQuantity(index, newQuantity) {
     }
     
     orderItems[index].quantity = quantity;
-    orderItems[index].subtotal = quantity * orderItems[index].price;
+    orderItems[index].subtotal = quantity * orderItems[index].unitPrice;
     
     displayOrderItems();
     updateOrderSummary();
@@ -400,25 +479,52 @@ function removeOrderItem(index) {
 // Update order summary
 function updateOrderSummary() {
     const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const discount = parseFloat(document.getElementById('discountAmount').value) || 0;
+    const discountElement = document.getElementById('discountAmount');
+    const discount = discountElement ? (parseFloat(discountElement.value) || 0) : 0;
     const iva = subtotal * 0.13; // 13% IVA
     const serviceTax = subtotal * 0.10; // 10% service tax
     const total = subtotal + iva + serviceTax - discount;
     
-    document.getElementById('subtotalAmount').textContent = subtotal.toFixed(2);
-    document.getElementById('discountDisplay').textContent = discount.toFixed(2);
-    document.getElementById('ivaAmount').textContent = iva.toFixed(2);
-    document.getElementById('serviceTaxAmount').textContent = serviceTax.toFixed(2);
-    document.getElementById('totalAmount').textContent = total.toFixed(2);
+    const subtotalElement = document.getElementById('subtotalAmount');
+    const discountDisplayElement = document.getElementById('discountDisplay');
+    const ivaElement = document.getElementById('ivaAmount');
+    const serviceTaxElement = document.getElementById('serviceTaxAmount');
+    const totalElement = document.getElementById('totalAmount');
+    
+    if (subtotalElement) subtotalElement.textContent = subtotal.toFixed(2);
+    if (discountDisplayElement) discountDisplayElement.textContent = discount.toFixed(2);
+    if (ivaElement) ivaElement.textContent = iva.toFixed(2);
+    if (serviceTaxElement) serviceTaxElement.textContent = serviceTax.toFixed(2);
+    if (totalElement) totalElement.textContent = total.toFixed(2);
 }
 
 // Validate form
 function validateForm() {
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    const hasItems = orderItems.length > 0;
+    const paymentMethodElement = document.getElementById('paymentMethod');
+    const transactionRefElement = document.getElementById('transactionReference');
+    const screenshotElement = document.getElementById('sinpeScreenshot');
+    const createOrderBtn = document.getElementById('createOrderBtn');
     
-    const isValid = paymentMethod && hasItems;
-    document.getElementById('createOrderBtn').disabled = !isValid;
+    if (!paymentMethodElement || !createOrderBtn) return;
+    
+    const paymentMethod = paymentMethodElement.value;
+    const hasItems = orderItems.length > 0;
+    const transactionRef = transactionRefElement ? transactionRefElement.value : '';
+    const screenshot = screenshotElement ? screenshotElement.value : '';
+    
+    let isValid = paymentMethod && hasItems;
+    
+    // Validate transaction reference for card/sinpe
+    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
+        isValid = false;
+    }
+    
+    // Validate screenshot for sinpe
+    if (paymentMethod === 'sinpe' && !screenshot) {
+        isValid = false;
+    }
+    
+    createOrderBtn.disabled = !isValid;
 }
 
 // Create order
@@ -434,17 +540,31 @@ async function createOrder() {
         return;
     }
     
-    // Prepare order data
+    // Validate transaction reference
+    const transactionRef = document.getElementById('transactionReference').value;
+    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
+        showError('Transaction reference is required for card and SINPE payments');
+        return;
+    }
+    
+    // Validate SINPE screenshot
+    const screenshot = document.getElementById('sinpeScreenshot').value;
+    if (paymentMethod === 'sinpe' && !screenshot) {
+        showError('SINPE screenshot URL is required for SINPE payments');
+        return;
+    }
+    
+    // Prepare order data according to API specification
     const orderData = {
         customer_id: document.getElementById('customerId').value || null,
         payment_method: paymentMethod,
-        transaction_reference: document.getElementById('transactionReference').value || null,
-        sinpe_screenshot_url: document.getElementById('sinpeScreenshot').value || null,
+        transaction_reference: transactionRef || null,
+        sinpe_screenshot_url: screenshot || null,
         discount_amount: parseFloat(document.getElementById('discountAmount').value) || 0,
         items: orderItems.map(item => ({
             recipe_id: item.recipeId,
             quantity: item.quantity,
-            unit_price: item.price
+            unit_price: item.unitPrice
         }))
     };
     
@@ -475,6 +595,10 @@ function resetOrderForm() {
     document.getElementById('recipeQuantity').value = '1';
     document.getElementById('recipePrice').value = '';
     document.getElementById('discountAmount').value = '0';
+    
+    // Clear validation states
+    document.getElementById('transactionReference').classList.remove('is-invalid');
+    document.getElementById('sinpeScreenshot').classList.remove('is-invalid');
     
     displayOrderItems();
     updateOrderSummary();

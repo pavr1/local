@@ -46,10 +46,12 @@ type OrdersHandler interface {
 // OrderRepository defines the interface for order data operations
 type OrderRepository interface {
 	CreateOrder(order *models.Order, items []models.OrderedRecipe) error
+	CreateOrderWithTx(tx *sql.Tx, order *models.Order, items []models.OrderedRecipe) error
 	GetOrderByID(id uuid.UUID) (*models.Order, error)
 	GetOrderWithItems(id uuid.UUID) (*models.OrderWithItems, error)
 	GetOrderedRecipesByOrderID(orderID uuid.UUID) ([]models.OrderedRecipe, error)
 	UpdateOrder(id uuid.UUID, updates *models.UpdateOrderRequest) error
+	UpdateOrderWithTx(tx *sql.Tx, id uuid.UUID, updates *models.UpdateOrderRequest) error
 	CancelOrder(id uuid.UUID) error
 	ListOrders(filter *models.OrderFilter) ([]models.Order, int, error)
 	GetOrderSummary() (*models.OrderSummary, error)
@@ -77,9 +79,9 @@ func New(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (OrdersHandler, 
 	}
 
 	return &ordersHandler{
-		db:         db,
-		config:     cfg,
-		logger:     logger,
+		db:     db,
+		config: cfg,
+		logger: logger,
 		// Removed jwtManager - gateway handles all auth
 		repo:       repo,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
@@ -155,49 +157,66 @@ func (h *ordersHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		items = append(items, item)
 	}
 
-	// Save to database
-	if err := h.repo.CreateOrder(order, items); err != nil {
+	// Start database transaction
+	tx, err := h.db.Begin()
+	if err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "Failed to start transaction", err)
+		return
+	}
+
+	// Save order to database within transaction
+	if err := h.repo.CreateOrderWithTx(tx, order, items); err != nil {
+		tx.Rollback()
 		h.respondWithError(w, http.StatusInternalServerError, "Failed to create order", err)
 		return
 	}
 
 	// Create income invoice
 	invoiceData := map[string]interface{}{
-		"invoice_type":        "income",
-		"transaction_date":    order.TransactionTimestamp,
-		"subtotal_amount":     order.SubtotalAmount,
-		"discount_amount":     order.DiscountAmount,
-		"iva_amount":          order.IvaAmount,
-		"service_tax_amount":  order.ServiceTaxAmount,
-		"total_amount":        order.TotalAmount,
-		"payment_method":      order.PaymentMethod,
+		"invoice_type":          "income",
+		"transaction_date":      order.TransactionTimestamp,
+		"subtotal_amount":       order.SubtotalAmount,
+		"discount_amount":       order.DiscountAmount,
+		"iva_amount":            order.IvaAmount,
+		"service_tax_amount":    order.ServiceTaxAmount,
+		"total_amount":          order.TotalAmount,
+		"payment_method":        order.PaymentMethod,
 		"transaction_reference": order.TransactionReference,
-		"sinpe_screenshot_url": order.SinpeScreenshotURL,
-		"notes":               fmt.Sprintf("Invoice for order %s", order.OrderNumber),
-		"expense_category_id": nil, // Income invoices don't have expense categories
+		"sinpe_screenshot_url":  order.SinpeScreenshotURL,
+		"notes":                 fmt.Sprintf("Invoice for order %s", order.OrderNumber),
+		"expense_category_id":   nil, // Income invoices don't have expense categories
 	}
 
 	// Call invoice service to create income invoice
 	invoiceResp, err := h.createIncomeInvoice(invoiceData)
 	if err != nil {
-		h.logger.WithError(err).WithField("order_id", order.ID).Error("Failed to create income invoice")
-		// Don't fail the order creation if invoice creation fails
-		// The order will be created without invoice details
-	} else {
-		// Update order with invoice details
-		if invoiceResp != nil {
-			order.InvoiceNumber = &invoiceResp.InvoiceNumber
-			order.InvoiceURL = &invoiceResp.InvoiceURL
-			
-			// Update the order with invoice details
-			updateReq := &models.UpdateOrderRequest{
-				InvoiceNumber: order.InvoiceNumber,
-				InvoiceURL:    order.InvoiceURL,
-			}
-			if err := h.repo.UpdateOrder(order.ID, updateReq); err != nil {
-				h.logger.WithError(err).WithField("order_id", order.ID).Warn("Failed to update order with invoice details")
-			}
+		tx.Rollback()
+		h.logger.WithError(err).WithField("order_id", order.ID).Error("Failed to create income invoice - rolling back order creation")
+		h.respondWithError(w, http.StatusInternalServerError, "Failed to create invoice - order creation rolled back", err)
+		return
+	}
+
+	// Update order with invoice details within the same transaction
+	if invoiceResp != nil {
+		order.InvoiceNumber = &invoiceResp.InvoiceNumber
+		order.InvoiceURL = &invoiceResp.InvoiceURL
+
+		updateReq := &models.UpdateOrderRequest{
+			InvoiceNumber: order.InvoiceNumber,
+			InvoiceURL:    order.InvoiceURL,
 		}
+		if err := h.repo.UpdateOrderWithTx(tx, order.ID, updateReq); err != nil {
+			tx.Rollback()
+			h.logger.WithError(err).WithField("order_id", order.ID).Error("Failed to update order with invoice details - rolling back")
+			h.respondWithError(w, http.StatusInternalServerError, "Failed to update order with invoice details", err)
+			return
+		}
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		h.respondWithError(w, http.StatusInternalServerError, "Failed to commit transaction", err)
+		return
 	}
 
 	// Get the complete order with calculated final_amount
@@ -548,11 +567,25 @@ func (h *ordersHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Requ
 
 // GetOrderSummary retrieves order statistics
 func (h *ordersHandler) GetOrderSummary(w http.ResponseWriter, r *http.Request) {
+	h.logger.WithFields(logrus.Fields{
+		"endpoint": "/orders/summary",
+		"method":   r.Method,
+		"remote":   r.RemoteAddr,
+	}).Info("Get order summary requested")
+
 	summary, err := h.repo.GetOrderSummary()
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to retrieve order summary")
 		h.respondWithError(w, http.StatusInternalServerError, "Failed to retrieve order summary", err)
 		return
 	}
+
+	h.logger.WithFields(logrus.Fields{
+		"total_orders":     summary.TotalOrders,
+		"pending_orders":   summary.PendingOrders,
+		"completed_orders": summary.CompletedOrders,
+		"total_revenue":    summary.TotalRevenue,
+	}).Info("Order summary retrieved successfully")
 
 	h.respondWithSuccess(w, http.StatusOK, "Order summary retrieved successfully", summary)
 }
@@ -666,9 +699,18 @@ func (h *ordersHandler) respondWithError(w http.ResponseWriter, status int, mess
 		"message": message,
 	}
 
+	// Always log the error message
 	if err != nil {
-		h.logger.WithError(err).Error(message)
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"status_code": status,
+			"endpoint":    "orders-service",
+		}).Error(message)
 		response["error"] = err.Error()
+	} else {
+		h.logger.WithFields(logrus.Fields{
+			"status_code": status,
+			"endpoint":    "orders-service",
+		}).Error(message)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
