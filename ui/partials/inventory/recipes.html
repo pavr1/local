@@ -675,6 +675,7 @@
     // Modal and form functions
     window.openAddRecipeModal = async function() {
         await loadRecipeCategories();
+        await loadIngredientsForRecipe();
         populateCategoryDropdowns();
         resetRecipeForm();
         const modalElement = document.getElementById('addRecipeModal');
@@ -705,9 +706,7 @@
             }
         }
         
-        // Clear recipe ingredients when opening add recipe modal
-        recipeIngredients = [];
-                    displayRecipeIngredients('addRecipeIngredientsList');
+
     }
 
     async function saveRecipe() {
@@ -867,11 +866,11 @@
             // Create a map of ingredient ID to most recent final price
             const ingredientPrices = new Map();
             existences.forEach(existence => {
-                if (existence.final_price !== null && existence.final_price !== undefined && existence.final_price >= 0) {
+                if (existence.final_price && existence.final_price > 0) {
                     const currentPrice = ingredientPrices.get(existence.ingredient_id);
                     if (!currentPrice || existence.created_at > currentPrice.created_at) {
                         ingredientPrices.set(existence.ingredient_id, {
-                            final_price: parseFloat(existence.final_price),
+                            final_price: existence.final_price,
                             created_at: existence.created_at
                         });
                     }
@@ -974,11 +973,13 @@
                     // Find the ingredient with pricing information
                     const ingredientWithPrice = allIngredients.find(ing => ing.id === ingredientId);
                     
+
+                    
                     const ingredient = {
                         id: ingredientId,
                         name: ingredientName,
                         quantity: 1,
-                        final_price: ingredientWithPrice && ingredientWithPrice.final_price !== null && ingredientWithPrice.final_price !== undefined ? parseFloat(ingredientWithPrice.final_price) : 0
+                        final_price: ingredientWithPrice && ingredientWithPrice.final_price ? ingredientWithPrice.final_price : 0
                     };
                     
                     recipeIngredients.push(ingredient);
@@ -1018,11 +1019,11 @@
         let totalCost = 0;
 
         const ingredientsHtml = recipeIngredients.map((ingredient, index) => {
-            const pricePerItem = ingredient.final_price !== null && ingredient.final_price !== undefined ? parseFloat(ingredient.final_price) : 0;
+            const pricePerItem = ingredient.final_price || 0;
             const subtotal = pricePerItem * ingredient.quantity;
             totalCost += subtotal;
 
-            const priceDisplay = pricePerItem !== null && pricePerItem !== undefined && pricePerItem >= 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
+            const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
 
             return `
             <div class="card mb-2">
