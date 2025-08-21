@@ -76,7 +76,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-3 mb-3">
-                            <button class="btn btn-outline-primary w-100 h-100 p-3" onclick="loadContent('orders-create-order')">
+                            <button class="btn btn-outline-primary w-100 h-100 p-3" onclick="openCreateOrderModal()">
                                 <i class="fas fa-plus-circle fa-2x mb-2"></i>
                                 <br>
                                 <strong>Create Order</strong>
@@ -148,7 +148,7 @@
                     <div id="noRecentOrders" class="text-center text-muted py-4">
                         <i class="fas fa-shopping-cart fa-3x mb-3"></i>
                         <p>No recent orders found.</p>
-                        <button class="btn btn-primary" onclick="loadContent('orders-create-order')">
+                        <button class="btn btn-primary" onclick="openCreateOrderModal()">
                             <i class="fas fa-plus me-2"></i>Create Your First Order
                         </button>
                     </div>
@@ -167,6 +167,9 @@
     </div>
 </div>
 
+<!-- Include Create Order Modal -->
+<div id="createOrderModalContainer"></div>
+
 <script>
 // Global variables
 let ordersSummary = {};
@@ -174,6 +177,9 @@ let ordersSummary = {};
 // Initialize the orders overview page
 window.initOrdersOverviewContent = async function() {
     console.log('🛒 Initializing orders overview content...');
+    
+    // Load create order modal content
+    await loadCreateOrderModal();
     
     // Test orders service health first
     try {
@@ -342,6 +348,32 @@ window.hideServiceUnavailable = function() {
     const serviceUnavailableDiv = document.getElementById('serviceUnavailable');
     if (serviceUnavailableDiv) serviceUnavailableDiv.style.display = 'none';
 }
+
+// Load create order modal content
+async function loadCreateOrderModal() {
+    try {
+        const response = await fetch('partials/orders/create-order.html');
+        const content = await response.text();
+        document.getElementById('createOrderModalContainer').innerHTML = content;
+    } catch (error) {
+        console.error('❌ Error loading create order modal:', error);
+    }
+}
+
+// Open create order modal
+function openCreateOrderModal() {
+    // Initialize the create order functionality
+    if (typeof initCreateOrder === 'function') {
+        initCreateOrder();
+    }
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('createOrderModal'));
+    modal.show();
+}
+
+// Expose the local function globally with a different name
+window.openCreateOrderModalLocal = openCreateOrderModal;
 
 // Functions are now globally available for the dashboard to call
 </script>

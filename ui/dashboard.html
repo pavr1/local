@@ -937,7 +937,7 @@
                                 </button>
                             </li>
                             <li class="nav-item">
-                                <button class="nav-link nav-sub" onclick="loadContent('orders-create-order')" data-page="orders-create-order">
+                                <button class="nav-link nav-sub" onclick="openCreateOrderModal()" data-page="orders-overview">
                                     <i class="fas fa-plus me-2"></i>Create Order
                                 </button>
                             </li>
@@ -1261,13 +1261,36 @@
             }
         }
 
+        // Global function to open create order modal
+        window.openCreateOrderModal = function() {
+            // Check if we're on the orders overview page
+            if (currentPage !== 'orders-overview') {
+                // Load orders overview first, then open modal
+                loadContent('orders-overview').then(() => {
+                    // Small delay to ensure the page is loaded
+                    setTimeout(() => {
+                        // Call the local function from the overview page
+                        const localOpenCreateOrderModal = window.openCreateOrderModalLocal;
+                        if (typeof localOpenCreateOrderModal === 'function') {
+                            localOpenCreateOrderModal();
+                        }
+                    }, 100);
+                });
+            } else {
+                // We're already on orders overview, just open the modal
+                const localOpenCreateOrderModal = window.openCreateOrderModalLocal;
+                if (typeof localOpenCreateOrderModal === 'function') {
+                    localOpenCreateOrderModal();
+                }
+            }
+        };
+
         // Get content URL for each page
         function getContentUrl(page) {
                     const contentMap = {
             'dashboard': 'partials/dashboard/index.html',
             'orders': 'partials/orders/index.html',
             'orders-overview': 'partials/orders/overview.html',
-            'orders-create-order': 'partials/orders/create-order.html',
             'inventory': 'partials/inventory/index.html',
             'inventory-overview': 'partials/inventory/overview.html',
             'inventory-suppliers': 'partials/inventory/suppliers.html',
@@ -1292,7 +1315,6 @@
                 'dashboard': 'initDashboardContent',
                 'orders': 'initOrdersContent',
                 'orders-overview': 'initOrdersOverviewContent',
-                'orders-create-order': 'initCreateOrderContent',
                 'inventory': 'initInventoryContent',
                 'inventory-overview': 'initInventoryOverviewContent',
                 'inventory-suppliers': 'initSuppliersContent',
@@ -1423,11 +1445,7 @@
                     subtitle: 'Overview of all orders, statistics, and quick actions',
                     icon: 'fas fa-shopping-cart'
                 },
-                'orders-create-order': { 
-                    title: 'Create Order', 
-                    subtitle: 'Create new customer orders with recipes and payment details',
-                    icon: 'fas fa-plus-circle'
-                },
+
                 'inventory': { 
                     title: 'Inventory Overview', 
                     subtitle: 'Track ingredients and monitor stock levels',

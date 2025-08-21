@@ -1,608 +1,703 @@
-<div class="container-fluid">
-    <div class="row">
-        <!-- Order Details Form -->
-        <div class="col-lg-8">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Order Details</h5>
-                </div>
-                <div class="card-body">
-                    <form id="createOrderForm">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="customerId" class="form-label">Customer ID (Optional)</label>
-                                <input type="text" class="form-control" id="customerId" placeholder="Enter customer UUID">
-                                <div class="form-text">Leave empty for walk-in customers</div>
+<!-- Create Order Modal -->
+<div class="modal fade" id="createOrderModal" tabindex="-1" aria-labelledby="createOrderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 90%; height: 90%;">
+        <div class="modal-content h-100">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createOrderModalLabel">
+                    <i class="fas fa-shopping-cart me-2"></i>Create New Order
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row h-100 g-0">
+                    <!-- Left Panel: Recipe Selection (40%) -->
+                    <div class="col-5 h-100 d-flex flex-column">
+                        <!-- Search and Filter Section -->
+                        <div class="p-3 border-bottom">
+                            <div class="mb-3">
+                                <label for="recipeSearchInput" class="form-label">Search Recipes</label>
+                                <input type="text" class="form-control" id="recipeSearchInput" 
+                                       placeholder="Search by recipe name..." onkeyup="filterRecipes()">
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="paymentMethod" class="form-label">Payment Method *</label>
-                                <select class="form-select" id="paymentMethod" required>
-                                    <option value="">Select payment method</option>
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="sinpe">SINPE</option>
+                            <div class="mb-3">
+                                <label for="recipeCategoryFilter" class="form-label">Filter by Category</label>
+                                <select class="form-select" id="recipeCategoryFilter" onchange="filterRecipes()">
+                                    <option value="">All Categories</option>
                                 </select>
                             </div>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="transactionReference" class="form-label">Transaction Reference</label>
-                                <input type="text" class="form-control" id="transactionReference" placeholder="Transaction reference">
-                                <div class="form-text">Required for card and SINPE payments</div>
+
+                        <!-- Recipe Grid Section -->
+                        <div class="flex-grow-1 overflow-auto p-3">
+                            <div id="recipeGrid" class="row g-3">
+                                <!-- Recipe cards will be loaded here -->
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="sinpeScreenshot" class="form-label">SINPE Screenshot URL</label>
-                                <input type="url" class="form-control" id="sinpeScreenshot" placeholder="Screenshot URL">
-                                <div class="form-text">Required for SINPE payments</div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Order Summary (60%) -->
+                    <div class="col-7 h-100 d-flex flex-column border-start">
+                        <div class="p-3 border-bottom bg-light">
+                            <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>Order Summary</h6>
+                        </div>
+                        
+                        <!-- Order Items List -->
+                        <div class="flex-grow-1 overflow-auto p-3">
+                            <div id="orderItemsList">
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-shopping-cart fa-3x mb-3 opacity-50"></i>
+                                    <p>No items added to order yet</p>
+                                    <p class="small">Click on recipe cards to add items</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="discountAmount" class="form-label">Discount Amount</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">₡</span>
-                                    <input type="number" class="form-control" id="discountAmount" value="0" min="0" step="0.01">
+                        <!-- Order Actions -->
+                        <div class="p-3 border-top bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-danger" onclick="clearOrder()">
+                                        <i class="fas fa-trash me-2"></i>Clear Order
+                                    </button>
                                 </div>
-                                <div class="form-text">Total discount applied from promotions</div>
+                                <div class="col-6 text-end">
+                                    <h5 class="mb-0">Total: <span id="orderTotal" class="text-primary">₡0.00</span></h5>
+                                    <button type="button" class="btn btn-success mt-2" onclick="proceedToPayment()" id="proceedToPaymentBtn" disabled>
+                                        <i class="fas fa-credit-card me-2"></i>Proceed to Payment
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <!-- Recipe Selection -->
-            <div class="card shadow-sm mt-4">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-ice-cream me-2"></i>Add Recipes</h5>
+<!-- Quantity Selection Modal -->
+<div class="modal fade" id="quantityModal" tabindex="-1" aria-labelledby="quantityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="quantityModalLabel">Add to Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="quantityModalImage" src="" alt="Recipe" class="img-fluid rounded" style="max-height: 150px;">
                 </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="recipeSelect" class="form-label">Select Recipe</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="recipeSelect" placeholder="Search recipes..." readonly>
-                                <input type="hidden" id="selectedRecipeId">
-                                <button class="btn btn-outline-primary" type="button" onclick="openRecipePicker()">
-                                    <i class="fas fa-search"></i> Browse Recipes
-                                </button>
+                <h6 id="quantityModalName" class="text-center mb-3"></h6>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Unit Price</label>
+                        <div class="form-control-plaintext" id="quantityModalPrice">₡0.00</div>
+                    </div>
+                    <div class="col-6">
+                        <label for="quantityInput" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantityInput" value="1" min="1" onchange="updateQuantitySubtotal()" onkeyup="updateQuantitySubtotal()">
+                    </div>
+                </div>
+                <div class="text-center">
+                    <h6>Subtotal: <span id="quantityModalSubtotal" class="text-primary">₡0.00</span></h6>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="addToOrder()">Add to Order</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="orderDetailsModalLabel">
+                    <i class="fas fa-credit-card me-2"></i>Order Details & Payment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="orderDetailsForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="customerId" class="form-label">Customer ID (Optional)</label>
+                            <input type="text" class="form-control" id="customerId" placeholder="Enter customer UUID">
+                            <div class="form-text">Leave empty for walk-in customers</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="paymentMethod" class="form-label">Payment Method *</label>
+                            <select class="form-select" id="paymentMethod" required onchange="togglePaymentFields()">
+                                <option value="">Select payment method</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="sinpe">SINPE</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3" id="transactionReferenceGroup" style="display: none;">
+                            <label for="transactionReference" class="form-label">Transaction Reference</label>
+                            <input type="text" class="form-control" id="transactionReference" placeholder="Transaction reference">
+                            <div class="form-text">Required for card payments</div>
+                        </div>
+                        <div class="col-md-6 mb-3" id="sinpeScreenshotGroup" style="display: none;">
+                            <label for="sinpeScreenshot" class="form-label">SINPE Screenshot URL</label>
+                            <input type="url" class="form-control" id="sinpeScreenshot" placeholder="Screenshot URL">
+                            <div class="form-text">Optional for SINPE payments</div>
+                        </div>
+                    </div>
+
+                    <!-- Final Order Summary -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-receipt me-2"></i>Final Order Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="finalOrderSummary">
+                                <!-- Final order summary will be populated here -->
+                            </div>
+                            <div class="text-end mt-3">
+                                <h5>Total: <span id="finalOrderTotal" class="text-primary">₡0.00</span></h5>
                             </div>
                         </div>
-                        <div class="col-md-2">
-                            <label for="recipeQuantity" class="form-label">Quantity</label>
-                            <input type="number" class="form-control" id="recipeQuantity" value="1" min="1">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="createOrder()">
+                    <i class="fas fa-check me-2"></i>Create Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Recipe Card Styles */
+    .recipe-card {
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+
+    .recipe-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .recipe-card img {
+        height: 120px;
+        object-fit: cover;
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+    }
+
+    .recipe-card .card-body {
+        padding: 0.75rem;
+    }
+
+    .recipe-card .card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .recipe-card .card-text {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .recipe-price {
+        font-weight: 600;
+        color: #28a745;
+    }
+
+    /* Order Summary Styles */
+    .order-item {
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 0;
+    }
+
+    .order-item:last-child {
+        border-bottom: none;
+    }
+
+    .order-item-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .order-item-details {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .order-item-actions {
+        margin-top: 0.5rem;
+    }
+
+    /* Modal Styles */
+    .modal-xl {
+        max-width: 90%;
+    }
+
+    .modal-body {
+        height: calc(90vh - 120px);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .col-5, .col-7 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+        
+        .modal-xl {
+            max-width: 95%;
+        }
+    }
+</style>
+
+<script>
+    // Global variables
+    let allRecipes = [];
+    let filteredRecipes = [];
+    let orderItems = [];
+    let selectedRecipe = null;
+
+    // Initialize the create order page
+    async function initCreateOrder() {
+        console.log('🛒 Initializing Create Order...');
+        await loadRecipes();
+        await loadRecipeCategories();
+        displayRecipes();
+        updateOrderSummary();
+    }
+
+    // Load all recipes
+    async function loadRecipes() {
+        try {
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && Array.isArray(result.data)) {
+                    allRecipes = result.data;
+                    filteredRecipes = [...allRecipes];
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading recipes:', error);
+            Alert.error('Failed to load recipes');
+        }
+    }
+
+    // Load recipe categories for filter
+    async function loadRecipeCategories() {
+        try {
+            const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && Array.isArray(result.data)) {
+                    const categorySelect = document.getElementById('recipeCategoryFilter');
+                    result.data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('❌ Error loading recipe categories:', error);
+        }
+    }
+
+    // Filter recipes based on search and category
+    function filterRecipes() {
+        const searchTerm = document.getElementById('recipeSearchInput').value.toLowerCase();
+        const categoryFilter = document.getElementById('recipeCategoryFilter').value;
+
+        filteredRecipes = allRecipes.filter(recipe => {
+            const matchesSearch = recipe.recipe_name.toLowerCase().includes(searchTerm);
+            const matchesCategory = !categoryFilter || recipe.recipe_category_id === categoryFilter;
+            return matchesSearch && matchesCategory;
+        });
+
+        displayRecipes();
+    }
+
+    // Display recipes in grid
+    function displayRecipes() {
+        const recipeGrid = document.getElementById('recipeGrid');
+        
+        if (filteredRecipes.length === 0) {
+            recipeGrid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No recipes found</p>
+                </div>
+            `;
+            return;
+        }
+
+        recipeGrid.innerHTML = filteredRecipes.map(recipe => `
+            <div class="col-md-6 col-lg-4">
+                <div class="card recipe-card" onclick="selectRecipe('${recipe.id}')">
+                    <img src="${recipe.picture_url || 'shared/images/placeholder-recipe.jpg'}" 
+                         alt="${recipe.recipe_name}" 
+                         onerror="this.src='shared/images/placeholder-recipe.jpg'">
+                    <div class="card-body">
+                        <h6 class="card-title">${recipe.recipe_name}</h6>
+                        <p class="card-text">${recipe.recipe_category_name || 'No Category'}</p>
+                        <div class="recipe-price">₡${(recipe.total_recipe_cost || 0).toFixed(2)}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Select recipe for quantity input
+    function selectRecipe(recipeId) {
+        const recipe = allRecipes.find(r => r.id === recipeId);
+        if (!recipe) return;
+
+        selectedRecipe = recipe;
+        
+        // Populate quantity modal
+        document.getElementById('quantityModalImage').src = recipe.picture_url || 'shared/images/placeholder-recipe.jpg';
+        document.getElementById('quantityModalName').textContent = recipe.recipe_name;
+        document.getElementById('quantityModalPrice').textContent = `₡${(recipe.total_recipe_cost || 0).toFixed(2)}`;
+        document.getElementById('quantityInput').value = 1;
+        
+        updateQuantitySubtotal();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('quantityModal'));
+        modal.show();
+    }
+
+    // Update quantity subtotal
+    function updateQuantitySubtotal() {
+        if (!selectedRecipe) return;
+        
+        const quantity = parseInt(document.getElementById('quantityInput').value) || 0;
+        const unitPrice = selectedRecipe.total_recipe_cost || 0;
+        const subtotal = quantity * unitPrice;
+        
+        document.getElementById('quantityModalSubtotal').textContent = `₡${subtotal.toFixed(2)}`;
+    }
+
+    // Add recipe to order
+    function addToOrder() {
+        if (!selectedRecipe) return;
+        
+        const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
+        const unitPrice = selectedRecipe.total_recipe_cost || 0;
+        
+        // Check if recipe already exists in order
+        const existingIndex = orderItems.findIndex(item => item.recipe_id === selectedRecipe.id);
+        
+        if (existingIndex >= 0) {
+            // Update existing item
+            orderItems[existingIndex].quantity += quantity;
+            orderItems[existingIndex].subtotal = orderItems[existingIndex].quantity * unitPrice;
+        } else {
+            // Add new item
+            orderItems.push({
+                recipe_id: selectedRecipe.id,
+                recipe_name: selectedRecipe.recipe_name,
+                recipe_category_name: selectedRecipe.recipe_category_name,
+                picture_url: selectedRecipe.picture_url,
+                quantity: quantity,
+                unit_price: unitPrice,
+                subtotal: quantity * unitPrice
+            });
+        }
+        
+        // Close modal and update display
+        const modal = bootstrap.Modal.getInstance(document.getElementById('quantityModal'));
+        modal.hide();
+        
+        updateOrderSummary();
+        selectedRecipe = null;
+    }
+
+    // Update order summary display
+    function updateOrderSummary() {
+        const orderItemsList = document.getElementById('orderItemsList');
+        const orderTotal = document.getElementById('orderTotal');
+        const proceedBtn = document.getElementById('proceedToPaymentBtn');
+        
+        if (orderItems.length === 0) {
+            orderItemsList.innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-shopping-cart fa-3x mb-3 opacity-50"></i>
+                    <p>No items added to order yet</p>
+                    <p class="small">Click on recipe cards to add items</p>
+                </div>
+            `;
+            orderTotal.textContent = '₡0.00';
+            proceedBtn.disabled = true;
+            return;
+        }
+        
+        const total = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+        
+        orderItemsList.innerHTML = orderItems.map((item, index) => `
+            <div class="order-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="order-item-name">${item.recipe_name}</div>
+                        <div class="order-item-details">
+                            ${item.recipe_category_name} • ${item.quantity} × ₡${item.unit_price.toFixed(2)}
                         </div>
-                        <div class="col-md-2">
-                            <label for="recipePrice" class="form-label">Unit Price</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₡</span>
-                                <input type="number" class="form-control" id="recipePrice" min="0" step="0.01">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <button class="btn btn-success w-100" onclick="addRecipeToOrder()">
-                                <i class="fas fa-plus me-2"></i>Add
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold">₡${item.subtotal.toFixed(2)}</div>
+                        <div class="order-item-actions">
+                            <button class="btn btn-sm btn-outline-primary" onclick="modifyQuantity(${index})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${index})">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
+        `).join('');
+        
+        orderTotal.textContent = `₡${total.toFixed(2)}`;
+        proceedBtn.disabled = false;
+    }
 
-            <!-- Order Items -->
-            <div class="card shadow-sm mt-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Order Items</h5>
-                </div>
-                <div class="card-body">
-                    <div id="orderItemsList" class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Recipe</th>
-                                    <th>Quantity</th>
-                                    <th>Unit Price</th>
-                                    <th>Subtotal</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderItemsTableBody">
-                                <!-- Items will be added here dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div id="noItemsMessage" class="text-center text-muted py-4">
-                        <i class="fas fa-ice-cream fa-3x mb-3"></i>
-                        <p>No items added yet. Start by adding some recipes!</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+    // Modify item quantity
+    function modifyQuantity(index) {
+        const item = orderItems[index];
+        if (!item) return;
+        
+        selectedRecipe = {
+            id: item.recipe_id,
+            recipe_name: item.recipe_name,
+            total_recipe_cost: item.unit_price
+        };
+        
+        // Populate quantity modal
+        document.getElementById('quantityModalImage').src = item.picture_url || 'shared/images/placeholder-recipe.jpg';
+        document.getElementById('quantityModalName').textContent = item.recipe_name;
+        document.getElementById('quantityModalPrice').textContent = `₡${item.unit_price.toFixed(2)}`;
+        document.getElementById('quantityInput').value = item.quantity;
+        
+        updateQuantitySubtotal();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('quantityModal'));
+        modal.show();
+        
+        // Store the index for updating
+        selectedRecipe.modifyIndex = index;
+    }
 
-        <!-- Order Summary -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm sticky-top" style="top: 20px;">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="fas fa-calculator me-2"></i>Order Summary</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-2">
-                        <div class="col-6">Subtotal:</div>
-                        <div class="col-6 text-end">₡<span id="subtotalAmount">0.00</span></div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">Discount:</div>
-                        <div class="col-6 text-end">-₡<span id="discountDisplay">0.00</span></div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">IVA (13%):</div>
-                        <div class="col-6 text-end">₡<span id="ivaAmount">0.00</span></div>
-                    </div>
-                    <div class="row mb-2">
-                        <div class="col-6">Service Tax (10%):</div>
-                        <div class="col-6 text-end">₡<span id="serviceTaxAmount">0.00</span></div>
-                    </div>
-                    <hr>
-                    <div class="row mb-3">
-                        <div class="col-6"><strong>Total:</strong></div>
-                        <div class="col-6 text-end"><strong>₡<span id="totalAmount">0.00</span></strong></div>
-                    </div>
-                    
-                    <button class="btn btn-primary w-100 mb-2" onclick="createOrder()" id="createOrderBtn" disabled>
-                        <i class="fas fa-check me-2"></i>Create Order
-                    </button>
-                    
-                    <button class="btn btn-outline-secondary w-100" onclick="resetOrderForm()">
-                        <i class="fas fa-undo me-2"></i>Reset Form
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Recipe Picker Modal -->
-<div class="modal fade" id="recipePickerModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-ice-cream me-2"></i>Select Recipe</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <input type="text" class="form-control" id="recipeSearchInput" placeholder="Search recipes by name or category...">
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Recipe Name</th>
-                                <th>Category</th>
-                                <th>Total Cost</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recipePickerTableBody">
-                            <!-- Recipes will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Global variables
-let orderItems = [];
-let allRecipes = [];
-let filteredRecipes = [];
-
-// Initialize the create order page
-window.initCreateOrderContent = async function() {
-    try {
-        await loadRecipes();
+    // Remove item from order
+    function removeItem(index) {
+        orderItems.splice(index, 1);
         updateOrderSummary();
-        setupEventListeners();
-    } catch (error) {
-        console.error('Error initializing create order content:', error);
-        showError('Failed to initialize create order page');
     }
-}
 
-// Load all recipes for the picker
-async function loadRecipes() {
-    try {
-        const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
+    // Clear entire order
+    function clearOrder() {
+        if (orderItems.length === 0) return;
         
-        if (!response.ok) {
-            throw new Error(`Failed to fetch recipes: ${response.status}`);
+        Swal.fire({
+            title: 'Clear Order?',
+            text: 'Are you sure you want to clear all items from the order?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, clear it!',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                orderItems = [];
+                updateOrderSummary();
+            }
+        });
+    }
+
+    // Proceed to payment
+    function proceedToPayment() {
+        if (orderItems.length === 0) {
+            Alert.warning('Please add items to the order first');
+            return;
         }
         
-        const result = await response.json();
+        // Populate final order summary
+        populateFinalOrderSummary();
         
-        if (result.success) {
-            allRecipes = result.data;
-            filteredRecipes = [...allRecipes];
+        // Show order details modal
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailsModal'));
+        modal.show();
+    }
+
+    // Populate final order summary
+    function populateFinalOrderSummary() {
+        const finalOrderSummary = document.getElementById('finalOrderSummary');
+        const finalOrderTotal = document.getElementById('finalOrderTotal');
+        
+        const total = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+        
+        finalOrderSummary.innerHTML = orderItems.map(item => `
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                    <strong>${item.recipe_name}</strong>
+                    <br><small class="text-muted">${item.quantity} × ₡${item.unit_price.toFixed(2)}</small>
+                </div>
+                <div class="fw-bold">₡${item.subtotal.toFixed(2)}</div>
+            </div>
+        `).join('');
+        
+        finalOrderTotal.textContent = `₡${total.toFixed(2)}`;
+    }
+
+    // Toggle payment fields based on payment method
+    function togglePaymentFields() {
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const transactionGroup = document.getElementById('transactionReferenceGroup');
+        const sinpeGroup = document.getElementById('sinpeScreenshotGroup');
+        
+        // Hide all groups first
+        transactionGroup.style.display = 'none';
+        sinpeGroup.style.display = 'none';
+        
+        // Show relevant group
+        if (paymentMethod === 'card') {
+            transactionGroup.style.display = 'block';
+        } else if (paymentMethod === 'sinpe') {
+            sinpeGroup.style.display = 'block';
+        }
+    }
+
+    // Create the order
+    async function createOrder() {
+        const form = document.getElementById('orderDetailsForm');
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        
+        if (!paymentMethod) {
+            Alert.warning('Please select a payment method');
+            return;
+        }
+        
+        // Validate payment-specific fields
+        if (paymentMethod === 'card') {
+            const transactionRef = document.getElementById('transactionReference').value.trim();
+            if (!transactionRef) {
+                Alert.warning('Please enter transaction reference for card payment');
+                return;
+            }
+        }
+        
+        const orderData = {
+            customer_id: document.getElementById('customerId').value.trim() || null,
+            payment_method: paymentMethod,
+            transaction_reference: document.getElementById('transactionReference').value.trim() || null,
+            sinpe_screenshot_url: document.getElementById('sinpeScreenshot').value.trim() || null,
+            ingredients: orderItems.map(item => ({
+                recipe_id: item.recipe_id,
+                number_of_units: item.quantity
+            }))
+        };
+        
+        try {
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/orders`, orderData);
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                Alert.success('Order created successfully!');
+                
+                // Close modals
+                const orderDetailsModal = bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'));
+                orderDetailsModal.hide();
+                
+                const createOrderModal = bootstrap.Modal.getInstance(document.getElementById('createOrderModal'));
+                createOrderModal.hide();
+                
+                // Reset form and order
+                form.reset();
+                orderItems = [];
+                updateOrderSummary();
+                
+                // Refresh the background page (Orders Overview)
+                if (typeof loadContent === 'function') {
+                    loadContent('orders-overview');
+                }
+            } else {
+                throw new Error(result.message || 'Failed to create order');
+            }
+        } catch (error) {
+            console.error('❌ Error creating order:', error);
+            Alert.error('Failed to create order. Please try again.');
+        }
+    }
+
+    // Override addToOrder for quantity modification
+    function addToOrder() {
+        if (!selectedRecipe) return;
+        
+        const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
+        const unitPrice = selectedRecipe.total_recipe_cost || 0;
+        
+        if (selectedRecipe.modifyIndex !== undefined) {
+            // Modify existing item
+            orderItems[selectedRecipe.modifyIndex].quantity = quantity;
+            orderItems[selectedRecipe.modifyIndex].subtotal = quantity * unitPrice;
+            delete selectedRecipe.modifyIndex;
         } else {
-            showError('Failed to load recipes');
+            // Check if recipe already exists in order
+            const existingIndex = orderItems.findIndex(item => item.recipe_id === selectedRecipe.id);
+            
+            if (existingIndex >= 0) {
+                // Update existing item
+                orderItems[existingIndex].quantity += quantity;
+                orderItems[existingIndex].subtotal = orderItems[existingIndex].quantity * unitPrice;
+            } else {
+                // Add new item
+                orderItems.push({
+                    recipe_id: selectedRecipe.id,
+                    recipe_name: selectedRecipe.recipe_name,
+                    recipe_category_name: selectedRecipe.recipe_category_name,
+                    picture_url: selectedRecipe.picture_url,
+                    quantity: quantity,
+                    unit_price: unitPrice,
+                    subtotal: quantity * unitPrice
+                });
+            }
         }
-    } catch (error) {
-        console.error('Error loading recipes:', error);
-        showError('Failed to load recipes');
+        
+        // Close modal and update display
+        const modal = bootstrap.Modal.getInstance(document.getElementById('quantityModal'));
+        modal.hide();
+        
+        updateOrderSummary();
+        selectedRecipe = null;
     }
-}
 
-// Setup event listeners
-function setupEventListeners() {
-    // Discount amount change
-    const discountElement = document.getElementById('discountAmount');
-    if (discountElement) {
-        discountElement.addEventListener('input', updateOrderSummary);
-    }
-    
-    // Recipe search
-    const searchElement = document.getElementById('recipeSearchInput');
-    if (searchElement) {
-        searchElement.addEventListener('input', filterRecipes);
-    }
-    
-    // Payment method change
-    const paymentElement = document.getElementById('paymentMethod');
-    if (paymentElement) {
-        paymentElement.addEventListener('change', validateForm);
-    }
-    
-    // Transaction reference validation
-    const transactionElement = document.getElementById('transactionReference');
-    if (transactionElement) {
-        transactionElement.addEventListener('input', validateTransactionReference);
-    }
-    
-    const screenshotElement = document.getElementById('sinpeScreenshot');
-    if (screenshotElement) {
-        screenshotElement.addEventListener('input', validateSinpeScreenshot);
-    }
-}
-
-// Validate transaction reference based on payment method
-function validateTransactionReference() {
-    const paymentMethodElement = document.getElementById('paymentMethod');
-    const transactionRefElement = document.getElementById('transactionReference');
-    
-    if (!paymentMethodElement || !transactionRefElement) return;
-    
-    const paymentMethod = paymentMethodElement.value;
-    const transactionRef = transactionRefElement.value;
-    
-    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
-        transactionRefElement.classList.add('is-invalid');
-    } else {
-        transactionRefElement.classList.remove('is-invalid');
-    }
-    validateForm();
-}
-
-// Validate SINPE screenshot
-function validateSinpeScreenshot() {
-    const paymentMethodElement = document.getElementById('paymentMethod');
-    const screenshotElement = document.getElementById('sinpeScreenshot');
-    
-    if (!paymentMethodElement || !screenshotElement) return;
-    
-    const paymentMethod = paymentMethodElement.value;
-    const screenshot = screenshotElement.value;
-    
-    if (paymentMethod === 'sinpe' && !screenshot) {
-        screenshotElement.classList.add('is-invalid');
-    } else {
-        screenshotElement.classList.remove('is-invalid');
-    }
-    validateForm();
-}
-
-// Open recipe picker modal
-function openRecipePicker() {
-    displayRecipesInPicker();
-    const modal = new bootstrap.Modal(document.getElementById('recipePickerModal'));
-    modal.show();
-}
-
-// Display recipes in the picker modal
-function displayRecipesInPicker() {
-    const tbody = document.getElementById('recipePickerTableBody');
-    tbody.innerHTML = '';
-    
-    filteredRecipes.forEach(recipe => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${recipe.recipe_name}</td>
-            <td>${recipe.recipe_category_name || 'Unknown'}</td>
-            <td>₡${recipe.total_recipe_cost?.toFixed(2) || '0.00'}</td>
-            <td>
-                <button class="btn btn-sm btn-primary" onclick="selectRecipe('${recipe.id}', '${recipe.recipe_name}', ${recipe.total_recipe_cost || 0})">
-                    <i class="fas fa-plus"></i> Select
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// Filter recipes in picker
-function filterRecipes() {
-    const searchElement = document.getElementById('recipeSearchInput');
-    if (!searchElement) return;
-    
-    const searchTerm = searchElement.value.toLowerCase();
-    filteredRecipes = allRecipes.filter(recipe => 
-        recipe.recipe_name.toLowerCase().includes(searchTerm) ||
-        (recipe.recipe_category_name && recipe.recipe_category_name.toLowerCase().includes(searchTerm))
-    );
-    displayRecipesInPicker();
-}
-
-// Select a recipe from the picker
-function selectRecipe(recipeId, recipeName, recipeCost) {
-    const selectedRecipeIdElement = document.getElementById('selectedRecipeId');
-    const recipeSelectElement = document.getElementById('recipeSelect');
-    const recipePriceElement = document.getElementById('recipePrice');
-    const recipeSearchInputElement = document.getElementById('recipeSearchInput');
-    const modalElement = document.getElementById('recipePickerModal');
-    
-    if (selectedRecipeIdElement) selectedRecipeIdElement.value = recipeId;
-    if (recipeSelectElement) recipeSelectElement.value = recipeName;
-    if (recipePriceElement) recipePriceElement.value = recipeCost.toFixed(2);
-    
-    // Close modal
-    if (modalElement) {
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) modal.hide();
-    }
-    
-    // Clear search
-    if (recipeSearchInputElement) recipeSearchInputElement.value = '';
-}
-
-// Add recipe to order
-function addRecipeToOrder() {
-    const recipeId = document.getElementById('selectedRecipeId').value;
-    const recipeName = document.getElementById('recipeSelect').value;
-    const quantity = parseInt(document.getElementById('recipeQuantity').value);
-    const unitPrice = parseFloat(document.getElementById('recipePrice').value);
-    
-    if (!recipeId || !recipeName) {
-        showError('Please select a recipe first');
-        return;
-    }
-    
-    if (quantity <= 0) {
-        showError('Quantity must be greater than 0');
-        return;
-    }
-    
-    if (unitPrice < 0) {
-        showError('Unit price cannot be negative');
-        return;
-    }
-    
-    const subtotal = quantity * unitPrice;
-    
-    // Add to order items
-    const item = {
-        id: Date.now(), // Temporary ID for UI
-        recipeId: recipeId,
-        recipeName: recipeName,
-        quantity: quantity,
-        unitPrice: unitPrice,
-        subtotal: subtotal
-    };
-    
-    orderItems.push(item);
-    
-    // Clear form
-    document.getElementById('selectedRecipeId').value = '';
-    document.getElementById('recipeSelect').value = '';
-    document.getElementById('recipeQuantity').value = '1';
-    document.getElementById('recipePrice').value = '';
-    
-    // Update display
-    displayOrderItems();
-    updateOrderSummary();
-    validateForm();
-}
-
-// Display order items
-function displayOrderItems() {
-    const tbody = document.getElementById('orderItemsTableBody');
-    const noItemsMessage = document.getElementById('noItemsMessage');
-    
-    if (orderItems.length === 0) {
-        tbody.innerHTML = '';
-        noItemsMessage.style.display = 'block';
-        return;
-    }
-    
-    noItemsMessage.style.display = 'none';
-    tbody.innerHTML = '';
-    
-    orderItems.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.recipeName}</td>
-            <td>
-                <input type="number" class="form-control form-control-sm" style="width: 80px;" 
-                       value="${item.quantity}" min="1" 
-                       onchange="updateItemQuantity(${index}, this.value)">
-            </td>
-            <td>₡${item.unitPrice.toFixed(2)}</td>
-            <td>₡${item.subtotal.toFixed(2)}</td>
-            <td>
-                <button class="btn btn-sm btn-danger" onclick="removeOrderItem(${index})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// Update item quantity
-function updateItemQuantity(index, newQuantity) {
-    const quantity = parseInt(newQuantity);
-    if (quantity <= 0) {
-        showError('Quantity must be greater than 0');
-        return;
-    }
-    
-    orderItems[index].quantity = quantity;
-    orderItems[index].subtotal = quantity * orderItems[index].unitPrice;
-    
-    displayOrderItems();
-    updateOrderSummary();
-}
-
-// Remove order item
-function removeOrderItem(index) {
-    orderItems.splice(index, 1);
-    displayOrderItems();
-    updateOrderSummary();
-    validateForm();
-}
-
-// Update order summary
-function updateOrderSummary() {
-    const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    const discountElement = document.getElementById('discountAmount');
-    const discount = discountElement ? (parseFloat(discountElement.value) || 0) : 0;
-    const iva = subtotal * 0.13; // 13% IVA
-    const serviceTax = subtotal * 0.10; // 10% service tax
-    const total = subtotal + iva + serviceTax - discount;
-    
-    const subtotalElement = document.getElementById('subtotalAmount');
-    const discountDisplayElement = document.getElementById('discountDisplay');
-    const ivaElement = document.getElementById('ivaAmount');
-    const serviceTaxElement = document.getElementById('serviceTaxAmount');
-    const totalElement = document.getElementById('totalAmount');
-    
-    if (subtotalElement) subtotalElement.textContent = subtotal.toFixed(2);
-    if (discountDisplayElement) discountDisplayElement.textContent = discount.toFixed(2);
-    if (ivaElement) ivaElement.textContent = iva.toFixed(2);
-    if (serviceTaxElement) serviceTaxElement.textContent = serviceTax.toFixed(2);
-    if (totalElement) totalElement.textContent = total.toFixed(2);
-}
-
-// Validate form
-function validateForm() {
-    const paymentMethodElement = document.getElementById('paymentMethod');
-    const transactionRefElement = document.getElementById('transactionReference');
-    const screenshotElement = document.getElementById('sinpeScreenshot');
-    const createOrderBtn = document.getElementById('createOrderBtn');
-    
-    if (!paymentMethodElement || !createOrderBtn) return;
-    
-    const paymentMethod = paymentMethodElement.value;
-    const hasItems = orderItems.length > 0;
-    const transactionRef = transactionRefElement ? transactionRefElement.value : '';
-    const screenshot = screenshotElement ? screenshotElement.value : '';
-    
-    let isValid = paymentMethod && hasItems;
-    
-    // Validate transaction reference for card/sinpe
-    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
-        isValid = false;
-    }
-    
-    // Validate screenshot for sinpe
-    if (paymentMethod === 'sinpe' && !screenshot) {
-        isValid = false;
-    }
-    
-    createOrderBtn.disabled = !isValid;
-}
-
-// Create order
-async function createOrder() {
-    if (orderItems.length === 0) {
-        showError('Please add at least one item to the order');
-        return;
-    }
-    
-    const paymentMethod = document.getElementById('paymentMethod').value;
-    if (!paymentMethod) {
-        showError('Please select a payment method');
-        return;
-    }
-    
-    // Validate transaction reference
-    const transactionRef = document.getElementById('transactionReference').value;
-    if ((paymentMethod === 'card' || paymentMethod === 'sinpe') && !transactionRef) {
-        showError('Transaction reference is required for card and SINPE payments');
-        return;
-    }
-    
-    // Validate SINPE screenshot
-    const screenshot = document.getElementById('sinpeScreenshot').value;
-    if (paymentMethod === 'sinpe' && !screenshot) {
-        showError('SINPE screenshot URL is required for SINPE payments');
-        return;
-    }
-    
-    // Prepare order data according to API specification
-    const orderData = {
-        customer_id: document.getElementById('customerId').value || null,
-        payment_method: paymentMethod,
-        transaction_reference: transactionRef || null,
-        sinpe_screenshot_url: screenshot || null,
-        discount_amount: parseFloat(document.getElementById('discountAmount').value) || 0,
-        items: orderItems.map(item => ({
-            recipe_id: item.recipeId,
-            quantity: item.quantity,
-            unit_price: item.unitPrice
-        }))
-    };
-    
-    try {
-        const response = await authenticatedPost('/api/v1/orders', orderData);
-        if (response.success) {
-            showSuccess('Order created successfully!');
-            resetOrderForm();
-            // Optionally redirect to orders list
-            setTimeout(() => {
-                loadContent('orders-overview');
-            }, 2000);
-        } else {
-            showError(response.message || 'Failed to create order');
-        }
-    } catch (error) {
-        console.error('Error creating order:', error);
-        showError('Failed to create order');
-    }
-}
-
-// Reset order form
-function resetOrderForm() {
-    orderItems = [];
-    document.getElementById('createOrderForm').reset();
-    document.getElementById('selectedRecipeId').value = '';
-    document.getElementById('recipeSelect').value = '';
-    document.getElementById('recipeQuantity').value = '1';
-    document.getElementById('recipePrice').value = '';
-    document.getElementById('discountAmount').value = '0';
-    
-    // Clear validation states
-    document.getElementById('transactionReference').classList.remove('is-invalid');
-    document.getElementById('sinpeScreenshot').classList.remove('is-invalid');
-    
-    displayOrderItems();
-    updateOrderSummary();
-    validateForm();
-}
-
-// Initialize when content is loaded
-if (typeof initCreateOrderContent === 'function') {
-    initCreateOrderContent();
-}
+    // Expose functions globally
+    window.initCreateOrder = initCreateOrder;
+    window.filterRecipes = filterRecipes;
+    window.selectRecipe = selectRecipe;
+    window.updateQuantitySubtotal = updateQuantitySubtotal;
+    window.addToOrder = addToOrder;
+    window.modifyQuantity = modifyQuantity;
+    window.removeItem = removeItem;
+    window.clearOrder = clearOrder;
+    window.proceedToPayment = proceedToPayment;
+    window.togglePaymentFields = togglePaymentFields;
+    window.createOrder = createOrder;
 </script>
