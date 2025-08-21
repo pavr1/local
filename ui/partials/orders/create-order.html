@@ -212,7 +212,7 @@ let allRecipes = [];
 let filteredRecipes = [];
 
 // Initialize the create order page
-async function initCreateOrderContent() {
+window.initCreateOrderContent = async function() {
     try {
         await loadRecipes();
         updateOrderSummary();
@@ -226,9 +226,18 @@ async function initCreateOrderContent() {
 // Load all recipes for the picker
 async function loadRecipes() {
     try {
-        const response = await authenticatedGet('/api/v1/inventory/recipes');
-        if (response.success) {
-            allRecipes = response.data;
+        const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
+        console.log('Recipes response:', response);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch recipes: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Recipes result:', result);
+        
+        if (result.success) {
+            allRecipes = result.data;
             filteredRecipes = [...allRecipes];
         } else {
             showError('Failed to load recipes');
