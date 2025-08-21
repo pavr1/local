@@ -1235,10 +1235,8 @@
                 
                 // Execute any scripts in the loaded content
                 const scripts = document.getElementById('main-content').getElementsByTagName('script');
-                console.log('📜 Found', scripts.length, 'scripts in loaded content');
                 for (let script of scripts) {
                     if (script.textContent) {
-                        console.log('📜 Executing script:', script.textContent.substring(0, 100) + '...');
                         try {
                             eval(script.textContent);
                         } catch (error) {
@@ -1329,15 +1327,10 @@
             }, 200);
             
             const initFunction = initMap[page];
-            console.log('🔍 Looking for init function:', initFunction);
-            console.log('🔍 Available window functions:', Object.keys(window).filter(key => key.includes('init')));
             if (initFunction && typeof window[initFunction] === 'function') {
-                console.log('✅ Found init function:', initFunction);
                 await window[initFunction]();
             } else {
                 console.log('❌ Init function not found or not a function');
-                console.log('❌ initFunction:', initFunction);
-                console.log('❌ typeof window[initFunction]:', typeof window[initFunction]);
             }
             
             // Always update system status in top panel (on all pages)
@@ -1431,7 +1424,7 @@
                     icon: 'fas fa-shopping-cart'
                 },
                 'orders-create-order': { 
-                    title: 'Order Management', 
+                    title: 'Create Order', 
                     subtitle: 'Create new customer orders with recipes and payment details',
                     icon: 'fas fa-plus-circle'
                 },
