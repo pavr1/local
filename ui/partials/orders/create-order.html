@@ -283,12 +283,15 @@
     // Load all recipes
     async function loadRecipes() {
         try {
+            console.log('🔄 Loading recipes...');
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`);
             if (response.ok) {
                 const result = await response.json();
+                console.log('🍦 Recipes response:', result);
                 if (result.success && Array.isArray(result.data)) {
                     allRecipes = result.data;
                     filteredRecipes = [...allRecipes];
+                    console.log(`🍦 Loaded ${allRecipes.length} recipes`);
                 }
             }
         } catch (error) {
@@ -300,9 +303,11 @@
     // Load recipe categories for filter
     async function loadRecipeCategories() {
         try {
+            console.log('🔄 Loading recipe categories...');
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipe-categories`);
             if (response.ok) {
                 const result = await response.json();
+                console.log('📋 Recipe categories response:', result);
                 if (result.success && Array.isArray(result.data)) {
                     const categorySelect = document.getElementById('recipeCategoryFilter');
                     result.data.forEach(category => {
@@ -311,6 +316,7 @@
                         option.textContent = category.name;
                         categorySelect.appendChild(option);
                     });
+                    console.log(`📋 Loaded ${result.data.length} recipe categories`);
                 }
             }
         } catch (error) {

@@ -200,6 +200,36 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 		return nil, err
 	}
 
+	// Load ingredients for each recipe
+	riHandler := recipeIngredientsHandler.NewDBHandler(h.db, h.logger)
+	for i := range recipes {
+		recipeID := recipes[i].ID
+		riReq := recipeIngredientsModels.ListRecipeIngredientsRequest{
+			RecipeID: &recipeID,
+		}
+
+		recipeIngredientsList, err := riHandler.List(riReq)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id": recipes[i].ID,
+			}).Warn("Failed to load recipe ingredients, continuing without ingredients")
+			// Don't fail the entire request if ingredients fail to load
+			recipes[i].Ingredients = []models.RecipeIngredient{}
+		} else {
+			// Convert recipe ingredients to the format expected by the recipe model
+			ingredients := make([]models.RecipeIngredient, len(recipeIngredientsList))
+			for j, ri := range recipeIngredientsList {
+				ingredients[j] = models.RecipeIngredient{
+					IngredientID:   ri.IngredientID,
+					NumberOfUnits:  ri.Quantity,
+					IngredientName: ri.IngredientName,
+					FinalPrice:     ri.FinalPrice,
+				}
+			}
+			recipes[i].Ingredients = ingredients
+		}
+	}
+
 	// Ensure we always return an empty slice instead of nil
 	if recipes == nil {
 		recipes = []models.Recipe{}
