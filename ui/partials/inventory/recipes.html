@@ -502,6 +502,7 @@
     let recipeIngredients = []; // For managing recipe ingredients
     let allIngredients = []; // All available ingredients
     let filteredIngredients = []; // Filtered ingredients for picker
+    let filteredCategories = []; // Filtered categories for picker
 
     // Initialize recipes content
     async function initRecipesContent() {
@@ -545,6 +546,7 @@
                 const result = await response.json();
                 if (result.success && Array.isArray(result.data)) {
                     recipeCategories = result.data;
+                    filteredCategories = [...recipeCategories]; // Initialize filtered categories
                 }
             }
         } catch (error) {
@@ -841,6 +843,34 @@
         modal.show();
     }
 
+    async function openRecipeCategoryPicker() {
+        await loadRecipeCategories();
+        
+        // Reset search
+        document.getElementById('recipeCategorySearchInput').value = '';
+        
+        // Display categories
+        displayCategoriesForRecipe();
+        
+        const modal = new bootstrap.Modal(document.getElementById('recipeCategoryPickerModal'));
+        modal.show();
+    }
+
+    async function openRecipeImagePicker() {
+        // Reset form
+        document.getElementById('recipeImageFileInput').value = '';
+        document.getElementById('recipeImageUrlInput').value = '';
+        document.getElementById('recipeImagePreview').style.display = 'none';
+        document.getElementById('confirmRecipeImageBtn').disabled = true;
+        
+        // Clear stored values
+        window.selectedImageFile = null;
+        window.selectedImageUrl = null;
+        
+        const modal = new bootstrap.Modal(document.getElementById('recipeImagePickerModal'));
+        modal.show();
+    }
+
     async function loadIngredientsForRecipe() {
         try {
             // Load ingredients
@@ -944,6 +974,160 @@
         if (selectAllCheckbox) {
             selectAllCheckbox.checked = false;
         }
+    }
+
+    function filterRecipeCategories() {
+        const searchTerm = document.getElementById('recipeCategorySearchInput').value.toLowerCase();
+        
+        filteredCategories = recipeCategories.filter(category => 
+            (category.name && category.name.toLowerCase().includes(searchTerm)) ||
+            (category.description && category.description.toLowerCase().includes(searchTerm))
+        );
+        
+        displayCategoriesForRecipe();
+    }
+
+    function displayCategoriesForRecipe() {
+        const tbody = document.getElementById('recipeCategoryPickerTableBody');
+        
+        if (!filteredCategories || filteredCategories.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" class="text-center text-muted py-4">
+                        <i class="fas fa-search me-2"></i>No categories found
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filteredCategories.map(category => `
+            <tr>
+                <td><strong>${category.name || 'N/A'}</strong></td>
+                <td>${category.description || 'N/A'}</td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="selectRecipeCategory('${category.id}', '${category.name}')">
+                        <i class="fas fa-check me-1"></i>Select
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function selectRecipeCategory(categoryId, categoryName) {
+        // Determine which modal is open and set the appropriate fields
+        const addRecipeModal = document.getElementById('addRecipeModal');
+        const editRecipeModal = document.getElementById('editRecipeModal');
+        
+        if (addRecipeModal && addRecipeModal.classList.contains('show')) {
+            // Set values for add recipe modal
+            document.getElementById('addRecipeCategoryId').value = categoryId;
+            document.getElementById('addRecipeCategoryDisplay').value = categoryName;
+        } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
+            // Set values for edit recipe modal
+            document.getElementById('editRecipeCategoryId').value = categoryId;
+            document.getElementById('editRecipeCategoryDisplay').value = categoryName;
+        }
+        
+        // Hide the category picker modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('recipeCategoryPickerModal'));
+        modal.hide();
+        
+        Alert.success(`Category "${categoryName}" selected.`);
+    }
+
+    function selectRecipeImageFromUrl() {
+        const imageUrl = document.getElementById('recipeImageUrlInput').value.trim();
+        
+        if (!imageUrl) {
+            Alert.warning('Please enter an image URL.');
+            return;
+        }
+        
+        // Show preview
+        const previewImage = document.getElementById('recipePreviewImage');
+        const previewContainer = document.getElementById('recipeImagePreview');
+        const confirmBtn = document.getElementById('confirmRecipeImageBtn');
+        
+        previewImage.src = imageUrl;
+        previewContainer.style.display = 'block';
+        confirmBtn.disabled = false;
+        
+        // Store the URL for confirmation
+        window.selectedImageUrl = imageUrl;
+    }
+
+    function handleRecipeImageUpload(event) {
+        const file = event.target.files[0];
+        
+        if (!file) {
+            return;
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            Alert.error('Please select a valid image file (JPG, PNG, GIF, WebP).');
+            event.target.value = '';
+            return;
+        }
+        
+        // Validate file size (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            Alert.error('Image file size must be less than 5MB.');
+            event.target.value = '';
+            return;
+        }
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const previewImage = document.getElementById('recipePreviewImage');
+            const previewContainer = document.getElementById('recipeImagePreview');
+            const confirmBtn = document.getElementById('confirmRecipeImageBtn');
+            
+            previewImage.src = e.target.result;
+            previewContainer.style.display = 'block';
+            confirmBtn.disabled = false;
+            
+            // Store the file for confirmation
+            window.selectedImageFile = file;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function confirmRecipeImageSelection() {
+        const addRecipeModal = document.getElementById('addRecipeModal');
+        const editRecipeModal = document.getElementById('editRecipeModal');
+        
+        let imageUrl = '';
+        
+        if (window.selectedImageFile) {
+            // Handle uploaded file - in a real app, you'd upload this to a server
+            // For now, we'll use a placeholder
+            imageUrl = 'uploaded-image-placeholder.jpg';
+        } else if (window.selectedImageUrl) {
+            imageUrl = window.selectedImageUrl;
+        }
+        
+        if (addRecipeModal && addRecipeModal.classList.contains('show')) {
+            // Set values for add recipe modal
+            document.getElementById('addRecipePictureUrl').value = imageUrl;
+            document.getElementById('addRecipeImageDisplay').value = imageUrl;
+        } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
+            // Set values for edit recipe modal - if it has image fields
+            // This would need to be implemented based on the edit modal structure
+        }
+        
+        // Hide the image picker modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('recipeImagePickerModal'));
+        modal.hide();
+        
+        // Clear stored values
+        window.selectedImageFile = null;
+        window.selectedImageUrl = null;
+        
+        Alert.success('Image selected successfully.');
     }
 
     function toggleSelectAllIngredients() {
@@ -1433,9 +1617,17 @@
     window.addSelectedIngredients = addSelectedIngredients;
     window.updateRecipeIngredientQuantity = updateRecipeIngredientQuantity;
     window.removeRecipeIngredient = removeRecipeIngredient;
+    window.saveRecipe = saveRecipe;
+    window.filterRecipeCategories = filterRecipeCategories;
+    window.selectRecipeCategory = selectRecipeCategory;
+    window.selectRecipeImageFromUrl = selectRecipeImageFromUrl;
+    window.handleRecipeImageUpload = handleRecipeImageUpload;
+    window.confirmRecipeImageSelection = confirmRecipeImageSelection;
+    window.openRecipeCategoryPicker = openRecipeCategoryPicker;
+    window.openRecipeImagePicker = openRecipeImagePicker;
 
     function openEditRecipeCategoryPicker() {
-        // The modal will be opened by the dashboard.html function
-        window.openRecipeCategoryPicker();
+        // Open the category picker modal
+        openRecipeCategoryPicker();
     }
 </script> 
