@@ -172,12 +172,12 @@
 let ordersSummary = {};
 
 // Initialize the orders overview page
-async function initOrdersOverviewContent() {
-    console.log('Initializing orders overview content...');
+window.initOrdersOverviewContent = async function() {
+    console.log('🛒 Initializing orders overview content...');
     
     // Test orders service health first
     try {
-        const healthResponse = await authenticatedGet('/api/v1/orders/p/health');
+        const healthResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/orders/p/health`);
         console.log('Orders service health check:', healthResponse);
     } catch (error) {
         console.error('Orders service health check failed:', error);
@@ -185,20 +185,27 @@ async function initOrdersOverviewContent() {
     
     await loadOrdersSummary();
     await loadRecentOrders();
-}
+};
 
 // Load orders summary statistics
-async function loadOrdersSummary() {
+window.loadOrdersSummary = async function() {
     try {
         console.log('Loading orders summary...');
-        const response = await authenticatedGet('/api/v1/orders/summary');
+        const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/orders/summary`);
         console.log('Orders summary response:', response);
         
-        if (response.success) {
-            ordersSummary = response.data;
+        if (!response.ok) {
+            throw new Error(`Failed to fetch orders summary: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Orders summary result:', result);
+        
+        if (result.success) {
+            ordersSummary = result.data;
             updateSummaryCards();
         } else {
-            console.error('Failed to load orders summary:', response.message);
+            console.error('Failed to load orders summary:', result.message);
             showServiceUnavailable();
             return;
         }
@@ -213,7 +220,7 @@ async function loadOrdersSummary() {
 }
 
 // Update summary cards
-function updateSummaryCards() {
+window.updateSummaryCards = function() {
     document.getElementById('totalOrders').textContent = ordersSummary.total_orders || 0;
     document.getElementById('completedOrders').textContent = ordersSummary.completed_orders || 0;
     document.getElementById('pendingOrders').textContent = ordersSummary.pending_orders || 0;
@@ -221,7 +228,7 @@ function updateSummaryCards() {
 }
 
 // Load recent orders
-async function loadRecentOrders() {
+window.loadRecentOrders = async function() {
     try {
         // Get today's date range
         const today = new Date();
@@ -229,13 +236,20 @@ async function loadRecentOrders() {
         const dateTo = today.toISOString().split('T')[0];
         
         console.log('Loading recent orders for date range:', dateFrom, 'to', dateTo);
-        const response = await authenticatedGet(`/api/v1/orders/by-date-range?date_from=${dateFrom}&date_to=${dateTo}&limit=5`);
+        const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/orders/by-date-range?date_from=${dateFrom}&date_to=${dateTo}&limit=5`);
         console.log('Recent orders response:', response);
         
-        if (response.success) {
-            displayRecentOrders(response.data);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch recent orders: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('Recent orders result:', result);
+        
+        if (result.success) {
+            displayRecentOrders(result.data);
         } else {
-            console.error('Failed to load recent orders:', response.message);
+            console.error('Failed to load recent orders:', result.message);
             showServiceUnavailable();
             return;
         }
@@ -250,7 +264,7 @@ async function loadRecentOrders() {
 }
 
 // Display recent orders
-function displayRecentOrders(orders) {
+window.displayRecentOrders = function(orders) {
     const tbody = document.getElementById('recentOrdersTableBody');
     const noOrdersDiv = document.getElementById('noRecentOrders');
     const tableDiv = document.getElementById('recentOrdersTable');
@@ -290,7 +304,7 @@ function displayRecentOrders(orders) {
 }
 
 // Get status badge HTML
-function getStatusBadge(status) {
+window.getStatusBadge = function(status) {
     const statusConfig = {
         'pending': { class: 'bg-warning text-dark', icon: 'clock' },
         'completed': { class: 'bg-success', icon: 'check-circle' },
@@ -306,13 +320,13 @@ function getStatusBadge(status) {
 }
 
 // View order details
-function viewOrder(orderId) {
+window.viewOrder = function(orderId) {
     // This will be implemented when we create the order details page
     showInfo('Order details view will be implemented soon');
 }
 
 // Show service unavailable message
-function showServiceUnavailable() {
+window.showServiceUnavailable = function() {
     const serviceUnavailableDiv = document.getElementById('serviceUnavailable');
     const recentOrdersTable = document.getElementById('recentOrdersTable');
     const noRecentOrdersDiv = document.getElementById('noRecentOrders');
@@ -323,13 +337,10 @@ function showServiceUnavailable() {
 }
 
 // Hide service unavailable message
-function hideServiceUnavailable() {
+window.hideServiceUnavailable = function() {
     const serviceUnavailableDiv = document.getElementById('serviceUnavailable');
     if (serviceUnavailableDiv) serviceUnavailableDiv.style.display = 'none';
 }
 
-// Initialize when content is loaded
-if (typeof initOrdersOverviewContent === 'function') {
-    initOrdersOverviewContent();
-}
+// Functions are now globally available for the dashboard to call
 </script>
