@@ -269,7 +269,8 @@ window.displayRecentOrders = function(orders) {
     const noOrdersDiv = document.getElementById('noRecentOrders');
     const tableDiv = document.getElementById('recentOrdersTable');
     
-    if (!orders || orders.length === 0) {
+    // Handle case where orders is not an array
+    if (!orders || !Array.isArray(orders) || orders.length === 0) {
         tbody.innerHTML = '';
         noOrdersDiv.style.display = 'block';
         tableDiv.style.display = 'none';

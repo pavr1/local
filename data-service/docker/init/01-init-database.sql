@@ -187,31 +187,100 @@ CREATE TABLE customers (
 );
 
 -- =============================================================================
+-- AUTHENTICATION & AUTHORIZATION ENTITIES (Moved before orders for dependency)
+-- =============================================================================
+
+-- Roles Table
+CREATE TABLE roles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    role_name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Users Table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(255) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Permissions Table
+CREATE TABLE permissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    permission_name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT,
+    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Sessions Table (for database-backed session management)
+-- Minimal schema: only session_id and token
+-- All session metadata (expiration, user data, etc.) is stored in the JWT token itself
+CREATE TABLE sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE
+);
+
+-- =============================================================================
 -- INCOME MANAGEMENT (ORDERS) ENTITIES
 -- =============================================================================
 
 -- Orders Table
 CREATE TABLE orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_number INTEGER DEFAULT nextval('order_number_seq'),
+    order_number VARCHAR(50) UNIQUE NOT NULL,
     customer_id UUID REFERENCES customers(id) ON DELETE SET NULL,
-    total_amount DECIMAL(10,2) NOT NULL CHECK (total_amount >= 0),
-    discount_amount DECIMAL(10,2) DEFAULT 0 CHECK (discount_amount >= 0),
-    final_amount DECIMAL(10,2) GENERATED ALWAYS AS (total_amount - discount_amount) STORED,
-    order_status VARCHAR(50) DEFAULT 'pending' CHECK (order_status IN ('pending', 'confirmed', 'completed', 'cancelled')),
+    sales_representative_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'completed', 'cancelled', 'sinpe_pending')) DEFAULT 'pending',
+    payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('cash', 'card', 'sinpe')),
+    transaction_reference VARCHAR(100),
+    sinpe_screenshot_url VARCHAR(500),
+    subtotal_amount DECIMAL(12,2) NOT NULL,
+    discount_amount DECIMAL(12,2) DEFAULT 0.00,
+    iva_amount DECIMAL(12,2) NOT NULL,
+    service_tax_amount DECIMAL(12,2) NOT NULL,
+    total_amount DECIMAL(12,2) NOT NULL,
+    invoice_number VARCHAR(50) UNIQUE,
+    invoice_url VARCHAR(500),
+    transaction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(order_number)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Ordered Receipes Table
 CREATE TABLE ordered_receipes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL CHECK (quantity > 0),
-    receipe_price DECIMAL(10,2) NOT NULL CHECK (receipe_price >= 0)
+    recipe_id UUID NOT NULL REFERENCES recipes(id) ON DELETE RESTRICT,
+    product_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL,
+    receipe_price DECIMAL(10,2) NOT NULL,
+    subtotal DECIMAL(12,2) GENERATED ALWAYS AS (quantity * receipe_price) STORED
 );
+
+-- Indexes for orders table
+CREATE INDEX idx_orders_number ON orders(order_number);
+CREATE INDEX idx_orders_customer ON orders(customer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_payment_method ON orders(payment_method);
+CREATE INDEX idx_orders_sales_rep ON orders(sales_representative_id);
+CREATE INDEX idx_orders_transaction_timestamp ON orders(transaction_timestamp);
+CREATE INDEX idx_orders_invoice_number ON orders(invoice_number);
+
+-- Indexes for ordered_receipes table
+CREATE INDEX idx_ordered_receipes_order ON ordered_receipes(order_id);
+CREATE INDEX idx_ordered_receipes_recipe ON ordered_receipes(recipe_id);
+CREATE INDEX idx_ordered_receipes_product_name ON ordered_receipes(product_name);
 
 -- =============================================================================
 -- PROMOTIONS & LOYALTY SYSTEM ENTITIES
@@ -284,48 +353,8 @@ CREATE TABLE system_configuration (
 );
 
 -- =============================================================================
--- AUTHENTICATION & AUTHORIZATION ENTITIES
+-- AUTHENTICATION & AUTHORIZATION ENTITIES (Already moved above)
 -- =============================================================================
-
--- Roles Table
-CREATE TABLE roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Users Table
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    username VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    full_name VARCHAR(255) NOT NULL,
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE RESTRICT,
-    is_active BOOLEAN DEFAULT true,
-    last_login TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Permissions Table
-CREATE TABLE permissions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    permission_name VARCHAR(100) NOT NULL UNIQUE,
-    description TEXT,
-    role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- Sessions Table (for database-backed session management)
--- Minimal schema: only session_id and token
--- All session metadata (expiration, user data, etc.) is stored in the JWT token itself
-CREATE TABLE sessions (
-    session_id VARCHAR(255) PRIMARY KEY,
-    token TEXT NOT NULL UNIQUE
-);
 
 -- =============================================================================
 -- USER-DEPENDENT ENTITIES (Moved after users table)
