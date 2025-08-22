@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"inventory-service/config"
 	"inventory-service/entities/recipes/models"
 
 	"github.com/gorilla/mux"
@@ -17,9 +18,9 @@ type RecipeHTTPHandler struct {
 	logger    *logrus.Logger
 }
 
-func NewRecipeHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeHTTPHandler {
+func NewRecipeHTTPHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *RecipeHTTPHandler {
 	return &RecipeHTTPHandler{
-		dbHandler: NewRecipeDBHandler(db, logger),
+		dbHandler: NewRecipeDBHandler(db, logger, cfg),
 		logger:    logger,
 	}
 }

@@ -47,6 +47,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 
 -- Inventory Service Settings
 ('Inventory', 'INVENTORY_SERVER_PORT', '8084', 'Port for the inventory service'),
+('Inventory', 'INVENTORY_IMAGES_BASE_PATH', '.', 'Base path for storing images in the inventory service'),
 
 -- Invoice Service Settings
 ('Invoice', 'INVOICE_SERVER_PORT', '8085', 'Port for the invoice service'),

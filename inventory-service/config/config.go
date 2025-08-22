@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -49,15 +48,9 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBSSLMode  string
-}
 
-// LoadConfig loads configuration from environment variables with defaults
-func LoadConfig() *Config {
-	return &Config{
-		ServerPort: getEnvString("INVENTORY_SERVER_PORT", "8084"),
-		ServerHost: getEnvString("INVENTORY_SERVER_HOST", "0.0.0.0"),
-		LogLevel:   getEnvString("LOG_LEVEL", "info"),
-	}
+	// Image storage configuration
+	ImagesBasePath string
 }
 
 // LoadConfigFromDataService loads configuration from the data service API
@@ -84,6 +77,9 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		DBPassword: "postgres123",
 		DBName:     "icecream_store",
 		DBSSLMode:  "disable",
+
+		// Image storage defaults
+		ImagesBasePath: ".",
 	}
 
 	// Populate config from settings
@@ -101,7 +97,10 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
-	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://localhost:8086")
+	dataServiceURL := "http://localhost:8086"
+	if value := os.Getenv("DATA_SERVICE_URL"); value != "" {
+		dataServiceURL = value
+	}
 	url := fmt.Sprintf("%s/api/v1/data/settings/by-service", dataServiceURL)
 
 	// Prepare request
@@ -181,6 +180,8 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			config.DBName = setting.Value
 		case "DB_SSL_MODE":
 			config.DBSSLMode = setting.Value
+		case "INVENTORY_IMAGES_BASE_PATH":
+			config.ImagesBasePath = setting.Value
 		default:
 			logger.WithField("key", setting.Key).Debug("Setting not mapped to config struct")
 		}
@@ -195,30 +196,4 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 }
 
-// getEnvString returns the environment variable value or default if not set
-func getEnvString(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// getEnvInt returns the environment variable value as int or default if not set
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-// getEnvDuration returns the environment variable value as duration or default if not set
-func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
-}
+// Note: Environment variable helpers removed - all configuration should come from data service settings

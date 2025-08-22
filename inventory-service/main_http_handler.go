@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"inventory-service/config"
 	existencesHandlers "inventory-service/entities/existences/handlers"
 	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"
@@ -38,7 +39,7 @@ type MainHttpHandler struct {
 }
 
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
-func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
+func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *MainHttpHandler {
 	// Initialize suppliers handlers
 	suppliersDBHandler := suppliersHandlers.NewDBHandler(db, logger)
 	suppliersHttpHandler := suppliersHandlers.NewHttpHandler(suppliersDBHandler, logger)
@@ -62,7 +63,7 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger) *MainHttpHandler {
 	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewRecipeCategoryHTTPHandler(db, logger)
 
 	// Initialize recipes handlers
-	recipesHttpHandler := recipesHandlers.NewRecipeHTTPHandler(db, logger)
+	recipesHttpHandler := recipesHandlers.NewRecipeHTTPHandler(db, logger, cfg)
 
 	// Initialize recipe ingredients handlers
 	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewRecipeIngredientHTTPHandler(db, logger)

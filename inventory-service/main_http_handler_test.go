@@ -4,11 +4,23 @@ import (
 	"database/sql"
 	"testing"
 
+	"inventory-service/config"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// createMockConfig creates a mock config for testing
+func createMockConfig() *config.Config {
+	return &config.Config{
+		ServerPort:     "8084",
+		ServerHost:     "0.0.0.0",
+		LogLevel:       "info",
+		ImagesBasePath: ".",
+	}
+}
 
 // TestNewMainHttpHandler tests the creation of MainHttpHandler
 func TestNewMainHttpHandler(t *testing.T) {
@@ -21,7 +33,14 @@ func TestNewMainHttpHandler(t *testing.T) {
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
 
 	t.Run("successful creation", func(t *testing.T) {
-		handler := NewMainHttpHandler(db, logger)
+		// Create a mock config for testing
+		mockConfig := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
+		handler := NewMainHttpHandler(db, logger, mockConfig)
 
 		assert.NotNil(t, handler)
 		assert.Equal(t, db, handler.db)
@@ -30,7 +49,14 @@ func TestNewMainHttpHandler(t *testing.T) {
 	})
 
 	t.Run("handlers are properly initialized", func(t *testing.T) {
-		handler := NewMainHttpHandler(db, logger)
+		// Create a mock config for testing
+		mockConfig := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
+		handler := NewMainHttpHandler(db, logger, mockConfig)
 
 		// Test that suppliers handler is initialized
 		suppliersHandler := handler.GetSuppliersHandler()
@@ -47,7 +73,7 @@ func TestMainHttpHandlerStructure(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	t.Run("has database connection", func(t *testing.T) {
 		assert.NotNil(t, handler.db)
@@ -72,7 +98,7 @@ func TestGetSuppliersHandler(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	t.Run("returns suppliers handler", func(t *testing.T) {
 		suppliersHandler := handler.GetSuppliersHandler()
@@ -109,7 +135,7 @@ func TestMainHttpHandlerWithDifferentLoggers(t *testing.T) {
 			logger := logrus.New()
 			logger.SetLevel(tt.logLevel)
 
-			handler := NewMainHttpHandler(db, logger)
+			handler := NewMainHttpHandler(db, logger, createMockConfig())
 			assert.NotNil(t, handler)
 			assert.Equal(t, tt.logLevel, handler.logger.Level)
 		})
@@ -124,7 +150,7 @@ func TestMainHttpHandlerResourcesCleanup(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	t.Run("database can be closed", func(t *testing.T) {
 		// Ensure we can close the database connection
@@ -145,7 +171,7 @@ func TestMainHttpHandlerNilInputs(t *testing.T) {
 
 		// This should not panic but would likely fail in real usage
 		// The test documents the behavior
-		handler := NewMainHttpHandler(nil, logger)
+		handler := NewMainHttpHandler(nil, logger, createMockConfig())
 		assert.NotNil(t, handler)
 		assert.Nil(t, handler.db)
 		assert.Equal(t, logger, handler.logger)
@@ -159,7 +185,7 @@ func TestMainHttpHandlerNilInputs(t *testing.T) {
 
 		// This should not panic but would likely fail in real usage
 		// The test documents the behavior
-		handler := NewMainHttpHandler(db, nil)
+		handler := NewMainHttpHandler(db, nil, createMockConfig())
 		assert.NotNil(t, handler)
 		assert.Equal(t, db, handler.db)
 		assert.Nil(t, handler.logger)
@@ -176,7 +202,7 @@ func TestMainHttpHandlerEntityHandlerIntegration(t *testing.T) {
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise
 
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	t.Run("suppliers handler integration", func(t *testing.T) {
 		suppliersHandler := handler.GetSuppliersHandler()
@@ -198,7 +224,7 @@ func TestMainHttpHandlerMemoryUsage(t *testing.T) {
 		require.NoError(t, err)
 
 		logger := logrus.New()
-		handler := NewMainHttpHandler(db, logger)
+		handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 		assert.NotNil(t, handler)
 		assert.NotNil(t, handler.GetSuppliersHandler())
@@ -215,7 +241,7 @@ func TestMainHttpHandlerConcurrentAccess(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	// Test concurrent access to GetSuppliersHandler
 	done := make(chan bool)
@@ -245,7 +271,7 @@ func BenchmarkNewMainHttpHandler(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		NewMainHttpHandler(db, logger)
+		NewMainHttpHandler(db, logger, createMockConfig())
 	}
 }
 
@@ -257,7 +283,7 @@ func BenchmarkGetSuppliersHandler(b *testing.B) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewMainHttpHandler(db, logger)
+	handler := NewMainHttpHandler(db, logger, createMockConfig())
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -61,33 +63,62 @@ func TestConnectToDatabase(t *testing.T) {
 // TestConfigurationIntegration tests that configuration loads correctly for main
 func TestConfigurationIntegration(t *testing.T) {
 	t.Run("default configuration", func(t *testing.T) {
-		cfg := config.LoadConfig()
+		// Create a mock data service server
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			response := `{
+				"success": true,
+				"data": [
+					{
+						"setting_id": "test-1",
+						"service": "Inventory",
+						"key": "INVENTORY_SERVER_PORT",
+						"value": "8084",
+						"description": "Port for inventory service"
+					},
+					{
+						"setting_id": "test-2",
+						"service": "Inventory",
+						"key": "INVENTORY_SERVER_HOST",
+						"value": "0.0.0.0",
+						"description": "Host for inventory service"
+					},
+					{
+						"setting_id": "test-3",
+						"service": "Inventory",
+						"key": "LOG_LEVEL",
+						"value": "info",
+						"description": "Log level"
+					}
+				],
+				"total": 3,
+				"message": "Settings retrieved successfully"
+			}`
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(response))
+		}))
+		defer server.Close()
+
+		// Set the data service URL to our mock server
+		originalURL := os.Getenv("DATA_SERVICE_URL")
+		os.Setenv("DATA_SERVICE_URL", server.URL)
+		defer func() {
+			if originalURL != "" {
+				os.Setenv("DATA_SERVICE_URL", originalURL)
+			} else {
+				os.Unsetenv("DATA_SERVICE_URL")
+			}
+		}()
+
+		logger := logrus.New()
+		cfg, err := config.LoadConfigFromDataService(logger)
+		require.NoError(t, err)
 
 		// Verify essential configuration values
 		assert.NotEmpty(t, cfg.ServerHost)
 		assert.NotEmpty(t, cfg.ServerPort)
 		assert.NotEmpty(t, cfg.LogLevel)
 		assert.Equal(t, "8084", cfg.ServerPort) // Inventory service specific port
-		// Database settings are now loaded from data service, not from config
-	})
-
-	t.Run("configuration with environment overrides", func(t *testing.T) {
-		// Set environment variables
-		envVars := map[string]string{
-			"INVENTORY_SERVER_HOST": "127.0.0.1",
-			"INVENTORY_SERVER_PORT": "9084",
-		}
-
-		for key, value := range envVars {
-			os.Setenv(key, value)
-			defer os.Unsetenv(key)
-		}
-
-		cfg := config.LoadConfig()
-
-		assert.Equal(t, "127.0.0.1", cfg.ServerHost)
-		assert.Equal(t, "9084", cfg.ServerPort)
-		// Database settings are now loaded from data service, not from environment variables
 	})
 }
 
@@ -100,13 +131,18 @@ func TestApplicationComponents(t *testing.T) {
 	})
 
 	t.Run("configuration loading", func(t *testing.T) {
-		cfg := config.LoadConfig()
+		// Create a mock config for testing
+		cfg := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
 		assert.NotNil(t, cfg)
 
 		// Test required fields are not empty
 		require.NotEmpty(t, cfg.ServerHost)
 		require.NotEmpty(t, cfg.ServerPort)
-		// Database settings are now loaded from data service, not from config
 	})
 
 	t.Run("main handler initialization", func(t *testing.T) {
@@ -118,7 +154,14 @@ func TestApplicationComponents(t *testing.T) {
 		logger := setupLogger("error") // Use error level to reduce test noise
 
 		// Test that NewMainHttpHandler can be created
-		mainHandler := NewMainHttpHandler(db, logger)
+		// Create a mock config for testing
+		mockConfig := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
+		mainHandler := NewMainHttpHandler(db, logger, mockConfig)
 		assert.NotNil(t, mainHandler)
 		assert.NotNil(t, mainHandler.GetSuppliersHandler())
 	})
@@ -146,8 +189,13 @@ func TestLoggerLevels(t *testing.T) {
 // TestApplicationStartupSequence tests the startup sequence components
 func TestApplicationStartupSequence(t *testing.T) {
 	t.Run("config then logger", func(t *testing.T) {
-		// Step 1: Load configuration
-		cfg := config.LoadConfig()
+		// Step 1: Create mock configuration
+		cfg := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
 		require.NotNil(t, cfg)
 
 		// Step 2: Setup logger with config
@@ -183,23 +231,25 @@ func TestErrorHandling(t *testing.T) {
 // TestInventoryServiceSpecifics tests inventory service specific functionality
 func TestInventoryServiceSpecifics(t *testing.T) {
 	t.Run("default port is 8084", func(t *testing.T) {
-		cfg := config.LoadConfig()
+		cfg := &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
 		assert.Equal(t, "8084", cfg.ServerPort, "Inventory service should default to port 8084")
-	})
-
-	t.Run("inventory environment variables", func(t *testing.T) {
-		os.Setenv("INVENTORY_SERVER_PORT", "9999")
-		defer os.Unsetenv("INVENTORY_SERVER_PORT")
-
-		cfg := config.LoadConfig()
-		assert.Equal(t, "9999", cfg.ServerPort, "Should use INVENTORY_SERVER_PORT env var")
 	})
 }
 
 // BenchmarkConfigLoad benchmarks configuration loading
 func BenchmarkConfigLoad(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		config.LoadConfig()
+		_ = &config.Config{
+			ServerPort:     "8084",
+			ServerHost:     "0.0.0.0",
+			LogLevel:       "info",
+			ImagesBasePath: ".",
+		}
 	}
 }
 

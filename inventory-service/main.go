@@ -39,7 +39,7 @@ func main() {
 	defer db.Close()
 
 	// Create main HTTP handler with all entity handlers
-	mainHandler := NewMainHttpHandler(db, logger)
+	mainHandler := NewMainHttpHandler(db, logger, cfg)
 
 	// Setup HTTP router
 	router := mux.NewRouter()

@@ -31,6 +31,8 @@ type CreateRecipeRequest struct {
 	RecipeName        string             `json:"recipe_name" validate:"required,min=1,max=255"`
 	RecipeDescription *string            `json:"recipe_description,omitempty"`
 	PictureURL        *string            `json:"picture_url,omitempty"`
+	ImageName         *string            `json:"image_name,omitempty"` // Name of the image file
+	ImageData         []byte             `json:"image_data,omitempty"` // Image data as bytes
 	RecipeCategoryID  string             `json:"recipe_category_id" validate:"required,uuid"`
 	TotalRecipeCost   float64            `json:"total_recipe_cost" validate:"required,min=0"`
 	Ingredients       []RecipeIngredient `json:"ingredients" validate:"required,min=1"`

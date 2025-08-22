@@ -2,26 +2,35 @@ package handlers
 
 import (
 	"database/sql"
+	"inventory-service/config"
 	recipeIngredientsHandler "inventory-service/entities/recipe_ingredients/handlers"
 	recipeIngredientsModels "inventory-service/entities/recipe_ingredients/models"
 	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
 	"inventory-service/entities/recipes/models"
 	recipeSQL "inventory-service/entities/recipes/sql"
+	imageHandler "inventory-service/pkg/images"
 
 	"github.com/sirupsen/logrus"
 )
 
 // RecipeDBHandler handles database operations for recipes
 type RecipeDBHandler struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db           *sql.DB
+	logger       *logrus.Logger
+	imageHandler *imageHandler.ImageHandler
+	config       *config.Config
 }
 
 // NewRecipeDBHandler creates a new database handler for recipes
-func NewRecipeDBHandler(db *sql.DB, logger *logrus.Logger) *RecipeDBHandler {
+func NewRecipeDBHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *RecipeDBHandler {
+	imgHandler := imageHandler.NewImageHandler()
+	imgHandler.SetBasePath(cfg.ImagesBasePath)
+
 	return &RecipeDBHandler{
-		db:     db,
-		logger: logger,
+		db:           db,
+		logger:       logger,
+		imageHandler: imgHandler,
+		config:       cfg,
 	}
 }
 
@@ -34,12 +43,33 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	}
 	defer tx.Rollback() // Rollback if not committed
 
+	// Handle image storage if image data is provided
+	var pictureURL *string
+	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
+		// Store the image
+		err = h.imageHandler.AddImage("recipes", *req.ImageName, req.ImageData)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_name": req.RecipeName,
+				"image_name":  *req.ImageName,
+			}).Error("Failed to store recipe image")
+			return nil, err
+		}
+
+		// Generate the picture URL
+		url := h.imageHandler.GetImageURL("recipes", *req.ImageName)
+		pictureURL = &url
+	} else {
+		// Use the provided PictureURL if no image data
+		pictureURL = req.PictureURL
+	}
+
 	var recipe models.Recipe
 	err = tx.QueryRow(
 		recipeSQL.CreateRecipeQuery,
 		req.RecipeName,
 		req.RecipeDescription,
-		req.PictureURL,
+		pictureURL,
 		req.RecipeCategoryID,
 		req.TotalRecipeCost,
 	).Scan(
@@ -87,6 +117,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 		"recipe_id":         recipe.ID,
 		"recipe_name":       recipe.RecipeName,
 		"ingredients_count": len(req.Ingredients),
+		"has_image":         req.ImageData != nil && len(req.ImageData) > 0,
 	}).Info("Recipe and ingredients created successfully")
 
 	return &recipe, nil

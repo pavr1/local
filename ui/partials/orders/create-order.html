@@ -7,7 +7,7 @@
                     <i class="fas fa-shopping-cart me-2"></i>Create New Order
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
+                </div>
             <div class="modal-body p-0">
                 <div class="row h-100 g-0">
                     <!-- Left Panel: Recipe Selection (40%) -->
@@ -26,7 +26,7 @@
                                 </select>
                             </div>
                         </div>
-
+                        
                         <!-- Recipe Grid Section -->
                         <div class="flex-grow-1 overflow-auto p-3">
                             <div id="recipeGrid" class="row g-3">
@@ -49,8 +49,8 @@
                                     <p>No items added to order yet</p>
                                     <p class="small">Click on recipe cards to add items</p>
                                 </div>
-                            </div>
-                        </div>
+                </div>
+            </div>
 
                         <!-- Order Actions -->
                         <div class="p-3 border-top bg-light">
@@ -58,22 +58,22 @@
                                 <div class="col-6">
                                     <button type="button" class="btn btn-outline-danger" onclick="clearOrder()">
                                         <i class="fas fa-trash me-2"></i>Clear Order
-                                    </button>
-                                </div>
+                                </button>
+                            </div>
                                 <div class="col-6 text-end">
                                     <h5 class="mb-0">Total: <span id="orderTotal" class="text-primary">₡0.00</span></h5>
                                     <button type="button" class="btn btn-success mt-2" onclick="proceedToPayment()" id="proceedToPaymentBtn" disabled>
                                         <i class="fas fa-credit-card me-2"></i>Proceed to Payment
                                     </button>
-                                </div>
+                        </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+                    </div>
+                    </div>
+                </div>
 
 <!-- Quantity Selection Modal -->
 <div class="modal fade" id="quantityModal" tabindex="-1" aria-labelledby="quantityModalLabel" aria-hidden="true">
@@ -100,12 +100,12 @@
                             <div class="col-md-3">
                                 <label for="quantityInput" class="form-label small mb-1">Quantity</label>
                                 <input type="number" class="form-control form-control-sm" id="quantityInput" value="1" min="1" onchange="updateQuantitySubtotal()" onkeyup="updateQuantitySubtotal()">
-                            </div>
+                    </div>
                             <div class="col-md-2 text-end">
                                 <label class="form-label small mb-1">Subtotal</label>
                                 <div class="fw-bold text-primary" id="quantityModalSubtotal">₡0.00</div>
-                            </div>
-                        </div>
+                    </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -172,9 +172,9 @@
                                 <h5>Total: <span id="finalOrderTotal" class="text-primary">₡0.00</span></h5>
                             </div>
                         </div>
-                    </div>
+                </div>
                 </form>
-            </div>
+                </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-success" onclick="createOrder()">
@@ -341,7 +341,7 @@
     }
 
     // Filter recipes based on search and category
-    function filterRecipes() {
+function filterRecipes() {
         const searchTerm = document.getElementById('recipeSearchInput').value.toLowerCase();
         const categoryFilter = document.getElementById('recipeCategoryFilter').value;
 
@@ -364,9 +364,9 @@
         
         if (!recipeGrid) {
             console.error('❌ Recipe grid element not found!');
-            return;
-        }
-        
+        return;
+    }
+    
         if (filteredRecipes.length === 0) {
             console.log('📭 No recipes to display');
             recipeGrid.innerHTML = `
@@ -375,9 +375,9 @@
                     <p class="text-muted">No recipes found</p>
                 </div>
             `;
-            return;
-        }
-
+        return;
+    }
+    
         console.log(`🍦 Displaying ${filteredRecipes.length} recipes`);
         recipeGrid.innerHTML = filteredRecipes.map(recipe => `
             <div class="col-md-6 col-lg-4">
@@ -566,11 +566,11 @@
 
     // Proceed to payment
     function proceedToPayment() {
-        if (orderItems.length === 0) {
+    if (orderItems.length === 0) {
             Alert.warning('Please add items to the order first');
-            return;
-        }
-        
+        return;
+    }
+    
         // Populate final order summary
         populateFinalOrderSummary();
         
@@ -624,9 +624,9 @@
         
         if (!paymentMethod) {
             Alert.warning('Please select a payment method');
-            return;
-        }
-        
+        return;
+    }
+    
         // Validate payment-specific fields
         if (paymentMethod === 'card') {
             const transactionRef = document.getElementById('createOrderTransactionReference').value.trim();
@@ -636,18 +636,18 @@
             }
         }
         
-        const orderData = {
+    const orderData = {
             customer_id: document.getElementById('createOrderCustomerId').value.trim() || null,
-            payment_method: paymentMethod,
+        payment_method: paymentMethod,
             transaction_reference: document.getElementById('createOrderTransactionReference').value.trim() || null,
             sinpe_screenshot_url: document.getElementById('createOrderSinpeScreenshot').value.trim() || null,
             ingredients: orderItems.map(item => ({
                 recipe_id: item.recipe_id,
                 number_of_units: item.quantity
-            }))
-        };
-        
-        try {
+        }))
+    };
+    
+    try {
             const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/orders`, orderData);
             const result = await response.json();
             
@@ -668,9 +668,9 @@
                 
                 // Refresh the background page (Orders Overview)
                 if (typeof loadContent === 'function') {
-                    loadContent('orders-overview');
+                loadContent('orders-overview');
                 }
-            } else {
+        } else {
                 throw new Error(result.message || 'Failed to create order');
             }
         } catch (error) {
@@ -717,7 +717,7 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('quantityModal'));
         modal.hide();
         
-        updateOrderSummary();
+    updateOrderSummary();
         selectedRecipe = null;
     }
 

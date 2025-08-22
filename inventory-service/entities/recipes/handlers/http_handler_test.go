@@ -24,7 +24,7 @@ func TestNewRecipeHTTPHandler(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 	assert.NotNil(t, handler)
 	assert.Equal(t, db, handler.dbHandler.db)
 	assert.Equal(t, logger, handler.logger)
@@ -36,7 +36,7 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	description := "Test description"
 	pictureURL := "https://example.com/image.jpg"
@@ -81,19 +81,19 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 
 	// Expect transaction to begin
 	mock.ExpectBegin()
-	
+
 	// Expect recipe creation
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnRows(rows)
-	
+
 	// Expect ingredient creation
 	for _, ingredient := range req.Ingredients {
 		mock.ExpectExec("INSERT INTO recipe_ingredients").
 			WithArgs(expectedRecipe.ID, ingredient.IngredientID, ingredient.NumberOfUnits).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 	}
-	
+
 	// Expect transaction to commit
 	mock.ExpectCommit()
 
@@ -129,7 +129,7 @@ func TestRecipeHTTPHandler_CreateRecipe_InvalidJSON(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	request := httptest.NewRequest("POST", "/recipes", bytes.NewBufferString("invalid json"))
 	request.Header.Set("Content-Type", "application/json")
@@ -146,7 +146,7 @@ func TestRecipeHTTPHandler_CreateRecipe_DBError(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	req := models.CreateRecipeRequest{
 		RecipeName:        "Test Recipe",
@@ -164,12 +164,12 @@ func TestRecipeHTTPHandler_CreateRecipe_DBError(t *testing.T) {
 
 	// Expect transaction to begin
 	mock.ExpectBegin()
-	
+
 	// Expect recipe creation to fail
 	mock.ExpectQuery("INSERT INTO recipes").
 		WithArgs(req.RecipeName, req.RecipeDescription, req.PictureURL, req.RecipeCategoryID, req.TotalRecipeCost).
 		WillReturnError(sql.ErrConnDone)
-		
+
 	// Expect transaction to rollback
 	mock.ExpectRollback()
 
@@ -198,7 +198,7 @@ func TestRecipeHTTPHandler_GetRecipe(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	now := time.Now()
 	description := "Test description"
@@ -263,7 +263,7 @@ func TestRecipeHTTPHandler_GetRecipe_NotFound(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	mock.ExpectQuery("SELECT id, recipe_name, recipe_description, picture_url, recipe_category_id, total_recipe_cost, created_at, updated_at").
 		WithArgs("non-existent-id").
@@ -294,7 +294,7 @@ func TestRecipeHTTPHandler_GetRecipe_MissingID(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	request := httptest.NewRequest("GET", "/recipes/", nil)
 	response := httptest.NewRecorder()
@@ -311,7 +311,7 @@ func TestRecipeHTTPHandler_ListRecipes(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	now := time.Now()
 	description := "Test description"
@@ -376,7 +376,7 @@ func TestRecipeHTTPHandler_ListRecipes_WithFilters(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	rows := sqlmock.NewRows([]string{
 		"id", "recipe_name", "recipe_description", "picture_url", "recipe_category_id", "total_recipe_cost", "created_at", "updated_at",
@@ -410,7 +410,7 @@ func TestRecipeHTTPHandler_UpdateRecipe(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	now := time.Now()
 	recipeName := "Updated Recipe"
@@ -488,7 +488,7 @@ func TestRecipeHTTPHandler_UpdateRecipe_NotFound(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	recipeName := "Updated Recipe"
 	req := models.UpdateRecipeRequest{
@@ -526,7 +526,7 @@ func TestRecipeHTTPHandler_DeleteRecipe(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	recipeID := "550e8400-e29b-41d4-a716-446655440000"
 
@@ -559,7 +559,7 @@ func TestRecipeHTTPHandler_DeleteRecipe_NotFound(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	mock.ExpectExec("DELETE FROM recipes").
 		WithArgs("non-existent-id").
@@ -590,7 +590,7 @@ func TestRecipeHTTPHandler_DeleteRecipe_MissingID(t *testing.T) {
 	defer db.Close()
 
 	logger := logrus.New()
-	handler := NewRecipeHTTPHandler(db, logger)
+	handler := NewRecipeHTTPHandler(db, logger, createMockConfig())
 
 	request := httptest.NewRequest("DELETE", "/recipes/", nil)
 	response := httptest.NewRecorder()
