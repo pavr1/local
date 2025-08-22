@@ -96,8 +96,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithField("port", "8086").Info("Starting Data Service HTTP server")
-		fmt.Println("🚀 Data Service HTTP server starting on :8086")
-		fmt.Println("📡 Health endpoint available at: http://localhost:8086/api/v1/data/p/health")
+		logger.WithField("port", "8086").Info("🚀 Data Service HTTP server starting on :8086")
+		logger.WithField("port", "8086").Info("📡 Health endpoint available at: http://localhost:8086/api/v1/data/p/health")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Failed to start HTTP server")

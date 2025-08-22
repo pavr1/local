@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"gateway-service/middleware"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,8 +31,9 @@ func TestCorsMiddleware(t *testing.T) {
 		w.Write([]byte("test response"))
 	})
 
-	// Wrap the handler with CORS middleware
-	corsHandler := corsMiddleware(testHandler)
+	// Create CORS middleware and wrap the handler
+	corsMiddleware := middleware.NewCORSMiddleware(testLogger())
+	corsHandler := corsMiddleware.HandleCORS(testHandler)
 
 	t.Run("sets CORS headers on regular request", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test", nil)
@@ -42,7 +44,7 @@ func TestCorsMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 		assert.Equal(t, "GET, POST, PUT, DELETE, OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
-		assert.Equal(t, "Content-Type, Authorization", w.Header().Get("Access-Control-Allow-Headers"))
+		assert.Equal(t, "Content-Type, Authorization, X-User-ID, X-Username, X-User-Role, X-User-Permissions", w.Header().Get("Access-Control-Allow-Headers"))
 		assert.Equal(t, "test response", w.Body.String())
 	})
 
@@ -55,7 +57,7 @@ func TestCorsMiddleware(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 		assert.Equal(t, "GET, POST, PUT, DELETE, OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
-		assert.Equal(t, "Content-Type, Authorization", w.Header().Get("Access-Control-Allow-Headers"))
+		assert.Equal(t, "Content-Type, Authorization, X-User-ID, X-Username, X-User-Role, X-User-Permissions", w.Header().Get("Access-Control-Allow-Headers"))
 		assert.Empty(t, w.Body.String()) // OPTIONS should not call the next handler
 	})
 
@@ -205,7 +207,8 @@ func TestCreateProxyHandler(t *testing.T) {
 func TestConcurrentRequests(t *testing.T) {
 	config := getServiceConfig()
 	healthHandler := createHealthHandler(&config, testLogger())
-	handler := corsMiddleware(healthHandler)
+	corsMiddleware := middleware.NewCORSMiddleware(testLogger())
+	handler := corsMiddleware.HandleCORS(healthHandler)
 
 	const numRequests = 10
 	responses := make(chan *httptest.ResponseRecorder, numRequests)
@@ -242,7 +245,8 @@ func TestErrorHandling(t *testing.T) {
 			})
 		})
 
-		corsHandler := corsMiddleware(errorHandler)
+		corsMiddleware := middleware.NewCORSMiddleware(testLogger())
+		corsHandler := corsMiddleware.HandleCORS(errorHandler)
 		req := httptest.NewRequest("GET", "/test", nil)
 		w := httptest.NewRecorder()
 
@@ -318,7 +322,8 @@ func TestGatewayServiceSpecifics(t *testing.T) {
 		testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
-		corsHandler := corsMiddleware(testHandler)
+		corsMiddleware := middleware.NewCORSMiddleware(testLogger())
+		corsHandler := corsMiddleware.HandleCORS(testHandler)
 
 		req := httptest.NewRequest("GET", "/api/test", nil)
 		w := httptest.NewRecorder()
@@ -328,6 +333,7 @@ func TestGatewayServiceSpecifics(t *testing.T) {
 		// Gateway should be the only service setting CORS headers
 		assert.Equal(t, "*", w.Header().Get("Access-Control-Allow-Origin"))
 		assert.Equal(t, "GET, POST, PUT, DELETE, OPTIONS", w.Header().Get("Access-Control-Allow-Methods"))
+		assert.Equal(t, "Content-Type, Authorization, X-User-ID, X-Username, X-User-Role, X-User-Permissions", w.Header().Get("Access-Control-Allow-Headers"))
 	})
 }
 
@@ -336,7 +342,8 @@ func BenchmarkCorsMiddleware(b *testing.B) {
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
-	corsHandler := corsMiddleware(testHandler)
+	corsMiddleware := middleware.NewCORSMiddleware(testLogger())
+	corsHandler := corsMiddleware.HandleCORS(testHandler)
 
 	req := httptest.NewRequest("GET", "/test", nil)
 

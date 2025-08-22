@@ -74,25 +74,6 @@ func initLogger() *logrus.Logger {
 	return log
 }
 
-// corsMiddleware handles CORS for all services - gateway is the single source of truth
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Set CORS headers - only the gateway sets these
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-		// Handle preflight requests
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Call the next handler
-		next.ServeHTTP(w, r)
-	})
-}
-
 // Service configuration
 type Config struct {
 	Port                string
@@ -244,8 +225,11 @@ func main() {
 	// Apply authentication middleware to data router
 	dataRouter.Use(sessionMiddleware.ValidateSession)
 
+	// Create CORS middleware
+	corsMiddleware := middleware.NewCORSMiddleware(logrusLogger)
+
 	// Apply CORS middleware to main router - gateway is single source of CORS
-	r.Use(corsMiddleware)
+	r.Use(corsMiddleware.HandleCORS)
 
 	// Add explicit OPTIONS handling for CORS preflight
 	r.Methods("OPTIONS").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -261,51 +245,82 @@ func main() {
 		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
 	}).Info("Gateway service started successfully")
 
-	fmt.Println("🚀 Gateway Service with Session Management starting on http://localhost:8082")
-	fmt.Println("📡 API available at http://localhost:8082/api")
-	fmt.Println("")
-	fmt.Println("🔐 SESSION MANAGEMENT ENDPOINTS:")
-	fmt.Println("   📂 Public:")
-	fmt.Printf("      POST /api/v1/sessions/p/login    → %s/api/v1/sessions/p/login (+ session creation)\n", config.SessionServiceURL)
-	fmt.Printf("      POST /api/v1/sessions/p/validate → %s/api/v1/sessions/p/validate (+ session validation)\n", config.SessionServiceURL)
-	fmt.Printf("      GET  /api/v1/sessions/p/health   → %s/api/v1/sessions/p/health\n", config.SessionServiceURL)
-	fmt.Println("   🔒 Protected (require valid session):")
-	fmt.Printf("      POST /api/v1/sessions/logout     → %s/api/v1/sessions/logout (+ session revocation)\n", config.SessionServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"port": config.Port,
+		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
+	}).Info("🚀 Gateway Service with Session Management starting on http://localhost:8082")
+	logrusLogger.Info("📡 API available at http://localhost:8082/api")
+	logrusLogger.Info("")
+	logrusLogger.Info("🔐 SESSION MANAGEMENT ENDPOINTS:")
+	logrusLogger.Info("   📂 Public:")
+	logrusLogger.WithFields(logrus.Fields{
+		"session_service_url": config.SessionServiceURL,
+	}).Info("      POST /api/v1/sessions/p/login    → " + config.SessionServiceURL + "/api/v1/sessions/p/login (+ session creation)")
+	logrusLogger.WithFields(logrus.Fields{
+		"session_service_url": config.SessionServiceURL,
+	}).Info("      POST /api/v1/sessions/p/validate → " + config.SessionServiceURL + "/api/v1/sessions/p/validate (+ session validation)")
+	logrusLogger.WithFields(logrus.Fields{
+		"session_service_url": config.SessionServiceURL,
+	}).Info("      GET  /api/v1/sessions/p/health   → " + config.SessionServiceURL + "/api/v1/sessions/p/health")
+	logrusLogger.Info("   🔒 Protected (require valid session):")
+	logrusLogger.WithFields(logrus.Fields{
+		"session_service_url": config.SessionServiceURL,
+	}).Info("      POST /api/v1/sessions/logout     → " + config.SessionServiceURL + "/api/v1/sessions/logout (+ session revocation)")
 
-	fmt.Println("")
-	fmt.Println("🛒 BUSINESS SERVICE ENDPOINTS:")
+	logrusLogger.Info("")
+	logrusLogger.Info("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")
-	fmt.Printf("      GET  /api/v1/orders/p/health       → %s\n", config.OrdersServiceURL)
-	fmt.Printf("      GET  /api/v1/inventory/p/health    → %s\n", config.InventoryServiceURL)
-	fmt.Printf("      GET  /api/v1/invoices/p/health     → %s\n", config.InvoiceServiceURL)
-	fmt.Printf("      GET  /api/v1/data/p/health         → %s\n", config.DataServiceURL)
-	fmt.Println("   🔒 Protected (require valid session):")
-	fmt.Printf("      ALL  /api/v1/orders/*          → %s\n", config.OrdersServiceURL)
-	fmt.Printf("      ALL  /api/v1/inventory/*       → %s\n", config.InventoryServiceURL)
-	fmt.Printf("           ├─ /suppliers/*          → Suppliers management\n")
-	fmt.Printf("           ├─ /ingredients/*        → [Future] Ingredients management\n")
-	fmt.Printf("           └─ /existences/*         → [Future] Stock management\n")
-	fmt.Printf("      ALL  /api/v1/invoices/*        → %s\n", config.InvoiceServiceURL)
-	fmt.Printf("           ├─ /invoices/*           → Invoice management\n")
-	fmt.Printf("           └─ /invoices/{id}/details  → Invoice details management\n")
-	fmt.Printf("      ALL  /api/v1/expense-categories/* → %s\n", config.InvoiceServiceURL)
-	fmt.Printf("           └─ /expense-categories/*  → Expense categories management\n")
-	fmt.Printf("      ALL  /api/v1/data/*            → %s\n", config.DataServiceURL)
-	fmt.Printf("           ├─ /settings/by-service   → Get settings by service\n")
-	fmt.Printf("           ├─ /settings/by-name      → Get settings by name\n")
-	fmt.Printf("           └─ /settings/grouped      → Get settings grouped by service\n")
-	fmt.Println("   📋 Service Management:")
-	fmt.Printf("      GET  /api/v1/logs/{service}     → Service logs viewer\n")
-	fmt.Println("")
-	fmt.Println("📋 SESSION MANAGEMENT:")
-	fmt.Printf("   🔒 /api/v1/sessions/*        → %s (session validated)\n", config.SessionServiceURL)
-	fmt.Println("")
-	fmt.Println("🔐 SESSION SECURITY FEATURES:")
-	fmt.Println("   ✅ Server-side token validation")
-	fmt.Println("   ✅ External token prevention")
-	fmt.Println("   ✅ Automatic token refresh")
-	fmt.Println("   ✅ Session revocation on logout")
-	fmt.Println("   ✅ User context injection")
+	logrusLogger.WithFields(logrus.Fields{
+		"orders_service_url": config.OrdersServiceURL,
+	}).Info("      GET  /api/v1/orders/p/health       → " + config.OrdersServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"inventory_service_url": config.InventoryServiceURL,
+	}).Info("      GET  /api/v1/inventory/p/health    → " + config.InventoryServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"invoice_service_url": config.InvoiceServiceURL,
+	}).Info("      GET  /api/v1/invoices/p/health     → " + config.InvoiceServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"data_service_url": config.DataServiceURL,
+	}).Info("      GET  /api/v1/data/p/health         → " + config.DataServiceURL)
+	logrusLogger.Info("   🔒 Protected (require valid session):")
+	logrusLogger.WithFields(logrus.Fields{
+		"orders_service_url": config.OrdersServiceURL,
+	}).Info("      ALL  /api/v1/orders/*          → " + config.OrdersServiceURL)
+	logrusLogger.WithFields(logrus.Fields{
+		"inventory_service_url": config.InventoryServiceURL,
+	}).Info("      ALL  /api/v1/inventory/*       → " + config.InventoryServiceURL)
+	logrusLogger.Info("           ├─ /suppliers/*          → Suppliers management")
+	logrusLogger.Info("           ├─ /ingredients/*        → [Future] Ingredients management")
+	logrusLogger.Info("           └─ /existences/*         → [Future] Stock management")
+	logrusLogger.WithFields(logrus.Fields{
+		"invoice_service_url": config.InvoiceServiceURL,
+	}).Info("      ALL  /api/v1/invoices/*        → " + config.InvoiceServiceURL)
+	logrusLogger.Info("           ├─ /invoices/*           → Invoice management")
+	logrusLogger.Info("           └─ /invoices/{id}/details  → Invoice details management")
+	logrusLogger.WithFields(logrus.Fields{
+		"invoice_service_url": config.InvoiceServiceURL,
+	}).Info("      ALL  /api/v1/expense-categories/* → " + config.InvoiceServiceURL)
+	logrusLogger.Info("           └─ /expense-categories/*  → Expense categories management")
+	logrusLogger.WithFields(logrus.Fields{
+		"data_service_url": config.DataServiceURL,
+	}).Info("      ALL  /api/v1/data/*            → " + config.DataServiceURL)
+	logrusLogger.Info("           ├─ /settings/by-service   → Get settings by service")
+	logrusLogger.Info("           ├─ /settings/by-name      → Get settings by name")
+	logrusLogger.Info("           └─ /settings/grouped      → Get settings grouped by service")
+	logrusLogger.Info("   📋 Service Management:")
+	logrusLogger.Info("      GET  /api/v1/logs/{service}     → Service logs viewer")
+	logrusLogger.Info("")
+	logrusLogger.Info("📋 SESSION MANAGEMENT:")
+	logrusLogger.WithFields(logrus.Fields{
+		"session_service_url": config.SessionServiceURL,
+	}).Info("   🔒 /api/v1/sessions/*        → " + config.SessionServiceURL + " (session validated)")
+	logrusLogger.Info("")
+	logrusLogger.Info("🔐 SESSION SECURITY FEATURES:")
+	logrusLogger.Info("   ✅ Server-side token validation")
+	logrusLogger.Info("   ✅ External token prevention")
+	logrusLogger.Info("   ✅ Automatic token refresh")
+	logrusLogger.Info("   ✅ Session revocation on logout")
+	logrusLogger.Info("   ✅ User context injection")
 
 	log.Fatal(http.ListenAndServe(":8082", r))
 }
@@ -327,6 +342,9 @@ func createServiceLogsHandler(logger *logrus.Logger) http.HandlerFunc {
 		}
 
 		if !validServices[serviceName] {
+			logger.WithFields(logrus.Fields{
+				"service": serviceName,
+			}).Error("Invalid service name")
 			http.Error(w, "Invalid service name", http.StatusBadRequest)
 			return
 		}
@@ -499,9 +517,8 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger)
 		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
 		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
-		//pvillalobos - gateway should not be hitting data service health endpoint, all business services do that already
-		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger) // For UI monitoring
 
+		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger)
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
 			status = "degraded"
@@ -627,6 +644,7 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 // isServiceRunning checks if a service is currently running by checking its port
 func isServiceRunning(serviceName string) bool {
 	// Map service names to their ports
+	//pvillalobos - hardcoded values
 	servicePorts := map[string]string{
 		"gateway-service":   "8082",
 		"session-service":   "8081",
@@ -674,6 +692,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		logrusLogger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -738,6 +757,9 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := fmt.Sprintf("Service %s start command executed", serviceName)
 	if isRunning {
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Info("Service was restarted (was already running)")
 		message = fmt.Sprintf("Service %s was restarted (was already running)", serviceName)
 	}
 
@@ -860,6 +882,7 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		logrusLogger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -895,6 +918,9 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := fmt.Sprintf("Service %s stop command executed", serviceName)
 	if !isRunning {
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Info("Service was already stopped")
 		message = fmt.Sprintf("Service %s was already stopped", serviceName)
 	}
 
@@ -936,6 +962,7 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		logrusLogger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -1020,6 +1047,9 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 
 	serviceDir, exists := serviceDirectories[serviceName]
 	if !exists {
+		logrusLogger.WithFields(logrus.Fields{
+			"service_name": serviceName,
+		}).Error("Unknown service")
 		return false, "", fmt.Errorf("unknown service: %s", serviceName)
 	}
 
@@ -1114,6 +1144,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
+	//pvillalobos - hardcoded values
 	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
 
 	logger.WithFields(logrus.Fields{

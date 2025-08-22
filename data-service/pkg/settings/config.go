@@ -7,6 +7,8 @@ import (
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/sirupsen/logrus"
+
+	sqlqueries "data-service/pkg/settings/sql"
 )
 
 // ServiceConfig holds configuration for a specific service
@@ -26,12 +28,14 @@ func NewServiceConfig(serviceName string, logger *logrus.Logger) (*ServiceConfig
 
 	// Connect to database with default credentials
 	if err := config.connectToDatabase(); err != nil {
+		logger.WithError(err).Error("Failed to connect to database")
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer config.db.Close()
 
 	// Load all settings (general + service specific)
 	if err := config.loadAllSettings(serviceName); err != nil {
+		logger.WithError(err).Error("Failed to load all settings")
 		return nil, err
 	}
 
@@ -51,11 +55,13 @@ func (sc *ServiceConfig) connectToDatabase() error {
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
+		sc.logger.WithError(err).Error("Failed to open database connection")
 		return fmt.Errorf("failed to open database connection: %w", err)
 	}
 
 	// Test the connection
 	if err := db.Ping(); err != nil {
+		sc.logger.WithError(err).Error("Failed to ping database")
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
 
@@ -69,12 +75,14 @@ func (sc *ServiceConfig) loadAllSettings(serviceName string) error {
 	// Load general settings first
 	generalSettings, err := sc.loadServiceSettings("General")
 	if err != nil {
+		sc.logger.WithError(err).Error("Failed to load general settings")
 		return fmt.Errorf("failed to load general settings: %w", err)
 	}
 
 	// Load service-specific settings
 	serviceSettings, err := sc.loadServiceSettings(serviceName)
 	if err != nil {
+		sc.logger.WithError(err).Error("Failed to load service settings")
 		return fmt.Errorf("failed to load service settings: %w", err)
 	}
 
@@ -103,15 +111,9 @@ func (sc *ServiceConfig) loadAllSettings(serviceName string) error {
 func (sc *ServiceConfig) loadServiceSettings(serviceName string) (map[string]string, error) {
 	sc.logger.WithField("service", serviceName).Info("Loading settings from database")
 
-	query := `
-		SELECT setting_id, service, key, value, description, created_at, updated_at
-		FROM settings 
-		WHERE service = $1
-		ORDER BY key
-	`
-
-	rows, err := sc.db.Query(query, serviceName)
+	rows, err := sc.db.Query(sqlqueries.GetSettingsByServiceQuery, serviceName)
 	if err != nil {
+		sc.logger.WithError(err).Error("Failed to query settings")
 		return nil, fmt.Errorf("failed to query settings: %w", err)
 	}
 	defer rows.Close()
@@ -129,12 +131,14 @@ func (sc *ServiceConfig) loadServiceSettings(serviceName string) (map[string]str
 			&setting.UpdatedAt,
 		)
 		if err != nil {
+			sc.logger.WithError(err).Error("Failed to scan setting row")
 			return nil, fmt.Errorf("failed to scan setting row: %w", err)
 		}
 		settingsMap[setting.Key] = setting.Value
 	}
 
 	if err = rows.Err(); err != nil {
+		sc.logger.WithError(err).Error("Error iterating settings rows")
 		return nil, fmt.Errorf("error iterating settings rows: %w", err)
 	}
 
@@ -167,12 +171,14 @@ func (sc *ServiceConfig) GetOrDefault(key, defaultValue string) string {
 func (sc *ServiceConfig) GetInt(key string) (int, error) {
 	value, exists := sc.Get(key)
 	if !exists {
+		sc.logger.WithField("key", key).Error("Setting not found")
 		return 0, fmt.Errorf("setting not found: %s", key)
 	}
 
 	var intValue int
 	_, err := fmt.Sscanf(value, "%d", &intValue)
 	if err != nil {
+		sc.logger.WithError(err).WithField("key", key).Error("Failed to parse setting as int")
 		return 0, fmt.Errorf("failed to parse setting %s as int: %w", key, err)
 	}
 
@@ -191,12 +197,14 @@ func (sc *ServiceConfig) GetIntOrDefault(key string, defaultValue int) int {
 func (sc *ServiceConfig) GetFloat(key string) (float64, error) {
 	value, exists := sc.Get(key)
 	if !exists {
+		sc.logger.WithField("key", key).Error("Setting not found")
 		return 0, fmt.Errorf("setting not found: %s", key)
 	}
 
 	var floatValue float64
 	_, err := fmt.Sscanf(value, "%f", &floatValue)
 	if err != nil {
+		sc.logger.WithError(err).WithField("key", key).Error("Failed to parse setting as float")
 		return 0, fmt.Errorf("failed to parse setting %s as float: %w", key, err)
 	}
 
@@ -230,6 +238,7 @@ func (sc *ServiceConfig) Refresh(serviceName string) error {
 
 	// Reconnect to database
 	if err := sc.connectToDatabase(); err != nil {
+		sc.logger.WithError(err).Error("Failed to connect to database")
 		return err
 	}
 	defer sc.db.Close()

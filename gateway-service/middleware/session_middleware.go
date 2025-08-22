@@ -104,6 +104,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
+			sm.logger.WithError(err).Error("Failed to read request body")
 			sm.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Failed to read request body")
 			return
 		}
@@ -111,6 +112,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		// Forward login request to session service with gateway headers
 		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/login", strings.NewReader(string(body)))
 		if err != nil {
+			sm.logger.WithError(err).Error("Failed to create login request")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create login request")
 			return
 		}
@@ -199,6 +201,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		// Forward logout request to session service with gateway headers
 		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/logout", r.Body)
 		if err != nil {
+			sm.logger.WithError(err).Error("Failed to create logout request")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create logout request")
 			return
 		}
@@ -225,6 +228,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		// Copy response from session service
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
+			sm.logger.WithError(err).Error("Failed to read logout response body")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "response_error", "Failed to read logout response")
 			return
 		}
@@ -270,32 +274,4 @@ func (sm *SessionMiddleware) writeErrorResponse(w http.ResponseWriter, statusCod
 	}
 
 	json.NewEncoder(w).Encode(response)
-}
-
-// Helper functions to safely extract values from interface{} maps
-func getString(m map[string]interface{}, key string) string {
-	if val, ok := m[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-func getStringSlice(m map[string]interface{}, key string) []string {
-	if val, ok := m[key].([]interface{}); ok {
-		result := make([]string, len(val))
-		for i, v := range val {
-			if str, ok := v.(string); ok {
-				result[i] = str
-			}
-		}
-		return result
-	}
-	return nil
-}
-
-func getBool(m map[string]interface{}, key string) bool {
-	if val, ok := m[key].(bool); ok {
-		return val
-	}
-	return false
 }
