@@ -14,7 +14,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -155,11 +154,10 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	}
 
 	// Create HTTP request
-	dataServiceURL := "http://localhost:8086"
-	if value := os.Getenv("DATA_SERVICE_URL"); value != "" {
-		dataServiceURL = value
-	}
-	url := fmt.Sprintf("%s/api/v1/data/images/%s", dataServiceURL, service)
+	// TODO: get gateway URL from config. We need to leave it localhost for images
+	gatewayURL := "http://localhost:8082"
+
+	url := fmt.Sprintf("%s/api/v1/data/images/%s", gatewayURL, service)
 
 	h.logger.WithFields(logrus.Fields{
 		"service":    service,
@@ -223,7 +221,7 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 // deleteImageFromDataService deletes an image from the data service
 func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) error {
 	// Construct the delete URL
-	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.DataServiceURL, service, filename)
+	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.GatewayURL, service, filename)
 
 	// Create HTTP client
 	client := &http.Client{

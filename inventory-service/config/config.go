@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -53,7 +52,7 @@ type Config struct {
 	ImagesBasePath string
 
 	// Service URLs
-	DataServiceURL string
+	GatewayURL string
 }
 
 // LoadConfigFromDataService loads configuration from the data service API
@@ -93,7 +92,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		ImagesBasePath: ".",
 
 		// Service URLs
-		DataServiceURL: "http://localhost:8086",
+		GatewayURL: "http://localhost:8082",
 	}
 
 	// Populate config from settings
@@ -111,10 +110,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
-	dataServiceURL := "http://localhost:8086"
-	if value := os.Getenv("DATA_SERVICE_URL"); value != "" {
-		dataServiceURL = value
-	}
+	dataServiceURL := "http://icecream_data_service:8086" // Use Docker service name for internal communication
 	url := fmt.Sprintf("%s/api/v1/data/settings/by-service", dataServiceURL)
 
 	// Prepare request
@@ -196,8 +192,8 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			config.DBSSLMode = setting.Value
 		case "INVENTORY_IMAGES_BASE_PATH":
 			config.ImagesBasePath = setting.Value
-		case "DATA_SERVICE_URL":
-			config.DataServiceURL = setting.Value
+		case "GATEWAY_URL":
+			config.GatewayURL = setting.Value
 		default:
 			logger.WithField("key", setting.Key).Debug("Setting not mapped to config struct")
 		}

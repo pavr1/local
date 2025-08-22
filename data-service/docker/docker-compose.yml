@@ -62,8 +62,7 @@ services:
       # Logging Configuration
       LOG_LEVEL: ${LOG_LEVEL:-info}
       
-      # Gateway Configuration
-      GATEWAY_URL: http://gateway-service:8082
+
     ports:
       - "8086:8086"
     volumes:
