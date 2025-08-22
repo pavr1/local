@@ -8,8 +8,8 @@ import (
 
 // ImageHandler handles image storage and retrieval operations
 type ImageHandler struct {
-	basePath    string
-	gatewayURL  string
+	basePath   string
+	gatewayURL string
 }
 
 // NewImageHandler creates a new image handler
@@ -19,7 +19,7 @@ func NewImageHandler(basePath string) *ImageHandler {
 	if value := os.Getenv("GATEWAY_URL"); value != "" {
 		gatewayURL = value
 	}
-	
+
 	return &ImageHandler{
 		basePath:   basePath,
 		gatewayURL: gatewayURL,

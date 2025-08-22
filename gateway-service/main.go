@@ -207,6 +207,9 @@ func main() {
 	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logrusLogger)).Methods("GET")
 	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.DataServiceURL, "/api/v1/data/p/health", logrusLogger)).Methods("GET")
 
+	// Public image serving endpoints (no authentication required) - MUST be defined BEFORE authenticated routes
+	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}/{filename}", logrusLogger)).Methods("GET")
+
 	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logrusLogger)).Methods("GET")
 
@@ -227,7 +230,6 @@ func main() {
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
-	dataRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Settings endpoints (authenticated)
 	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logrusLogger)).Methods("GET")
@@ -236,8 +238,11 @@ func main() {
 	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logrusLogger)).Methods("POST")
 	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logrusLogger)).Methods("POST")
 
-	// Other data service endpoints
+	// Other data service endpoints (authenticated)
 	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
+
+	// Apply authentication middleware to data router
+	dataRouter.Use(sessionMiddleware.ValidateSession)
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware)

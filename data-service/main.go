@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// Create image handler
-	imageHandler := images.NewImageHandler(".")
+	imageHandler := images.NewImageHandler("/app")
 
 	// Setup HTTP server
 	router := setupRouter(db, logger, settingsHandler, imageHandler)
