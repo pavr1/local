@@ -28,8 +28,6 @@ type MainHttpHandler struct {
 	logger *logrus.Logger
 	config *config.Config
 
-
-
 	// Entity handlers
 	SuppliersHandler            *suppliersHandlers.HttpHandler
 	IngredientCategoriesHandler *ingredientCategoriesHandlers.HttpHandler
@@ -204,8 +202,6 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 
 	h.logger.Info("HTTP routes configured successfully")
 }
-
-
 
 // HealthCheck handles health check requests
 func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {

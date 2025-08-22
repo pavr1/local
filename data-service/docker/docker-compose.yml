@@ -61,8 +61,13 @@ services:
       
       # Logging Configuration
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Gateway Configuration
+      GATEWAY_URL: http://gateway-service:8082
     ports:
       - "8086:8086"
+    volumes:
+      - data_images:/app/images
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +84,8 @@ volumes:
   postgres_data:
     driver: local
   pgadmin_data:
+    driver: local
+  data_images:
     driver: local
 
 networks:

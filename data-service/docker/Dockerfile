@@ -17,6 +17,10 @@ COPY main .
 # Make binary executable
 RUN chmod +x main
 
+# Create images directory and set permissions
+RUN mkdir -p /app/images/recipes && \
+    chown -R appuser:appgroup /app/images
+
 # Change ownership
 RUN chown -R appuser:appgroup /app
 

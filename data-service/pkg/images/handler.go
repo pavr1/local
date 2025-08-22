@@ -8,13 +8,21 @@ import (
 
 // ImageHandler handles image storage and retrieval operations
 type ImageHandler struct {
-	basePath string
+	basePath    string
+	gatewayURL  string
 }
 
 // NewImageHandler creates a new image handler
 func NewImageHandler(basePath string) *ImageHandler {
+	// Get gateway URL from environment variable, default to localhost:8082
+	gatewayURL := "http://localhost:8082"
+	if value := os.Getenv("GATEWAY_URL"); value != "" {
+		gatewayURL = value
+	}
+	
 	return &ImageHandler{
-		basePath: basePath,
+		basePath:   basePath,
+		gatewayURL: gatewayURL,
 	}
 }
 
@@ -129,10 +137,10 @@ func (h *ImageHandler) GetImagePath(service, name string) string {
 	return filepath.Join(h.basePath, "images", service, name)
 }
 
-// GetImageURL returns the URL path for an image (for web serving)
+// GetImageURL returns the full gateway URL for an image (for web serving)
 // service: the service name (e.g., "recipes", "invoices")
 // name: the name of the image file
-// returns: the URL path (e.g., "/images/recipes/vanilla-ice-cream.jpg")
+// returns: the full gateway URL (e.g., "http://localhost:8082/api/v1/data/images/recipes/vanilla-ice-cream.jpg")
 func (h *ImageHandler) GetImageURL(service, name string) string {
-	return fmt.Sprintf("/images/%s/%s", service, name)
+	return fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.gatewayURL, service, name)
 }
