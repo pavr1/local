@@ -181,6 +181,9 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 	router.HandleFunc("/api/v1/data/images/{service}", func(w http.ResponseWriter, r *http.Request) {
 		storeImage(w, r, imageHandler, logger)
 	}).Methods("POST")
+	router.HandleFunc("/api/v1/data/images/{service}/{filename}", func(w http.ResponseWriter, r *http.Request) {
+		deleteImage(w, r, imageHandler, logger)
+	}).Methods("DELETE")
 
 	return router
 }
@@ -347,6 +350,45 @@ func storeImage(w http.ResponseWriter, r *http.Request, imageHandler *images.Ima
 		"message":   "Image stored successfully",
 		"filename":  header.Filename,
 		"image_url": imageURL,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// deleteImage deletes an image from the file system
+func deleteImage(w http.ResponseWriter, r *http.Request, imageHandler *images.ImageHandler, logger *logrus.Logger) {
+	vars := mux.Vars(r)
+	service := vars["service"]
+	filename := vars["filename"]
+
+	if service == "" || filename == "" {
+		logger.WithFields(logrus.Fields{
+			"service":  service,
+			"filename": filename,
+		}).Error("Invalid image path for deletion")
+
+		http.Error(w, "Invalid image path", http.StatusBadRequest)
+		return
+	}
+
+	// Delete the image
+	err := imageHandler.DeleteImage(service, filename)
+	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"service":  service,
+			"filename": filename,
+		}).Error("Failed to delete image")
+		http.Error(w, "Failed to delete image", http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response
+	response := map[string]interface{}{
+		"success":  true,
+		"message":  "Image deleted successfully",
+		"filename": filename,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -51,6 +51,9 @@ type Config struct {
 
 	// Image storage configuration
 	ImagesBasePath string
+
+	// Service URLs
+	DataServiceURL string
 }
 
 // LoadConfigFromDataService loads configuration from the data service API
@@ -88,6 +91,9 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 
 		// Image storage defaults
 		ImagesBasePath: ".",
+
+		// Service URLs
+		DataServiceURL: "http://localhost:8086",
 	}
 
 	// Populate config from settings
@@ -190,6 +196,8 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 			config.DBSSLMode = setting.Value
 		case "INVENTORY_IMAGES_BASE_PATH":
 			config.ImagesBasePath = setting.Value
+		case "DATA_SERVICE_URL":
+			config.DataServiceURL = setting.Value
 		default:
 			logger.WithField("key", setting.Key).Debug("Setting not mapped to config struct")
 		}

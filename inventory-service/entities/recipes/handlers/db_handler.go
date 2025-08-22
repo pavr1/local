@@ -11,9 +11,11 @@ import (
 	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
 	"inventory-service/entities/recipes/models"
 	recipeSQL "inventory-service/entities/recipes/sql"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -52,8 +54,11 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 		return nil, fmt.Errorf("image is required for recipe creation")
 	}
 
+	req.RecipeName = strings.ReplaceAll(req.RecipeName, " ", "_")
+	req.RecipeName += ".jpg"
+
 	// Store the image in data service (image is required)
-	imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
+	imageURL, err := h.storeImageInDataService("recipes", req.RecipeName, req.ImageData)
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
@@ -213,6 +218,41 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	}
 
 	return response.ImageURL, nil
+}
+
+// deleteImageFromDataService deletes an image from the data service
+func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) error {
+	// Construct the delete URL
+	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.DataServiceURL, service, filename)
+
+	// Create HTTP client
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create DELETE request
+	req, err := http.NewRequest("DELETE", deleteURL, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+
+	// Execute the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("data service returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
 
 func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, error) {
@@ -475,6 +515,22 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 }
 
 func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
+	// First, get the recipe details to extract the image filename
+	recipe, err := h.GetByID(models.GetRecipeRequest{ID: req.ID})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"recipe_id": req.ID,
+			}).Warn("No recipe found to delete")
+			return sql.ErrNoRows
+		}
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": req.ID,
+		}).Error("Failed to get recipe details before deletion")
+		return err
+	}
+
+	// Delete the recipe from the database
 	result, err := h.db.Exec(recipeSQL.DeleteRecipeQuery, req.ID)
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
@@ -496,6 +552,32 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 			"recipe_id": req.ID,
 		}).Warn("No recipe found to delete")
 		return sql.ErrNoRows
+	}
+
+	// Delete the associated image file if it exists
+	if recipe.PictureURL != nil && *recipe.PictureURL != "" {
+		// Extract filename from the URL
+		// URL format: http://localhost:8082/api/v1/data/images/recipes/filename.jpg
+		imageURL := *recipe.PictureURL
+		parts := strings.Split(imageURL, "/")
+		if len(parts) >= 2 {
+			filename := parts[len(parts)-1] // Get the last part as filename
+
+			// Delete the image from data service
+			err = h.deleteImageFromDataService("recipes", filename)
+			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"recipe_id": req.ID,
+					"filename":  filename,
+				}).Warn("Failed to delete recipe image from data service, but recipe was deleted from database")
+				// Don't fail the entire operation if image deletion fails
+			} else {
+				h.logger.WithFields(logrus.Fields{
+					"recipe_id": req.ID,
+					"filename":  filename,
+				}).Info("Recipe image deleted from data service")
+			}
+		}
 	}
 
 	h.logger.WithFields(logrus.Fields{
