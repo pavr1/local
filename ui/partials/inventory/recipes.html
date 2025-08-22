@@ -228,6 +228,8 @@
                                 <input type="text" class="form-control" id="addRecipeImageDisplay" 
                                        readonly placeholder="Select an image" style="background: white;">
                                 <input type="hidden" id="addRecipePictureUrl" name="picture_url">
+                                <input type="hidden" id="addRecipeImageName" name="image_name">
+                                <input type="hidden" id="addRecipeImageData" name="image_data">
                                 <button type="button" class="btn btn-outline-primary" onclick="openRecipeImagePicker()" title="Select Image">
                                     <i class="fas fa-image"></i>
                                 </button>
@@ -344,6 +346,24 @@
                                    placeholder="0.00" readonly style="background: #f8f9fa;">
                             <div class="invalid-feedback">
                                 Please provide a valid total cost.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="editRecipeImageDisplay" class="form-label">Recipe Image</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="editRecipeImageDisplay" 
+                                       readonly placeholder="Select an image" style="background: white;">
+                                <input type="hidden" id="editRecipePictureUrl" name="picture_url">
+                                <input type="hidden" id="editRecipeImageName" name="image_name">
+                                <input type="hidden" id="editRecipeImageData" name="image_data">
+                                <button type="button" class="btn btn-outline-primary" onclick="openRecipeImagePicker()" title="Select Image">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                            </div>
+                            <div class="invalid-feedback">
+                                Please select a valid image.
                             </div>
                         </div>
                     </div>
@@ -787,61 +807,32 @@
                 number_of_units: ingredient.quantity
             }));
             
-            // Handle image data if a file was selected
-            if (window.selectedImageFile) {
-                // Convert file to base64 for transmission
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
-                    const imageBytes = atob(base64Data);
-                    
-                    // Convert to Uint8Array for transmission
-                    const imageArray = new Uint8Array(imageBytes.length);
-                    for (let i = 0; i < imageBytes.length; i++) {
-                        imageArray[i] = imageBytes.charCodeAt(i);
-                    }
-                    
-                    // Add image data to recipe
-                    recipeData.image_name = window.selectedImageFile.name;
-                    recipeData.image_data = Array.from(imageArray); // Convert to regular array for JSON
-                    
-                    // Send the request with image data
-                    const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok && result.success) {
-                        Alert.success('Recipe created successfully!');
-                        
-                        // Hide modal
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
-                        modal.hide();
-                        
-                        // Reload data
-                        await loadRecipesData();
-                    } else {
-                        throw new Error(result.message || 'Failed to create recipe');
-                    }
-                };
-                reader.readAsDataURL(window.selectedImageFile);
+            // Handle image data from hidden fields
+            const imageName = document.getElementById('addRecipeImageName').value;
+            const imageData = document.getElementById('addRecipeImageData').value;
+            
+            if (imageName && imageData) {
+                // Parse the image data from JSON string back to array
+                recipeData.image_name = imageName;
+                recipeData.image_data = JSON.parse(imageData);
+            }
+            
+            // Send the request
+            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                Alert.success('Recipe created successfully!');
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
+                modal.hide();
+                
+                // Reload data
+                await loadRecipesData();
             } else {
-                // No image file, send request without image data
-                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    Alert.success('Recipe created successfully!');
-                    
-                    // Hide modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
-                    modal.hide();
-                    
-                    // Reload data
-                    await loadRecipesData();
-                } else {
-                    throw new Error(result.message || 'Failed to create recipe');
-                }
+                throw new Error(result.message || 'Failed to create recipe');
             }
             
         } catch (error) {
@@ -1130,7 +1121,7 @@
             return;
         }
         
-        // Create preview
+        // Create preview and convert to bytes
         const reader = new FileReader();
         reader.onload = function(e) {
             const previewImage = document.getElementById('recipePreviewImage');
@@ -1141,8 +1132,20 @@
             previewContainer.style.display = 'block';
             confirmBtn.disabled = false;
             
-            // Store the file for confirmation
-            window.selectedImageFile = file;
+            // Convert file to bytes (Uint8Array)
+            const arrayBufferReader = new FileReader();
+            arrayBufferReader.onload = function(e) {
+                const arrayBuffer = e.target.result;
+                const bytes = new Uint8Array(arrayBuffer);
+                
+                // Store the file data for confirmation
+                window.selectedImageFile = {
+                    file: file,
+                    bytes: bytes,
+                    filename: file.name
+                };
+            };
+            arrayBufferReader.readAsArrayBuffer(file);
         };
         reader.readAsDataURL(file);
     }
@@ -1151,23 +1154,32 @@
         const addRecipeModal = document.getElementById('addRecipeModal');
         const editRecipeModal = document.getElementById('editRecipeModal');
         
-        let imageUrl = '';
-        
         if (window.selectedImageFile) {
-            // Handle uploaded file - in a real app, you'd upload this to a server
-            // For now, we'll use a placeholder
-            imageUrl = 'uploaded-image-placeholder.jpg';
+            // Handle uploaded file with bytes
+            const imageData = window.selectedImageFile;
+            
+            if (addRecipeModal && addRecipeModal.classList.contains('show')) {
+                // Set values for add recipe modal
+                document.getElementById('addRecipeImageName').value = imageData.filename;
+                document.getElementById('addRecipeImageData').value = JSON.stringify(Array.from(imageData.bytes));
+                document.getElementById('addRecipeImageDisplay').value = imageData.filename;
+            } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
+                // Set values for edit recipe modal
+                document.getElementById('editRecipeImageName').value = imageData.filename;
+                document.getElementById('editRecipeImageData').value = JSON.stringify(Array.from(imageData.bytes));
+                document.getElementById('editRecipeImageDisplay').value = imageData.filename;
+            }
         } else if (window.selectedImageUrl) {
-            imageUrl = window.selectedImageUrl;
-        }
-        
-        if (addRecipeModal && addRecipeModal.classList.contains('show')) {
-            // Set values for add recipe modal
-            document.getElementById('addRecipePictureUrl').value = imageUrl;
-            document.getElementById('addRecipeImageDisplay').value = imageUrl;
-        } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
-            // Set values for edit recipe modal - if it has image fields
-            // This would need to be implemented based on the edit modal structure
+            // Handle URL input
+            const imageUrl = window.selectedImageUrl;
+            
+            if (addRecipeModal && addRecipeModal.classList.contains('show')) {
+                document.getElementById('addRecipePictureUrl').value = imageUrl;
+                document.getElementById('addRecipeImageDisplay').value = imageUrl;
+            } else if (editRecipeModal && editRecipeModal.classList.contains('show')) {
+                document.getElementById('editRecipePictureUrl').value = imageUrl;
+                document.getElementById('editRecipeImageDisplay').value = imageUrl;
+            }
         }
         
         // Hide the image picker modal
@@ -1599,61 +1611,32 @@
                 number_of_units: ingredient.quantity
             }));
             
-            // Handle image data if a file was selected
-            if (window.selectedImageFile) {
-                // Convert file to base64 for transmission
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
-                    const imageBytes = atob(base64Data);
-                    
-                    // Convert to Uint8Array for transmission
-                    const imageArray = new Uint8Array(imageBytes.length);
-                    for (let i = 0; i < imageBytes.length; i++) {
-                        imageArray[i] = imageBytes.charCodeAt(i);
-                    }
-                    
-                    // Add image data to recipe
-                    recipeData.image_name = window.selectedImageFile.name;
-                    recipeData.image_data = Array.from(imageArray); // Convert to regular array for JSON
-                    
-                    // Send the request with image data
-                    const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
-                    
-                    const result = await response.json();
-                    
-                    if (response.ok && result.success) {
-                        Alert.success('Recipe updated successfully!');
-                        
-                        // Hide modal
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
-                        modal.hide();
-                        
-                        // Reload data
-                        await loadRecipesData();
-                    } else {
-                        throw new Error(result.message || 'Failed to update recipe');
-                    }
-                };
-                reader.readAsDataURL(window.selectedImageFile);
+            // Handle image data from hidden fields
+            const imageName = document.getElementById('editRecipeImageName').value;
+            const imageData = document.getElementById('editRecipeImageData').value;
+            
+            if (imageName && imageData) {
+                // Parse the image data from JSON string back to array
+                recipeData.image_name = imageName;
+                recipeData.image_data = JSON.parse(imageData);
+            }
+            
+            // Send the request
+            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                Alert.success('Recipe updated successfully!');
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
+                modal.hide();
+                
+                // Reload data
+                await loadRecipesData();
             } else {
-                // No image file, send request without image data
-                const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
-                
-                const result = await response.json();
-                
-                if (response.ok && result.success) {
-                    Alert.success('Recipe updated successfully!');
-                    
-                    // Hide modal
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
-                    modal.hide();
-                    
-                    // Reload data
-                    await loadRecipesData();
-                } else {
-                    throw new Error(result.message || 'Failed to update recipe');
-                }
+                throw new Error(result.message || 'Failed to update recipe');
             }
             
         } catch (error) {

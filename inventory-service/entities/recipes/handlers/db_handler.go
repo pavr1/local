@@ -1,36 +1,37 @@
 package handlers
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"inventory-service/config"
 	recipeIngredientsHandler "inventory-service/entities/recipe_ingredients/handlers"
 	recipeIngredientsModels "inventory-service/entities/recipe_ingredients/models"
 	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
 	"inventory-service/entities/recipes/models"
 	recipeSQL "inventory-service/entities/recipes/sql"
-	imageHandler "inventory-service/pkg/images"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
 // RecipeDBHandler handles database operations for recipes
 type RecipeDBHandler struct {
-	db           *sql.DB
-	logger       *logrus.Logger
-	imageHandler *imageHandler.ImageHandler
-	config       *config.Config
+	db     *sql.DB
+	logger *logrus.Logger
+	config *config.Config
 }
 
 // NewRecipeDBHandler creates a new database handler for recipes
 func NewRecipeDBHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *RecipeDBHandler {
-	imgHandler := imageHandler.NewImageHandler()
-	imgHandler.SetBasePath(cfg.ImagesBasePath)
-
 	return &RecipeDBHandler{
-		db:           db,
-		logger:       logger,
-		imageHandler: imgHandler,
-		config:       cfg,
+		db:     db,
+		logger: logger,
+		config: cfg,
 	}
 }
 
@@ -43,26 +44,24 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	}
 	defer tx.Rollback() // Rollback if not committed
 
-	// Handle image storage if image data is provided
-	var pictureURL *string
-	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
-		// Store the image
-		err = h.imageHandler.AddImage("recipes", *req.ImageName, req.ImageData)
-		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
-				"recipe_name": req.RecipeName,
-				"image_name":  *req.ImageName,
-			}).Error("Failed to store recipe image")
-			return nil, err
-		}
-
-		// Generate the picture URL (relative path)
-		url := h.imageHandler.GetImageURL("recipes", *req.ImageName)
-		pictureURL = &url
-	} else {
-		// Use the provided PictureURL if no image data
-		pictureURL = req.PictureURL
+	// Validate that image data is provided
+	if req.ImageData == nil || req.ImageName == nil || len(req.ImageData) == 0 {
+		h.logger.WithFields(logrus.Fields{
+			"recipe_name": req.RecipeName,
+		}).Error("Recipe creation failed: image is required")
+		return nil, fmt.Errorf("image is required for recipe creation")
 	}
+
+	// Store the image in data service (image is required)
+	imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_name": req.RecipeName,
+			"image_name":  *req.ImageName,
+		}).Error("Failed to store recipe image in data service")
+		return nil, err
+	}
+	pictureURL := &imageURL
 
 	var recipe models.Recipe
 	err = tx.QueryRow(
@@ -117,10 +116,103 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 		"recipe_id":         recipe.ID,
 		"recipe_name":       recipe.RecipeName,
 		"ingredients_count": len(req.Ingredients),
-		"has_image":         req.ImageData != nil && len(req.ImageData) > 0,
+		"has_image":         true,
 	}).Info("Recipe and ingredients created successfully")
 
 	return &recipe, nil
+}
+
+// storeImageInDataService stores an image in the data service and returns the image URL
+func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, imageData []byte) (string, error) {
+	// Create multipart form data
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	// Create form file
+	part, err := writer.CreateFormFile("image", imageName)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to create form file")
+		return "", fmt.Errorf("failed to create form file: %w", err)
+	}
+
+	// Write image data
+	_, err = part.Write(imageData)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to write image data")
+		return "", fmt.Errorf("failed to write image data: %w", err)
+	}
+
+	// Close writer
+	err = writer.Close()
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to close writer")
+		return "", fmt.Errorf("failed to close writer: %w", err)
+	}
+
+	// Create HTTP request
+	dataServiceURL := "http://localhost:8086"
+	if value := os.Getenv("DATA_SERVICE_URL"); value != "" {
+		dataServiceURL = value
+	}
+	url := fmt.Sprintf("%s/api/v1/data/images/%s", dataServiceURL, service)
+
+	h.logger.WithFields(logrus.Fields{
+		"service":    service,
+		"image_name": imageName,
+		"image_data": len(imageData),
+		"url":        url,
+	}).Info("Image data written successfully, calling data service")
+
+	req, err := http.NewRequest("POST", url, &buf)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to create HTTP request")
+		return "", fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Add gateway headers for internal service communication
+	req.Header.Set("X-Gateway-Service", "gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+	req.Header.Set("X-User-ID", "system")
+	req.Header.Set("X-User-Role", "admin")
+
+	// Make request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		h.logger.WithError(err).Error("Failed to make HTTP request")
+		return "", fmt.Errorf("failed to make HTTP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		h.logger.WithFields(logrus.Fields{
+			"status_code": resp.StatusCode,
+		}).Error("Data service returned non-OK status")
+		return "", fmt.Errorf("data service returned status %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var response struct {
+		Success  bool   `json:"success"`
+		Message  string `json:"message"`
+		ImageURL string `json:"image_url"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		h.logger.WithError(err).Error("Failed to decode response")
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	if !response.Success {
+		h.logger.WithFields(logrus.Fields{
+			"message": response.Message,
+		}).Error("Data service returned non-success response")
+		return "", fmt.Errorf("data service error: %s", response.Message)
+	}
+
+	return response.ImageURL, nil
 }
 
 func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, error) {
@@ -285,19 +377,22 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 	// Handle image storage if image data is provided
 	var pictureURL *string
 	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
-		// Store the image
-		err = h.imageHandler.AddImage("recipes", *req.ImageName, req.ImageData)
+		h.logger.WithFields(logrus.Fields{
+			"recipe_id":  id,
+			"image_name": *req.ImageName,
+			"image_data": len(req.ImageData),
+		}).Info("Storing recipe image in data service")
+
+		// Store the image in data service
+		imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
 		if err != nil {
 			h.logger.WithError(err).WithFields(logrus.Fields{
 				"recipe_id":  id,
 				"image_name": *req.ImageName,
-			}).Error("Failed to store recipe image")
+			}).Error("Failed to store recipe image in data service")
 			return nil, err
 		}
-
-		// Generate the picture URL (relative path)
-		url := h.imageHandler.GetImageURL("recipes", *req.ImageName)
-		pictureURL = &url
+		pictureURL = &imageURL
 	} else {
 		// Use the provided PictureURL if no image data
 		pictureURL = req.PictureURL

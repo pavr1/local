@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"data-service/pkg/database"
+	"data-service/pkg/images"
 	"data-service/pkg/settings"
 
 	"github.com/gorilla/mux"
@@ -78,8 +79,11 @@ func main() {
 		logger.WithError(err).Fatal("Failed to initialize settings handler")
 	}
 
+	// Create image handler
+	imageHandler := images.NewImageHandler(".")
+
 	// Setup HTTP server
-	router := setupRouter(db, logger, settingsHandler)
+	router := setupRouter(db, logger, settingsHandler, imageHandler)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8086", // Data service port - bind to all interfaces
@@ -136,7 +140,7 @@ func getEnvInt(key string, defaultValue int) int {
 }
 
 // setupRouter configures the HTTP routes
-func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHandler *settings.SettingsHandler) *mux.Router {
+func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHandler *settings.SettingsHandler, imageHandler *images.ImageHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Root endpoint to test if router is working
@@ -169,6 +173,14 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 	router.HandleFunc("/api/v1/data/settings/by-key", settingsHandler.GetByKey).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/reload", settingsHandler.Reload).Methods("POST")
 	router.HandleFunc("/api/v1/data/settings/update-setting", settingsHandler.UpdateSetting).Methods("POST")
+
+	// Image endpoints
+	router.HandleFunc("/api/v1/data/images/{service}/{filename}", func(w http.ResponseWriter, r *http.Request) {
+		serveImage(w, r, imageHandler, logger)
+	}).Methods("GET")
+	router.HandleFunc("/api/v1/data/images/{service}", func(w http.ResponseWriter, r *http.Request) {
+		storeImage(w, r, imageHandler, logger)
+	}).Methods("POST")
 
 	return router
 }
@@ -228,6 +240,113 @@ func statsEndpoint(w http.ResponseWriter, _ *http.Request, db database.DatabaseH
 			"wait_count":       stats.WaitCount,
 			"wait_duration":    stats.WaitDuration.String(),
 		},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// serveImage serves images from the file system
+func serveImage(w http.ResponseWriter, r *http.Request, imageHandler *images.ImageHandler, logger *logrus.Logger) {
+	vars := mux.Vars(r)
+	service := vars["service"]
+	filename := vars["filename"]
+
+	if service == "" || filename == "" {
+		logger.WithFields(logrus.Fields{
+			"service":  service,
+			"filename": filename,
+		}).Error("Invalid image path")
+
+		http.Error(w, "Invalid image path", http.StatusBadRequest)
+		return
+	}
+
+	// Retrieve image data
+	imageData, err := imageHandler.RetrieveImage(service, filename)
+	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"service":  service,
+			"filename": filename,
+		}).Error("Failed to retrieve image")
+		http.Error(w, "Image not found", http.StatusNotFound)
+		return
+	}
+
+	// Determine content type based on file extension
+	contentType := "image/jpeg" // default
+	switch {
+	case filename[len(filename)-4:] == ".png":
+		contentType = "image/png"
+	case filename[len(filename)-4:] == ".gif":
+		contentType = "image/gif"
+	case filename[len(filename)-5:] == ".webp":
+		contentType = "image/webp"
+	}
+
+	// Set headers and serve image
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
+	w.Write(imageData)
+}
+
+// storeImage stores an image in the file system
+func storeImage(w http.ResponseWriter, r *http.Request, imageHandler *images.ImageHandler, logger *logrus.Logger) {
+	vars := mux.Vars(r)
+	service := vars["service"]
+
+	if service == "" {
+		logger.Error("Service parameter is required")
+		http.Error(w, "Service parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse multipart form
+	if err := r.ParseMultipartForm(32 << 20); err != nil { // 32MB max
+		logger.WithError(err).Error("Failed to parse form")
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get the uploaded file
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		logger.WithError(err).Error("No image file provided")
+		http.Error(w, "No image file provided", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Read file data
+	imageData := make([]byte, header.Size)
+	_, err = file.Read(imageData)
+	if err != nil {
+		logger.WithError(err).Error("Failed to read uploaded image")
+		http.Error(w, "Failed to read image data", http.StatusInternalServerError)
+		return
+	}
+
+	// Store the image
+	err = imageHandler.AddImage(service, header.Filename, imageData)
+	if err != nil {
+		logger.WithError(err).WithFields(logrus.Fields{
+			"service":  service,
+			"filename": header.Filename,
+		}).Error("Failed to store image")
+		http.Error(w, "Failed to store image", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate the image URL
+	imageURL := imageHandler.GetImageURL(service, header.Filename)
+
+	// Return success response
+	response := map[string]interface{}{
+		"success":   true,
+		"message":   "Image stored successfully",
+		"filename":  header.Filename,
+		"image_url": imageURL,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

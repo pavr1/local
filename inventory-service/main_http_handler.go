@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"inventory-service/config"
@@ -17,7 +16,6 @@ import (
 	runoutIngredientsHandlers "inventory-service/entities/runout_ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
 	"inventory-service/middleware"
-	imageHandler "inventory-service/pkg/images"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -30,8 +28,7 @@ type MainHttpHandler struct {
 	logger *logrus.Logger
 	config *config.Config
 
-	// Image handler
-	imageHandler *imageHandler.ImageHandler
+
 
 	// Entity handlers
 	SuppliersHandler            *suppliersHandlers.HttpHandler
@@ -74,15 +71,10 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *
 	// Initialize recipe ingredients handlers
 	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewRecipeIngredientHTTPHandler(db, logger)
 
-	// Initialize image handler
-	imgHandler := imageHandler.NewImageHandler()
-	imgHandler.SetBasePath(cfg.ImagesBasePath)
-
 	return &MainHttpHandler{
 		db:                          db,
 		logger:                      logger,
 		config:                      cfg,
-		imageHandler:                imgHandler,
 		SuppliersHandler:            suppliersHttpHandler,
 		IngredientCategoriesHandler: ingredientCategoriesHttpHandler,
 		IngredientsHandler:          ingredientsHttpHandler,
@@ -202,9 +194,6 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 	recipesRouter.HandleFunc("/{id}", h.GetRecipesHandler().UpdateRecipe).Methods("PUT")
 	recipesRouter.HandleFunc("/{id}", h.GetRecipesHandler().DeleteRecipe).Methods("DELETE")
 
-	// Image serving endpoint (public - no authentication required for images)
-	publicRouter.HandleFunc("/images/{service}/{filename}", h.ServeImage).Methods("GET")
-
 	// Recipe Ingredients endpoints under inventory
 	recipeIngredientsRouter := protectedRouter.PathPrefix("/recipe-ingredients").Subrouter()
 	recipeIngredientsRouter.HandleFunc("", h.GetRecipeIngredientsHandler().ListRecipeIngredients).Methods("GET")
@@ -216,44 +205,7 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 	h.logger.Info("HTTP routes configured successfully")
 }
 
-// ServeImage serves images from the file system
-func (h *MainHttpHandler) ServeImage(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	service := vars["service"]
-	filename := vars["filename"]
 
-	if service == "" || filename == "" {
-		http.Error(w, "Invalid image path", http.StatusBadRequest)
-		return
-	}
-
-	// Retrieve image data using the instance image handler
-	imageData, err := h.imageHandler.RetrieveImage(service, filename)
-	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
-			"service":  service,
-			"filename": filename,
-		}).Error("Failed to retrieve image")
-		http.Error(w, "Image not found", http.StatusNotFound)
-		return
-	}
-
-	// Determine content type based on file extension
-	contentType := "image/jpeg" // default
-	switch {
-	case strings.HasSuffix(filename, ".png"):
-		contentType = "image/png"
-	case strings.HasSuffix(filename, ".gif"):
-		contentType = "image/gif"
-	case strings.HasSuffix(filename, ".webp"):
-		contentType = "image/webp"
-	}
-
-	// Set headers and serve image
-	w.Header().Set("Content-Type", contentType)
-	w.Header().Set("Cache-Control", "public, max-age=31536000") // Cache for 1 year
-	w.Write(imageData)
-}
 
 // HealthCheck handles health check requests
 func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
