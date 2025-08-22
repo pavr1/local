@@ -787,21 +787,61 @@
                 number_of_units: ingredient.quantity
             }));
             
-            const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                Alert.success('Recipe created successfully!');
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
-                modal.hide();
-                
-                // Reload data
-                await loadRecipesData();
+            // Handle image data if a file was selected
+            if (window.selectedImageFile) {
+                // Convert file to base64 for transmission
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
+                    const imageBytes = atob(base64Data);
+                    
+                    // Convert to Uint8Array for transmission
+                    const imageArray = new Uint8Array(imageBytes.length);
+                    for (let i = 0; i < imageBytes.length; i++) {
+                        imageArray[i] = imageBytes.charCodeAt(i);
+                    }
+                    
+                    // Add image data to recipe
+                    recipeData.image_name = window.selectedImageFile.name;
+                    recipeData.image_data = Array.from(imageArray); // Convert to regular array for JSON
+                    
+                    // Send the request with image data
+                    const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        Alert.success('Recipe created successfully!');
+                        
+                        // Hide modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
+                        modal.hide();
+                        
+                        // Reload data
+                        await loadRecipesData();
+                    } else {
+                        throw new Error(result.message || 'Failed to create recipe');
+                    }
+                };
+                reader.readAsDataURL(window.selectedImageFile);
             } else {
-                throw new Error(result.message || 'Failed to create recipe');
+                // No image file, send request without image data
+                const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes`, recipeData);
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    Alert.success('Recipe created successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRecipeModal'));
+                    modal.hide();
+                    
+                    // Reload data
+                    await loadRecipesData();
+                } else {
+                    throw new Error(result.message || 'Failed to create recipe');
+                }
             }
             
         } catch (error) {
@@ -1559,21 +1599,61 @@
                 number_of_units: ingredient.quantity
             }));
             
-            const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
-            
-            const result = await response.json();
-            
-            if (response.ok && result.success) {
-                Alert.success('Recipe updated successfully!');
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
-                modal.hide();
-                
-                // Reload data
-                await loadRecipesData();
+            // Handle image data if a file was selected
+            if (window.selectedImageFile) {
+                // Convert file to base64 for transmission
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const base64Data = e.target.result.split(',')[1]; // Remove data:image/...;base64, prefix
+                    const imageBytes = atob(base64Data);
+                    
+                    // Convert to Uint8Array for transmission
+                    const imageArray = new Uint8Array(imageBytes.length);
+                    for (let i = 0; i < imageBytes.length; i++) {
+                        imageArray[i] = imageBytes.charCodeAt(i);
+                    }
+                    
+                    // Add image data to recipe
+                    recipeData.image_name = window.selectedImageFile.name;
+                    recipeData.image_data = Array.from(imageArray); // Convert to regular array for JSON
+                    
+                    // Send the request with image data
+                    const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        Alert.success('Recipe updated successfully!');
+                        
+                        // Hide modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
+                        modal.hide();
+                        
+                        // Reload data
+                        await loadRecipesData();
+                    } else {
+                        throw new Error(result.message || 'Failed to update recipe');
+                    }
+                };
+                reader.readAsDataURL(window.selectedImageFile);
             } else {
-                throw new Error(result.message || 'Failed to update recipe');
+                // No image file, send request without image data
+                const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/recipes/${currentRecipe.id}`, recipeData);
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    Alert.success('Recipe updated successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeModal'));
+                    modal.hide();
+                    
+                    // Reload data
+                    await loadRecipesData();
+                } else {
+                    throw new Error(result.message || 'Failed to update recipe');
+                }
             }
             
         } catch (error) {

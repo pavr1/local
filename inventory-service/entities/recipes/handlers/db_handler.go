@@ -56,7 +56,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 			return nil, err
 		}
 
-		// Generate the picture URL
+		// Generate the picture URL (relative path)
 		url := h.imageHandler.GetImageURL("recipes", *req.ImageName)
 		pictureURL = &url
 	} else {
@@ -282,13 +282,34 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 	}
 	defer tx.Rollback() // Rollback if not committed
 
+	// Handle image storage if image data is provided
+	var pictureURL *string
+	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
+		// Store the image
+		err = h.imageHandler.AddImage("recipes", *req.ImageName, req.ImageData)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id":  id,
+				"image_name": *req.ImageName,
+			}).Error("Failed to store recipe image")
+			return nil, err
+		}
+
+		// Generate the picture URL (relative path)
+		url := h.imageHandler.GetImageURL("recipes", *req.ImageName)
+		pictureURL = &url
+	} else {
+		// Use the provided PictureURL if no image data
+		pictureURL = req.PictureURL
+	}
+
 	var recipe models.Recipe
 	err = tx.QueryRow(
 		recipeSQL.UpdateRecipeQuery,
 		id,
 		req.RecipeName,
 		req.RecipeDescription,
-		req.PictureURL,
+		pictureURL,
 		req.RecipeCategoryID,
 		req.TotalRecipeCost,
 	).Scan(

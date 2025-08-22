@@ -57,11 +57,19 @@ type Config struct {
 func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 	logger.Info("Loading configuration from data service")
 
-	// Call data service to get settings
-	settings, err := getSettingsFromDataService("Inventory", logger)
+	// Call data service to get settings for both Inventory and General services
+	inventorySettings, err := getSettingsFromDataService("Inventory", logger)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
+		return nil, fmt.Errorf("failed to get inventory settings from data service: %w", err)
 	}
+
+	generalSettings, err := getSettingsFromDataService("General", logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get general settings from data service: %w", err)
+	}
+
+	// Combine settings
+	settings := append(inventorySettings, generalSettings...)
 
 	// Create config and populate from settings
 	config := &Config{
