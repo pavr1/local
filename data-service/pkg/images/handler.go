@@ -129,10 +129,11 @@ func (h *ImageHandler) GetImagePath(service, name string) string {
 	return filepath.Join(h.basePath, "images", service, name)
 }
 
-// GetImageURL returns the relative URL path for an image (for web serving)
+// pvillalobos - hardcoded values
+// GetImageURL returns the full gateway URL path for an image (for web serving)
 // service: the service name (e.g., "recipes", "invoices")
 // name: the name of the image file
-// returns: the relative URL path (e.g., "/api/v1/data/images/recipes/vanilla-ice-cream.jpg")
+// returns: the full gateway URL path (e.g., "http://localhost:8082/api/v1/data/images/recipes/vanilla-ice-cream.jpg")
 func (h *ImageHandler) GetImageURL(service, name string) string {
-	return fmt.Sprintf("/api/v1/data/images/%s/%s", service, name)
+	return fmt.Sprintf("http://localhost:8082/api/v1/data/images/%s/%s", service, name)
 }
