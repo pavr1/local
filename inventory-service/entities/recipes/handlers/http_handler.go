@@ -68,9 +68,6 @@ func (h *RecipeHTTPHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	recipe, err := h.dbHandler.GetByID(req)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
-				"recipe_id": id,
-			}).Warn("Recipe not found")
 			response := models.RecipeResponse{
 				Success: false,
 				Data:    models.Recipe{},
@@ -163,9 +160,6 @@ func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request)
 	recipe, err := h.dbHandler.Update(req, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
-				"recipe_id": id,
-			}).Warn("Recipe not found for update")
 			response := models.RecipeResponse{
 				Success: false,
 				Data:    models.Recipe{},
@@ -207,9 +201,6 @@ func (h *RecipeHTTPHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request)
 	err := h.dbHandler.Delete(req)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
-				"recipe_id": id,
-			}).Warn("No recipe found to delete")
 			response := models.GenericResponse{
 				Success: false,
 				Message: "Recipe not found",

@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// pvillalobos - crete unit tests for this
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
 	CreateExpenseCategory(req models.CreateExpenseCategoryRequest) (*models.ExpenseCategory, error)
@@ -245,4 +246,4 @@ func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, 
 		Message: message,
 	}
 	h.writeJSONResponse(w, response, statusCode)
-} 
+}

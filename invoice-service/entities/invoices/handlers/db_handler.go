@@ -14,6 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// pvillalobos - crete unit tests for this
 // DBHandler handles database operations for invoices
 type DBHandler struct {
 	db     *sql.DB
@@ -33,7 +34,7 @@ func NewDBHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *DBHand
 // getExpenseCategoryName retrieves the expense category name by ID
 func (h *DBHandler) getExpenseCategoryName(tx *sql.Tx, categoryID string) (string, error) {
 	var categoryName string
-	err := tx.QueryRow("SELECT category_name FROM expense_categories WHERE id = $1", categoryID).Scan(&categoryName)
+	err := tx.QueryRow(invoiceSQL.GetCategoryNameByIDQuery, categoryID).Scan(&categoryName)
 	if err != nil {
 		h.logger.WithError(err).WithFields(logrus.Fields{
 			"expense_category_id": categoryID,

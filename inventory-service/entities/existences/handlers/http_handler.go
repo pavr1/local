@@ -106,6 +106,10 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 	unitType := vars["unitType"]
 
 	if ingredientID == "" || unitType == "" {
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+			"unit_type":     unitType,
+		}).Error("Missing ingredient ID or unit type")
 		http.Error(w, "Missing ingredient ID or unit type", http.StatusBadRequest)
 		return
 	}
@@ -113,6 +117,10 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id": ingredientID,
+				"unit_type":     unitType,
+			}).Error("No existence found for this ingredient and unit type")
 			// Return 404 when no existence is found
 			http.Error(w, "No existence found for this ingredient and unit type", http.StatusNotFound)
 			return
@@ -191,6 +199,9 @@ func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
 	existence, err := h.dbHandler.UpdateExistence(id, req)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"existence_id": id,
+			}).Error("Existence not found")
 			http.Error(w, "Existence not found", http.StatusNotFound)
 			return
 		}
@@ -217,6 +228,9 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 	err := h.dbHandler.DeleteExistence(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			h.logger.WithFields(logrus.Fields{
+				"existence_id": id,
+			}).Error("Existence not found")
 			http.Error(w, "Existence not found", http.StatusNotFound)
 			return
 		}

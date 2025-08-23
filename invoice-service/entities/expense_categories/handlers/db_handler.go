@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// pvillalobos - crete unit tests for this
 // DBHandler handles database operations for expense categories
 type DBHandler struct {
 	db     *sql.DB
@@ -161,4 +162,4 @@ func (h *DBHandler) DeleteExpenseCategory(id string) error {
 	}).Info("Expense category deleted successfully")
 
 	return nil
-} 
+}

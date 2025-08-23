@@ -46,6 +46,7 @@ func main() {
 	mainHandler.SetupRoutes(router)
 
 	// Start HTTP server
+	//pvillalalobos - config values
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort),
 		Handler:      router,
@@ -134,6 +135,7 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 	}
 
 	// Configure connection pool
+	//pvillalobos - hardcoded values
 	db.SetMaxOpenConns(25)
 	db.SetMaxIdleConns(5)
 	db.SetConnMaxLifetime(5 * time.Minute)

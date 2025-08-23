@@ -154,7 +154,7 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	}
 
 	// Create HTTP request
-	// TODO: get gateway URL from config. We need to leave it localhost for images
+	// pvillalobos: get gateway URL from config. We need to leave it localhost for images
 	gatewayURL := "http://localhost:8082"
 
 	url := fmt.Sprintf("%s/api/v1/data/images/%s", gatewayURL, service)
@@ -221,6 +221,7 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 // deleteImageFromDataService deletes an image from the data service
 func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) error {
 	// Construct the delete URL
+	// pvillalobos: hardcoded values
 	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.GatewayURL, service, filename)
 
 	// Create HTTP client
@@ -231,6 +232,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Create DELETE request
 	req, err := http.NewRequest("DELETE", deleteURL, nil)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to create delete request")
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
 
@@ -240,6 +242,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Execute the request
 	resp, err := client.Do(req)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to execute delete request")
 		return fmt.Errorf("failed to execute delete request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -247,6 +250,10 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		h.logger.WithFields(logrus.Fields{
+			"status_code": resp.StatusCode,
+			"body":        string(body),
+		}).Error("Data service returned non-OK status")
 		return fmt.Errorf("data service returned status %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -289,9 +296,6 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 
 	recipeIngredientsList, err := riHandler.List(riReq)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
-			"recipe_id": recipe.ID,
-		}).Warn("Failed to load recipe ingredients, continuing without ingredients")
 		// Don't fail the entire request if ingredients fail to load
 		recipe.Ingredients = []models.RecipeIngredient{}
 	} else {
@@ -371,10 +375,6 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 
 		recipeIngredientsList, err := riHandler.List(riReq)
 		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
-				"recipe_id": recipes[i].ID,
-			}).Warn("Failed to load recipe ingredients, continuing without ingredients")
-			// Don't fail the entire request if ingredients fail to load
 			recipes[i].Ingredients = []models.RecipeIngredient{}
 		} else {
 			// Convert recipe ingredients to the format expected by the recipe model
@@ -424,10 +424,6 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 		// Store the image in data service
 		imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
 		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
-				"recipe_id":  id,
-				"image_name": *req.ImageName,
-			}).Error("Failed to store recipe image in data service")
 			return nil, err
 		}
 		pictureURL = &imageURL

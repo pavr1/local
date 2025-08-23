@@ -55,3 +55,8 @@ var UpdateInvoiceTotalQuery string
 //
 //go:embed scripts/create_existence.sql
 var CreateExistenceQuery string
+
+// Category SQL queries
+//
+//go:embed scripts/get_category_name_by_id.sql
+var GetCategoryNameByIDQuery string

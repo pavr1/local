@@ -62,11 +62,13 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 	// Call data service to get settings for both Inventory and General services
 	inventorySettings, err := getSettingsFromDataService("Inventory", logger)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get inventory settings from data service")
 		return nil, fmt.Errorf("failed to get inventory settings from data service: %w", err)
 	}
 
 	generalSettings, err := getSettingsFromDataService("General", logger)
 	if err != nil {
+		logger.WithError(err).Error("Failed to get general settings from data service")
 		return nil, fmt.Errorf("failed to get general settings from data service: %w", err)
 	}
 
@@ -74,6 +76,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 	settings := append(inventorySettings, generalSettings...)
 
 	// Create config and populate from settings
+	//pvillalobos - hardcoded values
 	config := &Config{
 		// Default values
 		ServerPort: "8084",
@@ -110,6 +113,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
+	//pvillalobos - hardcoded values
 	dataServiceURL := "http://icecream_data_service:8086" // Use Docker service name for internal communication
 	url := fmt.Sprintf("%s/api/v1/data/settings/by-service", dataServiceURL)
 
@@ -120,12 +124,14 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
+		logger.WithError(err).Error("Failed to marshal request body")
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
+		logger.WithError(err).Error("Failed to create HTTP request")
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
@@ -142,21 +148,31 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.WithError(err).Error("Failed to make HTTP request")
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logger.WithFields(logrus.Fields{
+			"service": serviceName,
+			"status":  resp.StatusCode,
+		}).Error("Data service returned non-OK status")
 		return nil, fmt.Errorf("data service returned status %d", resp.StatusCode)
 	}
 
 	// Parse response
 	var settingsResponse SettingsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&settingsResponse); err != nil {
+		logger.WithError(err).Error("Failed to decode response")
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if !settingsResponse.Success {
+		logger.WithFields(logrus.Fields{
+			"service": serviceName,
+			"message": settingsResponse.Message,
+		}).Error("Data service returned error")
 		return nil, fmt.Errorf("data service returned error: %s", settingsResponse.Message)
 	}
 
@@ -168,6 +184,7 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	return settingsResponse.Data, nil
 }
 
+// pvillalobos - this is not dynamic
 // populateConfigFromSettings populates the config struct from settings
 func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
 	for _, setting := range settings {
@@ -207,5 +224,3 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 
 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 }
-
-// Note: Environment variable helpers removed - all configuration should come from data service settings

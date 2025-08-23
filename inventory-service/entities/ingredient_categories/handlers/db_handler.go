@@ -46,6 +46,7 @@ func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategory
 	return &category, nil
 }
 
+// pvillalobos - is this really needed?
 // GetIngredientCategoryByID retrieves an ingredient category by ID from the database
 func (h *DBHandler) GetIngredientCategoryByID(id string) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory

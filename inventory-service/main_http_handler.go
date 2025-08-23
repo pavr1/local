@@ -239,6 +239,7 @@ func (h *MainHttpHandler) checkDataServiceHealth() bool {
 		Timeout: 5 * time.Second,
 	}
 
+	// pvillalobos: hardcoded values
 	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to connect to data-service")
