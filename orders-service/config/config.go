@@ -64,6 +64,7 @@ type Config struct {
 func LoadConfig() *Config {
 	return &Config{
 		// Server
+		//pvillalobos - hardcoded values env variables not used
 		ServerHost: getEnv("SERVER_HOST", "0.0.0.0"),
 		ServerPort: getEnv("SERVER_PORT", "8083"),
 
@@ -91,6 +92,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 	}
 
 	// Create config and populate it directly from settings
+	//pvillalobos - hardcoded values
 	config := &Config{
 		// Server
 		ServerHost: "0.0.0.0",
@@ -134,6 +136,7 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 
 // getSettingsFromDataService calls the data service API to get settings
 func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
+	//pvillalobos - hardcoded values env variables not used
 	dataServiceURL := getEnv("DATA_SERVICE_URL", "http://localhost:8086")
 	url := fmt.Sprintf("%s/api/v1/data/settings/by-service", dataServiceURL)
 
@@ -144,12 +147,14 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
+		logger.WithError(err).Error("Failed to marshal request body")
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
 	// Create HTTP request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonBody))
 	if err != nil {
+		logger.WithError(err).Error("Failed to create HTTP request")
 		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
@@ -166,21 +171,31 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.WithError(err).Error("Failed to make HTTP request")
 		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		logger.WithFields(logrus.Fields{
+			"service": serviceName,
+			"status":  resp.StatusCode,
+		}).Error("Data service returned non-OK status")
 		return nil, fmt.Errorf("data service returned status %d", resp.StatusCode)
 	}
 
 	// Parse response
 	var settingsResponse SettingsResponse
 	if err := json.NewDecoder(resp.Body).Decode(&settingsResponse); err != nil {
+		logger.WithError(err).Error("Failed to decode response")
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if !settingsResponse.Success {
+		logger.WithFields(logrus.Fields{
+			"service": serviceName,
+			"message": settingsResponse.Message,
+		}).Error("Data service returned error")
 		return nil, fmt.Errorf("data service returned error: %s", settingsResponse.Message)
 	}
 
@@ -194,6 +209,7 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 
 // populateConfigFromSettings populates the config struct from settings
 func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
+	//pvillalobos - hardcoded values
 	for _, setting := range settings {
 		switch setting.Key {
 		case "SERVER_PORT":
@@ -248,6 +264,7 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
 }
 
+// pvillalobos - environment variables not used
 func getEnv(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value

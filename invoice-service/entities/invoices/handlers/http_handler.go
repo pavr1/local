@@ -301,7 +301,6 @@ func (h *HttpHandler) CreateInvoiceDetail(w http.ResponseWriter, r *http.Request
 
 	detail, err := h.dbHandler.CreateInvoiceDetail(req)
 	if err != nil {
-		// DBHandler already logged the error, don't duplicate
 		response := models.InvoiceDetailResponse{
 			Success: false,
 			Data:    models.InvoiceDetail{},
@@ -356,7 +355,6 @@ func (h *HttpHandler) GetInvoiceDetailsByInvoiceID(w http.ResponseWriter, r *htt
 func (h *HttpHandler) ListInvoiceDetails(w http.ResponseWriter, r *http.Request) {
 	details, err := h.dbHandler.ListInvoiceDetails()
 	if err != nil {
-		// DBHandler already logged the error, don't duplicate
 		response := models.InvoiceDetailsListResponse{
 			Success: false,
 			Data:    []models.InvoiceDetail{},

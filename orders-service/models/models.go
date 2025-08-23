@@ -31,30 +31,30 @@ type Order struct {
 
 // OrderedRecipe represents a recipe item within an order
 type OrderedRecipe struct {
-	ID            uuid.UUID `json:"id" db:"id"`
-	OrderID       uuid.UUID `json:"order_id" db:"order_id"`
-	RecipeID      uuid.UUID `json:"recipe_id" db:"recipe_id"`
-	ProductName   string    `json:"product_name" db:"product_name"`
-	Quantity      int       `json:"quantity" db:"quantity"`
-	ReceipePrice  float64   `json:"receipe_price" db:"receipe_price"`
-	Subtotal      float64   `json:"subtotal" db:"subtotal"`
+	ID           uuid.UUID `json:"id" db:"id"`
+	OrderID      uuid.UUID `json:"order_id" db:"order_id"`
+	RecipeID     uuid.UUID `json:"recipe_id" db:"recipe_id"`
+	ProductName  string    `json:"product_name" db:"product_name"`
+	Quantity     int       `json:"quantity" db:"quantity"`
+	ReceipePrice float64   `json:"receipe_price" db:"receipe_price"`
+	Subtotal     float64   `json:"subtotal" db:"subtotal"`
 }
 
 // CreateOrderRequest represents the request to create a new order
 type CreateOrderRequest struct {
-	CustomerID            *uuid.UUID                   `json:"customer_id"`
-	PaymentMethod         string                       `json:"payment_method" validate:"required,oneof=cash card sinpe"`
-	TransactionReference  *string                      `json:"transaction_reference"`
-	SinpeScreenshotURL    *string                      `json:"sinpe_screenshot_url"`
-	DiscountAmount        float64                      `json:"discount_amount"`
-	Items                 []CreateOrderedRecipeRequest `json:"items" validate:"required,min=1"`
+	CustomerID           *uuid.UUID                   `json:"customer_id"`
+	PaymentMethod        string                       `json:"payment_method" validate:"required,oneof=cash card sinpe"`
+	TransactionReference *string                      `json:"transaction_reference"`
+	SinpeScreenshotURL   *string                      `json:"sinpe_screenshot_url"`
+	DiscountAmount       float64                      `json:"discount_amount"`
+	Items                []CreateOrderedRecipeRequest `json:"items" validate:"required,min=1"`
 }
 
 // CreateOrderedRecipeRequest represents a recipe item in the order creation request
 type CreateOrderedRecipeRequest struct {
-	RecipeID   uuid.UUID `json:"recipe_id" validate:"required,uuid"`
-	Quantity   int       `json:"quantity" validate:"required,min=1"`
-	UnitPrice  float64   `json:"unit_price" validate:"required,min=0"`
+	RecipeID  uuid.UUID `json:"recipe_id" validate:"required,uuid"`
+	Quantity  int       `json:"quantity" validate:"required,min=1"`
+	UnitPrice float64   `json:"unit_price" validate:"required,min=0"`
 }
 
 // UpdateOrderRequest represents the request to update an order
@@ -107,7 +107,7 @@ type OrderFilter struct {
 }
 
 // Validation methods
-
+// pvillalobos - revisit these features
 // ValidatePaymentMethod checks if payment method is valid
 func (o *Order) ValidatePaymentMethod() bool {
 	validMethods := []string{"cash", "card", "sinpe"}
@@ -184,9 +184,9 @@ func (e *ValidationError) Error() string {
 
 // Constants for order statuses and payment methods
 const (
-	OrderStatusPending   = "pending"
-	OrderStatusCompleted = "completed"
-	OrderStatusCancelled = "cancelled"
+	OrderStatusPending      = "pending"
+	OrderStatusCompleted    = "completed"
+	OrderStatusCancelled    = "cancelled"
 	OrderStatusSinpePending = "sinpe_pending"
 
 	PaymentMethodCash  = "cash"

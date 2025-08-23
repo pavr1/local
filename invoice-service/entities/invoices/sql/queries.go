@@ -60,3 +60,6 @@ var CreateExistenceQuery string
 //
 //go:embed scripts/get_category_name_by_id.sql
 var GetCategoryNameByIDQuery string
+
+//go:embed scripts/get_invoice_id_by_detail_id.sql
+var GetInvoiceIDByDetailIDQuery string

@@ -111,13 +111,14 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 			}).Info("Creating existence with items_per_unit from invoice detail")
 
 			existenceReq := models.CreateExistenceRequest{
-				IngredientID:           *item.IngredientID,
-				InvoiceDetailID:        detail.ID,
-				UnitsPurchased:         item.Count,
-				UnitType:               item.UnitType,
-				ItemsPerUnit:           item.ItemsPerUnit,
-				CostPerUnit:            item.Price,
-				ExpirationDate:         item.ExpirationDate,
+				IngredientID:    *item.IngredientID,
+				InvoiceDetailID: detail.ID,
+				UnitsPurchased:  item.Count,
+				UnitType:        item.UnitType,
+				ItemsPerUnit:    item.ItemsPerUnit,
+				CostPerUnit:     item.Price,
+				ExpirationDate:  item.ExpirationDate,
+				//pvillalobos - hardcoded values
 				IncomeMarginPercentage: 30.0, // Default 30%
 				IvaPercentage:          13.0, // Default 13%
 				ServiceTaxPercentage:   10.0, // Default 10%
@@ -125,10 +126,6 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 			err = h.CreateInventoryExistence(tx, existenceReq)
 			if err != nil {
-				h.logger.WithError(err).WithFields(logrus.Fields{
-					"invoice_detail_id": detail.ID,
-					"ingredient_id":     *item.IngredientID,
-				}).Error("Failed to create existence for ingredient")
 				return nil, err
 			}
 		}
@@ -508,12 +505,9 @@ func (h *DBHandler) DeleteInvoiceDetail(id string) error {
 
 	// Get the invoice ID before deleting
 	var invoiceID string
-	err = tx.QueryRow("SELECT invoice_id FROM invoice_details WHERE id = $1", id).Scan(&invoiceID)
+	err = tx.QueryRow(invoiceSQL.GetInvoiceIDByDetailIDQuery, id).Scan(&invoiceID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
-				"invoice_detail_id": id,
-			}).Warn("No invoice detail found to delete")
 			return sql.ErrNoRows
 		}
 		h.logger.WithError(err).WithFields(logrus.Fields{
@@ -592,10 +586,6 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	mostRecentExistence, err := h.getMostRecentExistenceFromInventoryService(req.IngredientID, req.UnitType)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
-				"ingredient_id": req.IngredientID,
-				"unit_type":     req.UnitType,
-			}).Info("No previous existence found")
 			mostRecentExistence = nil // Ensure it's nil when no rows found
 		} else {
 			h.logger.WithError(err).WithFields(logrus.Fields{
@@ -604,6 +594,14 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 			}).Error("Failed to call inventory service for existence")
 			return err
 		}
+	}
+
+	if req.ItemsPerUnit == 0 {
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_id": req.IngredientID,
+			"unit_type":     req.UnitType,
+		}).Error("Items per unit is 0")
+		return fmt.Errorf("items per unit is 0")
 	}
 
 	// Calculate derived fields
@@ -733,6 +731,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 
 // getMostRecentExistenceFromInventoryService calls the inventory service to get the most recent existence
 func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, unitType string) (*models.Existence, error) {
+	//pvillalobos - hardcoded values
 	url := fmt.Sprintf("%s/api/v1/inventory/existences/ingredient/%s/unit-type/%s",
 		h.config.InventoryServiceURL, ingredientID, unitType)
 
@@ -742,6 +741,7 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to create request")
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -751,6 +751,7 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 
 	resp, err := client.Do(req)
 	if err != nil {
+		h.logger.WithError(err).Error("Failed to call inventory service")
 		return nil, fmt.Errorf("failed to call inventory service: %w", err)
 	}
 	defer resp.Body.Close()
@@ -761,6 +762,9 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		h.logger.WithFields(logrus.Fields{
+			"status_code": resp.StatusCode,
+		}).Error("Inventory service returned non-OK status")
 		return nil, fmt.Errorf("inventory service returned status %d", resp.StatusCode)
 	}
 
@@ -771,10 +775,14 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		h.logger.WithError(err).Error("Failed to decode response")
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if !response.Success {
+		h.logger.WithFields(logrus.Fields{
+			"message": response.Message,
+		}).Error("Inventory service returned error")
 		return nil, fmt.Errorf("inventory service returned error: %s", response.Message)
 	}
 

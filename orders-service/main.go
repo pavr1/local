@@ -40,11 +40,14 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create orders handler
-	ordersHandler, err := handler.New(db, cfg, logger)
+	// Create database handler
+	dbHandler, err := handler.NewOrderDBHandler(db, cfg, logger)
 	if err != nil {
-		logger.WithError(err).Fatal("Failed to create orders handler")
+		logger.WithError(err).Fatal("Failed to create database handler")
 	}
+
+	// Create HTTP handler
+	ordersHandler := handler.NewOrderHTTPHandler(dbHandler, cfg, logger)
 
 	// Setup HTTP router
 	router := setupRouter(ordersHandler, logger)
