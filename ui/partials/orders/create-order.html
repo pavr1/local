@@ -77,41 +77,36 @@
 
 <!-- Quantity Selection Modal -->
 <div class="modal fade" id="quantityModal" tabindex="-1" aria-labelledby="quantityModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" style="max-width: 90%;">
+    <div class="modal-dialog modal-xl" style="max-width: 900px;">
         <div class="modal-content">
             <div class="modal-header py-2">
-                <h5 class="modal-title" id="quantityModalLabel">Add to Order</h5>
+                <h6 class="modal-title" id="quantityModalLabel">Add to Order</h6>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body py-3">
-                <div class="row align-items-center">
-                    <div class="col-md-3 text-center">
-                        <img id="quantityModalImage" src="" alt="Recipe" class="img-fluid rounded" style="max-height: 80px; max-width: 100%;">
+                <div class="text-center mb-3">
+                    <img id="quantityModalImage" src="" alt="Recipe" class="img-fluid rounded" style="max-height: 480px; max-width: 100%; object-fit: cover;">
+                </div>
+                <div class="text-center mb-3">
+                    <h6 id="quantityModalName" class="mb-2"></h6>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label small mb-1">Unit Price</label>
+                        <div class="form-control-plaintext p-2 bg-light rounded" id="quantityModalPrice">₡0.00</div>
                     </div>
-                    <div class="col-md-9">
-                        <div class="row align-items-end">
-                            <div class="col-md-4">
-                                <h6 id="quantityModalName" class="mb-2"></h6>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label small mb-1">Unit Price</label>
-                                <div class="form-control-plaintext p-0" id="quantityModalPrice">₡0.00</div>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="quantityInput" class="form-label small mb-1">Quantity</label>
-                                <input type="number" class="form-control form-control-sm" id="quantityInput" value="1" min="1" onchange="updateQuantitySubtotal()" onkeyup="updateQuantitySubtotal()">
+                    <div class="col-6">
+                        <label for="quantityInput" class="form-label small mb-1">Quantity</label>
+                        <input type="number" class="form-control" id="quantityInput" value="1" min="1" onchange="updateQuantitySubtotal()" onkeyup="updateQuantitySubtotal()">
                     </div>
-                            <div class="col-md-2 text-end">
-                                <label class="form-label small mb-1">Subtotal</label>
-                                <div class="fw-bold text-primary" id="quantityModalSubtotal">₡0.00</div>
-                    </div>
-                    </div>
-                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <div class="fw-bold text-primary fs-5" id="quantityModalSubtotal">₡0.00</div>
                 </div>
             </div>
             <div class="modal-footer py-2">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="addToOrder()">Add to Order</button>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="addToOrder()">Add to Order</button>
             </div>
         </div>
     </div>
@@ -191,6 +186,8 @@
         cursor: pointer;
         transition: transform 0.2s, box-shadow 0.2s;
         height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
     .recipe-card:hover {
@@ -199,14 +196,20 @@
     }
 
     .recipe-card img {
-        height: 120px;
+        height: 140px;
+        width: 100%;
         object-fit: cover;
+        object-position: center;
         border-top-left-radius: 0.375rem;
         border-top-right-radius: 0.375rem;
     }
 
     .recipe-card .card-body {
         padding: 0.75rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
 
     .recipe-card .card-title {
@@ -270,6 +273,20 @@
         .modal-xl {
             max-width: 95%;
         }
+        
+        .recipe-card img {
+            height: 120px;
+        }
+    }
+    
+    /* Ensure recipe cards have consistent height */
+    .recipe-card {
+        min-height: 200px;
+    }
+    
+    /* Better image aspect ratio */
+    .recipe-card img {
+        aspect-ratio: 16/9;
     }
 </style>
 
