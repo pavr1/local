@@ -154,10 +154,8 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	}
 
 	// Create HTTP request
-	// pvillalobos: get gateway URL from config. We need to leave it localhost for images
-	gatewayURL := "http://localhost:8082"
-
-	url := fmt.Sprintf("%s/api/v1/data/images/%s", gatewayURL, service)
+	// Use the gateway URL from config
+	url := fmt.Sprintf("%s/api/v1/data/images/%s", h.config.GatewayURL, service)
 
 	h.logger.WithFields(logrus.Fields{
 		"service":    service,

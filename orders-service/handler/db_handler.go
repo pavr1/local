@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// pvillalobos - crete unit tests for this
 // OrderDBHandler handles database operations for orders
 type OrderDBHandler struct {
 	db     *sql.DB

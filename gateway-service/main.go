@@ -190,6 +190,7 @@ func main() {
 
 	// Public image serving endpoints (no authentication required) - MUST be defined BEFORE authenticated routes
 	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}/{filename}", logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}", logrusLogger)).Methods("POST")
 
 	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logrusLogger)).Methods("GET")

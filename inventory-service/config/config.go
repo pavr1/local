@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -94,8 +95,9 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		// Image storage defaults
 		ImagesBasePath: ".",
 
-		// Service URLs
-		GatewayURL: "http://localhost:8082",
+		//pvillalobos - hardcoded values env variables not used
+		// Service URLs - load from environment variables
+		GatewayURL: getEnvOrDefault("GATEWAY_URL", "http://localhost:8082"),
 	}
 
 	// Populate config from settings
@@ -223,4 +225,12 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 	}
 
 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
+}
+
+// getEnvOrDefault gets an environment variable or returns a default value
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
