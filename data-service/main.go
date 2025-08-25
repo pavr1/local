@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -23,10 +25,21 @@ func main() {
 	// Create a logger with custom configuration
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
-	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339,
-		PrettyPrint:     true,
+	
+	// Set log format with line numbers and better formatting
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		ForceColors:     true,
+		DisableColors:   false,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+		},
 	})
+
+	// Enable caller reporting for line numbers
+	logger.SetReportCaller(true)
 
 	// Create database configuration
 	config := &database.Config{

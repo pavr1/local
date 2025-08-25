@@ -15,6 +15,8 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -58,15 +60,20 @@ func initLogger() *logrus.Logger {
 		log.SetLevel(logrus.InfoLevel)
 	}
 
-	// Set structured JSON formatter for better parsing
-	log.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339,
-		FieldMap: logrus.FieldMap{
-			logrus.FieldKeyTime:  "timestamp",
-			logrus.FieldKeyLevel: "level",
-			logrus.FieldKeyMsg:   "message",
+	// Set log format with line numbers and better formatting
+	log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		ForceColors:     true,
+		DisableColors:   false,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
 		},
 	})
+
+	// Enable caller reporting for line numbers
+	log.SetReportCaller(true)
 
 	// Set output to stdout for containerized environments
 	log.SetOutput(os.Stdout)

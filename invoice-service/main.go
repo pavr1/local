@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path"
+	"runtime"
 	"syscall"
 	"time"
 
@@ -93,10 +95,20 @@ func setupLogger(logLevel string) *logrus.Logger {
 	}
 	logger.SetLevel(level)
 
-	// Set JSON formatter
-	logger.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: time.RFC3339,
+	// Set log format with line numbers and better formatting
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		ForceColors:     true,
+		DisableColors:   false,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+		},
 	})
+
+	// Enable caller reporting for line numbers
+	logger.SetReportCaller(true)
 
 	return logger
 }
