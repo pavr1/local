@@ -72,7 +72,7 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Create income invoice
 	// Generate invoice number for income invoice
-	invoiceNumber := fmt.Sprintf("INV-ORD-%s", createdOrder.Order.OrderNumber)
+	invoiceNumber := fmt.Sprintf("INV-%s", createdOrder.Order.OrderNumber)
 
 	// Create invoice request using proper struct
 	notes := fmt.Sprintf("Income invoice for order %s", createdOrder.Order.OrderNumber)
@@ -81,6 +81,7 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	var invoiceItems []map[string]interface{}
 	for _, orderItem := range createdOrder.Items {
 		invoiceItem := map[string]interface{}{
+			"ingredient_id":  nil, // Income invoices don't have ingredients
 			"detail":         fmt.Sprintf("Order %s - %s", createdOrder.Order.OrderNumber, orderItem.ProductName),
 			"count":          float64(orderItem.Quantity),
 			"unit_type":      "Units",
@@ -90,16 +91,18 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		invoiceItems = append(invoiceItems, invoiceItem)
 	}
 
-	// Build invoice request, omitting nil fields
+	// Build invoice request, explicitly setting expense_category_id to null
 	invoiceReq := map[string]interface{}{
-		"invoice_number":   invoiceNumber,
-		"transaction_date": createdOrder.Order.TransactionTimestamp,
-		"transaction_type": "income",
-		"image_url":        "https://example.com/income-invoice.jpg", // Required field, using placeholder
-		"notes":            &notes,
-		"items":            invoiceItems,
+		"id":                  uuid.New().String(),
+		"invoice_number":      invoiceNumber,
+		"transaction_date":    createdOrder.Order.TransactionTimestamp,
+		"transaction_type":    "income",
+		"supplier_id":         nil,
+		"expense_category_id": nil,                                      // Explicitly set to null for income invoices
+		"image_url":           "https://example.com/income-invoice.jpg", // Required field, using placeholder
+		"notes":               &notes,
+		"items":               invoiceItems,
 	}
-	// Only add expense_category_id if it's not nil (for income invoices, we omit it)
 
 	// Call invoice service to create income invoice
 	invoiceResp, err := h.createIncomeInvoice(invoiceReq)

@@ -144,6 +144,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	// API versioning
 	v1 := router.PathPrefix("/api/v1").Subrouter()
 
+	//pvillalobos - is this duplicated?
 	// Public health check endpoint
 	v1.HandleFunc("/invoices/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
