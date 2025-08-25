@@ -52,9 +52,10 @@ type CreateOrderRequest struct {
 
 // CreateOrderedRecipeRequest represents a recipe item in the order creation request
 type CreateOrderedRecipeRequest struct {
-	RecipeID  uuid.UUID `json:"recipe_id" validate:"required,uuid"`
-	Quantity  int       `json:"quantity" validate:"required,min=1"`
-	UnitPrice float64   `json:"unit_price" validate:"required,min=0"`
+	RecipeID   uuid.UUID `json:"recipe_id" validate:"required,uuid"`
+	RecipeName string    `json:"recipe_name" validate:"required"`
+	Quantity   int       `json:"quantity" validate:"required,min=1"`
+	UnitPrice  float64   `json:"unit_price" validate:"required,min=0"`
 }
 
 // UpdateOrderRequest represents the request to update an order

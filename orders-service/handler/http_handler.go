@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	invoiceModels "invoice-service/entities/invoices/models"
 	"orders-service/config"
 	"orders-service/models"
 
@@ -71,23 +72,37 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create income invoice
-	invoiceData := map[string]interface{}{
-		"invoice_type":          "income",
-		"transaction_date":      createdOrder.Order.TransactionTimestamp,
-		"subtotal_amount":       createdOrder.Order.SubtotalAmount,
-		"discount_amount":       createdOrder.Order.DiscountAmount,
-		"iva_amount":            createdOrder.Order.IvaAmount,
-		"service_tax_amount":    createdOrder.Order.ServiceTaxAmount,
-		"total_amount":          createdOrder.Order.TotalAmount,
-		"payment_method":        createdOrder.Order.PaymentMethod,
-		"transaction_reference": createdOrder.Order.TransactionReference,
-		"sinpe_screenshot_url":  createdOrder.Order.SinpeScreenshotURL,
-		"notes":                 fmt.Sprintf("Invoice for order %s", createdOrder.Order.OrderNumber),
-		"expense_category_id":   nil, // Income invoices don't have expense categories
+	// Generate invoice number for income invoice
+	invoiceNumber := fmt.Sprintf("INV-ORD-%s", createdOrder.Order.OrderNumber)
+
+	// Create invoice request using proper struct
+	notes := fmt.Sprintf("Income invoice for order %s", createdOrder.Order.OrderNumber)
+	
+	// Create invoice items from order items
+	var invoiceItems []invoiceModels.CreateInvoiceItemRequest
+	for _, orderItem := range createdOrder.Items {
+		invoiceItem := invoiceModels.CreateInvoiceItemRequest{
+			Detail:       fmt.Sprintf("Order %s - %s", createdOrder.Order.OrderNumber, orderItem.ProductName),
+			Count:        float64(orderItem.Quantity),
+			UnitType:     "Units",
+			ItemsPerUnit: 1,
+			Price:        orderItem.ReceipePrice,
+		}
+		invoiceItems = append(invoiceItems, invoiceItem)
+	}
+	
+	invoiceReq := invoiceModels.CreateInvoiceRequest{
+		InvoiceNumber:     invoiceNumber,
+		TransactionDate:   createdOrder.Order.TransactionTimestamp,
+		TransactionType:   "income", //pvillalobos - this should eventually be handled in the db (hardcoded)
+		ExpenseCategoryID: nil,      // Income invoices don't have expense categories
+		ImageURL:          "",       // Income invoices don't have images
+		Notes:             &notes,
+		Items:             invoiceItems,
 	}
 
 	// Call invoice service to create income invoice
-	invoiceResp, err := h.createIncomeInvoice(invoiceData)
+	invoiceResp, err := h.createIncomeInvoice(invoiceReq)
 	if err != nil {
 		h.logger.WithError(err).WithField("order_id", createdOrder.Order.ID).Error("Failed to create income invoice")
 		h.respondWithError(w, http.StatusInternalServerError, "Failed to create invoice", err)
@@ -490,7 +505,8 @@ func (h *OrderHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
+	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.DataServiceURL)
+	resp, err := client.Get(dataServiceHealthURL)
 	if err != nil {
 		h.respondWithError(w, http.StatusServiceUnavailable, "Data service connection failed", err)
 		return
@@ -514,16 +530,17 @@ func (h *OrderHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // createIncomeInvoice calls the invoice service to create an income invoice
-func (h *OrderHTTPHandler) createIncomeInvoice(invoiceData map[string]interface{}) (*InvoiceResponse, error) {
+func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq invoiceModels.CreateInvoiceRequest) (*InvoiceResponse, error) {
 	// Convert data to JSON
-	jsonData, err := json.Marshal(invoiceData)
+	jsonData, err := json.Marshal(invoiceReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal invoice data: %w", err)
 	}
 
-	// Call invoice service
+	// Call invoice service using configured URL
+	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.InvoiceServiceURL)
 	resp, err := h.httpClient.Post(
-		"http://icecream_invoice_service:8084/api/v1/invoices",
+		invoiceURL,
 		"application/json",
 		bytes.NewBuffer(jsonData),
 	)

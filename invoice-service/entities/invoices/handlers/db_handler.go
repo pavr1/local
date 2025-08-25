@@ -71,13 +71,16 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 		return nil, err
 	}
 
-	// Get expense category name to check if it's "Ingredients"
-	expenseCategoryName, err := h.getExpenseCategoryName(tx, req.ExpenseCategoryID)
-	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
-			"expense_category_id": req.ExpenseCategoryID,
-		}).Error("Failed to get expense category name")
-		return nil, err
+	// Get expense category name to check if it's "Ingredients" (only if expense category is provided)
+	var expenseCategoryName string
+	if req.ExpenseCategoryID != nil {
+		expenseCategoryName, err = h.getExpenseCategoryName(tx, *req.ExpenseCategoryID)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"expense_category_id": *req.ExpenseCategoryID,
+			}).Error("Failed to get expense category name")
+			return nil, err
+		}
 	}
 
 	// Create invoice details

@@ -64,7 +64,7 @@ type CreateInvoiceRequest struct {
 	TransactionDate   time.Time                  `json:"transaction_date" validate:"required"` // Always required, stored as UTC
 	TransactionType   string                     `json:"transaction_type" validate:"required,oneof=income outcome"`
 	SupplierID        *string                    `json:"supplier_id,omitempty" validate:"omitempty,uuid"`
-	ExpenseCategoryID string                     `json:"expense_category_id" validate:"required,uuid"`
+	ExpenseCategoryID *string                    `json:"expense_category_id,omitempty" validate:"omitempty,uuid"` // Optional for income invoices
 	ImageURL          string                     `json:"image_url" validate:"required,url"`
 	Notes             *string                    `json:"notes,omitempty"`
 	Items             []CreateInvoiceItemRequest `json:"items" validate:"required,dive"`

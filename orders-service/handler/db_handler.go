@@ -84,7 +84,7 @@ func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.Ord
 			ID:           uuid.New(),
 			OrderID:      order.ID,
 			RecipeID:     reqItem.RecipeID,
-			ProductName:  "", // Will be populated from recipe data
+			ProductName:  reqItem.RecipeName, // Use recipe name from request
 			Quantity:     reqItem.Quantity,
 			ReceipePrice: reqItem.UnitPrice,
 			Subtotal:     subtotal,

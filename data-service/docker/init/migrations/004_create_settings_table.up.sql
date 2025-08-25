@@ -44,6 +44,7 @@ INSERT INTO settings (service, key, value, description) VALUES
 
 -- Orders Service Settings
 ('Orders', 'SERVER_PORT', '8083', 'Port for the orders service'),
+('Orders', 'INVOICE_SERVICE_URL', 'http://icecream_invoice:8085', 'URL for invoice service'),
 
 -- Inventory Service Settings
 ('Inventory', 'INVENTORY_SERVER_PORT', '8084', 'Port for the inventory service'),

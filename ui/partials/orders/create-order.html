@@ -658,9 +658,12 @@ function filterRecipes() {
         payment_method: paymentMethod,
             transaction_reference: document.getElementById('createOrderTransactionReference').value.trim() || null,
             sinpe_screenshot_url: document.getElementById('createOrderSinpeScreenshot').value.trim() || null,
-            ingredients: orderItems.map(item => ({
+            discount_amount: 0,
+            items: orderItems.map(item => ({
                 recipe_id: item.recipe_id,
-                number_of_units: item.quantity
+                recipe_name: item.recipe_name,
+                quantity: item.quantity,
+                unit_price: item.unit_price
         }))
     };
     

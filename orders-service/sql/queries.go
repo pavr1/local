@@ -138,7 +138,7 @@ func (r *Repository) CreateOrderWithTx(tx *sql.Tx, order *models.Order, items []
 		for _, item := range items {
 			_, err = tx.Exec(itemQuery,
 				item.ID, item.OrderID, item.RecipeID, item.ProductName,
-				item.Quantity, item.ReceipePrice, item.Subtotal,
+				item.Quantity, item.ReceipePrice,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to insert ordered recipe: %w", err)
@@ -247,7 +247,7 @@ func (r *Repository) CreateOrder(order *models.Order, items []models.OrderedReci
 		for _, item := range items {
 			_, err = tx.Exec(itemQuery,
 				item.ID, item.OrderID, item.RecipeID, item.ProductName,
-				item.Quantity, item.ReceipePrice, item.Subtotal,
+				item.Quantity, item.ReceipePrice,
 			)
 			if err != nil {
 				return fmt.Errorf("failed to insert ordered recipe: %w", err)

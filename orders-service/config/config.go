@@ -52,6 +52,10 @@ type Config struct {
 	DefaultServiceRate float64
 	OrderTimeout       int // minutes
 
+	// Service URLs
+	InvoiceServiceURL string
+	DataServiceURL    string
+
 	// Database configuration
 	DBHost     string
 	DBPort     string
@@ -78,6 +82,10 @@ func LoadConfig() *Config {
 		DefaultTaxRate:     getEnvFloat("DEFAULT_TAX_RATE", 13.0),     // 13% IVA
 		DefaultServiceRate: getEnvFloat("DEFAULT_SERVICE_RATE", 10.0), // 10% servicio
 		OrderTimeout:       getEnvInt("ORDER_TIMEOUT", 30),            // 30 minutes
+
+		// Service URLs
+		InvoiceServiceURL: getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
+		DataServiceURL:    getEnv("DATA_SERVICE_URL", "http://localhost:8086"),
 	}
 }
 
@@ -108,6 +116,10 @@ func LoadConfigFromDataService(logger *logrus.Logger) (*Config, error) {
 		DefaultTaxRate:     13.0,
 		DefaultServiceRate: 10.0,
 		OrderTimeout:       30,
+
+		// Service URLs
+		InvoiceServiceURL: getEnv("INVOICE_SERVICE_URL", "http://localhost:8085"),
+		DataServiceURL:    getEnv("DATA_SERVICE_URL", "http://localhost:8086"),
 
 		// Database
 		DBHost:     "localhost",
