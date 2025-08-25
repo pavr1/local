@@ -27,8 +27,21 @@ type OrdersHandler interface {
 
 // InvoiceResponse represents the response from invoice service
 type InvoiceResponse struct {
-	InvoiceNumber string `json:"invoice_number"`
-	InvoiceURL    string `json:"invoice_url"`
+	Success bool `json:"success"`
+	Data    struct {
+		ID                string   `json:"id"`
+		InvoiceNumber     string   `json:"invoice_number"`
+		TransactionDate   string   `json:"transaction_date"`
+		TransactionType   string   `json:"transaction_type"`
+		SupplierID        *string  `json:"supplier_id"`
+		ExpenseCategoryID string   `json:"expense_category_id"`
+		TotalAmount       *float64 `json:"total_amount"`
+		ImageURL          string   `json:"image_url"`
+		Notes             *string  `json:"notes"`
+		CreatedAt         string   `json:"created_at"`
+		UpdatedAt         string   `json:"updated_at"`
+	} `json:"data"`
+	Message string `json:"message"`
 }
 
 // generateOrderNumber generates a unique order number

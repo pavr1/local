@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	invoiceModels "invoice-service/entities/invoices/models"
 	"orders-service/config"
 	"orders-service/models"
 
@@ -77,29 +76,30 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Create invoice request using proper struct
 	notes := fmt.Sprintf("Income invoice for order %s", createdOrder.Order.OrderNumber)
-	
+
 	// Create invoice items from order items
-	var invoiceItems []invoiceModels.CreateInvoiceItemRequest
+	var invoiceItems []map[string]interface{}
 	for _, orderItem := range createdOrder.Items {
-		invoiceItem := invoiceModels.CreateInvoiceItemRequest{
-			Detail:       fmt.Sprintf("Order %s - %s", createdOrder.Order.OrderNumber, orderItem.ProductName),
-			Count:        float64(orderItem.Quantity),
-			UnitType:     "Units",
-			ItemsPerUnit: 1,
-			Price:        orderItem.ReceipePrice,
+		invoiceItem := map[string]interface{}{
+			"detail":         fmt.Sprintf("Order %s - %s", createdOrder.Order.OrderNumber, orderItem.ProductName),
+			"count":          float64(orderItem.Quantity),
+			"unit_type":      "Units",
+			"items_per_unit": 1,
+			"price":          orderItem.ReceipePrice,
 		}
 		invoiceItems = append(invoiceItems, invoiceItem)
 	}
-	
-	invoiceReq := invoiceModels.CreateInvoiceRequest{
-		InvoiceNumber:     invoiceNumber,
-		TransactionDate:   createdOrder.Order.TransactionTimestamp,
-		TransactionType:   "income", //pvillalobos - this should eventually be handled in the db (hardcoded)
-		ExpenseCategoryID: nil,      // Income invoices don't have expense categories
-		ImageURL:          "",       // Income invoices don't have images
-		Notes:             &notes,
-		Items:             invoiceItems,
+
+	// Build invoice request, omitting nil fields
+	invoiceReq := map[string]interface{}{
+		"invoice_number":   invoiceNumber,
+		"transaction_date": createdOrder.Order.TransactionTimestamp,
+		"transaction_type": "income",
+		"image_url":        "https://example.com/income-invoice.jpg", // Required field, using placeholder
+		"notes":            &notes,
+		"items":            invoiceItems,
 	}
+	// Only add expense_category_id if it's not nil (for income invoices, we omit it)
 
 	// Call invoice service to create income invoice
 	invoiceResp, err := h.createIncomeInvoice(invoiceReq)
@@ -110,10 +110,10 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update order with invoice details
-	if invoiceResp != nil {
+	if invoiceResp != nil && invoiceResp.Success {
 		updateReq := &models.UpdateOrderRequest{
-			InvoiceNumber: &invoiceResp.InvoiceNumber,
-			InvoiceURL:    &invoiceResp.InvoiceURL,
+			InvoiceNumber: &invoiceResp.Data.InvoiceNumber,
+			InvoiceURL:    &invoiceResp.Data.ImageURL, // Use image_url as invoice URL
 		}
 
 		updatedOrder, err := h.dbHandler.UpdateOrder(createdOrder.Order.ID, updateReq)
@@ -530,12 +530,18 @@ func (h *OrderHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // createIncomeInvoice calls the invoice service to create an income invoice
-func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq invoiceModels.CreateInvoiceRequest) (*InvoiceResponse, error) {
+func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq map[string]interface{}) (*InvoiceResponse, error) {
 	// Convert data to JSON
 	jsonData, err := json.Marshal(invoiceReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal invoice data: %w", err)
 	}
+
+	// Debug: Log the JSON being sent
+	h.logger.WithFields(logrus.Fields{
+		"invoice_data": string(jsonData),
+		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.InvoiceServiceURL),
+	}).Info("Sending invoice request to invoice service")
 
 	// Call invoice service using configured URL
 	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.InvoiceServiceURL)
