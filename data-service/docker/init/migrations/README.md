@@ -25,6 +25,26 @@ Each migration consists of two files:
 - **Up**: Renames `calculated_price` to `minimum_price`, `final_price` to `maximum_price`, and adds new `final_price` field with range validation
 - **Down**: Reverts pricing field changes back to original structure
 
+### 003_remove_supplier_id_from_ingredients
+- **Up**: Removes `supplier_id` column from `ingredients` table
+- **Down**: Adds back `supplier_id` column to `ingredients` table
+
+### 004_create_settings_table
+- **Up**: Creates `settings` table for application configuration
+- **Down**: Drops `settings` table
+
+### 005_remove_unit_type_from_recipe_ingredients
+- **Up**: Removes `unit_type` column from `recipe_ingredients` table
+- **Down**: Adds back `unit_type` column to `recipe_ingredients` table
+
+### 006_remove_tax_fields_from_existences
+- **Up**: Removes IVA and Service Tax fields from `existences` table to separate tax handling to orders
+- **Down**: Restores tax fields to `existences` table
+
+### 007_enhance_orders_tax_handling
+- **Up**: Adds comments and constraints to `orders` table for proper tax handling
+- **Down**: Removes comments and constraints from `orders` table
+
 ## Running Migrations
 
 ### Manual Execution

@@ -182,7 +182,7 @@ CREATE INDEX idx_ingredients_supplier ON ingredients(supplier_id);
 - `supplier_id`: Foreign key reference to suppliers table (UUID, nullable for local store purchases)
 
 ### Existences Table
-**Purpose:** Track individual ingredient purchases/acquisitions from suppliers or supermarkets. Each record represents a specific purchase batch with invoice traceability.
+**Purpose:** Track individual ingredient purchases/acquisitions from suppliers or supermarkets. Each record represents a specific purchase batch with invoice traceability and base pricing strategy.
 
 ```sql
 CREATE TABLE existences (
@@ -203,15 +203,11 @@ CREATE TABLE existences (
     remaining_value DECIMAL(12,2) GENERATED ALWAYS AS (units_available * cost_per_unit) STORED,
     --expiry
     expiration_date DATE, -- get from invoice detail
-    --incomes & taxes
+    --pricing strategy (no taxes - taxes handled in orders)
     income_margin_percentage DECIMAL(5,2) DEFAULT 30.00, -- grabbed from config
     income_margin_amount DECIMAL(10,2) GENERATED ALWAYS AS (cost_per_item * income_margin_percentage / 100) STORED,
-    iva_percentage DECIMAL(5,2) DEFAULT 13.00, -- grabbed from config
-    iva_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * iva_percentage / 100) STORED,
-    service_tax_percentage DECIMAL(5,2) DEFAULT 10.00,
-    service_tax_amount DECIMAL(10,2) GENERATED ALWAYS AS ((cost_per_item + income_margin_amount) * service_tax_percentage / 100) STORED, -- grabbed from config
-    minimum_price DECIMAL(10,2) DEFAULT 0.00, -- Minimum acceptable price for income (previously calculated_price)
-    maximum_price DECIMAL(10,2), -- Maximum price ceiling (previously final_price)
+    minimum_price DECIMAL(10,2) DEFAULT 0.00, -- Minimum acceptable price for income (cost + margin only)
+    maximum_price DECIMAL(10,2), -- Maximum price ceiling (cost + margin only)
     final_price DECIMAL(10,2), -- User-editable final price (must be between minimum_price and maximum_price)
     --constraints
     CONSTRAINT check_final_price_range CHECK (final_price >= minimum_price AND final_price <= maximum_price)
@@ -252,22 +248,19 @@ CREATE INDEX idx_existences_expiration_date ON existences(expiration_date);
 - `expiration_date`: Expiration date for this specific ingredient batch (get from invoice detail, nullable)
 - `income_margin_percentage`: Configurable margin percentage (default 30%, from config)
 - `income_margin_amount`: Calculated margin amount (read-only)
-- `iva_percentage`: IVA tax percentage (default 13%, from config)
-- `iva_amount`: IVA tax amount (read-only auto-generated)
-- `service_tax_percentage`: Service tax percentage (default 10%, from config)
-- `service_tax_amount`: Service tax amount (read-only auto-generated)
-- `minimum_price`: Minimum acceptable price for income (previously calculated_price) - represents the minimum price needed to maintain profitability
-- `maximum_price`: Maximum price ceiling (previously final_price) - represents the maximum price that can be charged
+- `minimum_price`: Minimum acceptable price for income (cost + margin only) - represents the minimum price needed to maintain profitability
+- `maximum_price`: Maximum price ceiling (cost + margin only) - represents the maximum price that can be charged
 - `final_price`: User-editable final price - must be between minimum_price and maximum_price for income generation
 
 **Pricing Business Logic:**
-- **Minimum Price**: Represents the minimum acceptable price to maintain profitability (includes cost + margins + taxes)
-- **Maximum Price**: Represents the price ceiling based on market conditions and competitive pricing
-- **Final Price**: User-editable price that determines actual selling price
+- **Minimum Price**: Represents the minimum acceptable price to maintain profitability (includes cost + margins only, no taxes)
+- **Maximum Price**: Represents the price ceiling based on market conditions and competitive pricing (cost + margins only, no taxes)
+- **Final Price**: User-editable price that determines base selling price before taxes
   - Must be between minimum_price and maximum_price for income generation
   - Below minimum_price = expense (not allowed)
   - Defaults to maximum_price when existence is created
   - Can be adjusted by users within the valid range
+  - **Note**: Taxes (IVA and Service Tax) are calculated separately in the orders system
 
 ### Runout Ingredient Report Table
 **Purpose:** Track ingredient usage and runouts reported by employees. Updates existences table to reflect ingredient consumption.
@@ -649,7 +642,7 @@ CREATE INDEX idx_customers_email ON customers(email);
 ## Income Management (Orders) Entities
 
 ### Orders Table
-**Purpose:** Track all customer transactions/sales with complete product and payment information for accurate income analysis.
+**Purpose:** Track all customer transactions/sales with complete product and payment information for accurate income analysis. Handles all tax calculations and compliance requirements.
 
 ```sql
 CREATE TABLE orders (
@@ -700,15 +693,34 @@ CREATE INDEX idx_orders_invoice_number ON orders(invoice_number);
 - `payment_method`: Payment method used (cash, card, sinpe)
 - `transaction_reference`: Transaction reference for card/sinpe payments (required for non-cash)
 - `sinpe_screenshot_url`: Required screenshot URL for sinpe payments
-- `subtotal_amount`: Order subtotal before taxes
+- `subtotal_amount`: Order subtotal before taxes (sum of all recipe final prices from existences)
 - `discount_amount`: Total discount applied from promotions (defaults to 0.00)
-- `iva_amount`: IVA tax amount (13%)
-- `service_tax_amount`: Service tax amount (10%)
-- `total_amount`: Final total amount
+- `iva_amount`: IVA tax amount (13% of subtotal) - calculated and applied at order level
+- `service_tax_amount`: Service tax amount (10% of subtotal) - calculated and applied at order level
+- `total_amount`: Final total amount (subtotal + iva_amount + service_tax_amount - discount_amount)
 - `invoice_number`: Sequential invoice number (generated when order completed)
 - `invoice_url`: URL to generated invoice document
 - `transaction_timestamp`: When the transaction occurred
 - `completed_at`: When the order was completed (nullable)
+
+**Tax Handling Architecture:**
+The system separates pricing strategy from tax compliance:
+
+- **Existences (Inventory)**: Handle base pricing strategy (cost + income margin)
+  - Focus on business profitability and competitive pricing
+  - No tax calculations - pure business logic
+  - Final prices represent base selling price before taxes
+
+- **Orders**: Handle all tax calculations and compliance
+  - Apply IVA (13%) and Service Tax (10%) to order subtotal
+  - Ensure regulatory compliance and proper tax reporting
+  - Generate tax-compliant invoices and receipts
+
+This separation provides:
+- **Clean business logic**: Inventory focuses on core pricing strategy
+- **Tax compliance**: Orders handle all regulatory requirements
+- **Flexibility**: Tax rates can change without affecting inventory pricing
+- **Audit trail**: Clear separation between business pricing and tax calculations
 
 ### Ordered Receipes Table
 **Purpose:** Track individual products sold in each order with quantities and pricing snapshots.
