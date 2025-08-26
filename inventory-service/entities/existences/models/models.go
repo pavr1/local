@@ -5,6 +5,7 @@ import (
 )
 
 // Existence represents a specific ingredient purchase/acquisition batch
+// Focuses on base pricing strategy (cost + income margin only, no taxes)
 type Existence struct {
 	ID                     string     `json:"id" db:"id"`
 	ExistenceReferenceCode int        `json:"existence_reference_code" db:"existence_reference_code"`
@@ -23,10 +24,6 @@ type Existence struct {
 	ExpirationDate         *time.Time `json:"expiration_date" db:"expiration_date"`
 	IncomeMarginPercentage float64    `json:"income_margin_percentage" db:"income_margin_percentage"`
 	IncomeMarginAmount     float64    `json:"income_margin_amount" db:"income_margin_amount"`
-	IvaPercentage          float64    `json:"iva_percentage" db:"iva_percentage"`
-	IvaAmount              float64    `json:"iva_amount" db:"iva_amount"`
-	ServiceTaxPercentage   float64    `json:"service_tax_percentage" db:"service_tax_percentage"`
-	ServiceTaxAmount       float64    `json:"service_tax_amount" db:"service_tax_amount"`
 	MinimumPrice           float64    `json:"minimum_price" db:"minimum_price"`
 	MaximumPrice           *float64   `json:"maximum_price" db:"maximum_price"`
 	FinalPrice             *float64   `json:"final_price" db:"final_price"`
@@ -35,6 +32,7 @@ type Existence struct {
 }
 
 // CreateExistenceRequest represents the request to create a new existence
+// Focuses on base pricing strategy (cost + income margin only, no taxes)
 type CreateExistenceRequest struct {
 	IngredientID           string     `json:"ingredient_id" validate:"required,uuid"`
 	InvoiceDetailID        string     `json:"invoice_detail_id" validate:"required,uuid"`
@@ -45,14 +43,13 @@ type CreateExistenceRequest struct {
 	CostPerUnit            float64    `json:"cost_per_unit" validate:"required,min=0.01"`
 	ExpirationDate         *time.Time `json:"expiration_date,omitempty"`
 	IncomeMarginPercentage *float64   `json:"income_margin_percentage,omitempty" validate:"omitempty,min=0,max=100"`
-	IvaPercentage          *float64   `json:"iva_percentage,omitempty" validate:"omitempty,min=0,max=100"`
-	ServiceTaxPercentage   *float64   `json:"service_tax_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	MinimumPrice           *float64   `json:"minimum_price,omitempty" validate:"omitempty,min=0"`
 	MaximumPrice           *float64   `json:"maximum_price,omitempty" validate:"omitempty,min=0"`
 	FinalPrice             *float64   `json:"final_price,omitempty" validate:"omitempty,min=0"`
 }
 
 // UpdateExistenceRequest represents the request to update an existence
+// Focuses on base pricing strategy (cost + income margin only, no taxes)
 type UpdateExistenceRequest struct {
 	UnitsAvailable         *float64   `json:"units_available,omitempty" validate:"omitempty,min=0"`
 	UnitType               *string    `json:"unit_type,omitempty" validate:"omitempty,oneof=Liters Gallons Units Bag"`
@@ -60,8 +57,6 @@ type UpdateExistenceRequest struct {
 	CostPerUnit            *float64   `json:"cost_per_unit,omitempty" validate:"omitempty,min=0.01"`
 	ExpirationDate         *time.Time `json:"expiration_date,omitempty"`
 	IncomeMarginPercentage *float64   `json:"income_margin_percentage,omitempty" validate:"omitempty,min=0,max=100"`
-	IvaPercentage          *float64   `json:"iva_percentage,omitempty" validate:"omitempty,min=0,max=100"`
-	ServiceTaxPercentage   *float64   `json:"service_tax_percentage,omitempty" validate:"omitempty,min=0,max=100"`
 	MinimumPrice           *float64   `json:"minimum_price,omitempty" validate:"omitempty,min=0"`
 	MaximumPrice           *float64   `json:"maximum_price,omitempty" validate:"omitempty,min=0"`
 	FinalPrice             *float64   `json:"final_price,omitempty" validate:"omitempty,min=0"`

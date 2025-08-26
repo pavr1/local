@@ -38,17 +38,18 @@ func NewOrderDBHandler(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (*
 }
 
 // CreateOrder creates a new order in the database
+// Handles all tax calculations and compliance requirements
 func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.OrderWithItems, error) {
-	// Calculate totals
-	totalAmount := 0.0
+	// Calculate subtotal from recipe final prices (from existences - no taxes included)
+	subtotalAmount := 0.0
 	for _, item := range req.Items {
-		totalAmount += float64(item.Quantity) * item.UnitPrice
+		subtotalAmount += float64(item.Quantity) * item.UnitPrice
 	}
 
-	// Calculate tax and service tax
-	ivaAmount := totalAmount * (h.config.DefaultTaxRate / 100)
-	serviceTaxAmount := totalAmount * 0.10 // 10% service tax
-	subtotalAmount := totalAmount
+	//pvillalobos - hardcoded tax rates
+	// Calculate taxes on the subtotal (tax handling responsibility)
+	ivaAmount := subtotalAmount * (h.config.DefaultTaxRate / 100) // 13% IVA
+	serviceTaxAmount := subtotalAmount * 0.10                     // 10% service tax
 
 	// Generate order number
 	orderNumber := generateOrderNumber()
@@ -67,7 +68,7 @@ func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.Ord
 		DiscountAmount:        req.DiscountAmount,
 		IvaAmount:             ivaAmount,
 		ServiceTaxAmount:      serviceTaxAmount,
-		TotalAmount:           totalAmount + ivaAmount + serviceTaxAmount - req.DiscountAmount,
+		TotalAmount:           subtotalAmount + ivaAmount + serviceTaxAmount - req.DiscountAmount,
 		InvoiceNumber:         nil, // Will be set after invoice creation
 		InvoiceURL:            nil, // Will be set after invoice creation
 		TransactionTimestamp:  time.Now(),
