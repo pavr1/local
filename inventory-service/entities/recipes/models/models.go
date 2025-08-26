@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-// Recipe represents a recipe
+// Recipe represents a recipe with status management and cost calculation
 type Recipe struct {
 	ID                 string             `json:"id" db:"id"`
 	RecipeName         string             `json:"recipe_name" db:"recipe_name"`
@@ -13,6 +13,7 @@ type Recipe struct {
 	RecipeCategoryID   string             `json:"recipe_category_id" db:"recipe_category_id"`
 	RecipeCategoryName string             `json:"recipe_category_name" db:"recipe_category_name"`
 	TotalRecipeCost    float64            `json:"total_recipe_cost" db:"total_recipe_cost"`
+	Status             string             `json:"status" db:"status"` // pending, active
 	Ingredients        []RecipeIngredient `json:"ingredients,omitempty"`
 	CreatedAt          time.Time          `json:"created_at" db:"created_at"`
 	UpdatedAt          time.Time          `json:"updated_at" db:"updated_at"`
@@ -21,7 +22,7 @@ type Recipe struct {
 // RecipeIngredient represents a recipe ingredient with quantity
 type RecipeIngredient struct {
 	IngredientID   string  `json:"ingredient_id" validate:"required,uuid"`
-	NumberOfUnits  float64 `json:"number_of_units" validate:"required,min=0.001"`
+	Quantity       float64 `json:"quantity" validate:"required,min=0.001"`
 	IngredientName string  `json:"ingredient_name,omitempty"` // For display purposes
 	FinalPrice     float64 `json:"final_price,omitempty"`     // Price per unit
 }

@@ -63,3 +63,11 @@ var GetCategoryNameByIDQuery string
 
 //go:embed scripts/get_invoice_id_by_detail_id.sql
 var GetInvoiceIDByDetailIDQuery string
+
+// Recipe recalculation SQL queries
+//
+//go:embed scripts/get_recipes_by_ingredient.sql
+var GetRecipesByIngredientQuery string
+
+//go:embed scripts/recalculate_recipe_price_and_status.sql
+var RecalculateRecipePriceAndStatusQuery string

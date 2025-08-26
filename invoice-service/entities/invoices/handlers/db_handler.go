@@ -85,7 +85,23 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 	// Create invoice details
 	var totalAmount float64 = 0
-	for _, item := range req.Items {
+	h.logger.WithFields(logrus.Fields{
+		"invoice_id":  invoice.ID,
+		"total_items": len(req.Items),
+		"category":    expenseCategoryName,
+	}).Info("Starting invoice details creation")
+
+	for i, item := range req.Items {
+		h.logger.WithFields(logrus.Fields{
+			"item_index":     i + 1,
+			"total_items":    len(req.Items),
+			"ingredient_id":  item.IngredientID,
+			"detail":         item.Detail,
+			"count":          item.Count,
+			"unit_type":      item.UnitType,
+			"price":          item.Price,
+			"items_per_unit": item.ItemsPerUnit,
+		}).Info("Processing invoice detail item")
 		var detail models.InvoiceDetail
 		err = tx.QueryRow(invoiceSQL.CreateInvoiceDetailQuery,
 			invoice.ID, item.IngredientID, item.Detail, item.Count, item.UnitType, item.ItemsPerUnit, item.Price, item.ExpirationDate).
@@ -101,9 +117,19 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 		totalAmount += detail.Total
 
+		h.logger.WithFields(logrus.Fields{
+			"detail_id":     detail.ID,
+			"detail_total":  detail.Total,
+			"running_total": totalAmount,
+		}).Info("Invoice detail created successfully")
+
 		// Create existence if this is an ingredient item AND expense category is "Ingredients"
 		//pvillalobos - get rid of hardcoded values
 		if item.IngredientID != nil && expenseCategoryName == "Ingredients" {
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id": *item.IngredientID,
+				"category":      expenseCategoryName,
+			}).Info("Item is ingredient in Ingredients category, proceeding with existence creation")
 			// Debug logging to verify items_per_unit value
 			h.logger.WithFields(logrus.Fields{
 				"invoice_detail_id": detail.ID,
@@ -125,9 +151,40 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 				IncomeMarginPercentage: 30.0, // Default 30%
 			}
 
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id":         *item.IngredientID,
+				"invoice_detail_id":     detail.ID,
+				"units_purchased":       item.Count,
+				"unit_type":             item.UnitType,
+				"items_per_unit":        item.ItemsPerUnit,
+				"cost_per_unit":         item.Price,
+				"income_margin_percent": 30.0,
+			}).Info("Creating inventory existence")
+
 			err = h.CreateInventoryExistence(tx, existenceReq)
 			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"ingredient_id": *item.IngredientID,
+					"detail_id":     detail.ID,
+				}).Error("Failed to create inventory existence")
 				return nil, err
+			}
+
+			h.logger.WithFields(logrus.Fields{
+				"ingredient_id": *item.IngredientID,
+			}).Info("Inventory existence created successfully, starting recipe recalculation")
+
+			// Recalculate all recipes that use this ingredient within the same transaction
+			err = h.RecalculateRecipesForIngredient(tx, *item.IngredientID)
+			if err != nil {
+				h.logger.WithError(err).WithFields(logrus.Fields{
+					"ingredient_id": *item.IngredientID,
+				}).Warn("Failed to recalculate recipes for ingredient, continuing with invoice creation")
+				// Don't fail the entire invoice creation if recipe recalculation fails
+			} else {
+				h.logger.WithFields(logrus.Fields{
+					"ingredient_id": *item.IngredientID,
+				}).Info("Recipe recalculation completed successfully")
 			}
 		}
 	}
@@ -629,7 +686,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 
 		// Use values from previous existence
 		finalPrice = *mostRecentExistence.FinalPrice
-		
+
 		// Calculate income margin = final price - cost per item (base pricing only)
 		incomeMarginAmount = finalPrice - costPerItem
 		incomeMarginPercentage = (incomeMarginAmount / finalPrice) * 100
@@ -766,4 +823,113 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 	}
 
 	return &response.Data, nil
+}
+
+// RecalculateRecipesForIngredient recalculates all recipes that use a specific ingredient within a database transaction
+func (h *DBHandler) RecalculateRecipesForIngredient(tx *sql.Tx, ingredientID string) error {
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id": ingredientID,
+	}).Info("Starting recipe recalculation for ingredient")
+
+	// Get all recipes that use this ingredient
+	recipeIDs, err := h.GetRecipesByIngredient(tx, ingredientID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+		}).Error("Failed to get recipes by ingredient")
+		return err
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id": ingredientID,
+		"recipe_count":  len(recipeIDs),
+		"recipe_ids":    recipeIDs,
+	}).Info("Found recipes to recalculate")
+
+	// Recalculate each recipe within the transaction
+	for i, recipeID := range recipeIDs {
+		h.logger.WithFields(logrus.Fields{
+			"recipe_index":  i + 1,
+			"total_recipes": len(recipeIDs),
+			"recipe_id":     recipeID,
+			"ingredient_id": ingredientID,
+		}).Info("Recalculating recipe price and status")
+
+		err := h.RecalculateRecipePriceAndStatus(tx, recipeID)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id":     recipeID,
+				"ingredient_id": ingredientID,
+			}).Error("Failed to recalculate recipe, continuing with others")
+			// Continue with other recipes even if one fails
+			continue
+		}
+
+		h.logger.WithFields(logrus.Fields{
+			"recipe_id":     recipeID,
+			"ingredient_id": ingredientID,
+		}).Info("Recipe price and status updated successfully")
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id":   ingredientID,
+		"recipes_updated": len(recipeIDs),
+	}).Info("Completed recipe recalculation for ingredient")
+
+	return nil
+}
+
+// GetRecipesByIngredient gets all recipe IDs that use a specific ingredient within a transaction
+func (h *DBHandler) GetRecipesByIngredient(tx *sql.Tx, ingredientID string) ([]string, error) {
+	rows, err := tx.Query(invoiceSQL.GetRecipesByIngredientQuery, ingredientID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+		}).Error("Failed to get recipes by ingredient in transaction")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipeIDs []string
+	for rows.Next() {
+		var recipeID string
+		err := rows.Scan(&recipeID)
+		if err != nil {
+			h.logger.WithError(err).Warn("Failed to scan recipe ID, skipping")
+			continue
+		}
+		recipeIDs = append(recipeIDs, recipeID)
+	}
+
+	return recipeIDs, nil
+}
+
+// RecalculateRecipePriceAndStatus recalculates the price and status of a recipe within a transaction
+func (h *DBHandler) RecalculateRecipePriceAndStatus(tx *sql.Tx, recipeID string) error {
+	h.logger.WithFields(logrus.Fields{
+		"recipe_id": recipeID,
+		"sql_query": "RecalculateRecipePriceAndStatusQuery",
+	}).Info("Executing recipe price and status recalculation SQL")
+
+	result, err := tx.Exec(invoiceSQL.RecalculateRecipePriceAndStatusQuery, recipeID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": recipeID,
+		}).Error("Failed to recalculate recipe price and status in transaction")
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": recipeID,
+		}).Warn("Failed to get rows affected for recipe recalculation")
+	} else {
+		h.logger.WithFields(logrus.Fields{
+			"recipe_id":     recipeID,
+			"rows_affected": rowsAffected,
+		}).Info("Recipe price and status recalculation SQL executed successfully")
+	}
+
+	return nil
 }

@@ -18,3 +18,9 @@ var UpdateRecipeQuery string
 
 //go:embed scripts/delete_recipe.sql
 var DeleteRecipeQuery string
+
+//go:embed scripts/update_recipe_price_and_status.sql
+var UpdateRecipePriceAndStatusQuery string
+
+//go:embed scripts/get_recipes_by_ingredient.sql
+var GetRecipesByIngredientQuery string

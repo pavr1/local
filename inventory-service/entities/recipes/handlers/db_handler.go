@@ -82,6 +82,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 		&recipe.PictureURL,
 		&recipe.RecipeCategoryID,
 		&recipe.TotalRecipeCost,
+		&recipe.Status,
 		&recipe.CreatedAt,
 		&recipe.UpdatedAt,
 	)
@@ -94,20 +95,33 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	}
 
 	// Create recipe ingredients
-	for _, ingredient := range req.Ingredients {
+	for i, ingredient := range req.Ingredients {
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_index": i + 1,
+			"total_ingredients": len(req.Ingredients),
+			"ingredient_id":    ingredient.IngredientID,
+			"quantity":         ingredient.Quantity,
+		}).Info("Creating recipe ingredient")
+
 		_, err = tx.Exec(
 			recipeIngredientsSQL.CreateRecipeIngredientQuery,
 			recipe.ID,
 			ingredient.IngredientID,
-			ingredient.NumberOfUnits,
+			ingredient.Quantity,
 		)
 		if err != nil {
 			h.logger.WithError(err).WithFields(logrus.Fields{
 				"recipe_id":     recipe.ID,
 				"ingredient_id": ingredient.IngredientID,
+				"quantity":      ingredient.Quantity,
 			}).Error("Failed to create recipe ingredient in database")
 			return nil, err
 		}
+
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_id": ingredient.IngredientID,
+			"quantity":      ingredient.Quantity,
+		}).Info("Recipe ingredient created successfully")
 	}
 
 	// Commit the transaction
@@ -268,6 +282,7 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 		&recipe.RecipeCategoryID,
 		&recipe.RecipeCategoryName,
 		&recipe.TotalRecipeCost,
+		&recipe.Status,
 		&recipe.CreatedAt,
 		&recipe.UpdatedAt,
 	)
@@ -302,7 +317,7 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 		for i, ri := range recipeIngredientsList {
 			ingredients[i] = models.RecipeIngredient{
 				IngredientID:   ri.IngredientID,
-				NumberOfUnits:  ri.Quantity,
+				Quantity:       ri.Quantity,
 				IngredientName: ri.IngredientName,
 				FinalPrice:     ri.FinalPrice,
 			}
@@ -348,6 +363,7 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 			&recipe.RecipeCategoryID,
 			&recipe.RecipeCategoryName,
 			&recipe.TotalRecipeCost,
+			&recipe.Status,
 			&recipe.CreatedAt,
 			&recipe.UpdatedAt,
 		)
@@ -380,7 +396,7 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 			for j, ri := range recipeIngredientsList {
 				ingredients[j] = models.RecipeIngredient{
 					IngredientID:   ri.IngredientID,
-					NumberOfUnits:  ri.Quantity,
+					Quantity:       ri.Quantity,
 					IngredientName: ri.IngredientName,
 					FinalPrice:     ri.FinalPrice,
 				}
@@ -446,6 +462,7 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 		&recipe.PictureURL,
 		&recipe.RecipeCategoryID,
 		&recipe.TotalRecipeCost,
+		&recipe.Status,
 		&recipe.CreatedAt,
 		&recipe.UpdatedAt,
 	)
@@ -480,7 +497,7 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 				recipeIngredientsSQL.CreateRecipeIngredientQuery,
 				id,
 				ingredient.IngredientID,
-				ingredient.NumberOfUnits,
+				ingredient.Quantity,
 			)
 			if err != nil {
 				h.logger.WithError(err).WithFields(logrus.Fields{
@@ -575,6 +592,82 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 	h.logger.WithFields(logrus.Fields{
 		"recipe_id": req.ID,
 	}).Info("Recipe deleted successfully")
+
+	return nil
+}
+
+// RecalculateRecipePriceAndStatus recalculates the price and status of a recipe based on ingredient final prices
+func (h *RecipeDBHandler) RecalculateRecipePriceAndStatus(recipeID string) error {
+	_, err := h.db.Exec(recipeSQL.UpdateRecipePriceAndStatusQuery, recipeID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": recipeID,
+		}).Error("Failed to recalculate recipe price and status")
+		return err
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"recipe_id": recipeID,
+	}).Info("Recipe price and status recalculated successfully")
+
+	return nil
+}
+
+// GetRecipesByIngredient gets all recipe IDs that use a specific ingredient
+func (h *RecipeDBHandler) GetRecipesByIngredient(ingredientID string) ([]string, error) {
+	rows, err := h.db.Query(recipeSQL.GetRecipesByIngredientQuery, ingredientID)
+	if err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+		}).Error("Failed to get recipes by ingredient")
+		return nil, err
+	}
+	defer rows.Close()
+
+	var recipeIDs []string
+	for rows.Next() {
+		var recipeID string
+		err := rows.Scan(&recipeID)
+		if err != nil {
+			h.logger.WithError(err).Warn("Failed to scan recipe ID, skipping")
+			continue
+		}
+		recipeIDs = append(recipeIDs, recipeID)
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id": ingredientID,
+		"recipe_count":  len(recipeIDs),
+	}).Info("Retrieved recipes by ingredient")
+
+	return recipeIDs, nil
+}
+
+// RecalculateAllRecipesForIngredient recalculates all recipes that use a specific ingredient
+func (h *RecipeDBHandler) RecalculateAllRecipesForIngredient(ingredientID string) error {
+	// Get all recipes that use this ingredient
+	recipeIDs, err := h.GetRecipesByIngredient(ingredientID)
+	if err != nil {
+		return err
+	}
+
+	// Recalculate each recipe
+	for _, recipeID := range recipeIDs {
+		err := h.RecalculateRecipePriceAndStatus(recipeID)
+		if err != nil {
+			h.logger.WithError(err).WithFields(logrus.Fields{
+				"recipe_id":     recipeID,
+				"ingredient_id": ingredientID,
+			}).Error("Failed to recalculate recipe, continuing with others")
+			// Continue with other recipes even if one fails
+			continue
+		}
+	}
+
+	h.logger.WithFields(logrus.Fields{
+		"ingredient_id":   ingredientID,
+		"recipes_updated": len(recipeIDs),
+	}).Info("Recalculated all recipes for ingredient")
 
 	return nil
 }

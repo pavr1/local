@@ -45,6 +45,10 @@ Each migration consists of two files:
 - **Up**: Adds comments and constraints to `orders` table for proper tax handling
 - **Down**: Removes comments and constraints from `orders` table
 
+### 008_add_recipe_status_and_price
+- **Up**: Adds `status` column to `recipes` table for recipe availability and updates `total_recipe_cost` calculation
+- **Down**: Removes `status` column from `recipes` table
+
 ## Running Migrations
 
 ### Manual Execution
