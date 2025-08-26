@@ -804,7 +804,7 @@
             // Add ingredients to the request
             recipeData.ingredients = recipeIngredients.map(ingredient => ({
                 ingredient_id: ingredient.id,
-                number_of_units: ingredient.quantity
+                quantity: ingredient.quantity
             }));
             
             // Handle image data from hidden fields
@@ -1374,7 +1374,8 @@
 
         const ingredientsHtml = ingredients.map((ingredient) => {
             const pricePerItem = ingredient.final_price || 0;
-            const subtotal = pricePerItem * ingredient.number_of_units;
+            const quantity = ingredient.quantity || ingredient.number_of_units || 0; // Handle both old and new field names
+            const subtotal = pricePerItem * quantity;
             totalCost += subtotal;
 
             const priceDisplay = pricePerItem > 0 ? `₡${pricePerItem.toFixed(2)} per item` : 'No price available';
@@ -1388,7 +1389,7 @@
                             <br><small class="text-muted">${priceDisplay}</small>
                         </div>
                         <div class="col-md-3">
-                            <span class="text-muted">${ingredient.number_of_units} units</span>
+                            <span class="text-muted">${quantity} units</span>
                         </div>
                         <div class="col-md-3">
                             <span class="badge bg-info">₡${subtotal.toFixed(2)}</span>
@@ -1521,7 +1522,7 @@
             recipeIngredients = (recipe.ingredients || []).map(ingredient => ({
                 id: ingredient.ingredient_id,
                 name: ingredient.ingredient_name || 'Unknown Ingredient',
-                quantity: ingredient.number_of_units,
+                quantity: ingredient.quantity || ingredient.number_of_units || 1, // Handle both old and new field names
                 final_price: ingredient.final_price || 0
             }));
             
@@ -1608,7 +1609,7 @@
             // Add ingredients to the request
             recipeData.ingredients = recipeIngredients.map(ingredient => ({
                 ingredient_id: ingredient.id,
-                number_of_units: ingredient.quantity
+                quantity: ingredient.quantity
             }));
             
             // Handle image data from hidden fields
