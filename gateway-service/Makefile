@@ -106,9 +106,9 @@ stop-locally: ## Stop local service (if running in background)
 	
 	@echo "$(GREEN)✅ Local service stopped and resources cleaned$(RESET)"
 
-## 🐳 Standardized Docker Commands
+## 🐳 Standardized Container Commands
 
-build-docker: ## Build Docker image for gateway service
+build-container: ## Build Docker image for gateway service
 	@echo "$(CYAN)🔨 Building Gateway Service...$(RESET)"
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main .
 	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
@@ -116,17 +116,17 @@ build-docker: ## Build Docker image for gateway service
 	@cd docker && docker build -t docker-gateway-service -f Dockerfile ..
 	@echo "$(GREEN)✅ Docker image built: docker-gateway-service$(RESET)"
 
-start-docker: build-docker ## Start gateway service in Docker
+start-container: build-container ## Start gateway service in Docker
 	@echo "$(CYAN)🌐 Starting Gateway Service...$(RESET)"
 	@echo "$(CYAN)🌐 Starting Ice Cream Store Gateway Service...$(RESET)"
 	@./scripts/start.sh
 
-stop-docker: ## Stop gateway service Docker container
+stop-container: ## Stop gateway service Docker container
 	@echo "$(YELLOW)🛑 Stopping Gateway Service containers...$(RESET)"
 	@cd docker && docker-compose down
 	@echo "$(GREEN)✅ Gateway service stopped successfully!$(RESET)"
 
-fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+fresh-container: stop-container build-container start-container ## Fresh start: stop, rebuild, and start Docker container
 
 ## 📊 Monitoring & Debugging Commands
 
@@ -147,14 +147,7 @@ logs-follow: ## Follow service logs in real-time
 	@echo "$(CYAN)📋 Following Gateway Service logs...$(RESET)"
 	@./scripts/logs.sh -f
 
-## 🐳 Legacy Container Management Commands
 
-start-container: ## Start the gateway service in container (not implemented)
-	@echo "$(YELLOW)⚠️  Container mode not yet implemented for gateway service$(RESET)"
-	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
-
-stop-container: ## Stop the gateway service container (not implemented)
-	@echo "$(YELLOW)⚠️  Container mode not yet implemented for gateway service$(RESET)"
 
 # Legacy aliases for backward compatibility
 run: build ## [DEPRECATED] Use start-locally instead - Run the gateway service locally

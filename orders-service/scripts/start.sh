@@ -45,7 +45,7 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Data-service failed to start within the expected time"
-    echo "   Please ensure data-service is running first: cd ../data-service && make start-docker"
+    echo "   Please ensure data-service is running first: cd ../data-service && make start-container"
     exit 1
 fi
 

@@ -113,9 +113,9 @@ stop-locally: ## Stop local service (if running in background)
 	
 	@echo "$(GREEN)✅ Local service stopped and resources cleaned$(RESET)"
 
-## 🐳 Standardized Docker Commands
+## 🐳 Standardized Container Commands
 
-build-docker: ## Build Docker image for invoice service
+build-container: ## Build Docker image for invoice service
 	@echo "$(CYAN)🔨 Building Invoice Service...$(RESET)"
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o main .
 	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
@@ -123,17 +123,17 @@ build-docker: ## Build Docker image for invoice service
 	@cd docker && docker build -t docker-invoice-service -f Dockerfile ..
 	@echo "$(GREEN)✅ Docker image built: docker-invoice-service$(RESET)"
 
-start-docker: build-docker ## Start invoice service in Docker
+start-container: build-container ## Start invoice service in Docker
 	@echo "$(CYAN)🍦 Starting Invoice Service...$(RESET)"
 	@echo "$(CYAN)🍦 Starting Ice Cream Store Invoice Service...$(RESET)"
 	@./scripts/start.sh
 
-stop-docker: ## Stop invoice service Docker container
+stop-container: ## Stop invoice service Docker container
 	@echo "$(YELLOW)🛑 Stopping Invoice Service containers...$(RESET)"
 	@cd docker && docker-compose down
 	@echo "$(GREEN)✅ Invoice service stopped successfully!$(RESET)"
 
-fresh-docker: stop-docker build-docker start-docker ## Fresh start: stop, rebuild, and start Docker container
+fresh-container: stop-container build-container start-container ## Fresh start: stop, rebuild, and start Docker container
 
 ## 📊 Monitoring & Debugging Commands
 

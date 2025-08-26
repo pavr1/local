@@ -150,10 +150,10 @@ stop-locally: stop ## Stop data service containers and HTTP server
 	@pkill -f "go run main.go" 2>/dev/null || true
 	@echo "$(GREEN)✅ Local service stopped$(RESET)"
 
-start-docker: build-docker start ## Start data service containers (DB_HOST=postgres)
+start-container: build-container start ## Start data service containers (DB_HOST=postgres)
 	@echo "$(CYAN)🐳 Data service containers started with DB_HOST=postgres$(RESET)"
-stop-docker: stop ## [ALIAS] Stop data service containers
-restart-docker: restart ## [ALIAS] Restart data service containers
+stop-container: stop ## [ALIAS] Stop data service containers
+restart-container: restart ## [ALIAS] Restart data service containers
 
 reset: ## Reset database (⚠️  DELETES ALL DATA)
 	@echo "$(RED)⚠️  WARNING: This will delete ALL database data!$(RESET)"
@@ -202,7 +202,7 @@ build: ## Build the data service application
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
 
-build-docker: build ## Build the Docker image
+build-container: build ## Build the Docker image
 	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
 	@docker build -t docker-data-service -f docker/Dockerfile .
 	@echo "$(GREEN)✅ Docker image built: docker-data-service$(RESET)"
@@ -334,5 +334,5 @@ help: ## Show this help message
 	@echo ""
 	@echo "$(YELLOW)🔧 Environment Variables:$(RESET)"
 	@echo "   start-locally:  DB_HOST=localhost (connects to localhost:5432)"
-	@echo "   start-docker:   DB_HOST=postgres (connects to container:5432)"
+	@echo "   start-container:   DB_HOST=postgres (connects to container:5432)"
 	@echo "" 

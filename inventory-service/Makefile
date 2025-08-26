@@ -53,7 +53,7 @@ build: ## Build the inventory service binary
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
 
-build-docker: build ## Build the Docker image
+build-container: build ## Build the Docker image
 	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
 	@docker build -t docker-inventory-service -f docker/Dockerfile .
 	@echo "$(GREEN)✅ Docker image built: docker-inventory-service$(RESET)"
@@ -116,16 +116,16 @@ stop-locally: ## Stop local service (if running in background)
 
 ## 🐳 Container Management Commands
 
-start-docker: build-docker ## Start inventory service containers (DB_HOST=postgres)
+start-container: build-container ## Start inventory service containers (DB_HOST=postgres)
 	@echo "$(CYAN)🍦 Starting Inventory Service...$(RESET)"
 	@./scripts/start.sh
 	@echo "$(CYAN)🐳 Inventory service containers started with DB_HOST=postgres$(RESET)"
 
-stop-docker: ## Stop inventory service containers
+stop-container: ## Stop inventory service containers
 	@echo "$(YELLOW)🛑 Stopping Inventory Service containers...$(RESET)"
 	@./scripts/stop.sh
 
-restart-docker: stop-docker start-docker ## Restart inventory service containers
+restart-container: stop-container start-container ## Restart inventory service containers
 
 # Legacy aliases for backward compatibility
 run: build ## [DEPRECATED] Use start-locally instead - Run the inventory service locally

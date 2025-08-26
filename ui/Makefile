@@ -81,25 +81,25 @@ stop-locally: ## Stop UI development server (manual process)
 	
 	@echo "$(GREEN)✅ Local UI service stopped and resources cleaned$(RESET)"
 
-## 🐳 Standardized Docker Commands
+## 🐳 Standardized Container Commands
 
-build-docker: ## Build Docker image for UI service
+build-container: ## Build Docker image for UI service
 	@echo "$(CYAN)🔨 Building UI Service Docker image...$(RESET)"
 	@cd docker && docker build --no-cache -t docker-ui-service -f Dockerfile ..
 	@echo "$(GREEN)✅ Docker image built: docker-ui-service$(RESET)"
 
-start-docker: fresh-docker ## Start UI service in Docker (fresh build)
+start-container: fresh-container ## Start UI service in Docker (fresh build)
 	@echo "$(CYAN)🎨 Starting UI Service...$(RESET)"
 	@./scripts/start.sh
 
-stop-docker: ## Stop UI service Docker container
+stop-container: ## Stop UI service Docker container
 	@echo "$(YELLOW)🛑 Stopping UI Service containers...$(RESET)"
 	@cd docker && docker-compose down
 	@echo "$(GREEN)✅ UI service stopped successfully!$(RESET)"
 
-fresh-docker: stop-docker clean-docker build-docker start-docker ## Fresh start: stop, clean, rebuild, and start Docker container
+fresh-container: stop-container clean-container build-container start-container ## Fresh start: stop, clean, rebuild, and start Docker container
 
-clean-docker: ## Remove Docker image and containers completely
+clean-container: ## Remove Docker image and containers completely
 	@echo "$(YELLOW)🧹 Cleaning Docker image and containers...$(RESET)"
 	@docker rmi docker-ui-service 2>/dev/null || true
 	@docker rmi docker-ui 2>/dev/null || true
@@ -125,14 +125,7 @@ logs-follow: ## Follow service logs in real-time
 	@echo "$(CYAN)📋 Following UI Service logs...$(RESET)"
 	@./scripts/logs.sh -f
 
-## 🐳 Legacy Container Management Commands
 
-start-container: ## Start UI in Docker container (not implemented)
-	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
-	@echo "$(CYAN)   Use 'make start-locally' instead$(RESET)"
-
-stop-container: ## Stop UI Docker container (not implemented)
-	@echo "$(YELLOW)⚠️  Docker container mode not yet implemented for UI service$(RESET)"
 
 # Legacy aliases for backward compatibility
 start: start-locally ## [DEPRECATED] Use start-locally instead
@@ -202,4 +195,4 @@ version: ## Show version information
 	@npm --version 2>/dev/null || echo "NPM: Not installed"
 
 # List all targets for tab completion
-.PHONY: help install start-locally stop-locally start-docker stop-docker start dev build test status health clean fresh info logs version 
+.PHONY: help install start-locally stop-locally start-container stop-container start dev build test status health clean fresh info logs version 

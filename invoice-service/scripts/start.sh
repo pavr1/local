@@ -23,7 +23,7 @@ fi
 # Check if the database network exists (from data-service)
 if ! docker network ls | grep -q "docker_icecream_network"; then
     echo "⚠️  docker_icecream_network not found. Please ensure data-service is running first."
-    echo "   Run: cd ../data-service && make start-docker"
+    echo "   Run: cd ../data-service && make start-container"
     exit 1
 fi
 
@@ -45,7 +45,7 @@ done
 
 if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
     echo "❌ Data-service failed to start within the expected time"
-    echo "   Please ensure data-service is running first: cd ../data-service && make start-docker"
+    echo "   Please ensure data-service is running first: cd ../data-service && make start-container"
     exit 1
 fi
 
