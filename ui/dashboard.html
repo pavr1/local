@@ -4560,8 +4560,6 @@
                 
                 // Set default values
                 document.getElementById('existenceIncomeMarginPercentage').value = '30.00';
-                document.getElementById('existenceIvaPercentage').value = '13.00';
-                document.getElementById('existenceServiceTaxPercentage').value = '10.00';
                 
                 // Remove validation classes
                 form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -4590,8 +4588,7 @@
                     cost_per_unit: parseFloat(document.getElementById('existenceCostPerUnit').value),
                     expiration_date: document.getElementById('existenceExpirationDate').value || null,
                     income_margin_percentage: parseFloat(document.getElementById('existenceIncomeMarginPercentage').value) || null,
-                    iva_percentage: parseFloat(document.getElementById('existenceIvaPercentage').value) || null,
-                    service_tax_percentage: parseFloat(document.getElementById('existenceServiceTaxPercentage').value) || null,
+                    minimum_price: parseFloat(document.getElementById('existenceMinimumPrice').value) || null,
                     final_price: parseFloat(document.getElementById('existenceFinalPrice').value) || null
                 };
 
@@ -4692,10 +4689,6 @@
             
             document.getElementById('viewExistenceIncomeMarginPercentage').textContent = Number(existence.income_margin_percentage || 0).toFixed(2);
             document.getElementById('viewExistenceIncomeMarginAmount').textContent = '₡' + Number(existence.income_margin_amount || 0).toLocaleString();
-            document.getElementById('viewExistenceIvaPercentage').textContent = Number(existence.iva_percentage || 0).toFixed(2);
-            document.getElementById('viewExistenceIvaAmount').textContent = '₡' + Number(existence.iva_amount || 0).toLocaleString();
-            document.getElementById('viewExistenceServiceTaxPercentage').textContent = Number(existence.service_tax_percentage || 0).toFixed(2);
-            document.getElementById('viewExistenceServiceTaxAmount').textContent = '₡' + Number(existence.service_tax_amount || 0).toLocaleString();
             document.getElementById('viewExistenceMinimumPrice').textContent = '₡' + Number(existence.minimum_price || 0).toLocaleString();
             document.getElementById('viewExistenceMaximumPrice').textContent = '₡' + Number(existence.maximum_price || 0).toLocaleString();
             document.getElementById('viewExistenceFinalPrice').textContent = existence.final_price ? 
@@ -4735,8 +4728,8 @@
             }
         }
 
-        // Set final price for existence
-        function setFinalPrice(existenceId, minimumPrice, maximumPrice, currentFinalPrice, costPerItem, ivaPercentage, serviceTaxPercentage, incomeMarginPercentage) {
+        // Set final price for existence (base pricing only - no taxes)
+        function setFinalPrice(existenceId, minimumPrice, maximumPrice, currentFinalPrice, costPerItem, incomeMarginPercentage) {
             // Create modal content
             const modalContent = `
                 <div class="modal fade" id="setFinalPriceModal" tabindex="-1" aria-labelledby="setFinalPriceModalLabel" aria-hidden="true">
@@ -4766,49 +4759,19 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Income Calculation Preview -->
+                                <!-- Income Calculation Preview (Base Pricing - No Taxes) -->
                                 <div class="card mt-3">
                                     <div class="card-header">
-                                        <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Income Preview</h6>
+                                        <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Income Preview (Base Pricing)</h6>
                                     </div>
                                     <div class="card-body">
                                         <div class="row g-2">
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
-                                                    <span class="text-muted">IVA (${ivaPercentage}%):</span>
-                                                    <span id="previewIvaAmount" class="fw-bold">₡${(() => {
-                                                        const finalPrice = currentFinalPrice || maximumPrice;
-                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                        const taxMultiplier = 1 + totalTaxRate;
-                                                        const baseAmount = finalPrice / taxMultiplier;
-                                                        return (baseAmount * (ivaPercentage / 100)).toFixed(2);
-                                                    })()}</span>
-                                                </div>
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="d-flex justify-content-between">
-                                                    <span class="text-muted">Service Tax (${serviceTaxPercentage}%):</span>
-                                                    <span id="previewServiceTaxAmount" class="fw-bold">₡${(() => {
-                                                        const finalPrice = currentFinalPrice || maximumPrice;
-                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                        const taxMultiplier = 1 + totalTaxRate;
-                                                        const baseAmount = finalPrice / taxMultiplier;
-                                                        return (baseAmount * (serviceTaxPercentage / 100)).toFixed(2);
-                                                    })()}</span>
-                                                </div>
-                                            </div>
-                                            <div class="col-12">
-                                                <hr class="my-2">
-                                            </div>
-                                            <div class="col-6">
-                                                <div class="d-flex justify-content-between">
                                                     <span class="text-muted">Income Margin:</span>
                                                     <span id="previewIncomeMarginAmount" class="fw-bold text-success">₡${(() => {
                                                         const finalPrice = currentFinalPrice || maximumPrice;
-                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                        const taxMultiplier = 1 + totalTaxRate;
-                                                        const baseAmount = finalPrice / taxMultiplier;
-                                                        return (baseAmount - costPerItem).toFixed(2);
+                                                        return (finalPrice - costPerItem).toFixed(2);
                                                     })()}</span>
                                                 </div>
                                             </div>
@@ -4817,13 +4780,16 @@
                                                     <span class="text-muted">Income %:</span>
                                                     <span id="previewIncomeMarginPercentage" class="fw-bold text-success">${(() => {
                                                         const finalPrice = currentFinalPrice || maximumPrice;
-                                                        const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                        const taxMultiplier = 1 + totalTaxRate;
-                                                        const baseAmount = finalPrice / taxMultiplier;
-                                                        const marginAmount = baseAmount - costPerItem;
+                                                        const marginAmount = finalPrice - costPerItem;
                                                         return ((marginAmount / finalPrice) * 100).toFixed(2);
                                                     })()}%</span>
                                                 </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Tax calculations are handled separately in the orders system
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -4854,7 +4820,7 @@
             // Add real-time calculation updates and validation
             const finalPriceInput = document.getElementById('finalPriceInput');
             finalPriceInput.addEventListener('input', function() {
-                updateIncomePreview(this.value, costPerItem, ivaPercentage, serviceTaxPercentage);
+                updateIncomePreview(this.value, costPerItem);
                 validateFinalPriceInput(this.value, minimumPrice, maximumPrice);
             });
 
@@ -4864,31 +4830,18 @@
             });
         }
 
-        // Update income preview calculations
-        function updateIncomePreview(finalPrice, costPerItem, ivaPercentage, serviceTaxPercentage) {
+        // Update income preview calculations (base pricing only - no taxes)
+        function updateIncomePreview(finalPrice, costPerItem) {
             const finalPriceNum = parseFloat(finalPrice) || 0;
             const costPerItemNum = parseFloat(costPerItem) || 0;
-            const ivaPercentageNum = parseFloat(ivaPercentage) || 0;
-            const serviceTaxPercentageNum = parseFloat(serviceTaxPercentage) || 0;
 
-            // pvillalobos - Calculate total tax rate from existence data
-            const totalTaxRate = (ivaPercentageNum + serviceTaxPercentageNum) / 100; // pvillalobos - Total tax rate calculation
-            const taxMultiplier = 1 + totalTaxRate; // pvillalobos - Tax multiplier for reverse calculation
-
-            // Calculate base amount before taxes (reverse calculation)
-            const baseAmount = finalPriceNum / taxMultiplier;
-            const newMarginAmount = baseAmount - costPerItemNum;
-            
-            // Calculate tax amounts based on (cost + margin)
-            const ivaAmount = baseAmount * (ivaPercentageNum / 100);
-            const serviceTaxAmount = baseAmount * (serviceTaxPercentageNum / 100);
+            // Calculate income margin (base pricing - no taxes)
+            const newMarginAmount = finalPriceNum - costPerItemNum;
             
             // Calculate income margin percentage
             const incomeMarginPercentage = finalPriceNum > 0 ? (newMarginAmount / finalPriceNum) * 100 : 0;
 
             // Update display
-            document.getElementById('previewIvaAmount').textContent = '₡' + ivaAmount.toFixed(2);
-            document.getElementById('previewServiceTaxAmount').textContent = '₡' + serviceTaxAmount.toFixed(2);
             document.getElementById('previewIncomeMarginAmount').textContent = '₡' + newMarginAmount.toFixed(2);
             document.getElementById('previewIncomeMarginPercentage').textContent = incomeMarginPercentage.toFixed(2) + '%';
 
@@ -5073,8 +5026,6 @@
             document.getElementById('editExistenceCostPerUnit').value = existence.cost_per_unit || '';
             
             document.getElementById('editExistenceIncomeMarginPercentage').value = existence.income_margin_percentage || '';
-            document.getElementById('editExistenceIvaPercentage').value = existence.iva_percentage || '';
-            document.getElementById('editExistenceServiceTaxPercentage').value = existence.service_tax_percentage || '';
             document.getElementById('editExistenceMinimumPrice').value = existence.minimum_price || '';
             document.getElementById('editExistenceMaximumPrice').value = existence.maximum_price || '';
             document.getElementById('editExistenceFinalPrice').value = existence.final_price || '';
@@ -5101,8 +5052,6 @@
                     cost_per_unit: parseFloat(document.getElementById('editExistenceCostPerUnit').value),
                     expiration_date: document.getElementById('editExistenceExpirationDate').value || null,
                     income_margin_percentage: parseFloat(document.getElementById('editExistenceIncomeMarginPercentage').value) || null,
-                    iva_percentage: parseFloat(document.getElementById('editExistenceIvaPercentage').value) || null,
-                    service_tax_percentage: parseFloat(document.getElementById('editExistenceServiceTaxPercentage').value) || null,
                     minimum_price: parseFloat(document.getElementById('editExistenceMinimumPrice').value) || null,
                     maximum_price: parseFloat(document.getElementById('editExistenceMaximumPrice').value) || null,
                     final_price: parseFloat(document.getElementById('editExistenceFinalPrice').value) || null
@@ -7606,20 +7555,7 @@
                                     <span id="viewExistenceIncomeMarginAmount"></span>
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">IVA</label>
-                                <div class="d-flex justify-content-between">
-                                    <span id="viewExistenceIvaPercentage"></span>%
-                                    <span id="viewExistenceIvaAmount"></span>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Service Tax</label>
-                                <div class="d-flex justify-content-between">
-                                    <span id="viewExistenceServiceTaxPercentage"></span>%
-                                    <span id="viewExistenceServiceTaxAmount"></span>
-                                </div>
-                            </div>
+
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Minimum Price</label>
                                 <div id="viewExistenceMinimumPrice" class="form-control-plaintext"></div>
@@ -7706,16 +7642,8 @@
                                     <label for="editExistenceIncomeMarginPercentage" class="form-label">Income Margin Percentage</label>
                                     <input type="number" class="form-control" id="editExistenceIncomeMarginPercentage" step="0.01">
                                 </div>
-                                <div class="mb-3">
-                                    <label for="editExistenceIvaPercentage" class="form-label">IVA Percentage</label>
-                                    <input type="number" class="form-control" id="editExistenceIvaPercentage" step="0.01">
-                                </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="editExistenceServiceTaxPercentage" class="form-label">Service Tax Percentage</label>
-                                    <input type="number" class="form-control" id="editExistenceServiceTaxPercentage" step="0.01">
-                                </div>
                                 <div class="mb-3">
                                     <label for="editExistenceMinimumPrice" class="form-label">Minimum Price</label>
                                     <input type="number" class="form-control" id="editExistenceMinimumPrice" step="0.01" readonly>

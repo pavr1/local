@@ -9,10 +9,6 @@ INSERT INTO existences (
     expiration_date,
     income_margin_percentage,
     income_margin_amount,
-    iva_percentage,
-    iva_amount,
-    service_tax_percentage,
-    service_tax_amount,
     minimum_price,
     maximum_price,
     final_price
@@ -27,11 +23,7 @@ INSERT INTO existences (
     $7,  -- expiration_date
     $8,  -- income_margin_percentage
     $9,  -- income_margin_amount
-    $10, -- iva_percentage
-    $11, -- iva_amount
-    $12, -- service_tax_percentage
-    $13, -- service_tax_amount
-    $14, -- minimum_price
-    $15, -- maximum_price
-    $16  -- final_price
+    $10, -- minimum_price
+    $11, -- maximum_price
+    $12  -- final_price
 ); 
