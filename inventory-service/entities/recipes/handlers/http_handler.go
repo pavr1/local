@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"inventory-service/config"
 	"inventory-service/entities/recipes/models"
@@ -31,6 +33,15 @@ func (h *RecipeHTTPHandler) CreateRecipe(w http.ResponseWriter, r *http.Request)
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Invalid JSON in create recipe request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields based on database schema
+	if err := h.validateCreateRecipeRequest(req); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_name": req.RecipeName,
+		}).Error("Validation failed for create recipe request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -61,6 +72,15 @@ func (h *RecipeHTTPHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		h.logger.Warn("Missing recipe ID in get request")
 		h.writeErrorResponse(w, "Recipe ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate recipe ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"recipe_id": id,
+		}).Warn("Invalid recipe ID format in get request")
+		h.writeErrorResponse(w, "Recipe ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -157,6 +177,15 @@ func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateUpdateRecipeRequest(req, id); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"recipe_id": id,
+		}).Error("Validation failed for update recipe request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	recipe, err := h.dbHandler.Update(req, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -194,6 +223,15 @@ func (h *RecipeHTTPHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request)
 	if id == "" {
 		h.logger.Warn("Missing recipe ID in delete request")
 		h.writeErrorResponse(w, "Recipe ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate recipe ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"recipe_id": id,
+		}).Warn("Invalid recipe ID format in delete request")
+		h.writeErrorResponse(w, "Recipe ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -247,4 +285,140 @@ func (h *RecipeHTTPHandler) writeErrorResponse(w http.ResponseWriter, message st
 	}
 
 	h.writeJSONResponse(w, errorResponse, statusCode)
+}
+
+// validateCreateRecipeRequest validates all required fields for recipe creation
+func (h *RecipeHTTPHandler) validateCreateRecipeRequest(req models.CreateRecipeRequest) error {
+	// Validate recipe_name (required, non-empty, max 255 chars)
+	if req.RecipeName == "" {
+		return fmt.Errorf("recipe_name is required and cannot be empty")
+	}
+	//pvillalobos - hardcoded values
+	if len(req.RecipeName) > 255 {
+		return fmt.Errorf("recipe_name cannot exceed 255 characters, got: %d", len(req.RecipeName))
+	}
+
+	// Validate recipe_category_id (required, valid UUID)
+	if req.RecipeCategoryID == "" {
+		return fmt.Errorf("recipe_category_id is required and cannot be empty")
+	}
+	if !isValidUUID(req.RecipeCategoryID) {
+		return fmt.Errorf("recipe_category_id must be a valid UUID, got: %s", req.RecipeCategoryID)
+	}
+
+	// Validate total_recipe_cost (required, non-negative)
+	if req.TotalRecipeCost < 0 {
+		return fmt.Errorf("total_recipe_cost must be non-negative, got: %f", req.TotalRecipeCost)
+	}
+
+	// Validate ingredients (required, non-empty array)
+	if len(req.Ingredients) == 0 {
+		return fmt.Errorf("at least one ingredient is required")
+	}
+
+	// Validate each ingredient
+	for i, ingredient := range req.Ingredients {
+		if err := h.validateRecipeIngredient(ingredient, i); err != nil {
+			return fmt.Errorf("ingredient %d validation failed: %w", i, err)
+		}
+	}
+
+	// Validate image data (required for recipe creation)
+	if req.ImageData == nil || req.ImageName == nil || len(req.ImageData) == 0 {
+		return fmt.Errorf("image is required for recipe creation (image_data, image_name, and non-empty image_data)")
+	}
+
+	return nil
+}
+
+// validateRecipeIngredient validates a single recipe ingredient
+func (h *RecipeHTTPHandler) validateRecipeIngredient(ingredient models.RecipeIngredient, index int) error {
+	// Validate ingredient_id (required, valid UUID)
+	if ingredient.IngredientID == "" {
+		return fmt.Errorf("ingredient_id is required and cannot be empty")
+	}
+	if !isValidUUID(ingredient.IngredientID) {
+		return fmt.Errorf("ingredient_id must be a valid UUID, got: %s", ingredient.IngredientID)
+	}
+
+	// Validate quantity (required, greater than 0.001)
+	if ingredient.Quantity <= 0.001 {
+		return fmt.Errorf("quantity must be greater than 0.001, got: %f", ingredient.Quantity)
+	}
+
+	return nil
+}
+
+// validateUpdateRecipeRequest validates all required fields for recipe update
+func (h *RecipeHTTPHandler) validateUpdateRecipeRequest(req models.UpdateRecipeRequest, id string) error {
+	// Validate recipe ID (required, valid UUID)
+	if id == "" {
+		return fmt.Errorf("recipe ID is required and cannot be empty")
+	}
+	if !isValidUUID(id) {
+		return fmt.Errorf("recipe ID must be a valid UUID, got: %s", id)
+	}
+
+	// Validate recipe_name if provided (non-empty, max 255 chars)
+	if req.RecipeName != nil {
+		if *req.RecipeName == "" {
+			return fmt.Errorf("recipe_name cannot be empty if provided")
+		}
+		if len(*req.RecipeName) > 255 {
+			return fmt.Errorf("recipe_name cannot exceed 255 characters, got: %d", len(*req.RecipeName))
+		}
+	}
+
+	// Validate recipe_category_id if provided (valid UUID)
+	if req.RecipeCategoryID != nil {
+		if *req.RecipeCategoryID == "" {
+			return fmt.Errorf("recipe_category_id cannot be empty if provided")
+		}
+		if !isValidUUID(*req.RecipeCategoryID) {
+			return fmt.Errorf("recipe_category_id must be a valid UUID, got: %s", *req.RecipeCategoryID)
+		}
+	}
+
+	// Validate total_recipe_cost if provided (non-negative)
+	if req.TotalRecipeCost != nil {
+		if *req.TotalRecipeCost < 0 {
+			return fmt.Errorf("total_recipe_cost must be non-negative, got: %f", *req.TotalRecipeCost)
+		}
+	}
+
+	// Validate ingredients if provided (non-empty array)
+	if req.Ingredients != nil {
+		if len(req.Ingredients) == 0 {
+			return fmt.Errorf("ingredients cannot be empty if provided")
+		}
+
+		// Validate each ingredient
+		for i, ingredient := range req.Ingredients {
+			if err := h.validateRecipeIngredient(ingredient, i); err != nil {
+				return fmt.Errorf("ingredient %d validation failed: %w", i, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// isValidUUID checks if a string is a valid UUID
+func isValidUUID(uuid string) bool {
+	// Simple UUID validation - check length and format
+	if len(uuid) != 36 {
+		return false
+	}
+
+	// Check if it matches UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	parts := strings.Split(uuid, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {
+		return false
+	}
+
+	return true
 }

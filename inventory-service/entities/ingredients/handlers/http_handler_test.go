@@ -67,15 +67,15 @@ func TestCreateIngredientHTTP(t *testing.T) {
 			requestBody: models.CreateIngredientRequest{
 				Name:                 "Vanilla Extract",
 				Description:          stringPtr("Pure vanilla extract"),
-				IngredientCategoryID: stringPtr("category-123"),
+				IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440000"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
 				mockDB.On("CreateIngredient", mock.AnythingOfType("models.CreateIngredientRequest")).Return(
 					&models.Ingredient{
-						ID:                   "ingredient-123",
+						ID:                   "550e8400-e29b-41d4-a716-446655440001",
 						Name:                 "Vanilla Extract",
 						Description:          stringPtr("Pure vanilla extract"),
-						IngredientCategoryID: stringPtr("category-123"),
+						IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440000"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					}, nil)
@@ -84,10 +84,10 @@ func TestCreateIngredientHTTP(t *testing.T) {
 			expectedResponse: models.IngredientResponse{
 				Success: true,
 				Data: models.Ingredient{
-					ID:                   "ingredient-123",
+					ID:                   "550e8400-e29b-41d4-a716-446655440001",
 					Name:                 "Vanilla Extract",
 					Description:          stringPtr("Pure vanilla extract"),
-					IngredientCategoryID: stringPtr("category-123"),
+					IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440000"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
@@ -165,14 +165,14 @@ func TestGetIngredientHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_retrieval": {
-			ingredientID: "ingredient-123",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440001",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("GetIngredientByID", "ingredient-123").Return(
+				mockDB.On("GetIngredientByID", "550e8400-e29b-41d4-a716-446655440001").Return(
 					&models.Ingredient{
-						ID:                   "ingredient-123",
+						ID:                   "550e8400-e29b-41d4-a716-446655440001",
 						Name:                 "Vanilla Extract",
 						Description:          stringPtr("Pure vanilla extract"),
-						IngredientCategoryID: stringPtr("category-123"),
+						IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440000"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T00:00:00Z",
 					}, nil)
@@ -181,10 +181,10 @@ func TestGetIngredientHTTP(t *testing.T) {
 			expectedResponse: models.IngredientResponse{
 				Success: true,
 				Data: models.Ingredient{
-					ID:                   "ingredient-123",
+					ID:                   "550e8400-e29b-41d4-a716-446655440001",
 					Name:                 "Vanilla Extract",
 					Description:          stringPtr("Pure vanilla extract"),
-					IngredientCategoryID: stringPtr("category-123"),
+					IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440000"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T00:00:00Z",
 				},
@@ -192,9 +192,9 @@ func TestGetIngredientHTTP(t *testing.T) {
 			},
 		},
 		"ingredient_not_found": {
-			ingredientID: "nonexistent-id",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440002",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("GetIngredientByID", "nonexistent-id").Return(nil, sql.ErrNoRows)
+				mockDB.On("GetIngredientByID", "550e8400-e29b-41d4-a716-446655440002").Return(nil, sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
 			expectedResponse: models.IngredientResponse{
@@ -347,19 +347,19 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_update": {
-			ingredientID: "ingredient-123",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440001",
 			requestBody: models.UpdateIngredientRequest{
 				Name:                 stringPtr("Updated Vanilla"),
 				Description:          stringPtr("Updated description"),
-				IngredientCategoryID: stringPtr("new-category-456"),
+				IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440003"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("UpdateIngredient", "ingredient-123", mock.AnythingOfType("models.UpdateIngredientRequest")).Return(
+				mockDB.On("UpdateIngredient", "550e8400-e29b-41d4-a716-446655440001", mock.AnythingOfType("models.UpdateIngredientRequest")).Return(
 					&models.Ingredient{
-						ID:                   "ingredient-123",
+						ID:                   "550e8400-e29b-41d4-a716-446655440001",
 						Name:                 "Updated Vanilla",
 						Description:          stringPtr("Updated description"),
-						IngredientCategoryID: stringPtr("new-category-456"),
+						IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440003"),
 						CreatedAt:            "2024-01-01T00:00:00Z",
 						UpdatedAt:            "2024-01-01T12:00:00Z",
 					}, nil)
@@ -368,10 +368,10 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 			expectedResponse: models.IngredientResponse{
 				Success: true,
 				Data: models.Ingredient{
-					ID:                   "ingredient-123",
+					ID:                   "550e8400-e29b-41d4-a716-446655440001",
 					Name:                 "Updated Vanilla",
 					Description:          stringPtr("Updated description"),
-					IngredientCategoryID: stringPtr("new-category-456"),
+					IngredientCategoryID: stringPtr("550e8400-e29b-41d4-a716-446655440003"),
 					CreatedAt:            "2024-01-01T00:00:00Z",
 					UpdatedAt:            "2024-01-01T12:00:00Z",
 				},
@@ -379,12 +379,12 @@ func TestUpdateIngredientHTTP(t *testing.T) {
 			},
 		},
 		"ingredient_not_found": {
-			ingredientID: "nonexistent-id",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440004",
 			requestBody: models.UpdateIngredientRequest{
 				Name: stringPtr("Test Name"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("UpdateIngredient", "nonexistent-id", mock.AnythingOfType("models.UpdateIngredientRequest")).Return(
+				mockDB.On("UpdateIngredient", "550e8400-e29b-41d4-a716-446655440004", mock.AnythingOfType("models.UpdateIngredientRequest")).Return(
 					nil, sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -443,9 +443,9 @@ func TestDeleteIngredientHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_delete": {
-			ingredientID: "ingredient-123",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440001",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("DeleteIngredient", "ingredient-123").Return(nil)
+				mockDB.On("DeleteIngredient", "550e8400-e29b-41d4-a716-446655440001").Return(nil)
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedResponse: models.IngredientDeleteResponse{
@@ -454,9 +454,9 @@ func TestDeleteIngredientHTTP(t *testing.T) {
 			},
 		},
 		"ingredient_not_found": {
-			ingredientID: "nonexistent-id",
+			ingredientID: "550e8400-e29b-41d4-a716-446655440004",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("DeleteIngredient", "nonexistent-id").Return(sql.ErrNoRows)
+				mockDB.On("DeleteIngredient", "550e8400-e29b-41d4-a716-446655440004").Return(sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
 			expectedResponse: models.IngredientDeleteResponse{

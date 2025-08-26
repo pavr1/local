@@ -244,7 +244,7 @@ func TestHttpHandler_GetSupplier_Success(t *testing.T) {
 func TestHttpHandler_GetSupplier_NotFound(t *testing.T) {
 	handler, mockDB := setupTestHttpHandler()
 
-	supplierID := "nonexistent-id"
+	supplierID := "550e8400-e29b-41d4-a716-446655440002"
 
 	// Setup mock to return not found error
 	mockDB.GetSupplierByIDFunc = func(id string) (*models.Supplier, error) {

@@ -165,11 +165,11 @@ func TestGetIngredientCategoryHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_retrieval": {
-			categoryID: "category-123",
+			categoryID: "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("GetIngredientCategoryByID", "category-123").Return(
+				mockDB.On("GetIngredientCategoryByID", "550e8400-e29b-41d4-a716-446655440000").Return(
 					&models.IngredientCategory{
-						ID:          "category-123",
+						ID:          "550e8400-e29b-41d4-a716-446655440000",
 						Name:        "dairy_products",
 						Description: "Milk, cream, butter, eggs, cheese, yogurt",
 						IsActive:    true,
@@ -181,7 +181,7 @@ func TestGetIngredientCategoryHTTP(t *testing.T) {
 			expectedResponse: models.IngredientCategoryResponse{
 				Success: true,
 				Data: models.IngredientCategory{
-					ID:          "category-123",
+					ID:          "550e8400-e29b-41d4-a716-446655440000",
 					Name:        "dairy_products",
 					Description: "Milk, cream, butter, eggs, cheese, yogurt",
 					IsActive:    true,
@@ -192,9 +192,9 @@ func TestGetIngredientCategoryHTTP(t *testing.T) {
 			},
 		},
 		"category_not_found": {
-			categoryID: "nonexistent-id",
+			categoryID: "550e8400-e29b-41d4-a716-446655440001",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("GetIngredientCategoryByID", "nonexistent-id").Return(nil, sql.ErrNoRows)
+				mockDB.On("GetIngredientCategoryByID", "550e8400-e29b-41d4-a716-446655440001").Return(nil, sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
 			expectedResponse: models.IngredientCategoryResponse{
@@ -347,16 +347,16 @@ func TestUpdateIngredientCategoryHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_update": {
-			categoryID: "category-123",
+			categoryID: "550e8400-e29b-41d4-a716-446655440000",
 			requestBody: models.UpdateIngredientCategoryRequest{
 				Name:        stringPtr("updated_dairy"),
 				Description: stringPtr("Updated dairy products description"),
 				IsActive:    boolPtr(false),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("UpdateIngredientCategory", "category-123", mock.AnythingOfType("models.UpdateIngredientCategoryRequest")).Return(
+				mockDB.On("UpdateIngredientCategory", "550e8400-e29b-41d4-a716-446655440000", mock.AnythingOfType("models.UpdateIngredientCategoryRequest")).Return(
 					&models.IngredientCategory{
-						ID:          "category-123",
+						ID:          "550e8400-e29b-41d4-a716-446655440000",
 						Name:        "updated_dairy",
 						Description: "Updated dairy products description",
 						IsActive:    false,
@@ -368,7 +368,7 @@ func TestUpdateIngredientCategoryHTTP(t *testing.T) {
 			expectedResponse: models.IngredientCategoryResponse{
 				Success: true,
 				Data: models.IngredientCategory{
-					ID:          "category-123",
+					ID:          "550e8400-e29b-41d4-a716-446655440000",
 					Name:        "updated_dairy",
 					Description: "Updated dairy products description",
 					IsActive:    false,
@@ -379,12 +379,12 @@ func TestUpdateIngredientCategoryHTTP(t *testing.T) {
 			},
 		},
 		"category_not_found": {
-			categoryID: "nonexistent-id",
+			categoryID: "550e8400-e29b-41d4-a716-446655440001",
 			requestBody: models.UpdateIngredientCategoryRequest{
 				Name: stringPtr("Test Name"),
 			},
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("UpdateIngredientCategory", "nonexistent-id", mock.AnythingOfType("models.UpdateIngredientCategoryRequest")).Return(
+				mockDB.On("UpdateIngredientCategory", "550e8400-e29b-41d4-a716-446655440001", mock.AnythingOfType("models.UpdateIngredientCategoryRequest")).Return(
 					nil, sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
@@ -443,9 +443,9 @@ func TestDeleteIngredientCategoryHTTP(t *testing.T) {
 		expectedResponse   interface{}
 	}{
 		"successful_delete": {
-			categoryID: "category-123",
+			categoryID: "550e8400-e29b-41d4-a716-446655440000",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("DeleteIngredientCategory", "category-123").Return(nil)
+				mockDB.On("DeleteIngredientCategory", "550e8400-e29b-41d4-a716-446655440000").Return(nil)
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedResponse: models.IngredientCategoryDeleteResponse{
@@ -454,9 +454,9 @@ func TestDeleteIngredientCategoryHTTP(t *testing.T) {
 			},
 		},
 		"category_not_found": {
-			categoryID: "nonexistent-id",
+			categoryID: "550e8400-e29b-41d4-a716-446655440001",
 			mockSetup: func(mockDB *MockDBHandler) {
-				mockDB.On("DeleteIngredientCategory", "nonexistent-id").Return(sql.ErrNoRows)
+				mockDB.On("DeleteIngredientCategory", "550e8400-e29b-41d4-a716-446655440001").Return(sql.ErrNoRows)
 			},
 			expectedStatusCode: http.StatusNotFound,
 			expectedResponse: models.IngredientCategoryDeleteResponse{

@@ -3,7 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"inventory-service/entities/ingredient_categories/models"
 
@@ -54,6 +56,15 @@ func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateCreateIngredientCategoryRequest(req); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_name": req.Name,
+		}).Error("Validation failed for create ingredient category request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	category, err := h.dbHandler.CreateIngredientCategory(req)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
@@ -82,6 +93,15 @@ func (h *HttpHandler) GetIngredientCategory(w http.ResponseWriter, r *http.Reque
 	if id == "" {
 		h.logger.Warn("Missing ingredient category ID in get request")
 		h.writeErrorResponse(w, "Ingredient category ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate ingredient category ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"category_id": id,
+		}).Warn("Invalid ingredient category ID format in get request")
+		h.writeErrorResponse(w, "Ingredient category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -162,6 +182,15 @@ func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateUpdateIngredientCategoryRequest(req, id); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": id,
+		}).Error("Validation failed for update ingredient category request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	category, err := h.dbHandler.UpdateIngredientCategory(id, req)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -201,6 +230,15 @@ func (h *HttpHandler) DeleteIngredientCategory(w http.ResponseWriter, r *http.Re
 	if id == "" {
 		h.logger.Warn("Missing ingredient category ID in delete request")
 		h.writeErrorResponse(w, "Ingredient category ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate ingredient category ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"category_id": id,
+		}).Warn("Invalid ingredient category ID format in delete request")
+		h.writeErrorResponse(w, "Ingredient category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -255,4 +293,78 @@ func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, 
 	}
 
 	h.writeJSONResponse(w, errorResponse, statusCode)
+}
+
+// validateCreateIngredientCategoryRequest validates all required fields for ingredient category creation
+func (h *HttpHandler) validateCreateIngredientCategoryRequest(req models.CreateIngredientCategoryRequest) error {
+	// Validate name (required, non-empty, max 100 chars)
+	if req.Name == "" {
+		return fmt.Errorf("name is required and cannot be empty")
+	}
+	if len(req.Name) > 100 {
+		return fmt.Errorf("name cannot exceed 100 characters, got: %d", len(req.Name))
+	}
+
+	// Validate description (required, non-empty, max 1000 chars)
+	if req.Description == "" {
+		return fmt.Errorf("description is required and cannot be empty")
+	}
+	if len(req.Description) > 1000 {
+		return fmt.Errorf("description cannot exceed 1000 characters, got: %d", len(req.Description))
+	}
+
+	return nil
+}
+
+// validateUpdateIngredientCategoryRequest validates all required fields for ingredient category update
+func (h *HttpHandler) validateUpdateIngredientCategoryRequest(req models.UpdateIngredientCategoryRequest, id string) error {
+	// Validate ingredient category ID (required, valid UUID)
+	if id == "" {
+		return fmt.Errorf("ingredient category ID is required and cannot be empty")
+	}
+	if !isValidUUID(id) {
+		return fmt.Errorf("ingredient category ID must be a valid UUID, got: %s", id)
+	}
+
+	// Validate name if provided (non-empty, max 100 chars)
+	if req.Name != nil {
+		if *req.Name == "" {
+			return fmt.Errorf("name cannot be empty if provided")
+		}
+		if len(*req.Name) > 100 {
+			return fmt.Errorf("name cannot exceed 100 characters, got: %d", len(*req.Name))
+		}
+	}
+
+	// Validate description if provided (non-empty, max 1000 chars)
+	if req.Description != nil {
+		if *req.Description == "" {
+			return fmt.Errorf("description cannot be empty if provided")
+		}
+		if len(*req.Description) > 1000 {
+			return fmt.Errorf("description cannot exceed 1000 characters, got: %d", len(*req.Description))
+		}
+	}
+
+	return nil
+}
+
+// isValidUUID checks if a string is a valid UUID
+func isValidUUID(uuid string) bool {
+	// Simple UUID validation - check length and format
+	if len(uuid) != 36 {
+		return false
+	}
+
+	// Check if it matches UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	parts := strings.Split(uuid, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {
+		return false
+	}
+
+	return true
 }

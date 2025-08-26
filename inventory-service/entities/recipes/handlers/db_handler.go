@@ -97,10 +97,10 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	// Create recipe ingredients
 	for i, ingredient := range req.Ingredients {
 		h.logger.WithFields(logrus.Fields{
-			"ingredient_index": i + 1,
+			"ingredient_index":  i + 1,
 			"total_ingredients": len(req.Ingredients),
-			"ingredient_id":    ingredient.IngredientID,
-			"quantity":         ingredient.Quantity,
+			"ingredient_id":     ingredient.IngredientID,
+			"quantity":          ingredient.Quantity,
 		}).Info("Creating recipe ingredient")
 
 		_, err = tx.Exec(

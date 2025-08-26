@@ -121,6 +121,20 @@ func (h *SettingsHandler) GetByKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate service name format (basic validation)
+	if len(req.Service) > 50 {
+		h.logger.Error("Service name too long")
+		http.Error(w, "Service name cannot exceed 50 characters", http.StatusBadRequest)
+		return
+	}
+
+	// Validate key format (basic validation)
+	if len(req.Key) > 100 {
+		h.logger.Error("Key name too long")
+		http.Error(w, "Key name cannot exceed 100 characters", http.StatusBadRequest)
+		return
+	}
+
 	h.logger.WithFields(logrus.Fields{
 		"service": req.Service,
 		"key":     req.Key,
@@ -201,6 +215,27 @@ func (h *SettingsHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) 
 	if req.Service == "" || req.Key == "" || req.Value == "" {
 		h.logger.Error("Service, Key, and Value parameters are required")
 		http.Error(w, "Service, Key, and Value parameters are required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate service name format (basic validation)
+	if len(req.Service) > 50 {
+		h.logger.Error("Service name too long")
+		http.Error(w, "Service name cannot exceed 50 characters", http.StatusBadRequest)
+		return
+	}
+
+	// Validate key format (basic validation)
+	if len(req.Key) > 100 {
+		h.logger.Error("Key name too long")
+		http.Error(w, "Key name cannot exceed 100 characters", http.StatusBadRequest)
+		return
+	}
+
+	// Validate value format (basic validation)
+	if len(req.Value) > 1000 {
+		h.logger.Error("Value too long")
+		http.Error(w, "Value cannot exceed 1000 characters", http.StatusBadRequest)
 		return
 	}
 

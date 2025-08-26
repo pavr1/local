@@ -49,7 +49,7 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 		Ingredients: []models.RecipeIngredient{
 			{
 				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
-				NumberOfUnits: 2.5,
+				Quantity: 2.5,
 			},
 		},
 	}
@@ -90,7 +90,7 @@ func TestRecipeHTTPHandler_CreateRecipe(t *testing.T) {
 	// Expect ingredient creation
 	for _, ingredient := range req.Ingredients {
 		mock.ExpectExec("INSERT INTO recipe_ingredients").
-			WithArgs(expectedRecipe.ID, ingredient.IngredientID, ingredient.NumberOfUnits).
+			WithArgs(expectedRecipe.ID, ingredient.IngredientID, ingredient.Quantity).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 	}
 
@@ -156,8 +156,8 @@ func TestRecipeHTTPHandler_CreateRecipe_DBError(t *testing.T) {
 		TotalRecipeCost:   15.50,
 		Ingredients: []models.RecipeIngredient{
 			{
-				IngredientID:  "550e8400-e29b-41d4-a716-446655440010",
-				NumberOfUnits: 1.0,
+				IngredientID: "550e8400-e29b-41d4-a716-446655440010",
+				Quantity:     1.0,
 			},
 		},
 	}

@@ -3,7 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"inventory-service/entities/existences/models"
 
@@ -56,6 +58,15 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateCreateExistenceRequest(req); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"ingredient_id": req.IngredientID,
+		}).Error("Validation failed for create existence request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	existence, err := h.dbHandler.CreateExistence(req)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to create existence")
@@ -78,6 +89,15 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
+
+	// Validate existence ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"existence_id": id,
+		}).Warn("Invalid existence ID format in get request")
+		http.Error(w, "Existence ID must be a valid UUID", http.StatusBadRequest)
+		return
+	}
 
 	existence, err := h.dbHandler.GetExistenceByID(id)
 	if err != nil {
@@ -111,6 +131,33 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 			"unit_type":     unitType,
 		}).Error("Missing ingredient ID or unit type")
 		http.Error(w, "Missing ingredient ID or unit type", http.StatusBadRequest)
+		return
+	}
+
+	// Validate ingredient ID format
+	if !isValidUUID(ingredientID) {
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_id": ingredientID,
+		}).Warn("Invalid ingredient ID format")
+		http.Error(w, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
+		return
+	}
+
+	// Validate unit_type format
+	//pvillalobos - hardcoded values
+	allowedUnitTypes := []string{"Liters", "Gallons", "Units", "Bag"}
+	unitTypeValid := false
+	for _, allowed := range allowedUnitTypes {
+		if unitType == allowed {
+			unitTypeValid = true
+			break
+		}
+	}
+	if !unitTypeValid {
+		h.logger.WithFields(logrus.Fields{
+			"unit_type": unitType,
+		}).Warn("Invalid unit type format")
+		http.Error(w, "Unit type must be one of: Liters, Gallons, Units, Bag", http.StatusBadRequest)
 		return
 	}
 
@@ -245,5 +292,136 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// validateCreateExistenceRequest validates all required fields for existence creation
+func (h *HttpHandler) validateCreateExistenceRequest(req models.CreateExistenceRequest) error {
+	// Validate ingredient_id (required, valid UUID)
+	if req.IngredientID == "" {
+		return fmt.Errorf("ingredient_id is required and cannot be empty")
+	}
+	if !isValidUUID(req.IngredientID) {
+		return fmt.Errorf("ingredient_id must be a valid UUID, got: %s", req.IngredientID)
+	}
+
+	// Validate invoice_detail_id (required, valid UUID)
+	if req.InvoiceDetailID == "" {
+		return fmt.Errorf("invoice_detail_id is required and cannot be empty")
+	}
+	if !isValidUUID(req.InvoiceDetailID) {
+		return fmt.Errorf("invoice_detail_id must be a valid UUID, got: %s", req.InvoiceDetailID)
+	}
+
+	// Validate units_purchased (required, greater than 0)
+	if req.UnitsPurchased <= 0 {
+		return fmt.Errorf("units_purchased must be greater than 0, got: %f", req.UnitsPurchased)
+	}
+
+	// Validate units_available (required, non-negative)
+	if req.UnitsAvailable < 0 {
+		return fmt.Errorf("units_available must be non-negative, got: %f", req.UnitsAvailable)
+	}
+
+	// Validate unit_type (required, must be one of the allowed values)
+	if req.UnitType == "" {
+		return fmt.Errorf("unit_type is required and cannot be empty")
+	}
+	allowedUnitTypes := []string{"Liters", "Gallons", "Units", "Bag"}
+	unitTypeValid := false
+	for _, allowed := range allowedUnitTypes {
+		if req.UnitType == allowed {
+			unitTypeValid = true
+			break
+		}
+	}
+	if !unitTypeValid {
+		return fmt.Errorf("unit_type must be one of %v, got: %s", allowedUnitTypes, req.UnitType)
+	}
+
+	// Validate items_per_unit (required, greater than 0)
+	if req.ItemsPerUnit <= 0 {
+		return fmt.Errorf("items_per_unit must be greater than 0, got: %d", req.ItemsPerUnit)
+	}
+
+	// Validate cost_per_unit (required, greater than 0)
+	if req.CostPerUnit <= 0 {
+		return fmt.Errorf("cost_per_unit must be greater than 0, got: %f", req.CostPerUnit)
+	}
+
+	return nil
+}
+
+// validateUpdateExistenceRequest validates all required fields for existence update
+func (h *HttpHandler) validateUpdateExistenceRequest(req models.UpdateExistenceRequest, id string) error {
+	// Validate existence ID (required, valid UUID)
+	if id == "" {
+		return fmt.Errorf("existence ID is required and cannot be empty")
+	}
+	if !isValidUUID(id) {
+		return fmt.Errorf("existence ID must be a valid UUID, got: %s", id)
+	}
+
+	// Validate units_available if provided (non-negative)
+	if req.UnitsAvailable != nil {
+		if *req.UnitsAvailable < 0 {
+			return fmt.Errorf("units_available must be non-negative, got: %f", *req.UnitsAvailable)
+		}
+	}
+
+	// Validate minimum_price if provided (non-negative)
+	if req.MinimumPrice != nil {
+		if *req.MinimumPrice < 0 {
+			return fmt.Errorf("minimum_price must be non-negative, got: %f", *req.MinimumPrice)
+		}
+	}
+
+	// Validate maximum_price if provided (non-negative)
+	if req.MaximumPrice != nil {
+		if *req.MaximumPrice < 0 {
+			return fmt.Errorf("maximum_price must be non-negative, got: %f", *req.MaximumPrice)
+		}
+	}
+
+	// Validate final_price if provided (non-negative)
+	if req.FinalPrice != nil {
+		if *req.FinalPrice < 0 {
+			return fmt.Errorf("final_price must be non-negative, got: %f", *req.FinalPrice)
+		}
+	}
+
+	return nil
+}
+
+// isValidUUID checks if a string is a valid UUID
+func isValidUUID(uuid string) bool {
+	// Simple UUID validation - check length and format
+	if len(uuid) != 36 {
+		return false
+	}
+
+	// Check if it matches UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	parts := strings.Split(uuid, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {
+		return false
+	}
+
+	return true
+}
+
+// writeErrorResponse writes an error response with the specified status code
+func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
+	response := models.ExistenceResponse{
+		Success: false,
+		Data:    nil,
+		Message: message,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
 	json.NewEncoder(w).Encode(response)
 }

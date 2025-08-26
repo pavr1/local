@@ -3,7 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"inventory-service/entities/suppliers/models"
 
@@ -54,6 +56,15 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateCreateSupplierRequest(req); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_name": req.SupplierName,
+		}).Error("Validation failed for create supplier request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	supplier, err := h.dbHandler.CreateSupplier(req)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
@@ -82,6 +93,15 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		h.logger.Warn("Missing supplier ID in get request")
 		h.writeErrorResponse(w, "Supplier ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate supplier ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Warn("Invalid supplier ID format in get request")
+		h.writeErrorResponse(w, "Supplier ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -162,6 +182,15 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateUpdateSupplierRequest(req, id); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Error("Validation failed for update supplier request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	supplier, err := h.dbHandler.UpdateSupplier(id, req)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -201,6 +230,15 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		h.logger.Warn("Missing supplier ID in delete request")
 		h.writeErrorResponse(w, "Supplier ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate supplier ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"supplier_id": id,
+		}).Warn("Invalid supplier ID format in delete request")
+		h.writeErrorResponse(w, "Supplier ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -255,4 +293,60 @@ func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, 
 	}
 
 	h.writeJSONResponse(w, errorResponse, statusCode)
+}
+
+// validateCreateSupplierRequest validates all required fields for supplier creation
+func (h *HttpHandler) validateCreateSupplierRequest(req models.CreateSupplierRequest) error {
+	// Validate supplier_name (required, non-empty, max 255 chars)
+	if req.SupplierName == "" {
+		return fmt.Errorf("supplier_name is required and cannot be empty")
+	}
+	if len(req.SupplierName) > 255 {
+		return fmt.Errorf("supplier_name cannot exceed 255 characters, got: %d", len(req.SupplierName))
+	}
+
+	return nil
+}
+
+// validateUpdateSupplierRequest validates all required fields for supplier update
+func (h *HttpHandler) validateUpdateSupplierRequest(req models.UpdateSupplierRequest, id string) error {
+	// Validate supplier ID (required, valid UUID)
+	if id == "" {
+		return fmt.Errorf("supplier ID is required and cannot be empty")
+	}
+	if !isValidUUID(id) {
+		return fmt.Errorf("supplier ID must be a valid UUID, got: %s", id)
+	}
+
+	// Validate supplier_name if provided (non-empty, max 255 chars)
+	if req.SupplierName != nil {
+		if *req.SupplierName == "" {
+			return fmt.Errorf("supplier_name cannot be empty if provided")
+		}
+		if len(*req.SupplierName) > 255 {
+			return fmt.Errorf("supplier_name cannot exceed 255 characters, got: %d", len(*req.SupplierName))
+		}
+	}
+
+	return nil
+}
+
+// isValidUUID checks if a string is a valid UUID
+func isValidUUID(uuid string) bool {
+	// Simple UUID validation - check length and format
+	if len(uuid) != 36 {
+		return false
+	}
+
+	// Check if it matches UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	parts := strings.Split(uuid, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {
+		return false
+	}
+
+	return true
 }

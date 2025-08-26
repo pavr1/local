@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"inventory-service/entities/recipe_categories/models"
 
@@ -41,6 +43,15 @@ func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, 
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateCreateRecipeCategoryRequest(req); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_name": req.Name,
+		}).Error("Validation failed for create recipe category request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	recipeCategory, err := h.dbHandler.Create(req)
 	if err != nil {
 		response := models.RecipeCategoryResponse{
@@ -68,6 +79,15 @@ func (h *RecipeCategoryHTTPHandler) GetRecipeCategory(w http.ResponseWriter, r *
 	if id == "" {
 		h.logger.Warn("Missing recipe category ID in get request")
 		h.writeErrorResponse(w, "Recipe category ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate recipe category ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"category_id": id,
+		}).Warn("Invalid recipe category ID format in get request")
+		h.writeErrorResponse(w, "Recipe category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -160,6 +180,15 @@ func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, 
 		return
 	}
 
+	// Validate required fields based on database schema
+	if err := h.validateUpdateRecipeCategoryRequest(req, id); err != nil {
+		h.logger.WithError(err).WithFields(logrus.Fields{
+			"category_id": id,
+		}).Error("Validation failed for update recipe category request")
+		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	recipeCategory, err := h.dbHandler.Update(req, id)
 	if err != nil {
 		if err.Error() == "recipe category not found" {
@@ -197,6 +226,15 @@ func (h *RecipeCategoryHTTPHandler) DeleteRecipeCategory(w http.ResponseWriter, 
 	if id == "" {
 		h.logger.Warn("Missing recipe category ID in delete request")
 		h.writeErrorResponse(w, "Recipe category ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate recipe category ID format
+	if !isValidUUID(id) {
+		h.logger.WithFields(logrus.Fields{
+			"category_id": id,
+		}).Warn("Invalid recipe category ID format in delete request")
+		h.writeErrorResponse(w, "Recipe category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
@@ -250,4 +288,82 @@ func (h *RecipeCategoryHTTPHandler) writeErrorResponse(w http.ResponseWriter, me
 	}
 
 	h.writeJSONResponse(w, errorResponse, statusCode)
+}
+
+// validateCreateRecipeCategoryRequest validates all required fields for recipe category creation
+func (h *RecipeCategoryHTTPHandler) validateCreateRecipeCategoryRequest(req models.CreateRecipeCategoryRequest) error {
+	// Validate name (required, non-empty, max 100 chars)
+	if req.Name == "" {
+		return fmt.Errorf("name is required and cannot be empty")
+	}
+	//pvillalobos - hardcoded values
+	if len(req.Name) > 100 {
+		return fmt.Errorf("name cannot exceed 100 characters, got: %d", len(req.Name))
+	}
+
+	// Validate description (required, non-empty, max 1000 chars)
+	if req.Description == nil {
+		return fmt.Errorf("description is required and cannot be empty")
+	}
+	if *req.Description == "" {
+		return fmt.Errorf("description is required and cannot be empty")
+	}
+	if len(*req.Description) > 1000 {
+		return fmt.Errorf("description cannot exceed 1000 characters, got: %d", len(*req.Description))
+	}
+
+	return nil
+}
+
+// validateUpdateRecipeCategoryRequest validates all required fields for recipe category update
+func (h *RecipeCategoryHTTPHandler) validateUpdateRecipeCategoryRequest(req models.UpdateRecipeCategoryRequest, id string) error {
+	// Validate recipe category ID (required, valid UUID)
+	if id == "" {
+		return fmt.Errorf("recipe category ID is required and cannot be empty")
+	}
+	if !isValidUUID(id) {
+		return fmt.Errorf("recipe category ID must be a valid UUID, got: %s", id)
+	}
+
+	// Validate name if provided (non-empty, max 100 chars)
+	if req.Name != nil {
+		if *req.Name == "" {
+			return fmt.Errorf("name cannot be empty if provided")
+		}
+		if len(*req.Name) > 100 {
+			return fmt.Errorf("name cannot exceed 100 characters, got: %d", len(*req.Name))
+		}
+	}
+
+	// Validate description if provided (non-empty, max 1000 chars)
+	if req.Description != nil {
+		if *req.Description == "" {
+			return fmt.Errorf("description cannot be empty if provided")
+		}
+		if len(*req.Description) > 1000 {
+			return fmt.Errorf("description cannot exceed 1000 characters, got: %d", len(*req.Description))
+		}
+	}
+
+	return nil
+}
+
+// isValidUUID checks if a string is a valid UUID
+func isValidUUID(uuid string) bool {
+	// Simple UUID validation - check length and format
+	if len(uuid) != 36 {
+		return false
+	}
+
+	// Check if it matches UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+	parts := strings.Split(uuid, "-")
+	if len(parts) != 5 {
+		return false
+	}
+
+	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 || len(parts[3]) != 4 || len(parts[4]) != 12 {
+		return false
+	}
+
+	return true
 }

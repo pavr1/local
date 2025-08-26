@@ -57,8 +57,6 @@ func TestDBHandler_CreateExistence_Success(t *testing.T) {
 		CostPerUnit:            12000.00,
 		ExpirationDate:         &expirationDate,
 		IncomeMarginPercentage: float64Ptr(35.0),
-		IvaPercentage:          float64Ptr(13.0),
-		ServiceTaxPercentage:   float64Ptr(10.0),
 		FinalPrice:             float64Ptr(15000.00),
 	}
 
@@ -77,13 +75,9 @@ func TestDBHandler_CreateExistence_Success(t *testing.T) {
 		RemainingValue:         126000.00,
 		ExpirationDate:         &expirationDate,
 		IncomeMarginPercentage: 35.0,
-		IncomeMarginAmount:     44100.00, // 126000 * 35/100
-		IvaPercentage:          13.0,
-		IvaAmount:              22113.00, // (126000 + 44100) * 13/100
-		ServiceTaxPercentage:   10.0,
-		ServiceTaxAmount:       17010.00,              // (126000 + 44100) * 10/100
-		MinimumPrice:           209223.00,             // sum of all
-		MaximumPrice:           float64Ptr(209300.00), // rounded up to nearest 100
+		IncomeMarginAmount:     44100.00,              // 126000 * 35/100
+		MinimumPrice:           170100.00,             // cost + income margin
+		MaximumPrice:           float64Ptr(170200.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -102,8 +96,6 @@ func TestDBHandler_CreateExistence_Success(t *testing.T) {
 			req.CostPerUnit,
 			req.ExpirationDate,
 			req.IncomeMarginPercentage,
-			req.IvaPercentage,
-			req.ServiceTaxPercentage,
 			req.MinimumPrice,
 			req.MaximumPrice,
 			req.FinalPrice,
@@ -113,7 +105,6 @@ func TestDBHandler_CreateExistence_Success(t *testing.T) {
 			"units_purchased", "units_available", "unit_type", "items_per_unit",
 			"cost_per_item", "cost_per_unit", "total_purchase_cost", "remaining_value",
 			"expiration_date", "income_margin_percentage", "income_margin_amount",
-			"iva_percentage", "iva_amount", "service_tax_percentage", "service_tax_amount",
 			"minimum_price", "maximum_price", "final_price", "created_at", "updated_at",
 		}).AddRow(
 			expectedExistence.ID, expectedExistence.ExistenceReferenceCode,
@@ -123,9 +114,7 @@ func TestDBHandler_CreateExistence_Success(t *testing.T) {
 			expectedExistence.CostPerItem, expectedExistence.CostPerUnit,
 			expectedExistence.TotalPurchaseCost, expectedExistence.RemainingValue,
 			expectedExistence.ExpirationDate, expectedExistence.IncomeMarginPercentage,
-			expectedExistence.IncomeMarginAmount, expectedExistence.IvaPercentage,
-			expectedExistence.IvaAmount, expectedExistence.ServiceTaxPercentage,
-			expectedExistence.ServiceTaxAmount, expectedExistence.MinimumPrice,
+			expectedExistence.IncomeMarginAmount, expectedExistence.MinimumPrice,
 			expectedExistence.MaximumPrice, expectedExistence.FinalPrice, expectedExistence.CreatedAt,
 			expectedExistence.UpdatedAt,
 		))
@@ -169,8 +158,6 @@ func TestDBHandler_CreateExistence_DatabaseError(t *testing.T) {
 			req.CostPerUnit,
 			req.ExpirationDate,
 			req.IncomeMarginPercentage,
-			req.IvaPercentage,
-			req.ServiceTaxPercentage,
 			req.MinimumPrice,
 			req.MaximumPrice,
 			req.FinalPrice,
@@ -209,12 +196,8 @@ func TestDBHandler_GetExistenceByID_Success(t *testing.T) {
 		ExpirationDate:         &expirationDate,
 		IncomeMarginPercentage: 30.0,
 		IncomeMarginAmount:     36000.00,
-		IvaPercentage:          13.0,
-		IvaAmount:              20280.00,
-		ServiceTaxPercentage:   10.0,
-		ServiceTaxAmount:       15600.00,
-		MinimumPrice:           191880.00,
-		MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
+		MinimumPrice:           156000.00,             // cost + income margin
+		MaximumPrice:           float64Ptr(156100.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
@@ -228,7 +211,6 @@ func TestDBHandler_GetExistenceByID_Success(t *testing.T) {
 			"units_purchased", "units_available", "unit_type", "items_per_unit",
 			"cost_per_item", "cost_per_unit", "total_purchase_cost", "remaining_value",
 			"expiration_date", "income_margin_percentage", "income_margin_amount",
-			"iva_percentage", "iva_amount", "service_tax_percentage", "service_tax_amount",
 			"minimum_price", "maximum_price", "final_price", "created_at", "updated_at",
 		}).AddRow(
 			expectedExistence.ID, expectedExistence.ExistenceReferenceCode,
@@ -238,9 +220,7 @@ func TestDBHandler_GetExistenceByID_Success(t *testing.T) {
 			expectedExistence.CostPerItem, expectedExistence.CostPerUnit,
 			expectedExistence.TotalPurchaseCost, expectedExistence.RemainingValue,
 			expectedExistence.ExpirationDate, expectedExistence.IncomeMarginPercentage,
-			expectedExistence.IncomeMarginAmount, expectedExistence.IvaPercentage,
-			expectedExistence.IvaAmount, expectedExistence.ServiceTaxPercentage,
-			expectedExistence.ServiceTaxAmount, expectedExistence.MinimumPrice,
+			expectedExistence.IncomeMarginAmount, expectedExistence.MinimumPrice,
 			expectedExistence.MaximumPrice, expectedExistence.FinalPrice, expectedExistence.CreatedAt,
 			expectedExistence.UpdatedAt,
 		))
@@ -312,19 +292,15 @@ func TestDBHandler_ListExistences_Success(t *testing.T) {
 			ExpirationDate:         timePtr(time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC)),
 			IncomeMarginPercentage: 30.0,
 			IncomeMarginAmount:     36000.00,
-			IvaPercentage:          13.0,
-			IvaAmount:              20280.00,
-			ServiceTaxPercentage:   10.0,
-			ServiceTaxAmount:       15600.00,
-			MinimumPrice:           191880.00,
-			MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
+			MinimumPrice:           156000.00,             // cost + income margin
+			MaximumPrice:           float64Ptr(156100.00), // rounded up to nearest 100
 			FinalPrice:             float64Ptr(15000.00),
 			CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 			UpdatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		},
 	}
 
-	expectedSQL := `SELECT e.id, e.existence_reference_code, e.ingredient_id, i.name as ingredient_name, ic.name as ingredient_category, e.invoice_detail_id, e.units_purchased, e.units_available, e.unit_type, e.items_per_unit, e.cost_per_item, e.cost_per_unit, e.total_purchase_cost, e.remaining_value, e.expiration_date, e.income_margin_percentage, e.income_margin_amount, e.iva_percentage, e.iva_amount, e.service_tax_percentage, e.service_tax_amount, e.minimum_price, e.maximum_price, e.final_price, e.created_at, e.updated_at FROM existences e LEFT JOIN ingredients i ON e.ingredient_id = i.id LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id WHERE 1=1 AND.*ORDER BY e.created_at DESC LIMIT COALESCE.*OFFSET COALESCE.*`
+	expectedSQL := `SELECT e.id, e.existence_reference_code, e.ingredient_id, i.name as ingredient_name, ic.name as ingredient_category, e.invoice_detail_id, e.units_purchased, e.units_available, e.unit_type, e.items_per_unit, e.cost_per_item, e.cost_per_unit, e.total_purchase_cost, e.remaining_value, e.expiration_date, e.income_margin_percentage, e.income_margin_amount, e.minimum_price, e.maximum_price, e.final_price, e.created_at, e.updated_at FROM existences e LEFT JOIN ingredients i ON e.ingredient_id = i.id LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id WHERE 1=1 AND.*ORDER BY e.created_at DESC LIMIT COALESCE.*OFFSET COALESCE.*`
 	mock.ExpectQuery(expectedSQL).
 		WithArgs(&ingredientID, &unitType, &expired, &lowStock, nil, nil).
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -332,7 +308,6 @@ func TestDBHandler_ListExistences_Success(t *testing.T) {
 			"units_purchased", "units_available", "unit_type", "items_per_unit",
 			"cost_per_item", "cost_per_unit", "total_purchase_cost", "remaining_value",
 			"expiration_date", "income_margin_percentage", "income_margin_amount",
-			"iva_percentage", "iva_amount", "service_tax_percentage", "service_tax_amount",
 			"minimum_price", "maximum_price", "final_price", "created_at", "updated_at",
 		}).AddRow(
 			expectedExistences[0].ID, expectedExistences[0].ExistenceReferenceCode,
@@ -342,9 +317,7 @@ func TestDBHandler_ListExistences_Success(t *testing.T) {
 			expectedExistences[0].CostPerItem, expectedExistences[0].CostPerUnit,
 			expectedExistences[0].TotalPurchaseCost, expectedExistences[0].RemainingValue,
 			expectedExistences[0].ExpirationDate, expectedExistences[0].IncomeMarginPercentage,
-			expectedExistences[0].IncomeMarginAmount, expectedExistences[0].IvaPercentage,
-			expectedExistences[0].IvaAmount, expectedExistences[0].ServiceTaxPercentage,
-			expectedExistences[0].ServiceTaxAmount, expectedExistences[0].MinimumPrice,
+			expectedExistences[0].IncomeMarginAmount, expectedExistences[0].MinimumPrice,
 			expectedExistences[0].MaximumPrice, expectedExistences[0].FinalPrice, expectedExistences[0].CreatedAt,
 			expectedExistences[0].UpdatedAt,
 		))
@@ -366,7 +339,7 @@ func TestDBHandler_ListExistences_EmptyResult(t *testing.T) {
 
 	req := models.ListExistencesRequest{}
 
-	expectedSQL := `SELECT e.id, e.existence_reference_code, e.ingredient_id, i.name as ingredient_name, ic.name as ingredient_category, e.invoice_detail_id, e.units_purchased, e.units_available, e.unit_type, e.items_per_unit, e.cost_per_item, e.cost_per_unit, e.total_purchase_cost, e.remaining_value, e.expiration_date, e.income_margin_percentage, e.income_margin_amount, e.iva_percentage, e.iva_amount, e.service_tax_percentage, e.service_tax_amount, e.minimum_price, e.maximum_price, e.final_price, e.created_at, e.updated_at FROM existences e LEFT JOIN ingredients i ON e.ingredient_id = i.id LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id WHERE 1=1 AND.*ORDER BY e.created_at DESC LIMIT COALESCE.*OFFSET COALESCE.*`
+	expectedSQL := `SELECT e.id, e.existence_reference_code, e.ingredient_id, i.name as ingredient_name, ic.name as ingredient_category, e.invoice_detail_id, e.units_purchased, e.units_available, e.unit_type, e.items_per_unit, e.cost_per_item, e.cost_per_unit, e.total_purchase_cost, e.remaining_value, e.expiration_date, e.income_margin_percentage, e.income_margin_amount, e.minimum_price, e.maximum_price, e.final_price, e.created_at, e.updated_at FROM existences e LEFT JOIN ingredients i ON e.ingredient_id = i.id LEFT JOIN ingredient_categories ic ON i.ingredient_category_id = ic.id WHERE 1=1 AND.*ORDER BY e.created_at DESC LIMIT COALESCE.*OFFSET COALESCE.*`
 	mock.ExpectQuery(expectedSQL).
 		WithArgs(req.IngredientID, req.UnitType, req.Expired, req.LowStock, req.Limit, req.Offset).
 		WillReturnRows(sqlmock.NewRows([]string{
@@ -374,8 +347,7 @@ func TestDBHandler_ListExistences_EmptyResult(t *testing.T) {
 			"units_purchased", "units_available", "unit_type", "items_per_unit",
 			"cost_per_item", "cost_per_unit", "total_purchase_cost", "remaining_value",
 			"expiration_date", "income_margin_percentage", "income_margin_amount",
-			"iva_percentage", "iva_amount", "service_tax_percentage", "service_tax_amount",
-			"calculated_price", "final_price", "created_at", "updated_at",
+			"minimum_price", "maximum_price", "final_price", "created_at", "updated_at",
 		}))
 
 	// Execute
@@ -414,12 +386,8 @@ func TestDBHandler_UpdateExistence_Success(t *testing.T) {
 		ExpirationDate:         timePtr(time.Date(2024, 12, 31, 0, 0, 0, 0, time.UTC)),
 		IncomeMarginPercentage: 30.0,
 		IncomeMarginAmount:     36000.00,
-		IvaPercentage:          13.0,
-		IvaAmount:              20280.00,
-		ServiceTaxPercentage:   10.0,
-		ServiceTaxAmount:       15600.00,
-		MinimumPrice:           191880.00,
-		MaximumPrice:           float64Ptr(191900.00), // rounded up to nearest 100
+		MinimumPrice:           156000.00,             // cost + income margin
+		MaximumPrice:           float64Ptr(156100.00), // rounded up to nearest 100
 		FinalPrice:             float64Ptr(15000.00),
 		CreatedAt:              time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC),
 		UpdatedAt:              time.Date(2024, 1, 1, 12, 30, 0, 0, time.UTC),
@@ -435,8 +403,6 @@ func TestDBHandler_UpdateExistence_Success(t *testing.T) {
 			req.CostPerUnit,
 			req.ExpirationDate,
 			req.IncomeMarginPercentage,
-			req.IvaPercentage,
-			req.ServiceTaxPercentage,
 			req.MinimumPrice,
 			req.MaximumPrice,
 			req.FinalPrice,
@@ -446,7 +412,6 @@ func TestDBHandler_UpdateExistence_Success(t *testing.T) {
 			"units_purchased", "units_available", "unit_type", "items_per_unit",
 			"cost_per_item", "cost_per_unit", "total_purchase_cost", "remaining_value",
 			"expiration_date", "income_margin_percentage", "income_margin_amount",
-			"iva_percentage", "iva_amount", "service_tax_percentage", "service_tax_amount",
 			"minimum_price", "maximum_price", "final_price", "created_at", "updated_at",
 		}).AddRow(
 			expectedExistence.ID, expectedExistence.ExistenceReferenceCode,
@@ -456,9 +421,7 @@ func TestDBHandler_UpdateExistence_Success(t *testing.T) {
 			expectedExistence.CostPerItem, expectedExistence.CostPerUnit,
 			expectedExistence.TotalPurchaseCost, expectedExistence.RemainingValue,
 			expectedExistence.ExpirationDate, expectedExistence.IncomeMarginPercentage,
-			expectedExistence.IncomeMarginAmount, expectedExistence.IvaPercentage,
-			expectedExistence.IvaAmount, expectedExistence.ServiceTaxPercentage,
-			expectedExistence.ServiceTaxAmount, expectedExistence.MinimumPrice,
+			expectedExistence.IncomeMarginAmount, expectedExistence.MinimumPrice,
 			expectedExistence.MaximumPrice, expectedExistence.FinalPrice, expectedExistence.CreatedAt,
 			expectedExistence.UpdatedAt,
 		))
@@ -493,8 +456,6 @@ func TestDBHandler_UpdateExistence_NotFound(t *testing.T) {
 			req.CostPerUnit,
 			req.ExpirationDate,
 			req.IncomeMarginPercentage,
-			req.IvaPercentage,
-			req.ServiceTaxPercentage,
 			req.MinimumPrice,
 			req.MaximumPrice,
 			req.FinalPrice,
