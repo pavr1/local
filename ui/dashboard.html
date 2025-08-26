@@ -4214,6 +4214,12 @@
                     <td colspan="10" class="p-0">
                         <div class="existence-details-content">
                             <div class="row g-2">
+                                 <div class="col-md-3">
+                                    <div class="detail-card">
+                                        <div class="detail-label">Created</div>
+                                        <div class="detail-value">${new Date(existence.created_at).toLocaleDateString()}</div>
+                                    </div>
+                                </div>
                                 <div class="col-md-3">
                                     <div class="detail-card">
                                         <div class="detail-label">Income Margin</div>
@@ -4289,48 +4295,8 @@
                                 </div>
                                 <div class="col-md-3">
                                     <div class="detail-card">
-                                        <div class="detail-label">IVA</div>
-                                        <div class="detail-value">
-                                            <span class="fw-bold">₡${ivaAmount}</span>
-                                            <span class="text-secondary mx-1">/</span>
-                                            <span class="fw-bold">₡${(() => {
-                                                const finalPrice = Number(existence.final_price || 0);
-                                                const ivaPercentage = Number(existence.iva_percentage || 0);
-                                                const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
-                                                
-                                                // Calculate IVA amount for final price
-                                                const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                const taxMultiplier = 1 + totalTaxRate;
-                                                const baseAmount = finalPrice / taxMultiplier;
-                                                const ivaAmount = baseAmount * (ivaPercentage / 100);
-                                                
-                                                return ivaAmount.toFixed(2);
-                                            })()}</span>
-                                        </div>
-                                        <div class="detail-percentage">${existence.iva_percentage || 0}%</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="detail-card">
-                                        <div class="detail-label">Service Tax</div>
-                                        <div class="detail-value">
-                                            <span class="fw-bold">₡${serviceTaxAmount}</span>
-                                            <span class="text-secondary mx-1">/</span>
-                                            <span class="fw-bold">₡${(() => {
-                                                const finalPrice = Number(existence.final_price || 0);
-                                                const ivaPercentage = Number(existence.iva_percentage || 0);
-                                                const serviceTaxPercentage = Number(existence.service_tax_percentage || 0);
-                                                
-                                                // Calculate Service Tax amount for final price
-                                                const totalTaxRate = (ivaPercentage + serviceTaxPercentage) / 100;
-                                                const taxMultiplier = 1 + totalTaxRate;
-                                                const baseAmount = finalPrice / taxMultiplier;
-                                                const serviceTaxAmount = baseAmount * (serviceTaxPercentage / 100);
-                                                
-                                                return serviceTaxAmount.toFixed(2);
-                                            })()}</span>
-                                        </div>
-                                        <div class="detail-percentage">${existence.service_tax_percentage || 0}%</div>
+                                        <div class="detail-label">Price Per Unit</div>
+                                        <div class="detail-value">₡${Number(existence.cost_per_unit || 0).toLocaleString()}</div>
                                     </div>
                                 </div>
                                 <div class="col-md-3">
@@ -4342,22 +4308,10 @@
                                 </div>
                             </div>
                             <div class="row g-2 mt-2">
-                                <div class="col-md-4">
+                                <div class="col-md-12">
                                     <div class="detail-card detail-card-info">
                                         <div class="detail-label">Invoice</div>
                                         <div class="detail-value">${invoiceLink}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="detail-card detail-card-info">
-                                        <div class="detail-label">Price Per Unit</div>
-                                        <div class="detail-value">₡${Number(existence.cost_per_unit || 0).toLocaleString()}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="detail-card detail-card-info">
-                                        <div class="detail-label">Created</div>
-                                        <div class="detail-value">${new Date(existence.created_at).toLocaleDateString()}</div>
                                     </div>
                                 </div>
                             </div>
