@@ -11,7 +11,7 @@ type Invoice struct {
 	TransactionDate   time.Time `json:"transaction_date" db:"transaction_date"`
 	TransactionType   string    `json:"transaction_type" db:"transaction_type"`
 	SupplierID        *string   `json:"supplier_id" db:"supplier_id"`
-	ExpenseCategoryID string    `json:"expense_category_id" db:"expense_category_id"`
+	ExpenseCategoryID *string   `json:"expense_category_id" db:"expense_category_id"`
 	TotalAmount       *float64  `json:"total_amount" db:"total_amount"`
 	ImageURL          string    `json:"image_url" db:"image_url"`
 	Notes             *string   `json:"notes" db:"notes"`

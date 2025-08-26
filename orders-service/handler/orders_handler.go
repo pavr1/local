@@ -34,7 +34,7 @@ type InvoiceResponse struct {
 		TransactionDate   string   `json:"transaction_date"`
 		TransactionType   string   `json:"transaction_type"`
 		SupplierID        *string  `json:"supplier_id"`
-		ExpenseCategoryID string   `json:"expense_category_id"`
+		ExpenseCategoryID *string  `json:"expense_category_id"`
 		TotalAmount       *float64 `json:"total_amount"`
 		ImageURL          string   `json:"image_url"`
 		Notes             *string  `json:"notes"`
