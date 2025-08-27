@@ -11,20 +11,18 @@ import (
 
 // DBHandler handles database operations for existences
 type DBHandler struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db *sql.DB
 }
 
 // NewDBHandler creates a new database handler for existences
-func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
+func NewDBHandler(db *sql.DB) *DBHandler {
 	return &DBHandler{
-		db:     db,
-		logger: logger,
+		db: db,
 	}
 }
 
 // CreateExistence creates a new existence in the database
-func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest) (*models.Existence, error) {
+func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest, logger *logrus.Entry) (*models.Existence, error) {
 	var existence models.Existence
 
 	err := h.db.QueryRow(existenceSQL.CreateExistenceQuery,
@@ -49,14 +47,14 @@ func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest) (*models.
 			&existence.CreatedAt, &existence.UpdatedAt)
 
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id":     req.IngredientID,
 			"invoice_detail_id": req.InvoiceDetailID,
 		}).Error("Failed to create existence in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"existence_id":   existence.ID,
 		"reference_code": existence.ExistenceReferenceCode,
 		"ingredient_id":  existence.IngredientID,
@@ -66,7 +64,7 @@ func (h *DBHandler) CreateExistence(req models.CreateExistenceRequest) (*models.
 }
 
 // GetExistenceByID retrieves an existence by ID from the database
-func (h *DBHandler) GetExistenceByID(id string) (*models.Existence, error) {
+func (h *DBHandler) GetExistenceByID(id string, logger *logrus.Entry) (*models.Existence, error) {
 	var existence models.Existence
 
 	err := h.db.QueryRow(existenceSQL.GetExistenceByIDQuery, id).
@@ -80,12 +78,12 @@ func (h *DBHandler) GetExistenceByID(id string) (*models.Existence, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"existence_id": id,
 			}).Warn("Existence not found")
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Error("Failed to get existence from database")
 		return nil, err
@@ -95,7 +93,7 @@ func (h *DBHandler) GetExistenceByID(id string) (*models.Existence, error) {
 }
 
 // GetMostRecentExistenceByIngredientAndUnitType retrieves the most recent existence for a specific ingredient and unit type
-func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string) (*models.Existence, error) {
+func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string, logger *logrus.Entry) (*models.Existence, error) {
 	var existence models.Existence
 
 	err := h.db.QueryRow(existenceSQL.GetMostRecentExistenceByIngredientAndUnitTypeQuery, ingredientID, unitType).
@@ -109,20 +107,20 @@ func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"ingredient_id": ingredientID,
 				"unit_type":     unitType,
 			}).Info("No existence found for ingredient and unit type")
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": ingredientID,
 			"unit_type":     unitType,
 		}).Error("Failed to get most recent existence from database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"existence_id":   existence.ID,
 		"ingredient_id":  ingredientID,
 		"unit_type":      unitType,
@@ -133,11 +131,11 @@ func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, 
 }
 
 // ListExistences retrieves all existences from the database with optional filtering
-func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.Existence, error) {
+func (h *DBHandler) ListExistences(req models.ListExistencesRequest, logger *logrus.Entry) ([]models.Existence, error) {
 	rows, err := h.db.Query(existenceSQL.ListExistencesQuery,
 		req.IngredientID, req.UnitType, req.Expired, req.LowStock, req.Limit, req.Offset)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to list existences from database")
+		logger.WithError(err).Error("Failed to list existences from database")
 		return nil, err
 	}
 	defer rows.Close()
@@ -154,14 +152,14 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.E
 			&existence.MinimumPrice, &existence.MaximumPrice, &existence.FinalPrice, &existence.CreatedAt, &existence.UpdatedAt)
 
 		if err != nil {
-			h.logger.WithError(err).Error("Failed to scan existence row")
+			logger.WithError(err).Error("Failed to scan existence row")
 			return nil, err
 		}
 		existences = append(existences, existence)
 	}
 
 	if err = rows.Err(); err != nil {
-		h.logger.WithError(err).Error("Error occurred during rows iteration")
+		logger.WithError(err).Error("Error occurred during rows iteration")
 		return nil, err
 	}
 
@@ -170,7 +168,7 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.E
 		existences = []models.Existence{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"count": len(existences),
 	}).Info("Listed existences successfully")
 
@@ -178,7 +176,7 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest) ([]models.E
 }
 
 // UpdateExistence updates an existence in the database
-func (h *DBHandler) UpdateExistence(id string, req models.UpdateExistenceRequest) (*models.Existence, error) {
+func (h *DBHandler) UpdateExistence(id string, req models.UpdateExistenceRequest, logger *logrus.Entry) (*models.Existence, error) {
 	var existence models.Existence
 
 	err := h.db.QueryRow(existenceSQL.UpdateExistenceQuery, id,
@@ -194,18 +192,18 @@ func (h *DBHandler) UpdateExistence(id string, req models.UpdateExistenceRequest
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"existence_id": id,
 			}).Warn("Existence not found for update")
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Error("Failed to update existence in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"existence_id":   existence.ID,
 		"reference_code": existence.ExistenceReferenceCode,
 	}).Info("Existence updated successfully")
@@ -214,10 +212,10 @@ func (h *DBHandler) UpdateExistence(id string, req models.UpdateExistenceRequest
 }
 
 // DeleteExistence deletes an existence from the database
-func (h *DBHandler) DeleteExistence(id string) error {
+func (h *DBHandler) DeleteExistence(id string, logger *logrus.Entry) error {
 	result, err := h.db.Exec(existenceSQL.DeleteExistenceQuery, id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Error("Failed to delete existence from database")
 		return err
@@ -225,20 +223,20 @@ func (h *DBHandler) DeleteExistence(id string) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Error("Failed to get rows affected after deletion")
 		return err
 	}
 
 	if rowsAffected == 0 {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Warn("No existence found to delete")
 		return sql.ErrNoRows
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"existence_id": id,
 	}).Info("Existence deleted successfully")
 

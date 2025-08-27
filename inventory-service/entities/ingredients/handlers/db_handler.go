@@ -11,20 +11,18 @@ import (
 
 // DBHandler handles database operations for ingredients
 type DBHandler struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db *sql.DB
 }
 
 // NewDBHandler creates a new database handler for ingredients
-func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
+func NewDBHandler(db *sql.DB) *DBHandler {
 	return &DBHandler{
-		db:     db,
-		logger: logger,
+		db: db,
 	}
 }
 
 // CreateIngredient creates a new ingredient in the database
-func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest) (*models.Ingredient, error) {
+func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest, logger *logrus.Entry) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.CreateIngredientQuery,
@@ -32,13 +30,13 @@ func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest) (*model
 		Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.CreatedAt, &ingredient.UpdatedAt)
 
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_name": req.Name,
 		}).Error("Failed to create ingredient in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"ingredient_id":   ingredient.ID,
 		"ingredient_name": ingredient.Name,
 	}).Info("Ingredient created successfully")
@@ -47,7 +45,7 @@ func (h *DBHandler) CreateIngredient(req models.CreateIngredientRequest) (*model
 }
 
 // GetIngredientByID retrieves an ingredient by ID from the database
-func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
+func (h *DBHandler) GetIngredientByID(id string, logger *logrus.Entry) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.GetIngredientByIDQuery, id).
@@ -58,7 +56,7 @@ func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Error("Failed to retrieve ingredient from database")
 		return nil, err
@@ -68,10 +66,10 @@ func (h *DBHandler) GetIngredientByID(id string) (*models.Ingredient, error) {
 }
 
 // ListIngredients retrieves all ingredients from the database
-func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
+func (h *DBHandler) ListIngredients(logger *logrus.Entry) ([]models.Ingredient, error) {
 	rows, err := h.db.Query(ingredientSQL.ListIngredientsQuery)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to execute ingredients list query")
+		logger.WithError(err).Error("Failed to execute ingredients list query")
 		return nil, err
 	}
 	defer rows.Close()
@@ -81,7 +79,7 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 		var ingredient models.Ingredient
 		err := rows.Scan(&ingredient.ID, &ingredient.Name, &ingredient.Description, &ingredient.IngredientCategoryID, &ingredient.CreatedAt, &ingredient.UpdatedAt, &ingredient.CategoryName)
 		if err != nil {
-			h.logger.WithError(err).Warn("Failed to scan ingredient row, skipping")
+			logger.WithError(err).Warn("Failed to scan ingredient row, skipping")
 			continue
 		}
 		ingredients = append(ingredients, ingredient)
@@ -92,7 +90,7 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 		ingredients = []models.Ingredient{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"ingredients_count": len(ingredients),
 	}).Info("Listed ingredients successfully")
 
@@ -100,7 +98,7 @@ func (h *DBHandler) ListIngredients() ([]models.Ingredient, error) {
 }
 
 // UpdateIngredient updates an ingredient in the database
-func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientRequest) (*models.Ingredient, error) {
+func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientRequest, logger *logrus.Entry) (*models.Ingredient, error) {
 	var ingredient models.Ingredient
 
 	err := h.db.QueryRow(ingredientSQL.UpdateIngredientQuery,
@@ -112,13 +110,13 @@ func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientReque
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Error("Failed to update ingredient in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"ingredient_id":   ingredient.ID,
 		"ingredient_name": ingredient.Name,
 	}).Info("Ingredient updated successfully")
@@ -127,10 +125,10 @@ func (h *DBHandler) UpdateIngredient(id string, req models.UpdateIngredientReque
 }
 
 // DeleteIngredient deletes an ingredient from the database
-func (h *DBHandler) DeleteIngredient(id string) error {
+func (h *DBHandler) DeleteIngredient(id string, logger *logrus.Entry) error {
 	result, err := h.db.Exec(ingredientSQL.DeleteIngredientQuery, id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Error("Failed to execute ingredient delete query")
 		return err
@@ -138,7 +136,7 @@ func (h *DBHandler) DeleteIngredient(id string) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Error("Failed to get rows affected after delete")
 		return err
@@ -149,7 +147,7 @@ func (h *DBHandler) DeleteIngredient(id string) error {
 		return sql.ErrNoRows
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"ingredient_id": id,
 	}).Info("Ingredient deleted successfully")
 

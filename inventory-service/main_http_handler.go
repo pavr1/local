@@ -42,19 +42,19 @@ type MainHttpHandler struct {
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
 func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *MainHttpHandler {
 	// Initialize suppliers handlers
-	suppliersDBHandler := suppliersHandlers.NewDBHandler(db, logger)
+	suppliersDBHandler := suppliersHandlers.NewDBHandler(db)
 	suppliersHttpHandler := suppliersHandlers.NewHttpHandler(suppliersDBHandler, logger)
 
 	// Initialize ingredient categories handlers
-	ingredientCategoriesDBHandler := ingredientCategoriesHandlers.NewDBHandler(db, logger)
+	ingredientCategoriesDBHandler := ingredientCategoriesHandlers.NewDBHandler(db)
 	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler, logger)
 
 	// Initialize ingredients handlers
-	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db, logger)
+	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db)
 	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler, logger)
 
 	// Initialize existences handlers
-	existencesDBHandler := existencesHandlers.NewDBHandler(db, logger)
+	existencesDBHandler := existencesHandlers.NewDBHandler(db)
 	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler, logger)
 
 	// Initialize runout ingredients handlers

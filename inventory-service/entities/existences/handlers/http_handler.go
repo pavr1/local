@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/existences/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -15,12 +16,12 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateExistence(req models.CreateExistenceRequest) (*models.Existence, error)
-	GetExistenceByID(id string) (*models.Existence, error)
-	GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string) (*models.Existence, error)
-	ListExistences(req models.ListExistencesRequest) ([]models.Existence, error)
-	UpdateExistence(id string, req models.UpdateExistenceRequest) (*models.Existence, error)
-	DeleteExistence(id string) error
+	CreateExistence(req models.CreateExistenceRequest, logger *logrus.Entry) (*models.Existence, error)
+	GetExistenceByID(id string, logger *logrus.Entry) (*models.Existence, error)
+	GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string, logger *logrus.Entry) (*models.Existence, error)
+	ListExistences(req models.ListExistencesRequest, logger *logrus.Entry) ([]models.Existence, error)
+	UpdateExistence(id string, req models.UpdateExistenceRequest, logger *logrus.Entry) (*models.Existence, error)
+	DeleteExistence(id string, logger *logrus.Entry) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -50,26 +51,29 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 
 // CreateExistence handles POST /existences
 func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateExistenceRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Failed to decode create existence request")
+		logger.WithError(err).Error("Failed to decode create existence request")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateExistenceRequest(req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": req.IngredientID,
 		}).Error("Validation failed for create existence request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	existence, err := h.dbHandler.CreateExistence(req)
+	existence, err := h.dbHandler.CreateExistence(req, logger)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create existence")
+		logger.WithError(err).Error("Failed to create existence")
 		http.Error(w, "Failed to create existence", http.StatusInternalServerError)
 		return
 	}
@@ -87,25 +91,28 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 
 // GetExistence handles GET /existences/{id}
 func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	// Validate existence ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"existence_id": id,
 		}).Warn("Invalid existence ID format in get request")
 		http.Error(w, "Existence ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
-	existence, err := h.dbHandler.GetExistenceByID(id)
+	existence, err := h.dbHandler.GetExistenceByID(id, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Existence not found", http.StatusNotFound)
 			return
 		}
-		h.logger.WithError(err).Error("Failed to get existence")
+		logger.WithError(err).Error("Failed to get existence")
 		http.Error(w, "Failed to get existence", http.StatusInternalServerError)
 		return
 	}
@@ -113,6 +120,7 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 	response := models.ExistenceResponse{
 		Success: true,
 		Data:    existence,
+		Message: "Existence retrieved successfully",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -121,12 +129,15 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 
 // GetMostRecentExistenceByIngredientAndUnitType handles GET /existences/ingredient/{ingredientId}/unit-type/{unitType}
 func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	ingredientID := vars["ingredientId"]
 	unitType := vars["unitType"]
 
 	if ingredientID == "" || unitType == "" {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"ingredient_id": ingredientID,
 			"unit_type":     unitType,
 		}).Error("Missing ingredient ID or unit type")
@@ -136,7 +147,7 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 
 	// Validate ingredient ID format
 	if !isValidUUID(ingredientID) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"ingredient_id": ingredientID,
 		}).Warn("Invalid ingredient ID format")
 		http.Error(w, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
@@ -154,17 +165,17 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 		}
 	}
 	if !unitTypeValid {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"unit_type": unitType,
 		}).Warn("Invalid unit type format")
 		http.Error(w, "Unit type must be one of: Liters, Gallons, Units, Bag", http.StatusBadRequest)
 		return
 	}
 
-	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType)
+	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"ingredient_id": ingredientID,
 				"unit_type":     unitType,
 			}).Warn("No existence found for this ingredient and unit type")
@@ -172,7 +183,7 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 			http.Error(w, "No existence found for this ingredient and unit type", http.StatusNotFound)
 			return
 		}
-		h.logger.WithError(err).Error("Failed to get most recent existence")
+		logger.WithError(err).Error("Failed to get most recent existence")
 		http.Error(w, "Failed to get most recent existence", http.StatusInternalServerError)
 		return
 	}
@@ -214,9 +225,12 @@ func (h *HttpHandler) ListExistences(w http.ResponseWriter, r *http.Request) {
 		req.LowStock = &lowStock
 	}
 
-	existences, err := h.dbHandler.ListExistences(req)
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
+	existences, err := h.dbHandler.ListExistences(req, logger)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to list existences")
+		logger.WithError(err).Error("Failed to list existences")
 		http.Error(w, "Failed to list existences", http.StatusInternalServerError)
 		return
 	}
@@ -233,26 +247,29 @@ func (h *HttpHandler) ListExistences(w http.ResponseWriter, r *http.Request) {
 
 // UpdateExistence handles PUT /existences/{id}
 func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	var req models.UpdateExistenceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Failed to decode update existence request")
+		logger.WithError(err).Error("Failed to decode update existence request")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	existence, err := h.dbHandler.UpdateExistence(id, req)
+	existence, err := h.dbHandler.UpdateExistence(id, req, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"existence_id": id,
 			}).Error("Existence not found")
 			http.Error(w, "Existence not found", http.StatusNotFound)
 			return
 		}
-		h.logger.WithError(err).Error("Failed to update existence")
+		logger.WithError(err).Error("Failed to update existence")
 		http.Error(w, "Failed to update existence", http.StatusInternalServerError)
 		return
 	}
@@ -272,16 +289,19 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	err := h.dbHandler.DeleteExistence(id)
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
+	err := h.dbHandler.DeleteExistence(id, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"existence_id": id,
 			}).Error("Existence not found")
 			http.Error(w, "Existence not found", http.StatusNotFound)
 			return
 		}
-		h.logger.WithError(err).Error("Failed to delete existence")
+		logger.WithError(err).Error("Failed to delete existence")
 		http.Error(w, "Failed to delete existence", http.StatusInternalServerError)
 		return
 	}

@@ -11,20 +11,18 @@ import (
 
 // DBHandler handles database operations for ingredient categories
 type DBHandler struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db *sql.DB
 }
 
 // NewDBHandler creates a new database handler for ingredient categories
-func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
+func NewDBHandler(db *sql.DB) *DBHandler {
 	return &DBHandler{
-		db:     db,
-		logger: logger,
+		db: db,
 	}
 }
 
 // CreateIngredientCategory creates a new ingredient category in the database
-func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategoryRequest) (*models.IngredientCategory, error) {
+func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.CreateIngredientCategoryQuery,
@@ -32,13 +30,13 @@ func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategory
 		Scan(&category.ID, &category.Name, &category.Description, &category.IsActive, &category.CreatedAt, &category.UpdatedAt)
 
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_name": req.Name,
 		}).Error("Failed to create ingredient category in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"category_id":   category.ID,
 		"category_name": category.Name,
 	}).Info("Ingredient category created successfully")
@@ -46,9 +44,8 @@ func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategory
 	return &category, nil
 }
 
-// pvillalobos - is this really needed?
 // GetIngredientCategoryByID retrieves an ingredient category by ID from the database
-func (h *DBHandler) GetIngredientCategoryByID(id string) (*models.IngredientCategory, error) {
+func (h *DBHandler) GetIngredientCategoryByID(id string, logger *logrus.Entry) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.GetIngredientCategoryByIDQuery, id).
@@ -59,7 +56,7 @@ func (h *DBHandler) GetIngredientCategoryByID(id string) (*models.IngredientCate
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Failed to retrieve ingredient category from database")
 		return nil, err
@@ -69,10 +66,10 @@ func (h *DBHandler) GetIngredientCategoryByID(id string) (*models.IngredientCate
 }
 
 // ListIngredientCategories retrieves all ingredient categories from the database
-func (h *DBHandler) ListIngredientCategories() ([]models.IngredientCategory, error) {
+func (h *DBHandler) ListIngredientCategories(logger *logrus.Entry) ([]models.IngredientCategory, error) {
 	rows, err := h.db.Query(ingredientCategorySQL.ListIngredientCategoriesQuery)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to execute ingredient categories list query")
+		logger.WithError(err).Error("Failed to execute ingredient categories list query")
 		return nil, err
 	}
 	defer rows.Close()
@@ -82,7 +79,7 @@ func (h *DBHandler) ListIngredientCategories() ([]models.IngredientCategory, err
 		var category models.IngredientCategory
 		err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.IsActive, &category.CreatedAt, &category.UpdatedAt)
 		if err != nil {
-			h.logger.WithError(err).Warn("Failed to scan ingredient category row, skipping")
+			logger.WithError(err).Warn("Failed to scan ingredient category row, skipping")
 			continue
 		}
 		categories = append(categories, category)
@@ -93,7 +90,7 @@ func (h *DBHandler) ListIngredientCategories() ([]models.IngredientCategory, err
 		categories = []models.IngredientCategory{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"categories_count": len(categories),
 	}).Info("Listed ingredient categories successfully")
 
@@ -101,7 +98,7 @@ func (h *DBHandler) ListIngredientCategories() ([]models.IngredientCategory, err
 }
 
 // UpdateIngredientCategory updates an ingredient category in the database
-func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest) (*models.IngredientCategory, error) {
+func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.UpdateIngredientCategoryQuery,
@@ -113,13 +110,13 @@ func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredi
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Failed to update ingredient category in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"category_id":   category.ID,
 		"category_name": category.Name,
 	}).Info("Ingredient category updated successfully")
@@ -128,10 +125,10 @@ func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredi
 }
 
 // DeleteIngredientCategory deletes an ingredient category from the database
-func (h *DBHandler) DeleteIngredientCategory(id string) error {
+func (h *DBHandler) DeleteIngredientCategory(id string, logger *logrus.Entry) error {
 	result, err := h.db.Exec(ingredientCategorySQL.DeleteIngredientCategoryQuery, id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Failed to execute ingredient category delete query")
 		return err
@@ -139,7 +136,7 @@ func (h *DBHandler) DeleteIngredientCategory(id string) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Failed to get rows affected after delete")
 		return err
@@ -150,7 +147,7 @@ func (h *DBHandler) DeleteIngredientCategory(id string) error {
 		return sql.ErrNoRows
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"category_id": id,
 	}).Info("Ingredient category deleted successfully")
 

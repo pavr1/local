@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/ingredient_categories/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -15,11 +16,11 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateIngredientCategory(req models.CreateIngredientCategoryRequest) (*models.IngredientCategory, error)
-	GetIngredientCategoryByID(id string) (*models.IngredientCategory, error)
-	ListIngredientCategories() ([]models.IngredientCategory, error)
-	UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest) (*models.IngredientCategory, error)
-	DeleteIngredientCategory(id string) error
+	CreateIngredientCategory(req models.CreateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error)
+	GetIngredientCategoryByID(id string, logger *logrus.Entry) (*models.IngredientCategory, error)
+	ListIngredientCategories(logger *logrus.Entry) ([]models.IngredientCategory, error)
+	UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error)
+	DeleteIngredientCategory(id string, logger *logrus.Entry) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -49,23 +50,26 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 
 // CreateIngredientCategory handles POST /ingredient-categories
 func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateIngredientCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create ingredient category request")
+		logger.WithError(err).Error("Invalid JSON in create ingredient category request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateIngredientCategoryRequest(req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_name": req.Name,
 		}).Error("Validation failed for create ingredient category request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	category, err := h.dbHandler.CreateIngredientCategory(req)
+	category, err := h.dbHandler.CreateIngredientCategory(req, logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.IngredientCategoryResponse{
@@ -87,25 +91,28 @@ func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Re
 
 // GetIngredientCategory handles GET /ingredient-categories/{id}
 func (h *HttpHandler) GetIngredientCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing ingredient category ID in get request")
+		logger.Warn("Missing ingredient category ID in get request")
 		h.writeErrorResponse(w, "Ingredient category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate ingredient category ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"category_id": id,
 		}).Warn("Invalid ingredient category ID format in get request")
 		h.writeErrorResponse(w, "Ingredient category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
-	category, err := h.dbHandler.GetIngredientCategoryByID(id)
+	category, err := h.dbHandler.GetIngredientCategoryByID(id, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -138,11 +145,14 @@ func (h *HttpHandler) GetIngredientCategory(w http.ResponseWriter, r *http.Reque
 
 // ListIngredientCategories handles GET /ingredient-categories
 func (h *HttpHandler) ListIngredientCategories(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	// TODO: Parse query parameters for pagination when needed
 	// limit := r.URL.Query().Get("limit")
 	// offset := r.URL.Query().Get("offset")
 
-	categories, err := h.dbHandler.ListIngredientCategories()
+	categories, err := h.dbHandler.ListIngredientCategories(logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.IngredientCategoriesListResponse{
@@ -166,32 +176,35 @@ func (h *HttpHandler) ListIngredientCategories(w http.ResponseWriter, r *http.Re
 
 // UpdateIngredientCategory handles PUT /ingredient-categories/{id}
 func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing ingredient category ID in update request")
+		logger.Warn("Missing ingredient category ID in update request")
 		h.writeErrorResponse(w, "Ingredient category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateIngredientCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update ingredient category request")
+		logger.WithError(err).Error("Invalid JSON in update ingredient category request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateUpdateIngredientCategoryRequest(req, id); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Validation failed for update ingredient category request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	category, err := h.dbHandler.UpdateIngredientCategory(id, req)
+	category, err := h.dbHandler.UpdateIngredientCategory(id, req, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -224,30 +237,34 @@ func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Re
 
 // DeleteIngredientCategory handles DELETE /ingredient-categories/{id}
 func (h *HttpHandler) DeleteIngredientCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing ingredient category ID in delete request")
+		logger.Warn("Missing ingredient category ID in delete request")
 		h.writeErrorResponse(w, "Ingredient category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate ingredient category ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"category_id": id,
 		}).Warn("Invalid ingredient category ID format in delete request")
 		h.writeErrorResponse(w, "Ingredient category ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
-	err := h.dbHandler.DeleteIngredientCategory(id)
+	err := h.dbHandler.DeleteIngredientCategory(id, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.IngredientCategoryDeleteResponse{
+			response := models.IngredientCategoryResponse{
 				Success: false,
+				Data:    models.IngredientCategory{},
 				Message: "Ingredient category not found",
 			}
 			h.writeJSONResponse(w, response, http.StatusNotFound)
@@ -255,16 +272,13 @@ func (h *HttpHandler) DeleteIngredientCategory(w http.ResponseWriter, r *http.Re
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.IngredientCategoryDeleteResponse{
-			Success: false,
-			Message: "Failed to delete ingredient category: " + err.Error(),
-		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		h.writeErrorResponse(w, "Failed to delete ingredient category: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response := models.IngredientCategoryDeleteResponse{
+	response := models.IngredientCategoryResponse{
 		Success: true,
+		Data:    models.IngredientCategory{},
 		Message: "Ingredient category deleted successfully",
 	}
 	h.writeJSONResponse(w, response, http.StatusOK)
