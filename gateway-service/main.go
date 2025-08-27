@@ -236,6 +236,9 @@ func main() {
 	// Create CORS middleware
 	corsMiddleware := middleware.NewCORSMiddleware(logrusLogger)
 
+	// Apply request ID middleware to main router (first)
+	r.Use(middleware.RequestIDMiddleware(logrusLogger))
+
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware.HandleCORS)
 
@@ -498,6 +501,12 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
+
+		// Pass request ID to downstream services
+		if requestID := req.Header.Get("X-Request-ID"); requestID != "" {
+			// Request ID is already in the header, it will be forwarded automatically
+			logger.WithField("request_id", requestID).Debug("Forwarding request ID to downstream service")
+		}
 
 		logger.WithFields(logrus.Fields{
 			"method": req.Method,
