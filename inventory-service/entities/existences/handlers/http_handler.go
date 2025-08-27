@@ -84,6 +84,11 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 		Message: "Existence created successfully",
 	}
 
+	logger.WithFields(logrus.Fields{
+		"existence_id":  existence.ID,
+		"ingredient_id": existence.IngredientID,
+	}).Info("Existence created successfully")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
@@ -280,6 +285,11 @@ func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
 		Message: "Existence updated successfully",
 	}
 
+	logger.WithFields(logrus.Fields{
+		"existence_id":  existence.ID,
+		"ingredient_id": existence.IngredientID,
+	}).Info("Existence updated successfully")
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -310,6 +320,10 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "Existence deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"existence_id": id,
+	}).Info("Existence deleted successfully")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

@@ -62,6 +62,13 @@ func (h *RunoutIngredientHTTPHandler) CreateRunoutIngredient(w http.ResponseWrit
 		Data:    *runoutIngredient,
 		Message: "Runout ingredient created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": runoutIngredient.ID,
+		"existence_id":         runoutIngredient.ExistenceID,
+		"employee_id":          runoutIngredient.EmployeeID,
+	}).Info("Runout ingredient created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -211,6 +218,13 @@ func (h *RunoutIngredientHTTPHandler) UpdateRunoutIngredient(w http.ResponseWrit
 		Data:    *runoutIngredient,
 		Message: "Runout ingredient updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": runoutIngredient.ID,
+		"existence_id":         runoutIngredient.ExistenceID,
+		"employee_id":          runoutIngredient.EmployeeID,
+	}).Info("Runout ingredient updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -252,6 +266,11 @@ func (h *RunoutIngredientHTTPHandler) DeleteRunoutIngredient(w http.ResponseWrit
 		Success: true,
 		Message: "Runout ingredient deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"runout_ingredient_id": id,
+	}).Info("Runout ingredient deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

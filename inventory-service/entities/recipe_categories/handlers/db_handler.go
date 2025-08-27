@@ -127,10 +127,6 @@ func (h *RecipeCategoryDBHandler) List(req models.ListRecipeCategoriesRequest) (
 		recipeCategories = []models.RecipeCategory{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"categories_count": len(recipeCategories),
-	}).Info("Listed recipe categories successfully")
-
 	return recipeCategories, nil
 }
 

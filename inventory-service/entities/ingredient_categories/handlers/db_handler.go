@@ -90,10 +90,6 @@ func (h *DBHandler) ListIngredientCategories(logger *logrus.Entry) ([]models.Ing
 		categories = []models.IngredientCategory{}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"categories_count": len(categories),
-	}).Info("Listed ingredient categories successfully")
-
 	return categories, nil
 }
 

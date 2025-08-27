@@ -61,6 +61,13 @@ func (h *RecipeIngredientHTTPHandler) CreateRecipeIngredient(w http.ResponseWrit
 		Data:    *recipeIngredient,
 		Message: "Recipe ingredient created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": recipeIngredient.ID,
+		"recipe_id":            recipeIngredient.RecipeID,
+		"ingredient_id":        recipeIngredient.IngredientID,
+	}).Info("Recipe ingredient created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -206,6 +213,13 @@ func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWrit
 		Data:    *recipeIngredient,
 		Message: "Recipe ingredient updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": recipeIngredient.ID,
+		"recipe_id":            recipeIngredient.RecipeID,
+		"ingredient_id":        recipeIngredient.IngredientID,
+	}).Info("Recipe ingredient updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -250,6 +264,11 @@ func (h *RecipeIngredientHTTPHandler) DeleteRecipeIngredient(w http.ResponseWrit
 		Success: true,
 		Message: "Recipe ingredient deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"recipe_ingredient_id": id,
+	}).Info("Recipe ingredient deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

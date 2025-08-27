@@ -237,6 +237,12 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 		Data:    *supplier,
 		Message: "Supplier updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"supplier_id":   supplier.ID,
+		"supplier_name": supplier.SupplierName,
+	}).Info("Supplier updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -288,6 +294,11 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "Supplier deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"supplier_id": id,
+	}).Info("Supplier deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

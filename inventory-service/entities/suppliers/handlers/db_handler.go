@@ -91,10 +91,6 @@ func (h *DBHandler) ListSuppliers(logger *logrus.Entry) ([]models.Supplier, erro
 		suppliers = append(suppliers, supplier)
 	}
 
-	logger.WithFields(logrus.Fields{
-		"suppliers_count": len(suppliers),
-	}).Info("Listed suppliers successfully")
-
 	return suppliers, nil
 }
 

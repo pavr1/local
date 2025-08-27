@@ -86,6 +86,12 @@ func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Re
 		Data:    *category,
 		Message: "Ingredient category created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id":   category.ID,
+		"category_name": category.Name,
+	}).Info("Ingredient category created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -232,6 +238,12 @@ func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Re
 		Data:    *category,
 		Message: "Ingredient category updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id":   category.ID,
+		"category_name": category.Name,
+	}).Info("Ingredient category updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -281,6 +293,11 @@ func (h *HttpHandler) DeleteIngredientCategory(w http.ResponseWriter, r *http.Re
 		Data:    models.IngredientCategory{},
 		Message: "Ingredient category deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id": id,
+	}).Info("Ingredient category deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

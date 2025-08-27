@@ -72,6 +72,12 @@ func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, 
 		Data:    *recipeCategory,
 		Message: "Recipe category created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id":   recipeCategory.ID,
+		"category_name": recipeCategory.Name,
+	}).Info("Recipe category created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -226,6 +232,12 @@ func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, 
 		Data:    *recipeCategory,
 		Message: "Recipe category updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id":   recipeCategory.ID,
+		"category_name": recipeCategory.Name,
+	}).Info("Recipe category updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -276,6 +288,11 @@ func (h *RecipeCategoryHTTPHandler) DeleteRecipeCategory(w http.ResponseWriter, 
 		Success: true,
 		Message: "Recipe category deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"category_id": id,
+	}).Info("Recipe category deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

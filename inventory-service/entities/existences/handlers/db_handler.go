@@ -107,10 +107,6 @@ func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			logger.WithFields(logrus.Fields{
-				"ingredient_id": ingredientID,
-				"unit_type":     unitType,
-			}).Info("No existence found for ingredient and unit type")
 			return nil, err
 		}
 		logger.WithError(err).WithFields(logrus.Fields{
@@ -119,13 +115,6 @@ func (h *DBHandler) GetMostRecentExistenceByIngredientAndUnitType(ingredientID, 
 		}).Error("Failed to get most recent existence from database")
 		return nil, err
 	}
-
-	logger.WithFields(logrus.Fields{
-		"existence_id":   existence.ID,
-		"ingredient_id":  ingredientID,
-		"unit_type":      unitType,
-		"items_per_unit": existence.ItemsPerUnit,
-	}).Info("Most recent existence retrieved successfully")
 
 	return &existence, nil
 }
@@ -167,10 +156,6 @@ func (h *DBHandler) ListExistences(req models.ListExistencesRequest, logger *log
 	if existences == nil {
 		existences = []models.Existence{}
 	}
-
-	logger.WithFields(logrus.Fields{
-		"count": len(existences),
-	}).Info("Listed existences successfully")
 
 	return existences, nil
 }

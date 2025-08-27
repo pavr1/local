@@ -136,10 +136,6 @@ func (h *RecipeIngredientDBHandler) List(req models.ListRecipeIngredientsRequest
 		recipeIngredients = []models.RecipeIngredient{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"recipe_ingredients_count": len(recipeIngredients),
-	}).Info("Listed recipe ingredients successfully")
-
 	return recipeIngredients, nil
 }
 

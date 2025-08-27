@@ -152,10 +152,6 @@ func (h *RunoutIngredientDBHandler) List(req models.ListRunoutIngredientsRequest
 		runoutIngredients = []models.RunoutIngredient{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"runout_ingredients_count": len(runoutIngredients),
-	}).Info("Listed runout ingredients successfully")
-
 	return runoutIngredients, nil
 }
 

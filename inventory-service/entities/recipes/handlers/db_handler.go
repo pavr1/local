@@ -96,12 +96,6 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 
 	// Create recipe ingredients
 	for i, ingredient := range req.Ingredients {
-		h.logger.WithFields(logrus.Fields{
-			"ingredient_index":  i + 1,
-			"total_ingredients": len(req.Ingredients),
-			"ingredient_id":     ingredient.IngredientID,
-			"quantity":          ingredient.Quantity,
-		}).Info("Creating recipe ingredient")
 
 		_, err = tx.Exec(
 			recipeIngredientsSQL.CreateRecipeIngredientQuery,
@@ -118,10 +112,6 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 			return nil, err
 		}
 
-		h.logger.WithFields(logrus.Fields{
-			"ingredient_id": ingredient.IngredientID,
-			"quantity":      ingredient.Quantity,
-		}).Info("Recipe ingredient created successfully")
 	}
 
 	// Commit the transaction
@@ -170,13 +160,6 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	// Create HTTP request
 	// Use the gateway URL from config
 	url := fmt.Sprintf("%s/api/v1/data/images/%s", h.config.GatewayURL, service)
-
-	h.logger.WithFields(logrus.Fields{
-		"service":    service,
-		"image_name": imageName,
-		"image_data": len(imageData),
-		"url":        url,
-	}).Info("Image data written successfully, calling data service")
 
 	req, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
@@ -410,10 +393,6 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 		recipes = []models.Recipe{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"recipes_count": len(recipes),
-	}).Info("Listed recipes successfully")
-
 	return recipes, nil
 }
 
@@ -429,11 +408,6 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 	// Handle image storage if image data is provided
 	var pictureURL *string
 	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
-		h.logger.WithFields(logrus.Fields{
-			"recipe_id":  id,
-			"image_name": *req.ImageName,
-			"image_data": len(req.ImageData),
-		}).Info("Storing recipe image in data service")
 
 		// Store the image in data service
 		imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
@@ -581,10 +555,7 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 				}).Warn("Failed to delete recipe image from data service, but recipe was deleted from database")
 				// Don't fail the entire operation if image deletion fails
 			} else {
-				h.logger.WithFields(logrus.Fields{
-					"recipe_id": req.ID,
-					"filename":  filename,
-				}).Info("Recipe image deleted from data service")
+
 			}
 		}
 	}
@@ -635,11 +606,6 @@ func (h *RecipeDBHandler) GetRecipesByIngredient(ingredientID string) ([]string,
 		recipeIDs = append(recipeIDs, recipeID)
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"ingredient_id": ingredientID,
-		"recipe_count":  len(recipeIDs),
-	}).Info("Retrieved recipes by ingredient")
-
 	return recipeIDs, nil
 }
 
@@ -663,11 +629,6 @@ func (h *RecipeDBHandler) RecalculateAllRecipesForIngredient(ingredientID string
 			continue
 		}
 	}
-
-	h.logger.WithFields(logrus.Fields{
-		"ingredient_id":   ingredientID,
-		"recipes_updated": len(recipeIDs),
-	}).Info("Recalculated all recipes for ingredient")
 
 	return nil
 }

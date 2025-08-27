@@ -86,6 +86,12 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 		Data:    *ingredient,
 		Message: "Ingredient created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"ingredient_id":   ingredient.ID,
+		"ingredient_name": ingredient.Name,
+	}).Info("Ingredient created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -232,6 +238,12 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 		Data:    *ingredient,
 		Message: "Ingredient updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"ingredient_id":   ingredient.ID,
+		"ingredient_name": ingredient.Name,
+	}).Info("Ingredient updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
@@ -281,6 +293,11 @@ func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 		Data:    models.Ingredient{},
 		Message: "Ingredient deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"ingredient_id": id,
+	}).Info("Ingredient deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
