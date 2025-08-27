@@ -640,6 +640,14 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		"unit_type":         req.UnitType,
 	}).Info("CreateInventoryExistence called with items_per_unit")
 
+	if req.ItemsPerUnit == 0 {
+		h.logger.WithFields(logrus.Fields{
+			"ingredient_id": req.IngredientID,
+			"unit_type":     req.UnitType,
+		}).Error("Items per unit is 0")
+		return fmt.Errorf("items per unit is 0")
+	}
+
 	// Call the inventory service to get the most recent existence
 	mostRecentExistence, err := h.getMostRecentExistenceFromInventoryService(req.IngredientID, req.UnitType)
 	if err != nil {
@@ -652,14 +660,6 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 			}).Error("Failed to call inventory service for existence")
 			return err
 		}
-	}
-
-	if req.ItemsPerUnit == 0 {
-		h.logger.WithFields(logrus.Fields{
-			"ingredient_id": req.IngredientID,
-			"unit_type":     req.UnitType,
-		}).Error("Items per unit is 0")
-		return fmt.Errorf("items per unit is 0")
 	}
 
 	// Calculate derived fields
@@ -679,17 +679,27 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 	incomeMarginAmount = costPerItem * req.IncomeMarginPercentage / 100
 
 	if mostRecentExistence != nil && mostRecentExistence.FinalPrice != nil {
-		// Previous existence found, use its pricing structure
+		// Previous existence found, maintain pricing consistency
 		h.logger.WithFields(logrus.Fields{
 			"existence_id": mostRecentExistence.ID,
-		}).Info("Previous existence found, using its pricing structure")
+		}).Info("Previous existence found, maintaining pricing consistency")
 
-		// Use values from previous existence
+		// Use the existing final price to maintain consistency
 		finalPrice = *mostRecentExistence.FinalPrice
 
 		// Calculate income margin = final price - cost per item (base pricing only)
 		incomeMarginAmount = finalPrice - costPerItem
 		incomeMarginPercentage = (incomeMarginAmount / finalPrice) * 100
+
+		// For existing existences, minimum price is cost + margin (base pricing)
+		calculatedPrice = costPerItem + incomeMarginAmount
+
+		h.logger.WithFields(logrus.Fields{
+			"existing_final_price":         finalPrice,
+			"calculated_income_margin":     incomeMarginAmount,
+			"calculated_income_percentage": incomeMarginPercentage,
+			"calculated_base_price":        calculatedPrice,
+		}).Info("Using existing final price for consistency")
 	} else {
 		// No previous existence found, use default calculation
 		h.logger.WithFields(logrus.Fields{
@@ -717,9 +727,9 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		incomeMarginPercentage = req.IncomeMarginPercentage
 	}
 
-	// Map to new pricing structure
-	minimumPrice := calculatedPrice
-	maximumPrice := finalPrice
+	// Map to new pricing structure (base pricing only - no taxes)
+	minimumPrice := calculatedPrice // cost + margin
+	maximumPrice := finalPrice      // user-editable final price
 
 	// Log calculations for debugging
 	h.logger.WithFields(logrus.Fields{
