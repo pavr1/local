@@ -206,12 +206,6 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 
 // HealthCheck handles health check requests
 func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	h.logger.WithFields(logrus.Fields{
-		"endpoint": "/api/v1/inventory/p/health",
-		"method":   r.Method,
-		"remote":   r.RemoteAddr,
-	}).Info("Health check requested")
-
 	// Check data-service health
 	dataServiceHealthy := h.checkDataServiceHealth()
 

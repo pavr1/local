@@ -203,12 +203,6 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 
 // healthCheck handles the health check endpoint
 func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHandler, logger *logrus.Logger) {
-	logger.WithFields(logrus.Fields{
-		"endpoint": "/api/v1/data/p/health",
-		"method":   r.Method,
-		"remote":   r.RemoteAddr,
-	}).Info("Health check requested")
-
 	response := map[string]interface{}{
 		"service":   "data-service",
 		"timestamp": time.Now(),

@@ -517,19 +517,7 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 
 		// Ensure request ID is forwarded to downstream services
-		logger.WithField("request_id", requestID).Debug("Forwarding request ID to downstream service")
-
-		logger.WithFields(logrus.Fields{
-			"method": req.Method,
-			"path":   req.URL.Path,
-			"headers": map[string]string{
-				"X-Forwarded-For":           req.Header.Get("X-Forwarded-For"),
-				"X-Gateway-Service":         req.Header.Get("X-Gateway-Service"),
-				"X-Gateway-Session-Managed": req.Header.Get("X-Gateway-Session-Managed"),
-				"Authorization":             req.Header.Get("Authorization"),
-				"X-Request-ID":              req.Header.Get("X-Request-ID"),
-			},
-		}).Debug("Added gateway headers to request")
+		// Debug logging removed to reduce noise
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -618,10 +606,6 @@ func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc
 
 // checkServiceHealth checks if a service is responding to health checks
 func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
-	logger.WithFields(logrus.Fields{
-		"health_url": healthURL,
-	}).Debug("Starting health check")
-
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -640,14 +624,6 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
 
-	logger.WithFields(logrus.Fields{
-		"health_url": healthURL,
-		"headers": map[string]string{
-			"X-Gateway-Service":         req.Header.Get("X-Gateway-Service"),
-			"X-Gateway-Session-Managed": req.Header.Get("X-Gateway-Session-Managed"),
-		},
-	}).Debug("Making health check request")
-
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
@@ -658,12 +634,6 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	}
 	defer resp.Body.Close()
 
-	logger.WithFields(logrus.Fields{
-		"health_url":  healthURL,
-		"status_code": resp.StatusCode,
-		"status":      resp.Status,
-	}).Debug("Health check response received")
-
 	healthy := resp.StatusCode == http.StatusOK
 	if !healthy {
 		logger.WithFields(logrus.Fields{
@@ -671,10 +641,6 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 			"status_code": resp.StatusCode,
 			"status":      resp.Status,
 		}).Warn("Service health check failed")
-	} else {
-		logger.WithFields(logrus.Fields{
-			"health_url": healthURL,
-		}).Debug("Service health check passed")
 	}
 
 	return healthy
@@ -705,11 +671,6 @@ func isServiceRunning(serviceName string) bool {
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%s", port), 2*time.Second)
 	if err != nil {
 		// Port is not in use, service is not running
-		logrusLogger.WithFields(logrus.Fields{
-			"service_name": serviceName,
-			"port":         port,
-			"error":        err.Error(),
-		}).Debug("Service is not running")
 		return false
 	}
 	defer conn.Close()
@@ -1288,11 +1249,6 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 	}).Info("Starting to populate configuration from settings")
 
 	for _, setting := range settings {
-		logger.WithFields(logrus.Fields{
-			"service": setting.Service,
-			"key":     setting.Key,
-			"value":   setting.Value,
-		}).Debug("Processing setting")
 
 		switch setting.Key {
 		case "SESSION_SERVICE_URL":

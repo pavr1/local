@@ -183,12 +183,7 @@ func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*model
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	sm.logger.WithFields(logrus.Fields{
-		"username":    req.Username,
-		"status":      resp.StatusCode,
-		"body":        string(body),
-		"body_length": len(body),
-	}).Debug("Received session creation response")
+	// Debug logging removed to reduce noise
 
 	if resp.StatusCode != http.StatusCreated {
 		sm.logger.WithFields(logrus.Fields{
@@ -209,20 +204,14 @@ func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*model
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
-	sm.logger.WithFields(logrus.Fields{
-		"username":   req.Username,
-		"session_id": createResp.SessionID,
-		"message":    createResp.Message,
-	}).Debug("Session creation completed successfully")
+	// Debug logging removed to reduce noise
 
 	return &createResp, nil
 }
 
 // LogoutSession revokes a session
 func (sm *SessionManager) LogoutSession(sessionId string) error {
-	sm.logger.WithFields(logrus.Fields{
-		"session_id": sessionId,
-	}).Debug("Starting session logout")
+	// Debug logging removed to reduce noise
 
 	req := models.SessionLogoutRequest{
 		SessionID: sessionId,
@@ -255,9 +244,7 @@ func (sm *SessionManager) LogoutSession(sessionId string) error {
 		return fmt.Errorf("logout failed with status %d: %s", resp.StatusCode, string(body))
 	}
 
-	sm.logger.WithFields(logrus.Fields{
-		"session_id": sessionId,
-	}).Debug("Session logout completed successfully")
+	// Debug logging removed to reduce noise
 
 	return nil
 }
