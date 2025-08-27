@@ -488,13 +488,21 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 
 		// Log the proxy request (only for important requests)
 		if req.URL.Path != "/api/v1/sessions/p/health" {
-			logger.WithFields(logrus.Fields{
+			// Get request ID from header
+			requestID := req.Header.Get("X-Request-ID")
+			logFields := logrus.Fields{
 				"method":      req.Method,
 				"path":        req.URL.Path,
 				"target":      target.String(),
 				"remote_addr": req.RemoteAddr,
-				"user_agent":  req.UserAgent(),
-			}).Info("Proxying request")
+			}
+
+			// Add request ID if available
+			if requestID != "" {
+				logFields["request_id"] = requestID
+			}
+
+			logger.WithFields(logFields).Info("Proxying request")
 		}
 
 		// Add gateway headers

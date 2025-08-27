@@ -2,7 +2,8 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 
 	"github.com/sirupsen/logrus"
@@ -17,21 +18,13 @@ const (
 func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Validate request ID header exists
+			// Check if request ID is already provided in header
 			requestID := r.Header.Get(RequestIDHeader)
+			
+			// Generate new request ID if not provided
 			if requestID == "" {
-				logger.Error("Missing X-Request-ID header")
-
-				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(http.StatusBadRequest)
-
-				errorResponse := map[string]interface{}{
-					"error":   "missing_request_id",
-					"message": "X-Request-ID header is required",
-				}
-
-				json.NewEncoder(w).Encode(errorResponse)
-				return
+				requestID = generateRequestID()
+				logger.WithField("request_id", requestID).Debug("Generated new request ID")
 			}
 
 			// Add request ID to response headers
@@ -45,4 +38,14 @@ func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler 
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// generateRequestID creates a unique request ID
+func generateRequestID() string {
+	// Generate 16 random bytes
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+
+	// Convert to hex string
+	return hex.EncodeToString(bytes)
 }

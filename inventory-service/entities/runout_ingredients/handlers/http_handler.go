@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"inventory-service/entities/runout_ingredients/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -35,9 +36,12 @@ func NewRunoutIngredientHTTPHandler(db *sql.DB, logger *logrus.Logger) *RunoutIn
 
 // CreateRunoutIngredient handles POST /runout-ingredients
 func (h *RunoutIngredientHTTPHandler) CreateRunoutIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateRunoutIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create runout ingredient request")
+		logger.WithError(err).Error("Invalid JSON in create runout ingredient request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
@@ -63,11 +67,14 @@ func (h *RunoutIngredientHTTPHandler) CreateRunoutIngredient(w http.ResponseWrit
 
 // GetRunoutIngredient handles GET /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) GetRunoutIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing runout ingredient ID in get request")
+		logger.Warn("Missing runout ingredient ID in get request")
 		h.writeErrorResponse(w, "Runout ingredient ID is required", http.StatusBadRequest)
 		return
 	}
@@ -159,18 +166,21 @@ func (h *RunoutIngredientHTTPHandler) ListRunoutIngredients(w http.ResponseWrite
 
 // UpdateRunoutIngredient handles PUT /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) UpdateRunoutIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing runout ingredient ID in update request")
+		logger.Warn("Missing runout ingredient ID in update request")
 		h.writeErrorResponse(w, "Runout ingredient ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateRunoutIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update runout ingredient request")
+		logger.WithError(err).Error("Invalid JSON in update runout ingredient request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
@@ -206,11 +216,14 @@ func (h *RunoutIngredientHTTPHandler) UpdateRunoutIngredient(w http.ResponseWrit
 
 // DeleteRunoutIngredient handles DELETE /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) DeleteRunoutIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing runout ingredient ID in delete request")
+		logger.Warn("Missing runout ingredient ID in delete request")
 		h.writeErrorResponse(w, "Runout ingredient ID is required", http.StatusBadRequest)
 		return
 	}

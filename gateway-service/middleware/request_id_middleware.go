@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
@@ -17,11 +18,21 @@ const (
 func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Generate new request ID
-			requestID := generateRequestID()
+			// Check if request ID is already provided in header
+			requestID := r.Header.Get(RequestIDHeader)
+			
+			// Generate new request ID if not provided
+			if requestID == "" {
+				requestID = generateRequestID()
+			}
 
 			// Add request ID to response headers
 			w.Header().Set(RequestIDHeader, requestID)
+
+			// Add request ID to request context
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, "request_id", requestID)
+			r = r.WithContext(ctx)
 
 			// Log the incoming request with request ID
 			logger.WithFields(logrus.Fields{

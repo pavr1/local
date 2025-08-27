@@ -96,26 +96,26 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 
 // GetSupplier handles GET /suppliers/{id}
 func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing supplier ID in get request")
+		logger.Warn("Missing supplier ID in get request")
 		h.writeErrorResponse(w, "Supplier ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate supplier ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"supplier_id": id,
 		}).Warn("Invalid supplier ID format in get request")
 		h.writeErrorResponse(w, "Supplier ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
-
-	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
 
 	supplier, err := h.dbHandler.GetSupplierByID(id, logger)
 	if err != nil {

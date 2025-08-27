@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"inventory-service/entities/recipe_ingredients/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -34,9 +35,12 @@ func NewRecipeIngredientHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeIn
 
 // CreateRecipeIngredient handles POST /recipe-ingredients
 func (h *RecipeIngredientHTTPHandler) CreateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateRecipeIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create recipe ingredient request")
+		logger.WithError(err).Error("Invalid JSON in create recipe ingredient request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
@@ -62,11 +66,14 @@ func (h *RecipeIngredientHTTPHandler) CreateRecipeIngredient(w http.ResponseWrit
 
 // GetRecipeIngredient handles GET /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ingredient ID in get request")
+		logger.Warn("Missing recipe ingredient ID in get request")
 		h.writeErrorResponse(w, "Recipe ingredient ID is required", http.StatusBadRequest)
 		return
 	}
@@ -75,7 +82,7 @@ func (h *RecipeIngredientHTTPHandler) GetRecipeIngredient(w http.ResponseWriter,
 	recipeIngredient, err := h.dbHandler.GetByID(req)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_ingredient_id": id,
 			}).Warn("Recipe ingredient not found")
 			response := models.RecipeIngredientResponse{
@@ -151,18 +158,21 @@ func (h *RecipeIngredientHTTPHandler) ListRecipeIngredients(w http.ResponseWrite
 
 // UpdateRecipeIngredient handles PUT /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ingredient ID in update request")
+		logger.Warn("Missing recipe ingredient ID in update request")
 		h.writeErrorResponse(w, "Recipe ingredient ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateRecipeIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update recipe ingredient request")
+		logger.WithError(err).Error("Invalid JSON in update recipe ingredient request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
@@ -170,7 +180,7 @@ func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWrit
 	recipeIngredient, err := h.dbHandler.Update(req, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_ingredient_id": id,
 			}).Warn("Recipe ingredient not found for update")
 			response := models.RecipeIngredientResponse{
@@ -201,11 +211,14 @@ func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWrit
 
 // DeleteRecipeIngredient handles DELETE /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ingredient ID in delete request")
+		logger.Warn("Missing recipe ingredient ID in delete request")
 		h.writeErrorResponse(w, "Recipe ingredient ID is required", http.StatusBadRequest)
 		return
 	}
@@ -214,7 +227,7 @@ func (h *RecipeIngredientHTTPHandler) DeleteRecipeIngredient(w http.ResponseWrit
 	err := h.dbHandler.Delete(req)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_ingredient_id": id,
 			}).Warn("No recipe ingredient found to delete")
 			response := models.GenericResponse{

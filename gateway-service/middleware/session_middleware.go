@@ -3,6 +3,7 @@ package middleware
 import (
 	"encoding/json"
 	sessionmanager "gateway-service/middleware/session-manager"
+	"gateway-service/pkg/requestlogger"
 	"io"
 	"net/http"
 	"strings"
@@ -28,7 +29,10 @@ func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager, logger 
 // ValidateSession middleware validates the session ID against the session service
 func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sm.logger.WithFields(logrus.Fields{
+		// Get logger with request ID
+		logger := requestlogger.GetRequestLogger(sm.logger, r)
+
+		logger.WithFields(logrus.Fields{
 			"method": r.Method,
 			"path":   r.URL.Path,
 			"remote": r.RemoteAddr,
@@ -37,7 +41,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 		// Extract session ID from Authorization header
 		sessionId := extractSessionIdFromHeader(r)
 		if sessionId == "" {
-			sm.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"method": r.Method,
 				"path":   r.URL.Path,
 			}).Warn("Session validation failed: missing session ID")
@@ -45,7 +49,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 			return
 		}
 
-		sm.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"session_id": sessionId,
 			"method":     r.Method,
 			"path":       r.URL.Path,
@@ -54,7 +58,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 		// Validate session ID with session service
 		validation, err := sm.sessionManager.ValidateSession(sessionId)
 		if err != nil {
-			sm.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"session_id": sessionId,
 				"method":     r.Method,
 				"path":       r.URL.Path,
@@ -65,7 +69,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 
 		// Check if session is valid
 		if !validation.Valid {
-			sm.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"session_id": sessionId,
 				"method":     r.Method,
 				"path":       r.URL.Path,
@@ -75,7 +79,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 			return
 		}
 
-		sm.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"session_id": sessionId,
 			"user_id":    validation.UserID,
 			"username":   validation.Username,
@@ -101,10 +105,13 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 // LoginSession handles login and creates sessions
 func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Get logger with request ID
+		logger := requestlogger.GetRequestLogger(sm.logger, r)
+
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			sm.logger.WithError(err).Error("Failed to read request body")
+			logger.WithError(err).Error("Failed to read request body")
 			sm.writeErrorResponse(w, http.StatusBadRequest, "invalid_request", "Failed to read request body")
 			return
 		}
@@ -112,7 +119,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		// Forward login request to session service with gateway headers
 		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/p/login", strings.NewReader(string(body)))
 		if err != nil {
-			sm.logger.WithError(err).Error("Failed to create login request")
+			logger.WithError(err).Error("Failed to create login request")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create login request")
 			return
 		}
@@ -139,7 +146,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		// Read response from session service
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			sm.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"session_service_url": sessionServiceURL,
 				"status_code":         resp.StatusCode,
 			}).Error("Failed to read login response body")
@@ -149,7 +156,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 
 		// Gateway acts as pure proxy - session service handles all session creation logic
 		if resp.StatusCode == http.StatusOK {
-			sm.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"session_service_url": sessionServiceURL,
 				"status_code":         resp.StatusCode,
 				"response_length":     len(respBody),
@@ -172,10 +179,13 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 // LogoutSession handles logout and revokes sessions
 func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Get logger with request ID
+		logger := requestlogger.GetRequestLogger(sm.logger, r)
+
 		// Extract session ID from request
 		sessionId := extractSessionIdFromHeader(r)
 		if sessionId != "" {
-			sm.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"session_id":  sessionId,
 				"method":      r.Method,
 				"remote_addr": r.RemoteAddr,
@@ -183,16 +193,16 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 
 			// Revoke session in session service
 			if err := sm.sessionManager.LogoutSession(sessionId); err != nil {
-				sm.logger.WithError(err).WithFields(logrus.Fields{
+				logger.WithError(err).WithFields(logrus.Fields{
 					"session_id": sessionId,
 				}).Error("Failed to revoke session")
 			} else {
-				sm.logger.WithFields(logrus.Fields{
+				logger.WithFields(logrus.Fields{
 					"session_id": sessionId,
 				}).Info("Session revoked successfully")
 			}
 		} else {
-			sm.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"method":      r.Method,
 				"remote_addr": r.RemoteAddr,
 			}).Warn("Logout request without session ID")
@@ -201,7 +211,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		// Forward logout request to session service with gateway headers
 		req, err := http.NewRequest("POST", sessionServiceURL+"/api/v1/sessions/logout", r.Body)
 		if err != nil {
-			sm.logger.WithError(err).Error("Failed to create logout request")
+			logger.WithError(err).Error("Failed to create logout request")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "request_error", "Failed to create logout request")
 			return
 		}
@@ -215,7 +225,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		client := &http.Client{}
 		resp, err := client.Do(req)
 		if err != nil {
-			sm.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"session_service_url": sessionServiceURL,
 				"method":              r.Method,
 				"remote_addr":         r.RemoteAddr,
@@ -228,7 +238,7 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 		// Copy response from session service
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {
-			sm.logger.WithError(err).Error("Failed to read logout response body")
+			logger.WithError(err).Error("Failed to read logout response body")
 			sm.writeErrorResponse(w, http.StatusInternalServerError, "response_error", "Failed to read logout response")
 			return
 		}

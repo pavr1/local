@@ -10,6 +10,7 @@ import (
 
 	"inventory-service/config"
 	"inventory-service/entities/recipes/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -29,16 +30,19 @@ func NewRecipeHTTPHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config)
 
 // CreateRecipe handles POST /recipes
 func (h *RecipeHTTPHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create recipe request")
+		logger.WithError(err).Error("Invalid JSON in create recipe request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateRecipeRequest(req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
 		}).Error("Validation failed for create recipe request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
@@ -66,18 +70,21 @@ func (h *RecipeHTTPHandler) CreateRecipe(w http.ResponseWriter, r *http.Request)
 
 // GetRecipe handles GET /recipes/{id}
 func (h *RecipeHTTPHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ID in get request")
+		logger.Warn("Missing recipe ID in get request")
 		h.writeErrorResponse(w, "Recipe ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate recipe ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Warn("Invalid recipe ID format in get request")
 		h.writeErrorResponse(w, "Recipe ID must be a valid UUID", http.StatusBadRequest)
@@ -161,25 +168,28 @@ func (h *RecipeHTTPHandler) ListRecipes(w http.ResponseWriter, r *http.Request) 
 
 // UpdateRecipe handles PUT /recipes/{id}
 func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ID in update request")
+		logger.Warn("Missing recipe ID in update request")
 		h.writeErrorResponse(w, "Recipe ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update recipe request")
+		logger.WithError(err).Error("Invalid JSON in update recipe request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateUpdateRecipeRequest(req, id); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Error("Validation failed for update recipe request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
@@ -217,18 +227,21 @@ func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request)
 
 // DeleteRecipe handles DELETE /recipes/{id}
 func (h *RecipeHTTPHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe ID in delete request")
+		logger.Warn("Missing recipe ID in delete request")
 		h.writeErrorResponse(w, "Recipe ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate recipe ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Warn("Invalid recipe ID format in delete request")
 		h.writeErrorResponse(w, "Recipe ID must be a valid UUID", http.StatusBadRequest)

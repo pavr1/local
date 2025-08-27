@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/recipe_categories/models"
+	"inventory-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -36,16 +37,19 @@ func NewRecipeCategoryHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeCate
 
 // CreateRecipeCategory handles POST /recipe-categories
 func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateRecipeCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create recipe category request")
+		logger.WithError(err).Error("Invalid JSON in create recipe category request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateRecipeCategoryRequest(req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_name": req.Name,
 		}).Error("Validation failed for create recipe category request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
@@ -73,18 +77,21 @@ func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, 
 
 // GetRecipeCategory handles GET /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) GetRecipeCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe category ID in get request")
+		logger.Warn("Missing recipe category ID in get request")
 		h.writeErrorResponse(w, "Recipe category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate recipe category ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"category_id": id,
 		}).Warn("Invalid recipe category ID format in get request")
 		h.writeErrorResponse(w, "Recipe category ID must be a valid UUID", http.StatusBadRequest)
@@ -94,6 +101,7 @@ func (h *RecipeCategoryHTTPHandler) GetRecipeCategory(w http.ResponseWriter, r *
 	req := models.GetRecipeCategoryRequest{ID: id}
 	recipeCategory, err := h.dbHandler.GetByID(req)
 	if err != nil {
+		//pvillalobos - use notfoundError instead
 		if err.Error() == "recipe category not found" {
 			response := models.RecipeCategoryResponse{
 				Success: false,
@@ -164,25 +172,28 @@ func (h *RecipeCategoryHTTPHandler) ListRecipeCategories(w http.ResponseWriter, 
 
 // UpdateRecipeCategory handles PUT /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe category ID in update request")
+		logger.Warn("Missing recipe category ID in update request")
 		h.writeErrorResponse(w, "Recipe category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateRecipeCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update recipe category request")
+		logger.WithError(err).Error("Invalid JSON in update recipe category request")
 		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateUpdateRecipeCategoryRequest(req, id); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_id": id,
 		}).Error("Validation failed for update recipe category request")
 		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
@@ -220,18 +231,21 @@ func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, 
 
 // DeleteRecipeCategory handles DELETE /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) DeleteRecipeCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing recipe category ID in delete request")
+		logger.Warn("Missing recipe category ID in delete request")
 		h.writeErrorResponse(w, "Recipe category ID is required", http.StatusBadRequest)
 		return
 	}
 
 	// Validate recipe category ID format
 	if !isValidUUID(id) {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"category_id": id,
 		}).Warn("Invalid recipe category ID format in delete request")
 		h.writeErrorResponse(w, "Recipe category ID must be a valid UUID", http.StatusBadRequest)
