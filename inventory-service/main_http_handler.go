@@ -284,12 +284,11 @@ func (h *MainHttpHandler) loggingMiddleware() mux.MiddlewareFunc {
 			// Log the request
 			duration := time.Since(start)
 			h.logger.WithFields(logrus.Fields{
-				"method":     r.Method,
-				"path":       r.URL.Path,
-				"status":     wrappedWriter.statusCode,
-				"duration":   duration.String(),
-				"user_agent": r.UserAgent(),
-				"remote_ip":  r.RemoteAddr,
+				"method":    r.Method,
+				"path":      r.URL.Path,
+				"status":    wrappedWriter.statusCode,
+				"duration":  duration.String(),
+				"remote_ip": r.RemoteAddr,
 			}).Info("HTTP request processed")
 		})
 	}

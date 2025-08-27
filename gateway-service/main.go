@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"gateway-service/middleware"
@@ -486,20 +488,24 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 
+		// Ensure request ID is set (should be set by middleware, but double-check)
+		requestID := req.Header.Get("X-Request-ID")
+		if requestID == "" {
+			// Generate a request ID if not present (fallback)
+			requestID = generateRequestID()
+			req.Header.Set("X-Request-ID", requestID)
+			logger.WithField("request_id", requestID).Warn("Generated request ID in proxy director (fallback)")
+		}
+
+		//pvillalobos - hardcoded values
 		// Log the proxy request (only for important requests)
 		if req.URL.Path != "/api/v1/sessions/p/health" {
-			// Get request ID from header
-			requestID := req.Header.Get("X-Request-ID")
 			logFields := logrus.Fields{
 				"method":      req.Method,
 				"path":        req.URL.Path,
 				"target":      target.String(),
 				"remote_addr": req.RemoteAddr,
-			}
-
-			// Add request ID if available
-			if requestID != "" {
-				logFields["request_id"] = requestID
+				"request_id":  requestID,
 			}
 
 			logger.WithFields(logFields).Info("Proxying request")
@@ -510,11 +516,8 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 
-		// Pass request ID to downstream services
-		if requestID := req.Header.Get("X-Request-ID"); requestID != "" {
-			// Request ID is already in the header, it will be forwarded automatically
-			logger.WithField("request_id", requestID).Debug("Forwarding request ID to downstream service")
-		}
+		// Ensure request ID is forwarded to downstream services
+		logger.WithField("request_id", requestID).Debug("Forwarding request ID to downstream service")
 
 		logger.WithFields(logrus.Fields{
 			"method": req.Method,
@@ -524,6 +527,7 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 				"X-Gateway-Service":         req.Header.Get("X-Gateway-Service"),
 				"X-Gateway-Session-Managed": req.Header.Get("X-Gateway-Session-Managed"),
 				"Authorization":             req.Header.Get("Authorization"),
+				"X-Request-ID":              req.Header.Get("X-Request-ID"),
 			},
 		}).Debug("Added gateway headers to request")
 	}
@@ -531,6 +535,16 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 	return func(w http.ResponseWriter, r *http.Request) {
 		proxy.ServeHTTP(w, r)
 	}
+}
+
+// generateRequestID creates a unique request ID
+func generateRequestID() string {
+	// Generate 16 random bytes
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+
+	// Convert to hex string
+	return hex.EncodeToString(bytes)
 }
 
 // createHealthHandler creates a health handler with config

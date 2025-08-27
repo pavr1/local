@@ -244,7 +244,6 @@ func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 				"status":      wrappedWriter.statusCode,
 				"duration_ms": duration.Milliseconds(),
 				"remote_addr": r.RemoteAddr,
-				"user_agent":  r.UserAgent(),
 			}).Info("HTTP request processed")
 		})
 	}

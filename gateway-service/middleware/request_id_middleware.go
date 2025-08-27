@@ -20,7 +20,7 @@ func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check if request ID is already provided in header
 			requestID := r.Header.Get(RequestIDHeader)
-			
+
 			// Generate new request ID if not provided
 			if requestID == "" {
 				requestID = generateRequestID()
