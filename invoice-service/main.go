@@ -211,7 +211,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.DeleteExpenseCategory).Methods("DELETE")
 
 	// Main invoice operations (MUST be after specific routes)
-	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoiceWithDetails).Methods("POST")
+	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoice).Methods("POST")
 	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
 	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
 	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")

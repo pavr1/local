@@ -167,7 +167,7 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 			h.logger.WithFields(logrus.Fields{
 				"ingredient_id": ingredientID,
 				"unit_type":     unitType,
-			}).Error("No existence found for this ingredient and unit type")
+			}).Warn("No existence found for this ingredient and unit type")
 			// Return 404 when no existence is found
 			http.Error(w, "No existence found for this ingredient and unit type", http.StatusNotFound)
 			return

@@ -20,13 +20,6 @@ type DBHandlerInterface interface {
 	ListInvoices() ([]models.Invoice, error)
 	UpdateInvoice(id string, req models.UpdateInvoiceRequest) (*models.Invoice, error)
 	DeleteInvoice(id string) error
-	//pvillalobos - delete invoice details features if needed.
-	CreateInvoiceDetail(req models.CreateInvoiceDetailRequest) (*models.InvoiceDetail, error)
-	GetInvoiceDetailByID(id string) (*models.InvoiceDetail, error)
-	GetInvoiceDetailsByInvoiceID(invoiceID string) ([]models.InvoiceDetail, error)
-	ListInvoiceDetails() ([]models.InvoiceDetail, error)
-	UpdateInvoiceDetail(id string, req models.UpdateInvoiceDetailRequest) (*models.InvoiceDetail, error)
-	DeleteInvoiceDetail(id string) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -54,8 +47,8 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 	}
 }
 
-// CreateInvoiceWithDetails handles POST /invoices
-func (h *HttpHandler) CreateInvoiceWithDetails(w http.ResponseWriter, r *http.Request) {
+// CreateInvoice handles POST /invoices - creates invoice with all details
+func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateInvoiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Invalid JSON in create invoice request")
@@ -379,102 +372,6 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 	response := models.InvoiceDeleteResponse{
 		Success: true,
 		Message: "Invoice deleted successfully",
-	}
-	h.writeJSONResponse(w, response, http.StatusOK)
-}
-
-// CreateInvoiceDetail handles POST /invoices/{id}/details
-func (h *HttpHandler) CreateInvoiceDetail(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	invoiceID := vars["id"]
-
-	if invoiceID == "" {
-		h.logger.Warn("Missing invoice ID in create detail request")
-		h.writeErrorResponse(w, "Invoice ID is required", http.StatusBadRequest)
-		return
-	}
-
-	var req models.CreateInvoiceDetailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create invoice detail request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
-		return
-	}
-
-	// Set the invoice ID from the URL
-	req.InvoiceID = invoiceID
-
-	detail, err := h.dbHandler.CreateInvoiceDetail(req)
-	if err != nil {
-		response := models.InvoiceDetailResponse{
-			Success: false,
-			Data:    models.InvoiceDetail{},
-			Message: "Failed to create invoice detail: " + err.Error(),
-		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
-		return
-	}
-
-	response := models.InvoiceDetailResponse{
-		Success: true,
-		Data:    *detail,
-		Message: "Invoice detail created successfully",
-	}
-	h.writeJSONResponse(w, response, http.StatusCreated)
-}
-
-// GetInvoiceDetailsByInvoiceID handles GET /invoices/{id}/details
-func (h *HttpHandler) GetInvoiceDetailsByInvoiceID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	invoiceID := vars["id"]
-
-	if invoiceID == "" {
-		h.logger.Warn("Missing invoice ID in get details request")
-		h.writeErrorResponse(w, "Invoice ID is required", http.StatusBadRequest)
-		return
-	}
-
-	details, err := h.dbHandler.GetInvoiceDetailsByInvoiceID(invoiceID)
-	if err != nil {
-		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceDetailsListResponse{
-			Success: false,
-			Data:    []models.InvoiceDetail{},
-			Count:   0,
-			Message: "Failed to retrieve invoice details: " + err.Error(),
-		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
-		return
-	}
-
-	response := models.InvoiceDetailsListResponse{
-		Success: true,
-		Data:    details,
-		Count:   len(details),
-		Message: "Invoice details retrieved successfully",
-	}
-	h.writeJSONResponse(w, response, http.StatusOK)
-}
-
-// ListInvoiceDetails handles GET /invoice-details
-func (h *HttpHandler) ListInvoiceDetails(w http.ResponseWriter, r *http.Request) {
-	details, err := h.dbHandler.ListInvoiceDetails()
-	if err != nil {
-		response := models.InvoiceDetailsListResponse{
-			Success: false,
-			Data:    []models.InvoiceDetail{},
-			Count:   0,
-			Message: "Failed to list invoice details: " + err.Error(),
-		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
-		return
-	}
-
-	response := models.InvoiceDetailsListResponse{
-		Success: true,
-		Data:    details,
-		Count:   len(details),
-		Message: "Invoice details listed successfully",
 	}
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
