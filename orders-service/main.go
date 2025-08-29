@@ -11,8 +11,8 @@ import (
 
 	"orders-service/config"
 	"orders-service/handler"
-	"orders-service/middleware"
 	sharedLogger "shared/logger"
+	sharedMiddleware "shared/middlewares"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -132,7 +132,7 @@ func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mu
 	router := mux.NewRouter()
 
 	// Add request ID middleware
-	router.Use(middleware.RequestIDMiddleware(logger))
+	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE, "/api/v1/orders/p/health"))
 
 	// Add global middleware
 	// Removed authMiddleware.LoggingMiddleware - gateway handles all logging

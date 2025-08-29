@@ -6,6 +6,8 @@ import (
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
 	"session-service/middleware"
+	sharedLogger "shared/logger"
+	sharedMiddleware "shared/middlewares"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -47,7 +49,7 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 // SetupRoutes sets up all the routes for the service
 func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Add request ID middleware to all routes
-	router.Use(middleware.RequestIDMiddleware())
+	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_SESSION_SERVICE, "/api/v1/sessions/p/health"))
 
 	// Public router for endpoints that don't require gateway validation
 	publicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()

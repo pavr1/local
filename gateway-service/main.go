@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/exec"
 	sharedLogger "shared/logger"
+	sharedMiddleware "shared/middlewares"
 	"strings"
 	"time"
 
@@ -84,7 +85,7 @@ func main() {
 	r := mux.NewRouter()
 
 	// Apply request ID middleware to main router (first)
-	r.Use(middleware.RequestIDMiddleware())
+	r.Use(sharedMiddleware.InjectRequestIDMiddleware())
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
@@ -547,10 +548,6 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	// Add required gateway headers
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
-
-	// Generate and add request ID for health check calls
-	requestID := generateRequestID()
-	req.Header.Set("X-Request-ID", requestID)
 
 	resp, err := client.Do(req)
 	if err != nil {
