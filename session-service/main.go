@@ -89,10 +89,9 @@ func main() {
 	logger.Info("Server exited")
 }
 
-// setupLogger configures the logger
+// setupLogger configures the logrus logger
 func setupLogger(logLevel string) *logrus.Logger {
 	logger := logrus.New()
-	logger.SetOutput(os.Stdout)
 
 	// Set log level
 	level, err := logrus.ParseLevel(logLevel)

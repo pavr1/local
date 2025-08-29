@@ -10,7 +10,7 @@ import (
 
 	"inventory-service/config"
 	"inventory-service/entities/recipes/models"
-	"inventory-service/pkg/requestlogger"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -31,7 +31,7 @@ func NewRecipeHTTPHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config)
 // CreateRecipe handles POST /recipes
 func (h *RecipeHTTPHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	var req models.CreateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -77,7 +77,7 @@ func (h *RecipeHTTPHandler) CreateRecipe(w http.ResponseWriter, r *http.Request)
 // GetRecipe handles GET /recipes/{id}
 func (h *RecipeHTTPHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -175,7 +175,7 @@ func (h *RecipeHTTPHandler) ListRecipes(w http.ResponseWriter, r *http.Request) 
 // UpdateRecipe handles PUT /recipes/{id}
 func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -240,7 +240,7 @@ func (h *RecipeHTTPHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request)
 // DeleteRecipe handles DELETE /recipes/{id}
 func (h *RecipeHTTPHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

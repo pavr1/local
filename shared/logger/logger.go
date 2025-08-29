@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"path"
+	"runtime"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 // LogLevel represents log levels
@@ -189,4 +194,47 @@ func (cl *CentralizedLogger) Fatal(message string, fields map[string]interface{}
 // IsConnected returns whether the logger is connected to Fluentd
 func (cl *CentralizedLogger) IsConnected() bool {
 	return cl.connected
+}
+
+// GetRequestLogger creates a logger with request ID from context
+func GetRequestLogger(r *http.Request) *logrus.Entry {
+	//pvillalobos - hardcoded value
+	logger := SetupLogger("info") // Default log level
+
+	if requestID := r.Context().Value("request_id"); requestID != nil {
+		if id, ok := requestID.(string); ok {
+			return logger.WithField("request_id", id)
+		}
+	}
+	// Fallback to base logger if no request ID found
+	return logger.WithFields(logrus.Fields{})
+}
+
+// SetupLogger configures the logrus logger with consistent formatting
+func SetupLogger(logLevel string) *logrus.Logger {
+	logger := logrus.New()
+
+	// Set log level
+	level, err := logrus.ParseLevel(logLevel)
+	if err != nil {
+		level = logrus.InfoLevel
+	}
+	logger.SetLevel(level)
+
+	// Set log format with line numbers and better formatting
+	logger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+		ForceColors:     true,
+		DisableColors:   false,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+		},
+	})
+
+	// Enable caller reporting for line numbers
+	logger.SetReportCaller(true)
+
+	return logger
 }

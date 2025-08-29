@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"runtime"
 	"syscall"
 	"time"
 
 	"inventory-service/config"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -21,7 +20,7 @@ import (
 
 func main() {
 	// Setup initial logger
-	logger := setupLogger("info") // Default log level for initial setup
+	logger := sharedLogger.SetupLogger("info") // Default log level for initial setup
 	logger.Info("Starting Ice Cream Store Inventory Service")
 
 	// Load configuration from data service
@@ -31,7 +30,7 @@ func main() {
 	}
 
 	// Update logger with proper log level
-	logger = setupLogger(cfg.LogLevel)
+	logger = sharedLogger.SetupLogger(cfg.LogLevel)
 
 	// Connect to database using config
 	db, err := connectToDatabase(cfg, logger)
@@ -87,34 +86,7 @@ func main() {
 	logger.Info("Server exited gracefully")
 }
 
-// setupLogger configures the logrus logger
-func setupLogger(logLevel string) *logrus.Logger {
-	logger := logrus.New()
 
-	// Set log level
-	level, err := logrus.ParseLevel(logLevel)
-	if err != nil {
-		level = logrus.InfoLevel
-	}
-	logger.SetLevel(level)
-
-	// Set log format with line numbers and better formatting
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		ForceColors:     true,
-		DisableColors:   false,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
-
-	// Enable caller reporting for line numbers
-	logger.SetReportCaller(true)
-
-	return logger
-}
 
 // connectToDatabase establishes connection to PostgreSQL database using config
 func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {

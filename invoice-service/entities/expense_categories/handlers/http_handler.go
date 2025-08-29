@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/expense_categories/models"
-	"invoice-service/pkg/requestlogger"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -47,7 +47,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateExpenseCategory handles POST /expense-categories
 func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	var req models.CreateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -151,7 +151,7 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 // UpdateExpenseCategory handles PUT /expense-categories/{id}
 func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -209,7 +209,7 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 // DeleteExpenseCategory handles DELETE /expense-categories/{id}
 func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

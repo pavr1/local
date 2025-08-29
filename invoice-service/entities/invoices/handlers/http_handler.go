@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/invoices/models"
-	"invoice-service/pkg/requestlogger"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -51,7 +51,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateInvoice handles POST /invoices - creates invoice with all details
 func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	var req models.CreateInvoiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -302,7 +302,7 @@ func (h *HttpHandler) ListInvoices(w http.ResponseWriter, r *http.Request) {
 // UpdateInvoice handles PUT /invoices/{id}
 func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -361,7 +361,7 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 // DeleteInvoice handles DELETE /invoices/{id}
 func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

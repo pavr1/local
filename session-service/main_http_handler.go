@@ -64,7 +64,7 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 // HealthCheck handles health check requests
 func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	// Check data-service health
-	dataServiceHealthy := h.checkDataServiceHealth()
+	dataServiceHealthy := h.checkDataServiceHealth(r)
 
 	if !dataServiceHealthy {
 		if h.logger != nil {
@@ -88,12 +88,32 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // checkDataServiceHealth checks if the data-service is healthy
-func (h *MainHTTPHandler) checkDataServiceHealth() bool {
+func (h *MainHTTPHandler) checkDataServiceHealth(r *http.Request) bool {
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
-	resp, err := client.Get("http://icecream_data_service:8086/api/v1/data/p/health")
+	// Direct call to data service (internal service communication)
+	req, err := http.NewRequest("GET", "http://icecream_data_service:8086/api/v1/data/p/health", nil)
+	if err != nil {
+		if h.logger != nil {
+			h.logger.WithError(err).Error("Failed to create data service health check request")
+		}
+		return false
+	}
+
+	// Add gateway headers for internal service communication
+	req.Header.Set("X-Gateway-Service", "gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+	req.Header.Set("X-User-ID", "system")
+	req.Header.Set("X-User-Role", "admin")
+
+	// Forward the existing X-Request-ID from the current request
+	if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
+		req.Header.Set("X-Request-ID", requestID)
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		if h.logger != nil {
 			h.logger.WithError(err).Error("Failed to connect to data-service")

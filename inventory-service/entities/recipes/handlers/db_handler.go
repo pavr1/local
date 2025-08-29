@@ -638,5 +638,3 @@ func (h *RecipeDBHandler) RecalculateAllRecipesForIngredient(ingredientID string
 
 	return nil
 }
-
-

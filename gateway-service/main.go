@@ -624,6 +624,10 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
 
+	// Generate and add request ID for health check calls
+	requestID := generateRequestID()
+	req.Header.Set("X-Request-ID", requestID)
+
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.WithFields(logrus.Fields{

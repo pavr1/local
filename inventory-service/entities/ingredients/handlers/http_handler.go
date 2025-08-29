@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/ingredients/models"
-	"inventory-service/pkg/requestlogger"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -51,7 +51,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateIngredient handles POST /ingredients
 func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	var req models.CreateIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,7 +98,7 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 // GetIngredient handles GET /ingredients/{id}
 func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -152,7 +152,7 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 // ListIngredients handles GET /ingredients
 func (h *HttpHandler) ListIngredients(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	// TODO: Parse query parameters for pagination when needed
 	// limit := r.URL.Query().Get("limit")
@@ -183,7 +183,7 @@ func (h *HttpHandler) ListIngredients(w http.ResponseWriter, r *http.Request) {
 // UpdateIngredient handles PUT /ingredients/{id}
 func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -250,7 +250,7 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 // DeleteIngredient handles DELETE /ingredients/{id}
 func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := requestlogger.GetRequestLogger(h.logger, r)
+	logger := sharedLogger.GetRequestLogger(r)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

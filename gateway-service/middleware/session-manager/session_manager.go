@@ -32,7 +32,7 @@ func NewSessionManager(sessionServiceURL string, logger *logrus.Logger) *Session
 }
 
 // makeRequest makes a request to the session service with gateway headers
-func (sm *SessionManager) makeRequest(method, path string, body io.Reader) (*http.Response, error) {
+func (sm *SessionManager) makeRequest(method, path string, body io.Reader, requestID string) (*http.Response, error) {
 	sm.logger.WithFields(logrus.Fields{
 		"method": method,
 		"path":   path,
@@ -52,6 +52,11 @@ func (sm *SessionManager) makeRequest(method, path string, body io.Reader) (*htt
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	httpReq.Header.Set("X-Gateway-Session-Managed", "true")
+
+	// Add request ID if provided
+	if requestID != "" {
+		httpReq.Header.Set("X-Request-ID", requestID)
+	}
 
 	resp, err := sm.client.Do(httpReq)
 	if err != nil {
@@ -74,7 +79,7 @@ func (sm *SessionManager) makeRequest(method, path string, body io.Reader) (*htt
 }
 
 // ValidateSession validates a session ID against the session service
-func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionValidationResponse, error) {
+func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*models.SessionValidationResponse, error) {
 	sm.logger.WithFields(logrus.Fields{
 		"session_id": sessionId,
 	}).Debug("Starting session validation")
@@ -104,7 +109,7 @@ func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionVali
 		"request":    string(reqBody),
 	}).Debug("Sending session validation request")
 
-	resp, err := sm.makeRequest("POST", "/p/validate", bytes.NewBuffer(reqBody))
+	resp, err := sm.makeRequest("POST", "/p/validate", bytes.NewBuffer(reqBody), requestID)
 	if err != nil {
 		sm.logger.WithError(err).WithFields(logrus.Fields{
 			"session_id": sessionId,
@@ -152,7 +157,7 @@ func (sm *SessionManager) ValidateSession(sessionId string) (*models.SessionVali
 }
 
 // LoginSession creates a new session after successful login
-func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*models.SessionCreateResponse, error) {
+func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest, requestID string) (*models.SessionCreateResponse, error) {
 	sm.logger.WithFields(logrus.Fields{
 		"username": req.Username,
 	}).Debug("Starting session creation")
@@ -165,7 +170,7 @@ func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*model
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := sm.makeRequest("POST", "/p/login", bytes.NewBuffer(reqBody))
+	resp, err := sm.makeRequest("POST", "/p/login", bytes.NewBuffer(reqBody), requestID)
 	if err != nil {
 		sm.logger.WithError(err).WithFields(logrus.Fields{
 			"username": req.Username,
@@ -210,7 +215,7 @@ func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest) (*model
 }
 
 // LogoutSession revokes a session
-func (sm *SessionManager) LogoutSession(sessionId string) error {
+func (sm *SessionManager) LogoutSession(sessionId string, requestID string) error {
 	// Debug logging removed to reduce noise
 
 	req := models.SessionLogoutRequest{
@@ -225,7 +230,7 @@ func (sm *SessionManager) LogoutSession(sessionId string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	resp, err := sm.makeRequest("POST", "/logout", bytes.NewBuffer(reqBody))
+	resp, err := sm.makeRequest("POST", "/logout", bytes.NewBuffer(reqBody), requestID)
 	if err != nil {
 		sm.logger.WithError(err).WithFields(logrus.Fields{
 			"session_id": sessionId,

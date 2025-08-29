@@ -3,9 +3,9 @@ package middleware
 import (
 	"encoding/json"
 	sessionmanager "gateway-service/middleware/session-manager"
-	"gateway-service/pkg/requestlogger"
 	"io"
 	"net/http"
+	sharedLogger "shared/logger"
 	"strings"
 	"time"
 
@@ -30,7 +30,7 @@ func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager, logger 
 func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := requestlogger.GetRequestLogger(sm.logger, r)
+		logger := sharedLogger.GetRequestLogger(r)
 
 		logger.WithFields(logrus.Fields{
 			"method": r.Method,
@@ -55,8 +55,11 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 			"path":       r.URL.Path,
 		}).Info("Validating session with session service")
 
+		// Get request ID from current request
+		requestID := r.Header.Get("X-Request-ID")
+
 		// Validate session ID with session service
-		validation, err := sm.sessionManager.ValidateSession(sessionId)
+		validation, err := sm.sessionManager.ValidateSession(sessionId, requestID)
 		if err != nil {
 			logger.WithError(err).WithFields(logrus.Fields{
 				"session_id": sessionId,
@@ -106,7 +109,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := requestlogger.GetRequestLogger(sm.logger, r)
+		logger := sharedLogger.GetRequestLogger(r)
 
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
@@ -129,6 +132,11 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
 		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
+
+		// Forward the existing X-Request-ID from the current request
+		if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
+			req.Header.Set("X-Request-ID", requestID)
+		}
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -180,7 +188,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := requestlogger.GetRequestLogger(sm.logger, r)
+		logger := sharedLogger.GetRequestLogger(r)
 
 		// Extract session ID from request
 		sessionId := extractSessionIdFromHeader(r)
@@ -191,8 +199,11 @@ func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.Handle
 				"remote_addr": r.RemoteAddr,
 			}).Info("Attempting to revoke session")
 
+			// Get request ID from current request
+			requestID := r.Header.Get("X-Request-ID")
+
 			// Revoke session in session service
-			if err := sm.sessionManager.LogoutSession(sessionId); err != nil {
+			if err := sm.sessionManager.LogoutSession(sessionId, requestID); err != nil {
 				logger.WithError(err).WithFields(logrus.Fields{
 					"session_id": sessionId,
 				}).Error("Failed to revoke session")
