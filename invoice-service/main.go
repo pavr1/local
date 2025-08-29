@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"invoice-service/config"
-	"invoice-service/middleware"
 	sharedLogger "shared/logger"
+	sharedMiddleware "shared/middlewares"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -115,7 +115,7 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	router := mux.NewRouter()
 
 	// Add request ID middleware
-	router.Use(middleware.RequestIDMiddleware(logger))
+	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
 
 	// Add logging middleware
 	router.Use(loggingMiddleware(logger))

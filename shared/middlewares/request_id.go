@@ -46,16 +46,6 @@ func InjectRequestIDMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
-// generateRequestID creates a unique request ID
-func generateRequestID() string {
-	// Generate 16 random bytes
-	bytes := make([]byte, 16)
-	rand.Read(bytes)
-
-	// Convert to hex string
-	return hex.EncodeToString(bytes)
-}
-
 // CheckRequestIDMiddleware validates request ID header and adds it to context
 // healthExcludedPath: path to exclude from X-Request-ID validation (e.g., "/api/v1/sessions/p/health")
 func CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) func(http.Handler) http.Handler {
@@ -96,4 +86,14 @@ func CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) fun
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// generateRequestID creates a unique request ID
+func generateRequestID() string {
+	// Generate 16 random bytes
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+
+	// Convert to hex string
+	return hex.EncodeToString(bytes)
 }

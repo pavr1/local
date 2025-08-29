@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	sharedLogger "shared/logger"
+	sharedMiddleware "shared/middlewares"
 	"time"
 
 	"inventory-service/config"
@@ -133,7 +135,7 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
 	protectedRouter.Use(middleware.NewGatewayMiddleware(h.logger).ValidateGateway)
-	protectedRouter.Use(middleware.RequestIDMiddleware(h.logger)) // Add request ID validation
+	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
 	protectedRouter.Use(h.loggingMiddleware())
 
 	// Suppliers endpoints under inventory
