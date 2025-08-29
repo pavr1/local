@@ -7,12 +7,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"runtime"
 	"syscall"
 	"time"
 
 	"session-service/config"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -21,27 +20,24 @@ import (
 
 func main() {
 	// Setup initial logger
-	logger := setupLogger("info") // Default log level for initial setup
+	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_SESSION_SERVICE)
 	logger.Info("Starting Session Service")
 
 	// Load configuration from data service
-	cfg, err := config.LoadConfigFromDataService(logger)
+	cfg, err := config.LoadConfigFromDataService(logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
-	// Update logger with proper log level
-	logger = setupLogger(cfg.LogLevel)
-
 	// Connect to database using config
-	db, err := connectToDatabase(cfg, logger)
+	db, err := connectToDatabase(cfg, logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer db.Close()
 
 	// Create main HTTP handler
-	mainHandler, err := NewMainHTTPHandler(cfg, logger)
+	mainHandler, err := NewMainHTTPHandler(cfg, logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
@@ -87,35 +83,6 @@ func main() {
 	}
 
 	logger.Info("Server exited")
-}
-
-// setupLogger configures the logrus logger
-func setupLogger(logLevel string) *logrus.Logger {
-	logger := logrus.New()
-
-	// Set log level
-	level, err := logrus.ParseLevel(logLevel)
-	if err != nil {
-		level = logrus.InfoLevel
-	}
-	logger.SetLevel(level)
-
-	// Set log format with line numbers and better formatting
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		ForceColors:     true,
-		DisableColors:   false,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
-
-	// Enable caller reporting for line numbers
-	logger.SetReportCaller(true)
-
-	return logger
 }
 
 // connectToDatabase establishes connection to PostgreSQL database using config
