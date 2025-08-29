@@ -199,7 +199,7 @@ func (cl *CentralizedLogger) IsConnected() bool {
 // GetRequestLogger creates a logger with request ID from context
 func GetRequestLogger(r *http.Request) *logrus.Entry {
 	//pvillalobos - hardcoded value
-	logger := SetupLogger("info") // Default log level
+	logger := setupLogger("info") // Default log level
 
 	if requestID := r.Context().Value("request_id"); requestID != nil {
 		if id, ok := requestID.(string); ok {
@@ -211,7 +211,7 @@ func GetRequestLogger(r *http.Request) *logrus.Entry {
 }
 
 // SetupLogger configures the logrus logger with consistent formatting
-func SetupLogger(logLevel string) *logrus.Logger {
+func setupLogger(logLevel string) *logrus.Logger {
 	logger := logrus.New()
 
 	// Set log level
