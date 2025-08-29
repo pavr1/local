@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/expense_categories/models"
+	"invoice-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,9 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 
 // CreateExpenseCategory handles POST /expense-categories
 func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Invalid JSON in create expense category request")
@@ -69,6 +73,12 @@ func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Data:    *expenseCategory,
 		Message: "Expense category created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"expense_category_id":   expenseCategory.ID,
+		"expense_category_name": expenseCategory.CategoryName,
+	}).Info("Expense category created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -140,6 +150,9 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 
 // UpdateExpenseCategory handles PUT /expense-categories/{id}
 func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -184,11 +197,20 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Data:    *expenseCategory,
 		Message: "Expense category updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"expense_category_id":   expenseCategory.ID,
+		"expense_category_name": expenseCategory.CategoryName,
+	}).Info("Expense category updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
 // DeleteExpenseCategory handles DELETE /expense-categories/{id}
 func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -223,6 +245,11 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Success: true,
 		Message: "Expense category deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"expense_category_id": id,
+	}).Info("Expense category deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

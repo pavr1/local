@@ -25,7 +25,7 @@ func main() {
 	// Create a logger with custom configuration
 	logger := logrus.New()
 	logger.SetLevel(logrus.InfoLevel)
-	
+
 	// Set log format with line numbers and better formatting
 	logger.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,

@@ -85,23 +85,9 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 	// Create invoice details
 	var totalAmount float64 = 0
-	h.logger.WithFields(logrus.Fields{
-		"invoice_id":  invoice.ID,
-		"total_items": len(req.Items),
-		"category":    expenseCategoryName,
-	}).Info("Starting invoice details creation")
 
-	for i, item := range req.Items {
-		h.logger.WithFields(logrus.Fields{
-			"item_index":     i + 1,
-			"total_items":    len(req.Items),
-			"ingredient_id":  item.IngredientID,
-			"detail":         item.Detail,
-			"count":          item.Count,
-			"unit_type":      item.UnitType,
-			"price":          item.Price,
-			"items_per_unit": item.ItemsPerUnit,
-		}).Info("Processing invoice detail item")
+	for _, item := range req.Items {
+
 		var detail models.InvoiceDetail
 		err = tx.QueryRow(invoiceSQL.CreateInvoiceDetailQuery,
 			invoice.ID, item.IngredientID, item.Detail, item.Count, item.UnitType, item.ItemsPerUnit, item.Price, item.ExpirationDate).
@@ -117,27 +103,9 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 
 		totalAmount += detail.Total
 
-		h.logger.WithFields(logrus.Fields{
-			"detail_id":     detail.ID,
-			"detail_total":  detail.Total,
-			"running_total": totalAmount,
-		}).Info("Invoice detail created successfully")
-
 		// Create existence if this is an ingredient item AND expense category is "Ingredients"
 		//pvillalobos - get rid of hardcoded values
 		if item.IngredientID != nil && expenseCategoryName == "Ingredients" {
-			h.logger.WithFields(logrus.Fields{
-				"ingredient_id": *item.IngredientID,
-				"category":      expenseCategoryName,
-			}).Info("Item is ingredient in Ingredients category, proceeding with existence creation")
-			// Debug logging to verify items_per_unit value
-			h.logger.WithFields(logrus.Fields{
-				"invoice_detail_id": detail.ID,
-				"ingredient_id":     *item.IngredientID,
-				"items_per_unit":    item.ItemsPerUnit,
-				"cost_per_unit":     item.Price,
-				"unit_type":         item.UnitType,
-			}).Info("Creating existence with items_per_unit from invoice detail")
 
 			existenceReq := models.CreateExistenceRequest{
 				IngredientID:    *item.IngredientID,
@@ -151,16 +119,6 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 				IncomeMarginPercentage: 30.0, // Default 30%
 			}
 
-			h.logger.WithFields(logrus.Fields{
-				"ingredient_id":         *item.IngredientID,
-				"invoice_detail_id":     detail.ID,
-				"units_purchased":       item.Count,
-				"unit_type":             item.UnitType,
-				"items_per_unit":        item.ItemsPerUnit,
-				"cost_per_unit":         item.Price,
-				"income_margin_percent": 30.0,
-			}).Info("Creating inventory existence")
-
 			err = h.CreateInventoryExistence(tx, existenceReq)
 			if err != nil {
 				h.logger.WithError(err).WithFields(logrus.Fields{
@@ -169,10 +127,6 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest) (*models.Invo
 				}).Error("Failed to create inventory existence")
 				return nil, err
 			}
-
-			h.logger.WithFields(logrus.Fields{
-				"ingredient_id": *item.IngredientID,
-			}).Info("Inventory existence created successfully, starting recipe recalculation")
 
 			// Recalculate all recipes that use this ingredient within the same transaction
 			err = h.RecalculateRecipesForIngredient(tx, *item.IngredientID)
@@ -283,10 +237,6 @@ func (h *DBHandler) ListInvoices() ([]models.Invoice, error) {
 		invoices = []models.Invoice{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"invoices_count": len(invoices),
-	}).Info("Listed invoices successfully")
-
 	return invoices, nil
 }
 
@@ -347,8 +297,6 @@ func (h *DBHandler) DeleteInvoice(id string) error {
 
 	return nil
 }
-
-
 
 // CreateInventoryExistence creates an existence record from an invoice detail
 func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExistenceRequest) error {

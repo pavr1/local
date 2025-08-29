@@ -12,6 +12,7 @@ import (
 
 	"orders-service/config"
 	"orders-service/models"
+	"orders-service/pkg/requestlogger"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -51,6 +52,9 @@ func NewOrderHTTPHandler(dbHandler OrderDBHandlerInterface, cfg *config.Config, 
 
 // CreateOrder handles POST /orders
 func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.respondWithError(w, http.StatusBadRequest, "Invalid JSON payload", err)
@@ -128,7 +132,7 @@ func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		createdOrder = updatedOrder
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id":     createdOrder.Order.ID,
 		"order_number": createdOrder.Order.OrderNumber,
 		"total_amount": createdOrder.Order.TotalAmount,
@@ -163,6 +167,9 @@ func (h *OrderHTTPHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 // UpdateOrder handles PUT /orders/{id}
 func (h *OrderHTTPHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
 	if err != nil {
@@ -219,7 +226,7 @@ func (h *OrderHTTPHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id": orderID,
 	}).Info("Order updated successfully")
 
@@ -228,6 +235,9 @@ func (h *OrderHTTPHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 
 // CancelOrder handles DELETE /orders/{id}
 func (h *OrderHTTPHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
 	if err != nil {
@@ -244,7 +254,7 @@ func (h *OrderHTTPHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id": orderID,
 	}).Info("Order cancelled successfully")
 

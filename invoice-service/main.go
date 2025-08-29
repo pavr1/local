@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"invoice-service/config"
+	"invoice-service/middleware"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -147,6 +148,9 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
+	// Add request ID middleware
+	router.Use(middleware.RequestIDMiddleware(logger))
+
 	// Add logging middleware
 	router.Use(loggingMiddleware(logger))
 
@@ -236,15 +240,24 @@ func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 			// Process request
 			next.ServeHTTP(wrappedWriter, r)
 
-			// Log request
+			// Log request with request ID
 			duration := time.Since(start)
-			logger.WithFields(logrus.Fields{
+			logFields := logrus.Fields{
 				"method":      r.Method,
 				"uri":         r.RequestURI,
 				"status":      wrappedWriter.statusCode,
 				"duration_ms": duration.Milliseconds(),
 				"remote_addr": r.RemoteAddr,
-			}).Info("HTTP request processed")
+			}
+
+			// Add request ID if available
+			if requestID := r.Context().Value("request_id"); requestID != nil {
+				if id, ok := requestID.(string); ok {
+					logFields["request_id"] = id
+				}
+			}
+
+			logger.WithFields(logFields).Info("HTTP request processed")
 		})
 	}
 }

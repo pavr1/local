@@ -99,10 +99,6 @@ func (h *DBHandler) ListExpenseCategories() ([]models.ExpenseCategory, error) {
 		expenseCategories = []models.ExpenseCategory{}
 	}
 
-	h.logger.WithFields(logrus.Fields{
-		"expense_categories_count": len(expenseCategories),
-	}).Info("Listed expense categories successfully")
-
 	return expenseCategories, nil
 }
 

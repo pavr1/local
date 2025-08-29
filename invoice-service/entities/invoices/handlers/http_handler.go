@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/invoices/models"
+	"invoice-service/pkg/requestlogger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -49,6 +50,9 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 
 // CreateInvoice handles POST /invoices - creates invoice with all details
 func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	var req models.CreateInvoiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		h.logger.WithError(err).Error("Invalid JSON in create invoice request")
@@ -83,6 +87,13 @@ func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		Data:    *invoice,
 		Message: "Invoice created successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"invoice_id":       invoice.ID,
+		"invoice_number":   invoice.InvoiceNumber,
+		"transaction_type": invoice.TransactionType,
+	}).Info("Invoice created successfully")
+
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 
@@ -290,6 +301,9 @@ func (h *HttpHandler) ListInvoices(w http.ResponseWriter, r *http.Request) {
 
 // UpdateInvoice handles PUT /invoices/{id}
 func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -334,11 +348,21 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 		Data:    *invoice,
 		Message: "Invoice updated successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"invoice_id":       invoice.ID,
+		"invoice_number":   invoice.InvoiceNumber,
+		"transaction_type": invoice.TransactionType,
+	}).Info("Invoice updated successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 
 // DeleteInvoice handles DELETE /invoices/{id}
 func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -373,6 +397,11 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "Invoice deleted successfully",
 	}
+
+	logger.WithFields(logrus.Fields{
+		"invoice_id": id,
+	}).Info("Invoice deleted successfully")
+
 	h.writeJSONResponse(w, response, http.StatusOK)
 }
 

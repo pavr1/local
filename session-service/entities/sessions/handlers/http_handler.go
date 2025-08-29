@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"session-service/entities/sessions/models"
+	"session-service/pkg/requestlogger"
 
 	"github.com/sirupsen/logrus"
 )
@@ -32,6 +33,9 @@ func NewHTTPHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HTTPHa
 
 // CreateSession handles session creation requests
 func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	// Parse request
 	var req models.SessionCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -54,6 +58,11 @@ func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return success response
+	logger.WithFields(logrus.Fields{
+		"session_id": response.SessionID,
+		"username":   req.Username,
+	}).Info("Session created successfully")
+
 	h.writeJSONResponse(w, http.StatusCreated, response)
 }
 
@@ -80,6 +89,9 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 
 // LogoutSession handles session logout requests
 func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := requestlogger.GetRequestLogger(h.logger, r)
+
 	// Parse request body
 	var req models.SessionLogoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -103,6 +115,10 @@ func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
 
 	// Write response
 	if response.Success {
+		logger.WithFields(logrus.Fields{
+			"session_id": req.SessionID,
+		}).Info("Session logged out successfully")
+
 		h.writeJSONResponse(w, http.StatusOK, response)
 	} else {
 		h.writeJSONResponse(w, http.StatusNotFound, response)

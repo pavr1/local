@@ -13,8 +13,7 @@ import (
 
 	"orders-service/config"
 	"orders-service/handler"
-
-	// Removed middleware import - gateway handles all auth
+	"orders-service/middleware"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -166,8 +165,8 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
-	// Create middleware
-	// Removed authMiddleware - gateway handles all auth
+	// Add request ID middleware
+	router.Use(middleware.RequestIDMiddleware(logger))
 
 	// Add global middleware
 	// Removed authMiddleware.LoggingMiddleware - gateway handles all logging

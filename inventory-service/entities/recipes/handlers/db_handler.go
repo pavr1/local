@@ -95,7 +95,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	}
 
 	// Create recipe ingredients
-	for i, ingredient := range req.Ingredients {
+	for _, ingredient := range req.Ingredients {
 
 		_, err = tx.Exec(
 			recipeIngredientsSQL.CreateRecipeIngredientQuery,
@@ -233,6 +233,12 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 
 	// Set headers
 	req.Header.Set("Content-Type", "application/json")
+
+	// Add gateway headers for internal service communication
+	req.Header.Set("X-Gateway-Service", "gateway")
+	req.Header.Set("X-Gateway-Session-Managed", "true")
+	req.Header.Set("X-User-ID", "system")
+	req.Header.Set("X-User-Role", "admin")
 
 	// Execute the request
 	resp, err := client.Do(req)
@@ -632,3 +638,5 @@ func (h *RecipeDBHandler) RecalculateAllRecipesForIngredient(ingredientID string
 
 	return nil
 }
+
+
