@@ -47,7 +47,7 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 // SetupRoutes sets up all the routes for the service
 func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Add request ID middleware to all routes
-	router.Use(middleware.RequestIDMiddleware(h.logger))
+	router.Use(middleware.RequestIDMiddleware())
 
 	// Public router for endpoints that don't require gateway validation
 	publicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()

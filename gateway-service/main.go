@@ -48,7 +48,6 @@ type Config struct {
 }
 
 func main() {
-	// Initialize structured logger
 	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_GATEWAY_SERVICE)
 	logger.Info("Gateway service starting - logger initialized")
 
@@ -159,10 +158,10 @@ func main() {
 	dataRouter.Use(sessionMiddleware.ValidateSession)
 
 	// Create CORS middleware
-	corsMiddleware := middleware.NewCORSMiddleware(logger.Logger)
+	corsMiddleware := middleware.NewCORSMiddleware()
 
 	// Apply request ID middleware to main router (first)
-	r.Use(middleware.RequestIDMiddleware(logger.Logger))
+	r.Use(middleware.RequestIDMiddleware())
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware.HandleCORS)

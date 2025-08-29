@@ -4,8 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
-	"github.com/sirupsen/logrus"
+	sharedLogger "shared/logger"
 )
 
 const (
@@ -14,10 +13,11 @@ const (
 )
 
 // RequestIDMiddleware validates request ID header and adds it to context
-func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
+func RequestIDMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Validate request ID header exists (should be provided by gateway)
+			logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
 			requestID := r.Header.Get(RequestIDHeader)
 			if requestID == "" {
 				logger.Error("Missing X-Request-ID header")

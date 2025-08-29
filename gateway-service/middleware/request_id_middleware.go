@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	sharedLogger "shared/logger"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,9 +16,10 @@ const (
 )
 
 // RequestIDMiddleware generates a unique request ID for each request
-func RequestIDMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
+func RequestIDMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 			// Check if request ID is already provided in header
 			requestID := r.Header.Get(RequestIDHeader)
 
