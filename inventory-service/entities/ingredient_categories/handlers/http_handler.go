@@ -51,7 +51,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateIngredientCategory handles POST /ingredient-categories
 func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateIngredientCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -98,7 +98,7 @@ func (h *HttpHandler) CreateIngredientCategory(w http.ResponseWriter, r *http.Re
 // GetIngredientCategory handles GET /ingredient-categories/{id}
 func (h *HttpHandler) GetIngredientCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -152,7 +152,7 @@ func (h *HttpHandler) GetIngredientCategory(w http.ResponseWriter, r *http.Reque
 // ListIngredientCategories handles GET /ingredient-categories
 func (h *HttpHandler) ListIngredientCategories(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	// TODO: Parse query parameters for pagination when needed
 	// limit := r.URL.Query().Get("limit")
@@ -183,7 +183,7 @@ func (h *HttpHandler) ListIngredientCategories(w http.ResponseWriter, r *http.Re
 // UpdateIngredientCategory handles PUT /ingredient-categories/{id}
 func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -250,7 +250,7 @@ func (h *HttpHandler) UpdateIngredientCategory(w http.ResponseWriter, r *http.Re
 // DeleteIngredientCategory handles DELETE /ingredient-categories/{id}
 func (h *HttpHandler) DeleteIngredientCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

@@ -52,7 +52,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateExistence handles POST /existences
 func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateExistenceRequest
 
@@ -97,7 +97,7 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 // GetExistence handles GET /existences/{id}
 func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -135,7 +135,7 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 // GetMostRecentExistenceByIngredientAndUnitType handles GET /existences/ingredient/{ingredientId}/unit-type/{unitType}
 func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	ingredientID := vars["ingredientId"]
@@ -231,7 +231,7 @@ func (h *HttpHandler) ListExistences(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	existences, err := h.dbHandler.ListExistences(req, logger)
 	if err != nil {
@@ -253,7 +253,7 @@ func (h *HttpHandler) ListExistences(w http.ResponseWriter, r *http.Request) {
 // UpdateExistence handles PUT /existences/{id}
 func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -300,7 +300,7 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	err := h.dbHandler.DeleteExistence(id, logger)
 	if err != nil {

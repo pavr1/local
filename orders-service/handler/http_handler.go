@@ -53,7 +53,7 @@ func NewOrderHTTPHandler(dbHandler OrderDBHandlerInterface, cfg *config.Config, 
 // CreateOrder handles POST /orders
 func (h *OrderHTTPHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
 
 	var req models.CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -168,7 +168,7 @@ func (h *OrderHTTPHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 // UpdateOrder handles PUT /orders/{id}
 func (h *OrderHTTPHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
 
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
@@ -236,7 +236,7 @@ func (h *OrderHTTPHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 // CancelOrder handles DELETE /orders/{id}
 func (h *OrderHTTPHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
 
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])

@@ -25,6 +25,15 @@ const (
 	FATAL LogLevel = "FATAL"
 )
 
+const (
+	SERVICE_GATEWAY_SERVICE   = "gateway-service"
+	SERVICE_DATA_SERVICE      = "data-service"
+	SERVICE_INVENTORY_SERVICE = "inventory-service"
+	SERVICE_INVOICE_SERVICE   = "invoice-service"
+	SERVICE_ORDERS_SERVICE    = "orders-service"
+	SERVICE_SESSION_SERVICE   = "session-service"
+)
+
 // LogEntry represents a structured log entry
 type LogEntry struct {
 	Timestamp time.Time              `json:"timestamp"`
@@ -197,17 +206,19 @@ func (cl *CentralizedLogger) IsConnected() bool {
 }
 
 // GetRequestLogger creates a logger with request ID from context
-func GetRequestLogger(r *http.Request) *logrus.Entry {
+func GetRequestLogger(r *http.Request, service string) *logrus.Entry {
 	//pvillalobos - hardcoded value
 	logger := setupLogger("info") // Default log level
 
-	if requestID := r.Context().Value("request_id"); requestID != nil {
-		if id, ok := requestID.(string); ok {
-			return logger.WithField("request_id", id)
+	if logger != nil {
+		if requestID := r.Context().Value("request_id"); requestID != nil {
+			if id, ok := requestID.(string); ok {
+				return logger.WithField("request_id", id)
+			}
 		}
 	}
 	// Fallback to base logger if no request ID found
-	return logger.WithFields(logrus.Fields{})
+	return logger.WithFields(logrus.Fields{"service": service})
 }
 
 // SetupLogger configures the logrus logger with consistent formatting

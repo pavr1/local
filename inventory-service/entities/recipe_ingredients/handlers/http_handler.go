@@ -36,7 +36,7 @@ func NewRecipeIngredientHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeIn
 // CreateRecipeIngredient handles POST /recipe-ingredients
 func (h *RecipeIngredientHTTPHandler) CreateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateRecipeIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -74,7 +74,7 @@ func (h *RecipeIngredientHTTPHandler) CreateRecipeIngredient(w http.ResponseWrit
 // GetRecipeIngredient handles GET /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -166,7 +166,7 @@ func (h *RecipeIngredientHTTPHandler) ListRecipeIngredients(w http.ResponseWrite
 // UpdateRecipeIngredient handles PUT /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -226,7 +226,7 @@ func (h *RecipeIngredientHTTPHandler) UpdateRecipeIngredient(w http.ResponseWrit
 // DeleteRecipeIngredient handles DELETE /recipe-ingredients/{id}
 func (h *RecipeIngredientHTTPHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

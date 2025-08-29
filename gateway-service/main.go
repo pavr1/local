@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"gateway-service/middleware"
 	sessionmanager "gateway-service/middleware/session-manager"
-	"gateway-service/pkg/logger"
 	"io"
 	"log"
 	"net"
@@ -17,18 +16,13 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path"
-	"runtime"
-	"strconv"
+	sharedLogger "shared/logger"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
-
-// Global logger instance
-var logrusLogger *logrus.Logger
 
 // Response structs
 type Response struct {
@@ -43,46 +37,6 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
-// Initialize logger with structured format
-func initLogger() *logrus.Logger {
-	log := logrus.New()
-
-	// Set log level from environment or default to info
-	logLevel := os.Getenv("LOG_LEVEL")
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		log.SetLevel(logrus.DebugLevel)
-	case "info":
-		log.SetLevel(logrus.InfoLevel)
-	case "warn":
-		log.SetLevel(logrus.WarnLevel)
-	case "error":
-		log.SetLevel(logrus.ErrorLevel)
-	default:
-		log.SetLevel(logrus.InfoLevel)
-	}
-
-	// Set log format with line numbers and better formatting
-	log.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		ForceColors:     true,
-		DisableColors:   false,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
-
-	// Enable caller reporting for line numbers
-	log.SetReportCaller(true)
-
-	// Set output to stdout for containerized environments
-	log.SetOutput(os.Stdout)
-
-	return log
-}
-
 // Service configuration
 type Config struct {
 	Port                string
@@ -95,69 +49,38 @@ type Config struct {
 
 func main() {
 	// Initialize structured logger
-	logrusLogger = initLogger()
-	logrusLogger.Info("Gateway service starting - logger initialized")
+	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_GATEWAY_SERVICE)
+	logger.Info("Gateway service starting - logger initialized")
 
+	//pvillalobos - hardcoded values
 	// Bootstrap config with hardcoded data service URL for initial config loading
 	bootstrapConfig := Config{
 		DataServiceURL: "http://icecream_data_service:8086", // Hardcoded for bootstrap - Docker service name
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
 	}).Info("Created bootstrap configuration")
 
 	// Load full configuration from data service
-	logrusLogger.Info("Loading configuration from data service...")
-	config, err := loadConfigFromDataService(&bootstrapConfig, logrusLogger)
+	logger.Info("Loading configuration from data service...")
+	config, err := loadConfigFromDataService(&bootstrapConfig, logger.Logger)
 	if err != nil {
-		logrusLogger.WithError(err).Fatal("Failed to load configuration from data service")
+		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
-	// Initialize centralized logging
-	fluentdHost := getEnv("FLUENTD_HOST", "localhost")
-	fluentdPort := 24224
-	if port := getEnv("FLUENTD_PORT", ""); port != "" {
-		if p, err := strconv.Atoi(port); err == nil {
-			fluentdPort = p
-		}
-	}
-
-	// Initialize shared logger
-	centralLogger := logger.InitLogger("gateway-service", fluentdHost, fluentdPort)
-	defer centralLogger.Close()
-
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"port":              config.Port,
 		"session_service":   config.SessionServiceURL,
 		"orders_service":    config.OrdersServiceURL,
 		"inventory_service": config.InventoryServiceURL,
 		"invoice_service":   config.InvoiceServiceURL,
 		"data_service":      config.DataServiceURL,
-		"fluentd_host":      fluentdHost,
-		"fluentd_port":      fluentdPort,
 	}).Info("Gateway service starting")
 
-	centralLogger.Info("Gateway service starting", map[string]interface{}{
-		"port":              config.Port,
-		"session_service":   config.SessionServiceURL,
-		"orders_service":    config.OrdersServiceURL,
-		"inventory_service": config.InventoryServiceURL,
-		"invoice_service":   config.InvoiceServiceURL,
-		"data_service":      config.DataServiceURL,
-	})
-
-	logrusLogger.WithFields(logrus.Fields{
-		"invoice_service":   config.InvoiceServiceURL,
-		"session_service":   config.SessionServiceURL,
-		"orders_service":    config.OrdersServiceURL,
-		"inventory_service": config.InventoryServiceURL,
-		"data_service":      config.DataServiceURL,
-	}).Info("Gateway service configuration loaded")
-
 	// Create session manager for authentication with logger
-	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logrusLogger)
-	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logrusLogger)
+	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logger.Logger)
+	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger.Logger)
 
 	r := mux.NewRouter()
 
@@ -171,7 +94,7 @@ func main() {
 	v1 := api.PathPrefix("/v1").Subrouter()
 
 	// Public health check endpoint
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(config, logrusLogger)).Methods("GET")
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(config)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -185,61 +108,61 @@ func main() {
 	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login", logrusLogger)).Methods("POST")
-	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate", logrusLogger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate", logger.Logger)).Methods("POST")
 	// Protected session endpoints - session service handles authentication
-	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout", logrusLogger)).Methods("POST")
+	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout", logger.Logger)).Methods("POST")
 
 	// Public health endpoints (no authentication required)
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health", logrusLogger)).Methods("GET")
-	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health", logrusLogger)).Methods("GET")
-	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health", logrusLogger)).Methods("GET")
-	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logrusLogger)).Methods("GET")
-	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.DataServiceURL, "/api/v1/data/p/health", logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.DataServiceURL, "/api/v1/data/p/health", logger.Logger)).Methods("GET")
 
 	// Public image serving endpoints (no authentication required) - MUST be defined BEFORE authenticated routes
-	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}/{filename}", logrusLogger)).Methods("GET")
-	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}", logrusLogger)).Methods("POST")
+	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}/{filename}", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}", logger.Logger)).Methods("POST")
 
 	// Public logs endpoints (no authentication required) - for debugging
-	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logrusLogger)).Methods("GET")
+	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logger.Logger)).Methods("GET")
 
 	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
-	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders", logrusLogger))
+	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders", logger.Logger))
 	ordersRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Inventory service endpoints - with authentication middleware
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory", logrusLogger))
+	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory", logger.Logger))
 	inventoryRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Invoice service routes - with authentication middleware
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
-	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1", logrusLogger))
+	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1", logger.Logger))
 	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
 
 	// Settings endpoints (authenticated)
-	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logrusLogger)).Methods("GET")
-	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-service", logrusLogger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-key", logrusLogger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logrusLogger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logrusLogger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logger.Logger)).Methods("GET")
+	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-service", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-key", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logger.Logger)).Methods("POST")
 
 	// Other data service endpoints (authenticated)
-	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logrusLogger))
+	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logger.Logger))
 
 	// Apply authentication middleware to data router
 	dataRouter.Use(sessionMiddleware.ValidateSession)
 
 	// Create CORS middleware
-	corsMiddleware := middleware.NewCORSMiddleware(logrusLogger)
+	corsMiddleware := middleware.NewCORSMiddleware(logger.Logger)
 
 	// Apply request ID middleware to main router (first)
-	r.Use(middleware.RequestIDMiddleware(logrusLogger))
+	r.Use(middleware.RequestIDMiddleware(logger.Logger))
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware.HandleCORS)
@@ -253,87 +176,87 @@ func main() {
 	// UI is now served by its own service on port 3000
 	// Static file serving removed - UI runs independently
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"port": config.Port,
 		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
 	}).Info("Gateway service started successfully")
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"port": config.Port,
 		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
 	}).Info("🚀 Gateway Service with Session Management starting on http://localhost:8082")
-	logrusLogger.Info("📡 API available at http://localhost:8082/api")
-	logrusLogger.Info("")
-	logrusLogger.Info("🔐 SESSION MANAGEMENT ENDPOINTS:")
-	logrusLogger.Info("   📂 Public:")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("📡 API available at http://localhost:8082/api")
+	logger.Logger.Info("")
+	logger.Logger.Info("🔐 SESSION MANAGEMENT ENDPOINTS:")
+	logger.Logger.Info("   📂 Public:")
+	logger.Logger.WithFields(logrus.Fields{
 		"session_service_url": config.SessionServiceURL,
 	}).Info("      POST /api/v1/sessions/p/login    → " + config.SessionServiceURL + "/api/v1/sessions/p/login (+ session creation)")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"session_service_url": config.SessionServiceURL,
 	}).Info("      POST /api/v1/sessions/p/validate → " + config.SessionServiceURL + "/api/v1/sessions/p/validate (+ session validation)")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"session_service_url": config.SessionServiceURL,
 	}).Info("      GET  /api/v1/sessions/p/health   → " + config.SessionServiceURL + "/api/v1/sessions/p/health")
-	logrusLogger.Info("   🔒 Protected (require valid session):")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("   🔒 Protected (require valid session):")
+	logger.Logger.WithFields(logrus.Fields{
 		"session_service_url": config.SessionServiceURL,
 	}).Info("      POST /api/v1/sessions/logout     → " + config.SessionServiceURL + "/api/v1/sessions/logout (+ session revocation)")
 
-	logrusLogger.Info("")
-	logrusLogger.Info("🛒 BUSINESS SERVICE ENDPOINTS:")
+	logger.Logger.Info("")
+	logger.Logger.Info("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"orders_service_url": config.OrdersServiceURL,
 	}).Info("      GET  /api/v1/orders/p/health       → " + config.OrdersServiceURL)
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"inventory_service_url": config.InventoryServiceURL,
 	}).Info("      GET  /api/v1/inventory/p/health    → " + config.InventoryServiceURL)
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"invoice_service_url": config.InvoiceServiceURL,
 	}).Info("      GET  /api/v1/invoices/p/health     → " + config.InvoiceServiceURL)
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"data_service_url": config.DataServiceURL,
 	}).Info("      GET  /api/v1/data/p/health         → " + config.DataServiceURL)
-	logrusLogger.Info("   🔒 Protected (require valid session):")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("   🔒 Protected (require valid session):")
+	logger.Logger.WithFields(logrus.Fields{
 		"orders_service_url": config.OrdersServiceURL,
 	}).Info("      ALL  /api/v1/orders/*          → " + config.OrdersServiceURL)
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"inventory_service_url": config.InventoryServiceURL,
 	}).Info("      ALL  /api/v1/inventory/*       → " + config.InventoryServiceURL)
-	logrusLogger.Info("           ├─ /suppliers/*          → Suppliers management")
-	logrusLogger.Info("           ├─ /ingredients/*        → [Future] Ingredients management")
-	logrusLogger.Info("           └─ /existences/*         → [Future] Stock management")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("           ├─ /suppliers/*          → Suppliers management")
+	logger.Logger.Info("           ├─ /ingredients/*        → [Future] Ingredients management")
+	logger.Logger.Info("           └─ /existences/*         → [Future] Stock management")
+	logger.Logger.WithFields(logrus.Fields{
 		"invoice_service_url": config.InvoiceServiceURL,
 	}).Info("      ALL  /api/v1/invoices/*        → " + config.InvoiceServiceURL)
-	logrusLogger.Info("           ├─ /invoices/*           → Invoice management")
-	logrusLogger.Info("           └─ /invoices/{id}/details  → Invoice details management")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("           ├─ /invoices/*           → Invoice management")
+	logger.Logger.Info("           └─ /invoices/{id}/details  → Invoice details management")
+	logger.Logger.WithFields(logrus.Fields{
 		"invoice_service_url": config.InvoiceServiceURL,
 	}).Info("      ALL  /api/v1/expense-categories/* → " + config.InvoiceServiceURL)
-	logrusLogger.Info("           └─ /expense-categories/*  → Expense categories management")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("           └─ /expense-categories/*  → Expense categories management")
+	logger.Logger.WithFields(logrus.Fields{
 		"data_service_url": config.DataServiceURL,
 	}).Info("      ALL  /api/v1/data/*            → " + config.DataServiceURL)
-	logrusLogger.Info("           ├─ /settings/by-service   → Get settings by service")
-	logrusLogger.Info("           ├─ /settings/by-name      → Get settings by name")
-	logrusLogger.Info("           └─ /settings/grouped      → Get settings grouped by service")
-	logrusLogger.Info("   📋 Service Management:")
-	logrusLogger.Info("      GET  /api/v1/logs/{service}     → Service logs viewer")
-	logrusLogger.Info("")
-	logrusLogger.Info("📋 SESSION MANAGEMENT:")
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.Info("           ├─ /settings/by-service   → Get settings by service")
+	logger.Logger.Info("           ├─ /settings/by-name      → Get settings by name")
+	logger.Logger.Info("           └─ /settings/grouped      → Get settings grouped by service")
+	logger.Logger.Info("   📋 Service Management:")
+	logger.Logger.Info("      GET  /api/v1/logs/{service}     → Service logs viewer")
+	logger.Logger.Info("")
+	logger.Logger.Info("📋 SESSION MANAGEMENT:")
+	logger.Logger.WithFields(logrus.Fields{
 		"session_service_url": config.SessionServiceURL,
 	}).Info("   🔒 /api/v1/sessions/*        → " + config.SessionServiceURL + " (session validated)")
-	logrusLogger.Info("")
-	logrusLogger.Info("🔐 SESSION SECURITY FEATURES:")
-	logrusLogger.Info("   ✅ Server-side token validation")
-	logrusLogger.Info("   ✅ External token prevention")
-	logrusLogger.Info("   ✅ Automatic token refresh")
-	logrusLogger.Info("   ✅ Session revocation on logout")
-	logrusLogger.Info("   ✅ User context injection")
+	logger.Logger.Info("")
+	logger.Logger.Info("🔐 SESSION SECURITY FEATURES:")
+	logger.Logger.Info("   ✅ Server-side token validation")
+	logger.Logger.Info("   ✅ External token prevention")
+	logger.Logger.Info("   ✅ Automatic token refresh")
+	logger.Logger.Info("   ✅ Session revocation on logout")
+	logger.Logger.Info("   ✅ User context injection")
 
 	log.Fatal(http.ListenAndServe(":8082", r))
 }
@@ -536,16 +459,18 @@ func generateRequestID() string {
 }
 
 // createHealthHandler creates a health handler with config
-func createHealthHandler(config *Config, logger *logrus.Logger) http.HandlerFunc {
+func createHealthHandler(config *Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
+
 		// Check all business services that appear on the dashboard + data service for UI monitoring
 		gatewayHealthy := true // Gateway is healthy if it's responding to this request
-		sessionHealthy := checkServiceHealth(config.SessionServiceURL+"/api/v1/sessions/p/health", logger)
-		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger)
-		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger)
-		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger)
+		sessionHealthy := checkServiceHealth(config.SessionServiceURL+"/api/v1/sessions/p/health", logger.Logger)
+		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger.Logger)
+		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger.Logger)
+		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger.Logger)
 
-		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger)
+		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger.Logger)
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
 			status = "degraded"
@@ -651,7 +576,7 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 }
 
 // isServiceRunning checks if a service is currently running by checking its port
-func isServiceRunning(serviceName string) bool {
+func isServiceRunning(serviceName string, logger *logrus.Logger) bool {
 	// Map service names to their ports
 	//pvillalobos - hardcoded values
 	servicePorts := map[string]string{
@@ -665,7 +590,7 @@ func isServiceRunning(serviceName string) bool {
 
 	port, exists := servicePorts[serviceName]
 	if !exists {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Warn("Unknown service, cannot check running status")
 		return false
@@ -679,7 +604,7 @@ func isServiceRunning(serviceName string) bool {
 	}
 	defer conn.Close()
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"service_name": serviceName,
 		"port":         port,
 	}).Info("Service is running")
@@ -688,6 +613,7 @@ func isServiceRunning(serviceName string) bool {
 
 // Service management handlers
 func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 	vars := mux.Vars(r)
 	serviceName := vars["service"]
 
@@ -696,7 +622,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		logrusLogger.WithError(err).Error("Failed to decode request body")
+		logger.Logger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -706,19 +632,19 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"service_name": serviceName,
 		"environment":  environment,
 	}).Info("Starting service")
 
 	// Check if service is already running
-	isRunning := isServiceRunning(serviceName)
+	isRunning := isServiceRunning(serviceName, logger.Logger)
 	var finalOutput strings.Builder
 	var finalSuccess bool = true
 	var finalError error
 
 	if isRunning {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Warn("Service is already running, stopping it first")
 
@@ -726,11 +652,11 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Stop the service first
 		stopTarget := fmt.Sprintf("stop-%s", environment)
-		stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+		stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget, logger.Logger)
 		finalOutput.WriteString(fmt.Sprintf("Stop output: %s\n", stopOutput))
 
 		if !stopSuccess || stopErr != nil {
-			logrusLogger.WithError(stopErr).WithFields(logrus.Fields{
+			logger.Logger.WithError(stopErr).WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"stop_output":  stopOutput,
 			}).Error("Failed to stop running service")
@@ -738,7 +664,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 			finalSuccess = false
 			finalError = fmt.Errorf("failed to stop running service: %v", stopErr)
 		} else {
-			logrusLogger.WithFields(logrus.Fields{
+			logger.Logger.WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"stop_output":  stopOutput,
 			}).Info("Successfully stopped running service")
@@ -750,7 +676,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 	// Now start the service
 	if finalSuccess {
 		makeTarget := fmt.Sprintf("start-%s", environment)
-		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, makeTarget)
+		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, makeTarget, logger.Logger)
 		finalOutput.WriteString(fmt.Sprintf("Start output: %s", startOutput))
 
 		if !startSuccess || startErr != nil {
@@ -761,7 +687,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 	message := fmt.Sprintf("Service %s start command executed", serviceName)
 	if isRunning {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Info("Service was restarted (was already running)")
 		message = fmt.Sprintf("Service %s was restarted (was already running)", serviceName)
@@ -778,22 +704,22 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 
 	if finalError != nil {
 		response["error"] = finalError.Error()
-		logrusLogger.WithError(finalError).WithFields(logrus.Fields{
+		logger.Logger.WithError(finalError).WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Error("Failed to start service")
 	} else {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 			"environment":  environment,
 		}).Info("Successfully executed start command for service")
 
 		// If data-service was successfully started, automatically restart all dependent services
 		if serviceName == "data-service" && finalSuccess {
-			logrusLogger.WithFields(logrus.Fields{
+			logger.Logger.WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"environment":  environment,
 			}).Info("Data service started successfully, auto-restarting dependent services")
-			go restartDependentServices(environment)
+			go restartDependentServices(environment, logger.Logger)
 		}
 	}
 
@@ -807,7 +733,7 @@ func serviceStartHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // restartDependentServices automatically restarts all services that depend on the database
-func restartDependentServices(environment string) {
+func restartDependentServices(environment string, logger *logrus.Logger) {
 	// Services that depend on data-service (in dependency order)
 	dependentServices := []string{
 		"session-service",
@@ -817,32 +743,32 @@ func restartDependentServices(environment string) {
 		"gateway-service", // Gateway last to ensure all other services are ready
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"environment": environment,
 		"services":    dependentServices,
 	}).Info("Starting automatic restart of dependent services")
 
 	for _, serviceName := range dependentServices {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 			"environment":  environment,
 		}).Info("Auto-restarting service")
 
 		// Check if service is running before attempting restart
-		if isServiceRunning(serviceName) {
+		if isServiceRunning(serviceName, logger) {
 			// Stop the service first
 			stopTarget := fmt.Sprintf("stop-%s", environment)
-			stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+			stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget, logger)
 
 			if !stopSuccess || stopErr != nil {
-				logrusLogger.WithError(stopErr).WithFields(logrus.Fields{
+				logger.WithError(stopErr).WithFields(logrus.Fields{
 					"service_name": serviceName,
 					"stop_output":  stopOutput,
 				}).Error("Failed to stop service during auto-restart")
 				continue // Skip to next service
 			}
 
-			logrusLogger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"stop_output":  stopOutput,
 			}).Info("Stopped service during auto-restart")
@@ -853,15 +779,15 @@ func restartDependentServices(environment string) {
 
 		// Start the service
 		startTarget := fmt.Sprintf("start-%s", environment)
-		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget)
+		startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget, logger)
 
 		if !startSuccess || startErr != nil {
-			logrusLogger.WithError(startErr).WithFields(logrus.Fields{
+			logger.WithError(startErr).WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"start_output": startOutput,
 			}).Error("Failed to start service during auto-restart")
 		} else {
-			logrusLogger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"service_name": serviceName,
 				"start_output": startOutput,
 			}).Info("Successfully auto-restarted service")
@@ -871,13 +797,14 @@ func restartDependentServices(environment string) {
 		time.Sleep(3 * time.Second)
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"environment": environment,
 		"services":    dependentServices,
 	}).Info("Completed automatic restart of dependent services")
 }
 
 func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 	vars := mux.Vars(r)
 	serviceName := vars["service"]
 
@@ -886,7 +813,7 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		logrusLogger.WithError(err).Error("Failed to decode request body")
+		logger.Logger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -896,19 +823,19 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"service_name": serviceName,
 		"environment":  environment,
 	}).Info("Stopping service")
 
 	// Check if service is already stopped
-	isRunning := isServiceRunning(serviceName)
+	isRunning := isServiceRunning(serviceName, logger.Logger)
 	var success bool = true
 	var output string
 	var err error
 
 	if !isRunning {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Info("Service is already stopped, ignoring stop request")
 		output = fmt.Sprintf("Service %s was already stopped", serviceName)
@@ -917,12 +844,12 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		// Execute make command based on environment
 		makeTarget := fmt.Sprintf("stop-%s", environment)
-		success, output, err = executeServiceCommand(serviceName, makeTarget)
+		success, output, err = executeServiceCommand(serviceName, makeTarget, logger.Logger)
 	}
 
 	message := fmt.Sprintf("Service %s stop command executed", serviceName)
 	if !isRunning {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Info("Service was already stopped")
 		message = fmt.Sprintf("Service %s was already stopped", serviceName)
@@ -939,11 +866,11 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response["error"] = err.Error()
-		logrusLogger.WithError(err).WithFields(logrus.Fields{
+		logger.Logger.WithError(err).WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Error("Failed to stop service")
 	} else {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Info("Successfully executed stop command for service")
 	}
@@ -958,6 +885,7 @@ func serviceStopHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 	vars := mux.Vars(r)
 	serviceName := vars["service"]
 
@@ -966,7 +894,7 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		logrusLogger.WithError(err).Error("Failed to decode request body")
+		logger.Logger.WithError(err).Error("Failed to decode request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -976,7 +904,7 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 		environment = "locally" // Default
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.Logger.WithFields(logrus.Fields{
 		"service_name": serviceName,
 		"environment":  environment,
 	}).Info("Restarting service")
@@ -986,13 +914,13 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 	startTarget := fmt.Sprintf("start-%s", environment)
 
 	// First stop the service
-	stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget)
+	stopSuccess, stopOutput, stopErr := executeServiceCommand(serviceName, stopTarget, logger.Logger)
 
 	// Wait a moment for graceful shutdown
 	time.Sleep(2 * time.Second)
 
 	// Then start the service
-	startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget)
+	startSuccess, startOutput, startErr := executeServiceCommand(serviceName, startTarget, logger.Logger)
 
 	success := stopSuccess && startSuccess
 	output := fmt.Sprintf("Stop output: %s\nStart output: %s", stopOutput, startOutput)
@@ -1015,14 +943,14 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 			errMsg += fmt.Sprintf("Start error: %v", startErr)
 		}
 		response["error"] = errMsg
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 			"stop_error":   stopErr,
 			"start_error":  startErr,
 			"error_msg":    errMsg,
 		}).Error("Failed to restart service")
 	} else {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.Logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 			"environment":  environment,
 		}).Info("Successfully executed restart command for service")
@@ -1038,7 +966,7 @@ func serviceRestartHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Execute service command using make in the appropriate directory
-func executeServiceCommand(serviceName, makeTarget string) (bool, string, error) {
+func executeServiceCommand(serviceName, makeTarget string, logger *logrus.Logger) (bool, string, error) {
 	// Map service names to directories
 	serviceDirectories := map[string]string{
 		"data-service":      "data-service",
@@ -1051,7 +979,7 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 
 	serviceDir, exists := serviceDirectories[serviceName]
 	if !exists {
-		logrusLogger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"service_name": serviceName,
 		}).Error("Unknown service")
 		return false, "", fmt.Errorf("unknown service: %s", serviceName)
@@ -1061,7 +989,7 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 	cmd := exec.Command("make", makeTarget)
 	cmd.Dir = fmt.Sprintf("../%s", serviceDir) // Relative to gateway-service directory
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"service_dir": serviceDir,
 		"make_target": makeTarget,
 		"command":     fmt.Sprintf("cd %s && make %s", serviceDir, makeTarget),
@@ -1071,7 +999,7 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		logrusLogger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"service_dir": serviceDir,
 			"make_target": makeTarget,
 			"output":      string(output),
@@ -1079,7 +1007,7 @@ func executeServiceCommand(serviceName, makeTarget string) (bool, string, error)
 		return false, string(output), err
 	}
 
-	logrusLogger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"service_dir": serviceDir,
 		"make_target": makeTarget,
 		"output":      string(output),
@@ -1112,6 +1040,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 		"settings_count": len(settings),
 	}).Info("Successfully retrieved settings from data service")
 
+	//pvillalobos - hardcoded values
 	// Create config with defaults
 	config := &Config{
 		Port:                "8082",
@@ -1179,6 +1108,7 @@ func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Se
 		"url":          dataServiceURL + "/api/v1/data/settings/by-service",
 	}).Debug("Making HTTP request to data service")
 
+	//pvillalobos - hardcoded values
 	// Make request to data service
 	resp, err := client.Post(
 		dataServiceURL+"/api/v1/data/settings/by-service",

@@ -51,7 +51,7 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 // CreateSupplier handles POST /suppliers
 func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateSupplierRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -97,7 +97,7 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 // GetSupplier handles GET /suppliers/{id}
 func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -151,7 +151,7 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 // ListSuppliers handles GET /suppliers
 func (h *HttpHandler) ListSuppliers(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	// TODO: Parse query parameters for pagination when needed
 	// limit := r.URL.Query().Get("limit")
@@ -182,7 +182,7 @@ func (h *HttpHandler) ListSuppliers(w http.ResponseWriter, r *http.Request) {
 // UpdateSupplier handles PUT /suppliers/{id}
 func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -249,7 +249,7 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 // DeleteSupplier handles DELETE /suppliers/{id}
 func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

@@ -34,7 +34,7 @@ func NewHTTPHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HTTPHa
 // CreateSession handles session creation requests
 func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
 
 	// Parse request
 	var req models.SessionCreateRequest
@@ -90,7 +90,7 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 // LogoutSession handles session logout requests
 func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
 
 	// Parse request body
 	var req models.SessionLogoutRequest

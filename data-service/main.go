@@ -87,7 +87,7 @@ func main() {
 	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
 
 	// Create settings handler
-	settingsHandler, err := settings.NewSettingsHandler(settingsService, logger)
+	settingsHandler, err := settings.NewSettingsHandler(settingsService)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize settings handler")
 	}

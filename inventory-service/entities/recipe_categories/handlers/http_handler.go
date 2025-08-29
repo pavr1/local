@@ -38,7 +38,7 @@ func NewRecipeCategoryHTTPHandler(db *sql.DB, logger *logrus.Logger) *RecipeCate
 // CreateRecipeCategory handles POST /recipe-categories
 func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateRecipeCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -84,7 +84,7 @@ func (h *RecipeCategoryHTTPHandler) CreateRecipeCategory(w http.ResponseWriter, 
 // GetRecipeCategory handles GET /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) GetRecipeCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -179,7 +179,7 @@ func (h *RecipeCategoryHTTPHandler) ListRecipeCategories(w http.ResponseWriter, 
 // UpdateRecipeCategory handles PUT /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -244,7 +244,7 @@ func (h *RecipeCategoryHTTPHandler) UpdateRecipeCategory(w http.ResponseWriter, 
 // DeleteRecipeCategory handles DELETE /recipe-categories/{id}
 func (h *RecipeCategoryHTTPHandler) DeleteRecipeCategory(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]

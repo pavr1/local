@@ -30,7 +30,7 @@ func NewSessionMiddleware(sessionManager *sessionmanager.SessionManager, logger 
 func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := sharedLogger.GetRequestLogger(r)
+		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 
 		logger.WithFields(logrus.Fields{
 			"method": r.Method,
@@ -109,7 +109,7 @@ func (sm *SessionMiddleware) ValidateSession(next http.Handler) http.Handler {
 func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := sharedLogger.GetRequestLogger(r)
+		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 
 		// Read the request body
 		body, err := io.ReadAll(r.Body)
@@ -188,7 +188,7 @@ func (sm *SessionMiddleware) LoginSession(sessionServiceURL string) http.Handler
 func (sm *SessionMiddleware) LogoutSession(sessionServiceURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Get logger with request ID
-		logger := sharedLogger.GetRequestLogger(r)
+		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 
 		// Extract session ID from request
 		sessionId := extractSessionIdFromHeader(r)

@@ -37,7 +37,7 @@ func NewRunoutIngredientHTTPHandler(db *sql.DB, logger *logrus.Logger) *RunoutIn
 // CreateRunoutIngredient handles POST /runout-ingredients
 func (h *RunoutIngredientHTTPHandler) CreateRunoutIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	var req models.CreateRunoutIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -75,7 +75,7 @@ func (h *RunoutIngredientHTTPHandler) CreateRunoutIngredient(w http.ResponseWrit
 // GetRunoutIngredient handles GET /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) GetRunoutIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -174,7 +174,7 @@ func (h *RunoutIngredientHTTPHandler) ListRunoutIngredients(w http.ResponseWrite
 // UpdateRunoutIngredient handles PUT /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) UpdateRunoutIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -231,7 +231,7 @@ func (h *RunoutIngredientHTTPHandler) UpdateRunoutIngredient(w http.ResponseWrit
 // DeleteRunoutIngredient handles DELETE /runout-ingredients/{id}
 func (h *RunoutIngredientHTTPHandler) DeleteRunoutIngredient(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r)
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
 	vars := mux.Vars(r)
 	id := vars["id"]
