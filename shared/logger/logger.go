@@ -210,7 +210,7 @@ func GetRequestLogger(r *http.Request, service string) *logrus.Entry {
 	//pvillalobos - hardcoded value
 	logger := setupLogger("info") // Default log level
 
-	if logger != nil {
+	if r != nil {
 		if requestID := r.Context().Value("request_id"); requestID != nil {
 			if id, ok := requestID.(string); ok {
 				return logger.WithField("request_id", id)

@@ -83,6 +83,9 @@ func main() {
 
 	r := mux.NewRouter()
 
+	// Apply request ID middleware to main router (first)
+	r.Use(middleware.RequestIDMiddleware())
+
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 
@@ -159,9 +162,6 @@ func main() {
 
 	// Create CORS middleware
 	corsMiddleware := middleware.NewCORSMiddleware()
-
-	// Apply request ID middleware to main router (first)
-	r.Use(middleware.RequestIDMiddleware())
 
 	// Apply CORS middleware to main router - gateway is single source of CORS
 	r.Use(corsMiddleware.HandleCORS)
