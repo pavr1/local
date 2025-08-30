@@ -14,7 +14,10 @@ func InjectGatewayHeadersMiddleware(serviceName string) func(http.Handler) http.
 			logger := sharedLogger.GetRequestLogger(r, serviceName)
 
 			// Add gateway headers
-			r.Header.Set("Content-Type", "application/json")
+			// Only set Content-Type if not already set (preserve multipart/form-data for file uploads)
+			if r.Header.Get("Content-Type") == "" {
+				r.Header.Set("Content-Type", "application/json")
+			}
 			r.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 			r.Header.Set("X-Gateway-Session-Managed", "true")
 

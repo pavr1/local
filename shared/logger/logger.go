@@ -245,7 +245,12 @@ func setupLogger(logLevel string) *logrus.Logger {
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
 			// Get the relative path from the project root
 			// This will show the full relative path instead of just the filename
-			return "", fmt.Sprintf("%s:%d", f.File, f.Line)
+			// Extract the relative path by finding the project root
+			filePath := f.File
+			if idx := findProjectRoot(filePath); idx != -1 {
+				filePath = filePath[idx:]
+			}
+			return "", fmt.Sprintf("%s:%d", filePath, f.Line)
 		},
 	})
 
@@ -253,4 +258,39 @@ func setupLogger(logLevel string) *logrus.Logger {
 	logger.SetReportCaller(true)
 
 	return logger
+}
+
+// findProjectRoot finds the index of the project root in the file path
+// It looks for common project directory names to identify the root
+func findProjectRoot(filePath string) int {
+	// Common project root indicators
+	indicators := []string{
+		"/gateway-service/",
+		"/data-service/",
+		"/inventory-service/",
+		"/invoice-service/",
+		"/orders-service/",
+		"/session-service/",
+		"/ui/",
+		"/shared/",
+	}
+
+	for _, indicator := range indicators {
+		if idx := findLastIndex(filePath, indicator); idx != -1 {
+			return idx
+		}
+	}
+
+	return -1
+}
+
+// findLastIndex finds the last occurrence of a substring in a string
+func findLastIndex(s, substr string) int {
+	lastIdx := -1
+	for i := 0; i < len(s)-len(substr)+1; i++ {
+		if s[i:i+len(substr)] == substr {
+			lastIdx = i
+		}
+	}
+	return lastIdx
 }
