@@ -204,20 +204,16 @@ func (cl *CentralizedLogger) IsConnected() bool {
 	return cl.connected
 }
 
-// GetRequestLogger creates a logger with request ID from context
+// GetRequestLogger creates a logger with request ID from request header
 func GetRequestLogger(r *http.Request, service string) *logrus.Entry {
 	//pvillalobos - hardcoded value
-	logger := setupLogger("info") // Default log level
+	logger := setupLogger("info")
 
 	if r != nil {
-		if requestID := r.Context().Value("request_id"); requestID != nil {
-			if id, ok := requestID.(string); ok {
-				return logger.WithField("request_id", id)
-			} else {
-				logger.WithFields(logrus.Fields{"service": service}).Info("Invalid X-Request-ID format")
-			}
+		if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
+			return logger.WithField("request_id", requestID)
 		} else {
-			logger.WithFields(logrus.Fields{"service": service}).Info("No X-Request-ID found in context")
+			logger.WithFields(logrus.Fields{"service": service}).Info("No X-Request-ID found in header")
 		}
 	}
 

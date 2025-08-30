@@ -461,7 +461,7 @@ func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, uni
 	}
 
 	// Add gateway headers for internal service communication
-	req.Header.Set("X-Gateway-Service", "invoice-service")
+	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
 
 	resp, err := client.Do(req)
