@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"runtime"
 	"time"
 
@@ -244,8 +243,9 @@ func setupLogger(logLevel string) *logrus.Logger {
 		ForceColors:     true,
 		DisableColors:   false,
 		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf("%s:%d", filename, f.Line)
+			// Get the relative path from the project root
+			// This will show the full relative path instead of just the filename
+			return "", fmt.Sprintf("%s:%d", f.File, f.Line)
 		},
 	})
 
