@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"session-service/config"
 	"session-service/entities/sessions/handlers"
-	"session-service/middleware"
 	sharedLogger "shared/logger"
 	sharedMiddleware "shared/middlewares"
 	"time"
@@ -16,10 +15,8 @@ import (
 
 // MainHTTPHandler handles all HTTP requests for the session service
 type MainHTTPHandler struct {
-	sessionsHandler   *handlers.HTTPHandler
-	gatewayMiddleware *middleware.GatewayMiddleware
-	logger            *logrus.Logger
-	dataServiceURL    string // For testing - allows mocking the data service URL
+	sessionsHandler *handlers.HTTPHandler
+	logger          *logrus.Logger
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
@@ -36,13 +33,9 @@ func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHan
 	// Create HTTP handler
 	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 
-	// Create gateway middleware
-	gatewayMiddleware := middleware.NewGatewayMiddleware()
-
 	return &MainHTTPHandler{
-		sessionsHandler:   sessionsHandler,
-		gatewayMiddleware: gatewayMiddleware,
-		logger:            logger,
+		sessionsHandler: sessionsHandler,
+		logger:          logger,
 	}, nil
 }
 
@@ -59,7 +52,8 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	protectedRouter.Use(h.gatewayMiddleware.ValidateGateway)
+	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_SESSION_SERVICE))
+	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_SESSION_SERVICE, "/api/v1/sessions/p/health"))
 	protectedRouter.HandleFunc("/logout", h.sessionsHandler.LogoutSession).Methods("POST")
 }
 

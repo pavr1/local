@@ -113,8 +113,10 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 // setupRouter configures the HTTP router with all routes
 func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
-	router.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE))
-	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
+
+	//pvillalobos - use this public/protected router pattern for all services
+	// publicRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
+	// publicRouter.HandleFunc("/p/health", h.HealthCheck).Methods("GET")
 
 	// Health check endpoint
 	v1 := router.PathPrefix("/api/v1").Subrouter()
@@ -159,7 +161,17 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 
 	// Invoices routes (includes invoice details management)
 	invoicesRouter := api.PathPrefix("/invoices").Subrouter()
+	invoicesRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE))
+	invoicesRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
 	invoicesHandler := mainHandler.GetInvoicesHandler()
+
+	// Main invoice operations (MUST be after specific routes)
+	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoice).Methods("POST")
+	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
+	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
 
 	// Expense Categories routes - under invoices (MUST be before generic {id} routes)
 	expenseCategoriesRouter := invoicesRouter.PathPrefix("/expense-categories").Subrouter()
@@ -171,16 +183,6 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.GetExpenseCategory).Methods("GET")
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.UpdateExpenseCategory).Methods("PUT")
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.DeleteExpenseCategory).Methods("DELETE")
-
-	// Main invoice operations (MUST be after specific routes)
-	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoice).Methods("POST")
-	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
-	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
-
-	// Invoice details are managed through the main invoice APIs
 
 	logger.Info("HTTP router configured successfully")
 	return router

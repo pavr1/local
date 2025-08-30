@@ -105,14 +105,6 @@ func New(config *Config, logger *logrus.Logger) DatabaseHandler {
 		config = DefaultConfig()
 	}
 
-	if logger == nil {
-		logger = logrus.New()
-		logger.SetLevel(logrus.InfoLevel)
-		logger.SetFormatter(&logrus.JSONFormatter{
-			TimestampFormat: time.RFC3339,
-		})
-	}
-
 	return &dbHandler{
 		config:    config,
 		logger:    logger,

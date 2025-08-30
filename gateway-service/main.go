@@ -40,7 +40,7 @@ type HealthResponse struct {
 
 // Service configuration
 type Config struct {
-	Port                string
+	GatewayServiceURL   string
 	SessionServiceURL   string
 	OrdersServiceURL    string
 	InventoryServiceURL string
@@ -70,7 +70,7 @@ func main() {
 	}
 
 	logger.WithFields(logrus.Fields{
-		"port":              config.Port,
+		"gateway_service":   config.GatewayServiceURL,
 		"session_service":   config.SessionServiceURL,
 		"orders_service":    config.OrdersServiceURL,
 		"inventory_service": config.InventoryServiceURL,
@@ -178,14 +178,12 @@ func main() {
 	// Static file serving removed - UI runs independently
 
 	logger.Logger.WithFields(logrus.Fields{
-		"port": config.Port,
-		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
+		"url": config.GatewayServiceURL,
 	}).Info("Gateway service started successfully")
 
 	logger.Logger.WithFields(logrus.Fields{
-		"port": config.Port,
-		"url":  fmt.Sprintf("http://localhost:%s", config.Port),
-	}).Info("🚀 Gateway Service with Session Management starting on http://localhost:8082")
+		"url": config.GatewayServiceURL,
+	}).Info("🚀 Gateway Service with Session Management starting on " + config.GatewayServiceURL)
 	logger.Logger.Info("📡 API available at http://localhost:8082/api")
 	logger.Logger.Info("")
 	logger.Logger.Info("🔐 SESSION MANAGEMENT ENDPOINTS:")
@@ -465,13 +463,14 @@ func createHealthHandler(config *Config) http.HandlerFunc {
 		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 
 		// Check all business services that appear on the dashboard + data service for UI monitoring
+		// Use gateway's own proxy endpoints instead of direct service calls
 		gatewayHealthy := true // Gateway is healthy if it's responding to this request
-		sessionHealthy := checkServiceHealth(config.SessionServiceURL+"/api/v1/sessions/p/health", logger.Logger)
-		ordersHealthy := checkServiceHealth(config.OrdersServiceURL+"/api/v1/orders/p/health", logger.Logger)
-		inventoryHealthy := checkServiceHealth(config.InventoryServiceURL+"/api/v1/inventory/p/health", logger.Logger)
-		invoiceHealthy := checkServiceHealth(config.InvoiceServiceURL+"/api/v1/invoices/p/health", logger.Logger)
+		sessionHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/sessions/p/health", logger.Logger)
+		ordersHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/orders/p/health", logger.Logger)
+		inventoryHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/inventory/p/health", logger.Logger)
+		invoiceHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/invoices/p/health", logger.Logger)
 
-		dataHealthy := checkServiceHealth(config.DataServiceURL+"/api/v1/data/p/health", logger.Logger)
+		dataHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/data/p/health", logger.Logger)
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
 			status = "degraded"
@@ -549,6 +548,10 @@ func checkServiceHealth(healthURL string, logger *logrus.Logger) bool {
 	// Add required gateway headers
 	req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 	req.Header.Set("X-Gateway-Session-Managed", "true")
+	// Add user context headers for internal service communication
+	req.Header.Set("X-User-ID", "system")
+	req.Header.Set("X-Username", "system")
+	req.Header.Set("X-User-Role", "admin")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -1040,7 +1043,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 	//pvillalobos - hardcoded values
 	// Create config with defaults
 	config := &Config{
-		Port:                "8082",
+		GatewayServiceURL:   "http://localhost:8082",
 		SessionServiceURL:   "http://localhost:8081",
 		OrdersServiceURL:    "http://localhost:8083",
 		InventoryServiceURL: "http://localhost:8084",
@@ -1049,7 +1052,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 	}
 
 	logger.WithFields(logrus.Fields{
-		"default_port":              config.Port,
+		"default_gateway_service":   config.GatewayServiceURL,
 		"default_session_service":   config.SessionServiceURL,
 		"default_orders_service":    config.OrdersServiceURL,
 		"default_inventory_service": config.InventoryServiceURL,
@@ -1061,7 +1064,7 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 	populateConfigFromSettings(config, settings, logger)
 
 	logger.WithFields(logrus.Fields{
-		"final_port":              config.Port,
+		"final_gateway_service":   config.GatewayServiceURL,
 		"final_session_service":   config.SessionServiceURL,
 		"final_orders_service":    config.OrdersServiceURL,
 		"final_inventory_service": config.InventoryServiceURL,
@@ -1222,14 +1225,14 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 				"old_value": oldValue,
 				"new_value": setting.Value,
 			}).Info("Updated data service URL")
-		case "GATEWAY_PORT":
-			oldValue := config.Port
-			config.Port = setting.Value
+		case "GATEWAY_SERVICE_URL":
+			oldValue := config.GatewayServiceURL
+			config.GatewayServiceURL = setting.Value
 			logger.WithFields(logrus.Fields{
 				"key":       setting.Key,
 				"old_value": oldValue,
 				"new_value": setting.Value,
-			}).Info("Updated gateway port")
+			}).Info("Updated gateway service URL")
 		default:
 			logger.WithFields(logrus.Fields{
 				"key":   setting.Key,
@@ -1239,11 +1242,11 @@ func populateConfigFromSettings(config *Config, settings []Setting, logger *logr
 	}
 
 	logger.WithFields(logrus.Fields{
+		"gateway_service":   config.GatewayServiceURL,
 		"session_service":   config.SessionServiceURL,
 		"orders_service":    config.OrdersServiceURL,
 		"inventory_service": config.InventoryServiceURL,
 		"invoice_service":   config.InvoiceServiceURL,
 		"data_service":      config.DataServiceURL,
-		"port":              config.Port,
 	}).Info("Configuration populated from settings successfully")
 }

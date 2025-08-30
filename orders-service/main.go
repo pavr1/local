@@ -131,19 +131,15 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
-	// Add request ID middleware
-	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE, "/api/v1/orders/p/health"))
-
-	// Add global middleware
-	// Removed authMiddleware.LoggingMiddleware - gateway handles all logging
-	// router.Use(authMiddleware.CORS) // Disabled: Gateway handles CORS for all services
-
 	// Public routes (no authentication required)
 	publicRouter := router.PathPrefix("/api/v1").Subrouter()
 	publicRouter.HandleFunc("/orders/p/health", ordersHandler.HealthCheck).Methods("GET")
 
 	// Protected routes (authentication required)
 	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
+	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE))
+	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE, "/api/v1/orders/p/health"))
+
 	// Removed protectedRouter.Use(authMiddleware.Authenticate) - gateway handles all auth
 
 	// Order endpoints with permission checks

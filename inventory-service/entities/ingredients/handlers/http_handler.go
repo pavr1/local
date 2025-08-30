@@ -87,11 +87,6 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 		Message: "Ingredient created successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
-		"ingredient_id":   ingredient.ID,
-		"ingredient_name": ingredient.Name,
-	}).Info("Ingredient created successfully")
-
 	h.writeJSONResponse(w, response, http.StatusCreated)
 }
 

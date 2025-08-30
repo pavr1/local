@@ -127,8 +127,6 @@ func (h *MainHttpHandler) GetRecipeIngredientsHandler() *recipeIngredientsHandle
 
 // SetupRoutes sets up all the routes for the service
 func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
-	router.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE))
-	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
 
 	// Public router for endpoints that don't require gateway validation
 	publicRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
@@ -136,6 +134,9 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
+	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE))
+	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
+
 	// Suppliers endpoints under inventory
 	suppliersRouter := protectedRouter.PathPrefix("/suppliers").Subrouter()
 	suppliersRouter.HandleFunc("", h.GetSuppliersHandler().ListSuppliers).Methods("GET")

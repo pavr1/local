@@ -214,9 +214,14 @@ func GetRequestLogger(r *http.Request, service string) *logrus.Entry {
 		if requestID := r.Context().Value("request_id"); requestID != nil {
 			if id, ok := requestID.(string); ok {
 				return logger.WithField("request_id", id)
+			} else {
+				logger.WithFields(logrus.Fields{"service": service}).Info("Invalid X-Request-ID format")
 			}
+		} else {
+			logger.WithFields(logrus.Fields{"service": service}).Info("No X-Request-ID found in context")
 		}
 	}
+
 	// Fallback to base logger if no request ID found
 	return logger.WithFields(logrus.Fields{"service": service})
 }

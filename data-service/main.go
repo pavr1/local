@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
-	"runtime"
 	"strconv"
 	"syscall"
 	"time"
@@ -16,31 +14,16 @@ import (
 	"data-service/pkg/database"
 	"data-service/pkg/images"
 	"data-service/pkg/settings"
+	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	// Create a logger with custom configuration
-	logger := logrus.New()
-	logger.SetLevel(logrus.InfoLevel)
+	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_DATA_SERVICE)
 
-	// Set log format with line numbers and better formatting
-	logger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		ForceColors:     true,
-		DisableColors:   false,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
-
-	// Enable caller reporting for line numbers
-	logger.SetReportCaller(true)
-
+	//pvillalobos: hardcoded values
 	// Create database configuration
 	config := &database.Config{
 		Host:     getEnv("DB_HOST", "localhost"),
@@ -66,7 +49,7 @@ func main() {
 	}
 
 	// Create database handler
-	db := database.New(config, logger)
+	db := database.New(config, logger.Logger)
 
 	// Connect to database
 	fmt.Println("🍦 Connecting to Ice Cream Store Data Service...")
@@ -83,8 +66,8 @@ func main() {
 	fmt.Println("✅ Database connection established successfully")
 
 	// Create settings service
-	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
-	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
+	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger.Logger)
+	settingsService := settings.NewSettingsService(settingsDBHandler, logger.Logger)
 
 	// Create settings handler
 	settingsHandler, err := settings.NewSettingsHandler(settingsService)
@@ -96,7 +79,7 @@ func main() {
 	imageHandler := images.NewImageHandler("/app")
 
 	// Setup HTTP server
-	router := setupRouter(db, logger, settingsHandler, imageHandler)
+	router := setupRouter(db, logger.Logger, settingsHandler, imageHandler)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8086", // Data service port - bind to all interfaces
@@ -166,13 +149,6 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 	// Public health check endpoint (no authentication required)
 	router.HandleFunc("/api/v1/data/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthCheck(w, r, db, logger)
-	}).Methods("GET")
-
-	// Test endpoint to verify router is working
-	router.HandleFunc("/api/v1/test", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"message":"API v1 router is working"}`))
 	}).Methods("GET")
 
 	// Stats endpoint (optional, for monitoring)
