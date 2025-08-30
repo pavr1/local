@@ -22,7 +22,7 @@ func NewDBHandler(db *sql.DB) *DBHandler {
 }
 
 // CreateIngredientCategory creates a new ingredient category in the database
-func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error) {
+func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategoryRequest, logger *logrus.Logger) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.CreateIngredientCategoryQuery,
@@ -45,7 +45,7 @@ func (h *DBHandler) CreateIngredientCategory(req models.CreateIngredientCategory
 }
 
 // GetIngredientCategoryByID retrieves an ingredient category by ID from the database
-func (h *DBHandler) GetIngredientCategoryByID(id string, logger *logrus.Entry) (*models.IngredientCategory, error) {
+func (h *DBHandler) GetIngredientCategoryByID(id string, logger *logrus.Logger) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.GetIngredientCategoryByIDQuery, id).
@@ -53,7 +53,6 @@ func (h *DBHandler) GetIngredientCategoryByID(id string, logger *logrus.Entry) (
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
 		logger.WithError(err).WithFields(logrus.Fields{
@@ -66,7 +65,7 @@ func (h *DBHandler) GetIngredientCategoryByID(id string, logger *logrus.Entry) (
 }
 
 // ListIngredientCategories retrieves all ingredient categories from the database
-func (h *DBHandler) ListIngredientCategories(logger *logrus.Entry) ([]models.IngredientCategory, error) {
+func (h *DBHandler) ListIngredientCategories(logger *logrus.Logger) ([]models.IngredientCategory, error) {
 	rows, err := h.db.Query(ingredientCategorySQL.ListIngredientCategoriesQuery)
 	if err != nil {
 		logger.WithError(err).Error("Failed to execute ingredient categories list query")
@@ -74,7 +73,7 @@ func (h *DBHandler) ListIngredientCategories(logger *logrus.Entry) ([]models.Ing
 	}
 	defer rows.Close()
 
-	var categories []models.IngredientCategory
+	categories := []models.IngredientCategory{}
 	for rows.Next() {
 		var category models.IngredientCategory
 		err := rows.Scan(&category.ID, &category.Name, &category.Description, &category.IsActive, &category.CreatedAt, &category.UpdatedAt)
@@ -85,16 +84,11 @@ func (h *DBHandler) ListIngredientCategories(logger *logrus.Entry) ([]models.Ing
 		categories = append(categories, category)
 	}
 
-	// Ensure we return an empty slice instead of nil for consistency
-	if categories == nil {
-		categories = []models.IngredientCategory{}
-	}
-
 	return categories, nil
 }
 
 // UpdateIngredientCategory updates an ingredient category in the database
-func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest, logger *logrus.Entry) (*models.IngredientCategory, error) {
+func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredientCategoryRequest, logger *logrus.Logger) (*models.IngredientCategory, error) {
 	var category models.IngredientCategory
 
 	err := h.db.QueryRow(ingredientCategorySQL.UpdateIngredientCategoryQuery,
@@ -121,7 +115,7 @@ func (h *DBHandler) UpdateIngredientCategory(id string, req models.UpdateIngredi
 }
 
 // DeleteIngredientCategory deletes an ingredient category from the database
-func (h *DBHandler) DeleteIngredientCategory(id string, logger *logrus.Entry) error {
+func (h *DBHandler) DeleteIngredientCategory(id string, logger *logrus.Logger) error {
 	result, err := h.db.Exec(ingredientCategorySQL.DeleteIngredientCategoryQuery, id)
 	if err != nil {
 		logger.WithError(err).WithFields(logrus.Fields{
@@ -139,7 +133,6 @@ func (h *DBHandler) DeleteIngredientCategory(id string, logger *logrus.Entry) er
 	}
 
 	if rowsAffected == 0 {
-		// Don't log as error since "not found" is a normal business case
 		return sql.ErrNoRows
 	}
 

@@ -27,7 +27,7 @@ type MainHttpHandler struct {
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
 func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *MainHttpHandler {
 	// Initialize invoices handlers
-	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, logger, cfg)
+	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, cfg)
 	invoicesHttpHandler := invoicesHandlers.NewHttpHandler(invoicesDBHandler, logger)
 
 	// Initialize expense categories handlers

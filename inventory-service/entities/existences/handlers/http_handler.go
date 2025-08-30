@@ -16,12 +16,12 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateExistence(req models.CreateExistenceRequest, logger *logrus.Entry) (*models.Existence, error)
-	GetExistenceByID(id string, logger *logrus.Entry) (*models.Existence, error)
-	GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string, logger *logrus.Entry) (*models.Existence, error)
-	ListExistences(req models.ListExistencesRequest, logger *logrus.Entry) ([]models.Existence, error)
-	UpdateExistence(id string, req models.UpdateExistenceRequest, logger *logrus.Entry) (*models.Existence, error)
-	DeleteExistence(id string, logger *logrus.Entry) error
+	CreateExistence(req models.CreateExistenceRequest, logger *logrus.Logger) (*models.Existence, error)
+	GetExistenceByID(id string, logger *logrus.Logger) (*models.Existence, error)
+	GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType string, logger *logrus.Logger) (*models.Existence, error)
+	ListExistences(req models.ListExistencesRequest, logger *logrus.Logger) ([]models.Existence, error)
+	UpdateExistence(id string, req models.UpdateExistenceRequest, logger *logrus.Logger) (*models.Existence, error)
+	DeleteExistence(id string, logger *logrus.Logger) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -30,22 +30,12 @@ var _ DBHandlerInterface = (*DBHandler)(nil)
 // HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
-	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler *DBHandler, logger *logrus.Logger) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
-		logger:    logger,
-	}
-}
-
-// NewHttpHandlerWithInterface creates a new HTTP handler with interface (for testing)
-func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
-	return &HttpHandler{
-		dbHandler: dbHandler,
-		logger:    logger,
 	}
 }
 
@@ -71,7 +61,7 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existence, err := h.dbHandler.CreateExistence(req, logger)
+	existence, err := h.dbHandler.CreateExistence(req, logger.Logger)
 	if err != nil {
 		logger.WithError(err).Error("Failed to create existence")
 		http.Error(w, "Failed to create existence", http.StatusInternalServerError)
@@ -111,7 +101,7 @@ func (h *HttpHandler) GetExistence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existence, err := h.dbHandler.GetExistenceByID(id, logger)
+	existence, err := h.dbHandler.GetExistenceByID(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "Existence not found", http.StatusNotFound)
@@ -177,7 +167,7 @@ func (h *HttpHandler) GetMostRecentExistenceByIngredientAndUnitType(w http.Respo
 		return
 	}
 
-	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType, logger)
+	existence, err := h.dbHandler.GetMostRecentExistenceByIngredientAndUnitType(ingredientID, unitType, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.WithFields(logrus.Fields{
@@ -233,7 +223,7 @@ func (h *HttpHandler) ListExistences(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
 	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
-	existences, err := h.dbHandler.ListExistences(req, logger)
+	existences, err := h.dbHandler.ListExistences(req, logger.Logger)
 	if err != nil {
 		logger.WithError(err).Error("Failed to list existences")
 		http.Error(w, "Failed to list existences", http.StatusInternalServerError)
@@ -265,7 +255,7 @@ func (h *HttpHandler) UpdateExistence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existence, err := h.dbHandler.UpdateExistence(id, req, logger)
+	existence, err := h.dbHandler.UpdateExistence(id, req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.WithFields(logrus.Fields{
@@ -302,7 +292,7 @@ func (h *HttpHandler) DeleteExistence(w http.ResponseWriter, r *http.Request) {
 	// Get logger with request ID
 	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 
-	err := h.dbHandler.DeleteExistence(id, logger)
+	err := h.dbHandler.DeleteExistence(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.WithFields(logrus.Fields{

@@ -20,34 +20,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// RecipeDBHandler handles database operations for recipes
-type RecipeDBHandler struct {
+// DBHandler handles database operations for recipes
+type DBHandler struct {
 	db     *sql.DB
-	logger *logrus.Logger
 	config *config.Config
 }
 
-// NewRecipeDBHandler creates a new database handler for recipes
-func NewRecipeDBHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *RecipeDBHandler {
-	return &RecipeDBHandler{
+// NewDBHandler creates a new database handler for recipes
+func NewDBHandler(db *sql.DB, cfg *config.Config) *DBHandler {
+	return &DBHandler{
 		db:     db,
-		logger: logger,
 		config: cfg,
 	}
 }
 
-func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe, error) {
+func (h *DBHandler) Create(req models.CreateRecipeRequest, logger *logrus.Logger) (*models.Recipe, error) {
 	// Start a transaction
 	tx, err := h.db.Begin()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to begin transaction")
+		logger.WithError(err).Error("Failed to begin transaction")
 		return nil, err
 	}
 	defer tx.Rollback() // Rollback if not committed
 
 	// Validate that image data is provided
 	if req.ImageData == nil || req.ImageName == nil || len(req.ImageData) == 0 {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
 		}).Error("Recipe creation failed: image is required")
 		return nil, fmt.Errorf("image is required for recipe creation")
@@ -57,9 +55,9 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	req.RecipeName += ".jpg"
 
 	// Store the image in data service (image is required)
-	imageURL, err := h.storeImageInDataService("recipes", req.RecipeName, req.ImageData)
+	imageURL, err := h.storeImageInDataService("recipes", req.RecipeName, req.ImageData, logger)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
 			"image_name":  *req.ImageName,
 		}).Error("Failed to store recipe image in data service")
@@ -88,7 +86,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 	)
 
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
 		}).Error("Failed to create recipe in database")
 		return nil, err
@@ -104,7 +102,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 			ingredient.Quantity,
 		)
 		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"recipe_id":     recipe.ID,
 				"ingredient_id": ingredient.IngredientID,
 				"quantity":      ingredient.Quantity,
@@ -116,11 +114,11 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 
 	// Commit the transaction
 	if err = tx.Commit(); err != nil {
-		h.logger.WithError(err).Error("Failed to commit transaction")
+		logger.WithError(err).Error("Failed to commit transaction")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"recipe_id":         recipe.ID,
 		"recipe_name":       recipe.RecipeName,
 		"ingredients_count": len(req.Ingredients),
@@ -131,7 +129,7 @@ func (h *RecipeDBHandler) Create(req models.CreateRecipeRequest) (*models.Recipe
 }
 
 // storeImageInDataService stores an image in the data service and returns the image URL
-func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, imageData []byte) (string, error) {
+func (h *DBHandler) storeImageInDataService(service, imageName string, imageData []byte, logger *logrus.Logger) (string, error) {
 	// Create multipart form data
 	var buf bytes.Buffer
 	writer := multipart.NewWriter(&buf)
@@ -139,21 +137,21 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	// Create form file
 	part, err := writer.CreateFormFile("image", imageName)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create form file")
+		logger.WithError(err).Error("Failed to create form file")
 		return "", fmt.Errorf("failed to create form file: %w", err)
 	}
 
 	// Write image data
 	_, err = part.Write(imageData)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to write image data")
+		logger.WithError(err).Error("Failed to write image data")
 		return "", fmt.Errorf("failed to write image data: %w", err)
 	}
 
 	// Close writer
 	err = writer.Close()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to close writer")
+		logger.WithError(err).Error("Failed to close writer")
 		return "", fmt.Errorf("failed to close writer: %w", err)
 	}
 
@@ -163,7 +161,7 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 
 	req, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create HTTP request")
+		logger.WithError(err).Error("Failed to create HTTP request")
 		return "", fmt.Errorf("failed to create HTTP request: %w", err)
 	}
 
@@ -179,13 +177,13 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to make HTTP request")
+		logger.WithError(err).Error("Failed to make HTTP request")
 		return "", fmt.Errorf("failed to make HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"status_code": resp.StatusCode,
 		}).Error("Data service returned non-OK status")
 		return "", fmt.Errorf("data service returned status %d", resp.StatusCode)
@@ -199,12 +197,12 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		h.logger.WithError(err).Error("Failed to decode response")
+		logger.WithError(err).Error("Failed to decode response")
 		return "", fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if !response.Success {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"message": response.Message,
 		}).Error("Data service returned non-success response")
 		return "", fmt.Errorf("data service error: %s", response.Message)
@@ -214,7 +212,7 @@ func (h *RecipeDBHandler) storeImageInDataService(service, imageName string, ima
 }
 
 // deleteImageFromDataService deletes an image from the data service
-func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) error {
+func (h *DBHandler) deleteImageFromDataService(service, filename string, logger *logrus.Logger) error {
 	// Construct the delete URL
 	// pvillalobos: hardcoded values
 	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.GatewayURL, service, filename)
@@ -227,7 +225,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Create DELETE request
 	req, err := http.NewRequest("DELETE", deleteURL, nil)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to create delete request")
+		logger.WithError(err).Error("Failed to create delete request")
 		return fmt.Errorf("failed to create delete request: %w", err)
 	}
 
@@ -243,7 +241,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Execute the request
 	resp, err := client.Do(req)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to execute delete request")
+		logger.WithError(err).Error("Failed to execute delete request")
 		return fmt.Errorf("failed to execute delete request: %w", err)
 	}
 	defer resp.Body.Close()
@@ -251,7 +249,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"status_code": resp.StatusCode,
 			"body":        string(body),
 		}).Error("Data service returned non-OK status")
@@ -261,7 +259,7 @@ func (h *RecipeDBHandler) deleteImageFromDataService(service, filename string) e
 	return nil
 }
 
-func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, error) {
+func (h *DBHandler) GetByID(req models.GetRecipeRequest, logger *logrus.Logger) (*models.Recipe, error) {
 	var recipe models.Recipe
 	err := h.db.QueryRow(recipeSQL.GetRecipeByIDQuery, req.ID).Scan(
 		&recipe.ID,
@@ -278,25 +276,25 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_id": req.ID,
 			}).Warn("Recipe not found")
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": req.ID,
 		}).Error("Failed to get recipe from database")
 		return nil, err
 	}
 
 	// Load ingredients for the recipe using the recipe ingredients handler
-	riHandler := recipeIngredientsHandler.NewDBHandler(h.db, h.logger)
+	riHandler := recipeIngredientsHandler.NewDBHandler(h.db)
 	recipeID := recipe.ID
 	riReq := recipeIngredientsModels.ListRecipeIngredientsRequest{
 		RecipeID: &recipeID,
 	}
 
-	recipeIngredientsList, err := riHandler.List(riReq)
+	recipeIngredientsList, err := riHandler.List(riReq, logger)
 	if err != nil {
 		// Don't fail the entire request if ingredients fail to load
 		recipe.Ingredients = []models.RecipeIngredient{}
@@ -317,7 +315,7 @@ func (h *RecipeDBHandler) GetByID(req models.GetRecipeRequest) (*models.Recipe, 
 	return &recipe, nil
 }
 
-func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, error) {
+func (h *DBHandler) List(req models.ListRecipesRequest, logger *logrus.Logger) ([]models.Recipe, error) {
 	limit := 50
 	if req.Limit != nil {
 		limit = *req.Limit
@@ -336,7 +334,7 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 		offset,
 	)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to execute recipes list query")
+		logger.WithError(err).Error("Failed to execute recipes list query")
 		return nil, err
 	}
 	defer rows.Close()
@@ -357,26 +355,27 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 			&recipe.UpdatedAt,
 		)
 		if err != nil {
-			h.logger.WithError(err).Warn("Failed to scan recipe row, skipping")
+			logger.WithError(err).Warn("Failed to scan recipe row, skipping")
 			continue
 		}
 		recipes = append(recipes, recipe)
 	}
 
 	if err = rows.Err(); err != nil {
-		h.logger.WithError(err).Error("Error occurred during rows iteration")
+		logger.WithError(err).Error("Error occurred during rows iteration")
 		return nil, err
 	}
 
+	//pvillalobos: revisit this, why are we creating a new DBHandler for each recipe?
 	// Load ingredients for each recipe
-	riHandler := recipeIngredientsHandler.NewDBHandler(h.db, h.logger)
+	riHandler := recipeIngredientsHandler.NewDBHandler(h.db)
 	for i := range recipes {
 		recipeID := recipes[i].ID
 		riReq := recipeIngredientsModels.ListRecipeIngredientsRequest{
 			RecipeID: &recipeID,
 		}
 
-		recipeIngredientsList, err := riHandler.List(riReq)
+		recipeIngredientsList, err := riHandler.List(riReq, logger)
 		if err != nil {
 			recipes[i].Ingredients = []models.RecipeIngredient{}
 		} else {
@@ -402,11 +401,11 @@ func (h *RecipeDBHandler) List(req models.ListRecipesRequest) ([]models.Recipe, 
 	return recipes, nil
 }
 
-func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*models.Recipe, error) {
+func (h *DBHandler) Update(req models.UpdateRecipeRequest, id string, logger *logrus.Logger) (*models.Recipe, error) {
 	// Start a transaction
 	tx, err := h.db.Begin()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to begin transaction")
+		logger.WithError(err).Error("Failed to begin transaction")
 		return nil, err
 	}
 	defer tx.Rollback() // Rollback if not committed
@@ -416,7 +415,7 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 	if req.ImageData != nil && req.ImageName != nil && len(req.ImageData) > 0 {
 
 		// Store the image in data service
-		imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData)
+		imageURL, err := h.storeImageInDataService("recipes", *req.ImageName, req.ImageData, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -449,12 +448,12 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_id": id,
 			}).Warn("Recipe not found for update")
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Error("Failed to update recipe in database")
 		return nil, err
@@ -465,7 +464,7 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 		// Delete existing ingredients
 		_, err = tx.Exec(recipeIngredientsSQL.DeleteRecipeIngredientsByRecipeIDQuery, id)
 		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"recipe_id": id,
 			}).Error("Failed to delete existing recipe ingredients")
 			return nil, err
@@ -480,7 +479,7 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 				ingredient.Quantity,
 			)
 			if err != nil {
-				h.logger.WithError(err).WithFields(logrus.Fields{
+				logger.WithError(err).WithFields(logrus.Fields{
 					"recipe_id":     id,
 					"ingredient_id": ingredient.IngredientID,
 				}).Error("Failed to create recipe ingredient in database")
@@ -491,11 +490,11 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 
 	// Commit the transaction
 	if err = tx.Commit(); err != nil {
-		h.logger.WithError(err).Error("Failed to commit transaction")
+		logger.WithError(err).Error("Failed to commit transaction")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"recipe_id":   recipe.ID,
 		"recipe_name": recipe.RecipeName,
 	}).Info("Recipe updated successfully")
@@ -503,17 +502,17 @@ func (h *RecipeDBHandler) Update(req models.UpdateRecipeRequest, id string) (*mo
 	return &recipe, nil
 }
 
-func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
+func (h *DBHandler) Delete(req models.DeleteRecipeRequest, logger *logrus.Logger) error {
 	// First, get the recipe details to extract the image filename
-	recipe, err := h.GetByID(models.GetRecipeRequest{ID: req.ID})
+	recipe, err := h.GetByID(models.GetRecipeRequest{ID: req.ID}, logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			h.logger.WithFields(logrus.Fields{
+			logger.WithFields(logrus.Fields{
 				"recipe_id": req.ID,
 			}).Warn("No recipe found to delete")
 			return sql.ErrNoRows
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": req.ID,
 		}).Error("Failed to get recipe details before deletion")
 		return err
@@ -522,7 +521,7 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 	// Delete the recipe from the database
 	result, err := h.db.Exec(recipeSQL.DeleteRecipeQuery, req.ID)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": req.ID,
 		}).Error("Failed to execute recipe delete query")
 		return err
@@ -530,14 +529,14 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": req.ID,
 		}).Error("Failed to get rows affected after delete")
 		return err
 	}
 
 	if rowsAffected == 0 {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"recipe_id": req.ID,
 		}).Warn("No recipe found to delete")
 		return sql.ErrNoRows
@@ -553,9 +552,9 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 			filename := parts[len(parts)-1] // Get the last part as filename
 
 			// Delete the image from data service
-			err = h.deleteImageFromDataService("recipes", filename)
+			err = h.deleteImageFromDataService("recipes", filename, logger)
 			if err != nil {
-				h.logger.WithError(err).WithFields(logrus.Fields{
+				logger.WithError(err).WithFields(logrus.Fields{
 					"recipe_id": req.ID,
 					"filename":  filename,
 				}).Warn("Failed to delete recipe image from data service, but recipe was deleted from database")
@@ -566,7 +565,7 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 		}
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"recipe_id": req.ID,
 	}).Info("Recipe deleted successfully")
 
@@ -574,16 +573,16 @@ func (h *RecipeDBHandler) Delete(req models.DeleteRecipeRequest) error {
 }
 
 // RecalculateRecipePriceAndStatus recalculates the price and status of a recipe based on ingredient final prices
-func (h *RecipeDBHandler) RecalculateRecipePriceAndStatus(recipeID string) error {
+func (h *DBHandler) RecalculateRecipePriceAndStatus(recipeID string, logger *logrus.Logger) error {
 	_, err := h.db.Exec(recipeSQL.UpdateRecipePriceAndStatusQuery, recipeID)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": recipeID,
 		}).Error("Failed to recalculate recipe price and status")
 		return err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"recipe_id": recipeID,
 	}).Info("Recipe price and status recalculated successfully")
 
@@ -591,10 +590,10 @@ func (h *RecipeDBHandler) RecalculateRecipePriceAndStatus(recipeID string) error
 }
 
 // GetRecipesByIngredient gets all recipe IDs that use a specific ingredient
-func (h *RecipeDBHandler) GetRecipesByIngredient(ingredientID string) ([]string, error) {
+func (h *DBHandler) GetRecipesByIngredient(ingredientID string, logger *logrus.Logger) ([]string, error) {
 	rows, err := h.db.Query(recipeSQL.GetRecipesByIngredientQuery, ingredientID)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": ingredientID,
 		}).Error("Failed to get recipes by ingredient")
 		return nil, err
@@ -606,7 +605,7 @@ func (h *RecipeDBHandler) GetRecipesByIngredient(ingredientID string) ([]string,
 		var recipeID string
 		err := rows.Scan(&recipeID)
 		if err != nil {
-			h.logger.WithError(err).Warn("Failed to scan recipe ID, skipping")
+			logger.WithError(err).Warn("Failed to scan recipe ID, skipping")
 			continue
 		}
 		recipeIDs = append(recipeIDs, recipeID)
@@ -616,18 +615,18 @@ func (h *RecipeDBHandler) GetRecipesByIngredient(ingredientID string) ([]string,
 }
 
 // RecalculateAllRecipesForIngredient recalculates all recipes that use a specific ingredient
-func (h *RecipeDBHandler) RecalculateAllRecipesForIngredient(ingredientID string) error {
+func (h *DBHandler) RecalculateAllRecipesForIngredient(ingredientID string, logger *logrus.Logger) error {
 	// Get all recipes that use this ingredient
-	recipeIDs, err := h.GetRecipesByIngredient(ingredientID)
+	recipeIDs, err := h.GetRecipesByIngredient(ingredientID, logger)
 	if err != nil {
 		return err
 	}
 
 	// Recalculate each recipe
 	for _, recipeID := range recipeIDs {
-		err := h.RecalculateRecipePriceAndStatus(recipeID)
+		err := h.RecalculateRecipePriceAndStatus(recipeID, logger)
 		if err != nil {
-			h.logger.WithError(err).WithFields(logrus.Fields{
+			logger.WithError(err).WithFields(logrus.Fields{
 				"recipe_id":     recipeID,
 				"ingredient_id": ingredientID,
 			}).Error("Failed to recalculate recipe, continuing with others")

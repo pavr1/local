@@ -16,11 +16,11 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateIngredient(req models.CreateIngredientRequest, logger *logrus.Entry) (*models.Ingredient, error)
-	GetIngredientByID(id string, logger *logrus.Entry) (*models.Ingredient, error)
-	ListIngredients(logger *logrus.Entry) ([]models.Ingredient, error)
-	UpdateIngredient(id string, req models.UpdateIngredientRequest, logger *logrus.Entry) (*models.Ingredient, error)
-	DeleteIngredient(id string, logger *logrus.Entry) error
+	CreateIngredient(req models.CreateIngredientRequest, logger *logrus.Logger) (*models.Ingredient, error)
+	GetIngredientByID(id string, logger *logrus.Logger) (*models.Ingredient, error)
+	ListIngredients(logger *logrus.Logger) ([]models.Ingredient, error)
+	UpdateIngredient(id string, req models.UpdateIngredientRequest, logger *logrus.Logger) (*models.Ingredient, error)
+	DeleteIngredient(id string, logger *logrus.Logger) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -29,22 +29,12 @@ var _ DBHandlerInterface = (*DBHandler)(nil)
 // HttpHandler handles HTTP requests for ingredient operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
-	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler *DBHandler, logger *logrus.Logger) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
-		logger:    logger,
-	}
-}
-
-// NewHttpHandlerWithInterface creates a new HTTP handler with interface (for testing)
-func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
-	return &HttpHandler{
-		dbHandler: dbHandler,
-		logger:    logger,
 	}
 }
 
@@ -56,7 +46,7 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in create ingredient request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
@@ -65,11 +55,11 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_name": req.Name,
 		}).Error("Validation failed for create ingredient request")
-		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ingredient, err := h.dbHandler.CreateIngredient(req, logger)
+	ingredient, err := h.dbHandler.CreateIngredient(req, logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.IngredientResponse{
@@ -77,7 +67,7 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Ingredient{},
 			Message: "Failed to create ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
 		return
 	}
 
@@ -87,7 +77,7 @@ func (h *HttpHandler) CreateIngredient(w http.ResponseWriter, r *http.Request) {
 		Message: "Ingredient created successfully",
 	}
 
-	h.writeJSONResponse(w, response, http.StatusCreated)
+	h.writeJSONResponse(w, r, response, http.StatusCreated)
 }
 
 // GetIngredient handles GET /ingredients/{id}
@@ -100,7 +90,7 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing ingredient ID in get request")
-		h.writeErrorResponse(w, "Ingredient ID is required", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Ingredient ID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -109,11 +99,11 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 		logger.WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Warn("Invalid ingredient ID format in get request")
-		h.writeErrorResponse(w, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
-	ingredient, err := h.dbHandler.GetIngredientByID(id, logger)
+	ingredient, err := h.dbHandler.GetIngredientByID(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -122,7 +112,7 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 				Data:    models.Ingredient{},
 				Message: "Ingredient not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			h.writeJSONResponse(w, r, response, http.StatusNotFound)
 			return
 		}
 
@@ -132,7 +122,7 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Ingredient{},
 			Message: "Failed to get ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
 		return
 	}
 
@@ -141,7 +131,7 @@ func (h *HttpHandler) GetIngredient(w http.ResponseWriter, r *http.Request) {
 		Data:    *ingredient,
 		Message: "Ingredient retrieved successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	h.writeJSONResponse(w, r, response, http.StatusOK)
 }
 
 // ListIngredients handles GET /ingredients
@@ -153,7 +143,7 @@ func (h *HttpHandler) ListIngredients(w http.ResponseWriter, r *http.Request) {
 	// limit := r.URL.Query().Get("limit")
 	// offset := r.URL.Query().Get("offset")
 
-	ingredients, err := h.dbHandler.ListIngredients(logger)
+	ingredients, err := h.dbHandler.ListIngredients(logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.IngredientsListResponse{
@@ -162,7 +152,7 @@ func (h *HttpHandler) ListIngredients(w http.ResponseWriter, r *http.Request) {
 			Count:   0,
 			Message: "Failed to list ingredients: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
 		return
 	}
 
@@ -172,7 +162,7 @@ func (h *HttpHandler) ListIngredients(w http.ResponseWriter, r *http.Request) {
 		Count:   len(ingredients),
 		Message: "Ingredients retrieved successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	h.writeJSONResponse(w, r, response, http.StatusOK)
 }
 
 // UpdateIngredient handles PUT /ingredients/{id}
@@ -185,14 +175,14 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing ingredient ID in update request")
-		h.writeErrorResponse(w, "Ingredient ID is required", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Ingredient ID is required", http.StatusBadRequest)
 		return
 	}
 
 	var req models.UpdateIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in update ingredient request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
 		return
 	}
 
@@ -201,11 +191,11 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Error("Validation failed for update ingredient request")
-		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Validation failed: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	ingredient, err := h.dbHandler.UpdateIngredient(id, req, logger)
+	ingredient, err := h.dbHandler.UpdateIngredient(id, req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -214,7 +204,7 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 				Data:    models.Ingredient{},
 				Message: "Ingredient not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			h.writeJSONResponse(w, r, response, http.StatusNotFound)
 			return
 		}
 
@@ -224,7 +214,7 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Ingredient{},
 			Message: "Failed to update ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
 		return
 	}
 
@@ -239,7 +229,7 @@ func (h *HttpHandler) UpdateIngredient(w http.ResponseWriter, r *http.Request) {
 		"ingredient_name": ingredient.Name,
 	}).Info("Ingredient updated successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
+	h.writeJSONResponse(w, r, response, http.StatusOK)
 }
 
 // DeleteIngredient handles DELETE /ingredients/{id}
@@ -252,7 +242,7 @@ func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing ingredient ID in delete request")
-		h.writeErrorResponse(w, "Ingredient ID is required", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Ingredient ID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -261,11 +251,11 @@ func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 		logger.WithFields(logrus.Fields{
 			"ingredient_id": id,
 		}).Warn("Invalid ingredient ID format in delete request")
-		h.writeErrorResponse(w, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
+		h.writeErrorResponse(w, r, "Ingredient ID must be a valid UUID", http.StatusBadRequest)
 		return
 	}
 
-	err := h.dbHandler.DeleteIngredient(id, logger)
+	err := h.dbHandler.DeleteIngredient(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -274,12 +264,12 @@ func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 				Data:    models.Ingredient{},
 				Message: "Ingredient not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			h.writeJSONResponse(w, r, response, http.StatusNotFound)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		h.writeErrorResponse(w, "Failed to delete ingredient: "+err.Error(), http.StatusInternalServerError)
+		h.writeErrorResponse(w, r, "Failed to delete ingredient: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -293,32 +283,33 @@ func (h *HttpHandler) DeleteIngredient(w http.ResponseWriter, r *http.Request) {
 		"ingredient_id": id,
 	}).Info("Ingredient deleted successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
+	h.writeJSONResponse(w, r, response, http.StatusOK)
 }
 
 // Helper methods for HTTP responses
 
 // writeJSONResponse writes a JSON response with the specified status code
-func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
+func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, r *http.Request, data interface{}, statusCode int) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.WithError(err).Error("Failed to encode JSON response")
+		logger.WithError(err).Error("Failed to encode JSON response")
 		// If we can't encode the response, send a basic error
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
 
 // writeErrorResponse writes an error response using the ErrorResponse model
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
+func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, r *http.Request, message string, statusCode int) {
 	errorResponse := models.ErrorResponse{
 		Success: false,
 		Error:   http.StatusText(statusCode),
 		Message: message,
 	}
 
-	h.writeJSONResponse(w, errorResponse, statusCode)
+	h.writeJSONResponse(w, r, errorResponse, statusCode)
 }
 
 // validateCreateIngredientRequest validates all required fields for ingredient creation

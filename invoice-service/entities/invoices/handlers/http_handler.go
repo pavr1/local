@@ -15,12 +15,12 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateInvoice(req models.CreateInvoiceRequest) (*models.Invoice, error)
-	GetInvoiceByID(id string) (*models.Invoice, error)
-	GetInvoiceByNumber(number string) (*models.Invoice, error)
-	ListInvoices() ([]models.Invoice, error)
-	UpdateInvoice(id string, req models.UpdateInvoiceRequest) (*models.Invoice, error)
-	DeleteInvoice(id string) error
+	CreateInvoice(req models.CreateInvoiceRequest, logger *logrus.Logger) (*models.Invoice, error)
+	GetInvoiceByID(id string, logger *logrus.Logger) (*models.Invoice, error)
+	GetInvoiceByNumber(number string, logger *logrus.Logger) (*models.Invoice, error)
+	ListInvoices(logger *logrus.Logger) ([]models.Invoice, error)
+	UpdateInvoice(id string, req models.UpdateInvoiceRequest, logger *logrus.Logger) (*models.Invoice, error)
+	DeleteInvoice(id string, logger *logrus.Logger) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -70,7 +70,7 @@ func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invoice, err := h.dbHandler.CreateInvoice(req)
+	invoice, err := h.dbHandler.CreateInvoice(req, logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.InvoiceResponse{
@@ -193,6 +193,8 @@ func (h *HttpHandler) validateInvoiceItem(item models.CreateInvoiceItemRequest, 
 
 // GetInvoiceByID handles GET /invoices/{id}
 func (h *HttpHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
@@ -202,7 +204,7 @@ func (h *HttpHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invoice, err := h.dbHandler.GetInvoiceByID(id)
+	invoice, err := h.dbHandler.GetInvoiceByID(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -235,6 +237,8 @@ func (h *HttpHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 
 // GetInvoiceByNumber handles GET /invoices/number/{number}
 func (h *HttpHandler) GetInvoiceByNumber(w http.ResponseWriter, r *http.Request) {
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
+
 	vars := mux.Vars(r)
 	number := vars["number"]
 
@@ -244,7 +248,7 @@ func (h *HttpHandler) GetInvoiceByNumber(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	invoice, err := h.dbHandler.GetInvoiceByNumber(number)
+	invoice, err := h.dbHandler.GetInvoiceByNumber(number, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -277,7 +281,9 @@ func (h *HttpHandler) GetInvoiceByNumber(w http.ResponseWriter, r *http.Request)
 
 // ListInvoices handles GET /invoices
 func (h *HttpHandler) ListInvoices(w http.ResponseWriter, r *http.Request) {
-	invoices, err := h.dbHandler.ListInvoices()
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
+
+	invoices, err := h.dbHandler.ListInvoices(logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := models.InvoicesListResponse{
@@ -320,7 +326,7 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invoice, err := h.dbHandler.UpdateInvoice(id, req)
+	invoice, err := h.dbHandler.UpdateInvoice(id, req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -372,7 +378,7 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.dbHandler.DeleteInvoice(id)
+	err := h.dbHandler.DeleteInvoice(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error

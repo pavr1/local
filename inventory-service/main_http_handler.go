@@ -34,10 +34,10 @@ type MainHttpHandler struct {
 	IngredientCategoriesHandler *ingredientCategoriesHandlers.HttpHandler
 	IngredientsHandler          *ingredientsHandlers.HttpHandler
 	ExistencesHandler           *existencesHandlers.HttpHandler
-	RunoutIngredientsHandler    *runoutIngredientsHandlers.RunoutIngredientHTTPHandler
-	RecipeCategoriesHandler     *recipeCategoriesHandlers.RecipeCategoryHTTPHandler
-	RecipesHandler              *recipesHandlers.RecipeHTTPHandler
-	RecipeIngredientsHandler    *recipeIngredientsHandlers.RecipeIngredientHTTPHandler
+	RunoutIngredientsHandler    *runoutIngredientsHandlers.HttpHandler
+	RecipeCategoriesHandler     *recipeCategoriesHandlers.HttpHandler
+	RecipesHandler              *recipesHandlers.HttpHandler
+	RecipeIngredientsHandler    *recipeIngredientsHandlers.HttpHandler
 }
 
 // NewMainHttpHandler creates a new main HTTP handler with all entity handlers
@@ -48,27 +48,30 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *
 
 	// Initialize ingredient categories handlers
 	ingredientCategoriesDBHandler := ingredientCategoriesHandlers.NewDBHandler(db)
-	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler, logger)
+	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler)
 
 	// Initialize ingredients handlers
 	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db)
-	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler, logger)
+	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler)
 
 	// Initialize existences handlers
 	existencesDBHandler := existencesHandlers.NewDBHandler(db)
-	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler, logger)
+	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler)
 
 	// Initialize runout ingredients handlers
-	runoutIngredientsHttpHandler := runoutIngredientsHandlers.NewRunoutIngredientHTTPHandler(db, logger)
+	runoutIngredientsHttpHandler := runoutIngredientsHandlers.NewHttpHandler(db)
 
 	// Initialize recipe categories handlers
-	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewRecipeCategoryHTTPHandler(db, logger)
+	recipeCategoriesDBHandler := recipeCategoriesHandlers.NewDBHandler(db)
+	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewHttpHandler(recipeCategoriesDBHandler)
 
 	// Initialize recipes handlers
-	recipesHttpHandler := recipesHandlers.NewRecipeHTTPHandler(db, logger, cfg)
+	recipesDBHandler := recipesHandlers.NewDBHandler(db, cfg)
+	recipesHttpHandler := recipesHandlers.NewHttpHandler(recipesDBHandler)
 
 	// Initialize recipe ingredients handlers
-	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewRecipeIngredientHTTPHandler(db, logger)
+	recipeIngredientsDBHandler := recipeIngredientsHandlers.NewDBHandler(db)
+	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewHttpHandler(recipeIngredientsDBHandler)
 
 	return &MainHttpHandler{
 		db:                          db,
@@ -106,22 +109,22 @@ func (h *MainHttpHandler) GetExistencesHandler() *existencesHandlers.HttpHandler
 }
 
 // GetRunoutIngredientsHandler returns the runout ingredients HTTP handler
-func (h *MainHttpHandler) GetRunoutIngredientsHandler() *runoutIngredientsHandlers.RunoutIngredientHTTPHandler {
+func (h *MainHttpHandler) GetRunoutIngredientsHandler() *runoutIngredientsHandlers.HttpHandler {
 	return h.RunoutIngredientsHandler
 }
 
 // GetRecipeCategoriesHandler returns the recipe categories HTTP handler
-func (h *MainHttpHandler) GetRecipeCategoriesHandler() *recipeCategoriesHandlers.RecipeCategoryHTTPHandler {
+func (h *MainHttpHandler) GetRecipeCategoriesHandler() *recipeCategoriesHandlers.HttpHandler {
 	return h.RecipeCategoriesHandler
 }
 
 // GetRecipesHandler returns the recipes HTTP handler
-func (h *MainHttpHandler) GetRecipesHandler() *recipesHandlers.RecipeHTTPHandler {
+func (h *MainHttpHandler) GetRecipesHandler() *recipesHandlers.HttpHandler {
 	return h.RecipesHandler
 }
 
 // GetRecipeIngredientsHandler returns the recipe ingredients HTTP handler
-func (h *MainHttpHandler) GetRecipeIngredientsHandler() *recipeIngredientsHandlers.RecipeIngredientHTTPHandler {
+func (h *MainHttpHandler) GetRecipeIngredientsHandler() *recipeIngredientsHandlers.HttpHandler {
 	return h.RecipeIngredientsHandler
 }
 
