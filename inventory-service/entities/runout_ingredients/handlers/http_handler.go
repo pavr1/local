@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"inventory-service/entities/runout_ingredients/models"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -45,23 +46,26 @@ func (h *HttpHandler) CreateRunoutIngredient(w http.ResponseWriter, r *http.Requ
 	var req models.CreateRunoutIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in create runout ingredient request")
-		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
 	runoutIngredient, err := h.dbHandler.Create(req, logger.Logger)
 	if err != nil {
-		response := models.RunoutIngredientResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.RunoutIngredient{},
 			Message: "Failed to create runout ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RunoutIngredientResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusCreated,
 		Data:    *runoutIngredient,
 		Message: "Runout ingredient created successfully",
 	}
@@ -72,7 +76,7 @@ func (h *HttpHandler) CreateRunoutIngredient(w http.ResponseWriter, r *http.Requ
 		"employee_id":          runoutIngredient.EmployeeID,
 	}).Info("Runout ingredient created successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusCreated)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // GetRunoutIngredient handles GET /runout-ingredients/{id}
@@ -85,7 +89,10 @@ func (h *HttpHandler) GetRunoutIngredient(w http.ResponseWriter, r *http.Request
 
 	if id == "" {
 		logger.Warn("Missing runout ingredient ID in get request")
-		h.writeErrorResponse(w, r, "Runout ingredient ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Runout ingredient ID is required",
+		})
 		return
 	}
 
@@ -93,30 +100,30 @@ func (h *HttpHandler) GetRunoutIngredient(w http.ResponseWriter, r *http.Request
 	runoutIngredient, err := h.dbHandler.GetByID(req, logger.Logger)
 	if err != nil {
 		if err.Error() == "runout ingredient not found" {
-			response := models.RunoutIngredientResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.RunoutIngredient{},
 				Message: "Runout ingredient not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.RunoutIngredientResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.RunoutIngredient{},
 			Message: "Failed to get runout ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RunoutIngredientResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *runoutIngredient,
 		Message: "Runout ingredient retrieved successfully",
 	}
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // ListRunoutIngredients handles GET /runout-ingredients
@@ -159,22 +166,21 @@ func (h *HttpHandler) ListRunoutIngredients(w http.ResponseWriter, r *http.Reque
 
 	runoutIngredients, err := h.dbHandler.List(req, logger.Logger)
 	if err != nil {
-		response := models.RunoutIngredientsResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    []models.RunoutIngredient{},
 			Message: "Failed to list runout ingredients: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RunoutIngredientsResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    runoutIngredients,
-		Total:   len(runoutIngredients),
 		Message: "Runout ingredients retrieved successfully",
 	}
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // UpdateRunoutIngredient handles PUT /runout-ingredients/{id}
@@ -187,40 +193,46 @@ func (h *HttpHandler) UpdateRunoutIngredient(w http.ResponseWriter, r *http.Requ
 
 	if id == "" {
 		logger.Warn("Missing runout ingredient ID in update request")
-		h.writeErrorResponse(w, r, "Runout ingredient ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Runout ingredient ID is required",
+		})
 		return
 	}
 
 	var req models.UpdateRunoutIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in update runout ingredient request")
-		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
 	runoutIngredient, err := h.dbHandler.Update(req, id, logger.Logger)
 	if err != nil {
 		if err.Error() == "runout ingredient not found" {
-			response := models.RunoutIngredientResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.RunoutIngredient{},
 				Message: "Runout ingredient not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.RunoutIngredientResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.RunoutIngredient{},
 			Message: "Failed to update runout ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RunoutIngredientResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *runoutIngredient,
 		Message: "Runout ingredient updated successfully",
 	}
@@ -231,7 +243,7 @@ func (h *HttpHandler) UpdateRunoutIngredient(w http.ResponseWriter, r *http.Requ
 		"employee_id":          runoutIngredient.EmployeeID,
 	}).Info("Runout ingredient updated successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // DeleteRunoutIngredient handles DELETE /runout-ingredients/{id}
@@ -244,7 +256,10 @@ func (h *HttpHandler) DeleteRunoutIngredient(w http.ResponseWriter, r *http.Requ
 
 	if id == "" {
 		logger.Warn("Missing runout ingredient ID in delete request")
-		h.writeErrorResponse(w, r, "Runout ingredient ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Runout ingredient ID is required",
+		})
 		return
 	}
 
@@ -252,24 +267,24 @@ func (h *HttpHandler) DeleteRunoutIngredient(w http.ResponseWriter, r *http.Requ
 	err := h.dbHandler.Delete(req, logger.Logger)
 	if err != nil {
 		if err.Error() == "runout ingredient not found" {
-			response := models.GenericResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Message: "Runout ingredient not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.GenericResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete runout ingredient: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.GenericResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Runout ingredient deleted successfully",
 	}
 
@@ -277,32 +292,5 @@ func (h *HttpHandler) DeleteRunoutIngredient(w http.ResponseWriter, r *http.Requ
 		"runout_ingredient_id": id,
 	}).Info("Runout ingredient deleted successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusOK)
-}
-
-// Helper methods for HTTP responses
-
-// writeJSONResponse writes a JSON response with the specified status code
-func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, r *http.Request, data interface{}, statusCode int) {
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		logger.WithError(err).Error("Failed to encode JSON response")
-		// If we can't encode the response, send a basic error
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
-
-// writeErrorResponse writes an error response
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, r *http.Request, message string, statusCode int) {
-	errorResponse := map[string]interface{}{
-		"success": false,
-		"error":   http.StatusText(statusCode),
-		"message": message,
-	}
-
-	h.writeJSONResponse(w, r, errorResponse, statusCode)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }

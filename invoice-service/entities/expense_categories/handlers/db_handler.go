@@ -9,23 +9,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// pvillalobos - crete unit tests for this
 // DBHandler handles database operations for expense categories
 type DBHandler struct {
-	db     *sql.DB
-	logger *logrus.Logger
+	db *sql.DB
 }
 
 // NewDBHandler creates a new database handler for expense categories
-func NewDBHandler(db *sql.DB, logger *logrus.Logger) *DBHandler {
+func NewDBHandler(db *sql.DB) *DBHandler {
 	return &DBHandler{
-		db:     db,
-		logger: logger,
+		db: db,
 	}
 }
 
 // CreateExpenseCategory creates a new expense category in the database
-func (h *DBHandler) CreateExpenseCategory(req models.CreateExpenseCategoryRequest) (*models.ExpenseCategory, error) {
+func (h *DBHandler) CreateExpenseCategory(req models.CreateExpenseCategoryRequest, logger *logrus.Logger) (*models.ExpenseCategory, error) {
 	var expenseCategory models.ExpenseCategory
 
 	// Set default values
@@ -39,13 +36,13 @@ func (h *DBHandler) CreateExpenseCategory(req models.CreateExpenseCategoryReques
 		Scan(&expenseCategory.ID, &expenseCategory.CategoryName, &expenseCategory.Description, &expenseCategory.IsActive, &expenseCategory.CreatedAt, &expenseCategory.UpdatedAt)
 
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"category_name": req.CategoryName,
 		}).Error("Failed to create expense category in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"expense_category_id":   expenseCategory.ID,
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category created successfully")
@@ -54,7 +51,7 @@ func (h *DBHandler) CreateExpenseCategory(req models.CreateExpenseCategoryReques
 }
 
 // GetExpenseCategoryByID retrieves an expense category by ID from the database
-func (h *DBHandler) GetExpenseCategoryByID(id string) (*models.ExpenseCategory, error) {
+func (h *DBHandler) GetExpenseCategoryByID(id string, logger *logrus.Logger) (*models.ExpenseCategory, error) {
 	var expenseCategory models.ExpenseCategory
 
 	err := h.db.QueryRow(expenseCategorySQL.GetExpenseCategoryByIDQuery, id).
@@ -65,7 +62,7 @@ func (h *DBHandler) GetExpenseCategoryByID(id string) (*models.ExpenseCategory, 
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"expense_category_id": id,
 		}).Error("Failed to retrieve expense category from database")
 		return nil, err
@@ -75,35 +72,30 @@ func (h *DBHandler) GetExpenseCategoryByID(id string) (*models.ExpenseCategory, 
 }
 
 // ListExpenseCategories retrieves all expense categories from the database
-func (h *DBHandler) ListExpenseCategories() ([]models.ExpenseCategory, error) {
+func (h *DBHandler) ListExpenseCategories(logger *logrus.Logger) ([]models.ExpenseCategory, error) {
 	rows, err := h.db.Query(expenseCategorySQL.ListExpenseCategoriesQuery)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to execute expense categories list query")
+		logger.WithError(err).Error("Failed to execute expense categories list query")
 		return nil, err
 	}
 	defer rows.Close()
 
-	var expenseCategories []models.ExpenseCategory
+	expenseCategories := []models.ExpenseCategory{}
 	for rows.Next() {
 		var expenseCategory models.ExpenseCategory
 		err := rows.Scan(&expenseCategory.ID, &expenseCategory.CategoryName, &expenseCategory.Description, &expenseCategory.IsActive, &expenseCategory.CreatedAt, &expenseCategory.UpdatedAt)
 		if err != nil {
-			h.logger.WithError(err).Warn("Failed to scan expense category row, skipping")
+			logger.WithError(err).Warn("Failed to scan expense category row, skipping")
 			continue
 		}
 		expenseCategories = append(expenseCategories, expenseCategory)
-	}
-
-	// Ensure we return an empty slice instead of nil for consistency
-	if expenseCategories == nil {
-		expenseCategories = []models.ExpenseCategory{}
 	}
 
 	return expenseCategories, nil
 }
 
 // UpdateExpenseCategory updates an expense category in the database
-func (h *DBHandler) UpdateExpenseCategory(id string, req models.UpdateExpenseCategoryRequest) (*models.ExpenseCategory, error) {
+func (h *DBHandler) UpdateExpenseCategory(id string, req models.UpdateExpenseCategoryRequest, logger *logrus.Logger) (*models.ExpenseCategory, error) {
 	var expenseCategory models.ExpenseCategory
 
 	err := h.db.QueryRow(expenseCategorySQL.UpdateExpenseCategoryQuery,
@@ -115,13 +107,13 @@ func (h *DBHandler) UpdateExpenseCategory(id string, req models.UpdateExpenseCat
 			// Don't log as error since "not found" is a normal business case
 			return nil, err
 		}
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"expense_category_id": id,
 		}).Error("Failed to update expense category in database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"expense_category_id":   expenseCategory.ID,
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category updated successfully")
@@ -130,10 +122,10 @@ func (h *DBHandler) UpdateExpenseCategory(id string, req models.UpdateExpenseCat
 }
 
 // DeleteExpenseCategory deletes an expense category from the database
-func (h *DBHandler) DeleteExpenseCategory(id string) error {
+func (h *DBHandler) DeleteExpenseCategory(id string, logger *logrus.Logger) error {
 	result, err := h.db.Exec(expenseCategorySQL.DeleteExpenseCategoryQuery, id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"expense_category_id": id,
 		}).Error("Failed to execute expense category delete query")
 		return err
@@ -141,18 +133,18 @@ func (h *DBHandler) DeleteExpenseCategory(id string) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to get rows affected for expense category delete")
+		logger.WithError(err).Error("Failed to get rows affected for expense category delete")
 		return err
 	}
 
 	if rowsAffected == 0 {
-		h.logger.WithFields(logrus.Fields{
+		logger.WithFields(logrus.Fields{
 			"expense_category_id": id,
 		}).Warn("No expense category found to delete")
 		return sql.ErrNoRows
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"expense_category_id": id,
 		"rows_affected":       rowsAffected,
 	}).Info("Expense category deleted successfully")

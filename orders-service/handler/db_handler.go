@@ -14,32 +14,30 @@ import (
 )
 
 // pvillalobos - crete unit tests for this
-// OrderDBHandler handles database operations for orders
-type OrderDBHandler struct {
+// DBHandler handles database operations for orders
+type DBHandler struct {
 	db     *sql.DB
 	config *config.Config
-	logger *logrus.Logger
 	repo   *ordersql.Repository
 }
 
-// NewOrderDBHandler creates a new order database handler
-func NewOrderDBHandler(db *sql.DB, cfg *config.Config, logger *logrus.Logger) (*OrderDBHandler, error) {
+// NewDBHandler creates a new order database handler
+func NewDBHandler(db *sql.DB, cfg *config.Config) (*DBHandler, error) {
 	repo, err := ordersql.NewRepository(db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository: %w", err)
 	}
 
-	return &OrderDBHandler{
+	return &DBHandler{
 		db:     db,
 		config: cfg,
-		logger: logger,
 		repo:   repo,
 	}, nil
 }
 
 // CreateOrder creates a new order in the database
 // Handles all tax calculations and compliance requirements
-func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.OrderWithItems, error) {
+func (h *DBHandler) CreateOrder(req models.CreateOrderRequest, logger *logrus.Logger) (*models.OrderWithItems, error) {
 	// Calculate subtotal from recipe final prices (from existences - no taxes included)
 	subtotalAmount := 0.0
 	for _, item := range req.Items {
@@ -96,14 +94,14 @@ func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.Ord
 	// Start database transaction
 	tx, err := h.db.Begin()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to begin transaction for order creation")
+		logger.WithError(err).Error("Failed to begin transaction for order creation")
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer tx.Rollback()
 
 	// Save order to database within transaction
 	if err := h.repo.CreateOrderWithTx(tx, order, items); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": order.ID,
 		}).Error("Failed to create order in database")
 		return nil, fmt.Errorf("failed to create order: %w", err)
@@ -111,20 +109,20 @@ func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.Ord
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		h.logger.WithError(err).Error("Failed to commit order creation transaction")
+		logger.WithError(err).Error("Failed to commit order creation transaction")
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	// Get the complete order with calculated final_amount
 	createdOrder, err := h.repo.GetOrderWithItems(order.ID)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": order.ID,
 		}).Error("Failed to retrieve created order")
 		return nil, fmt.Errorf("failed to retrieve created order: %w", err)
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id":     order.ID,
 		"order_number": order.OrderNumber,
 		"total_amount": order.TotalAmount,
@@ -136,10 +134,10 @@ func (h *OrderDBHandler) CreateOrder(req models.CreateOrderRequest) (*models.Ord
 }
 
 // GetOrder retrieves an order by ID
-func (h *OrderDBHandler) GetOrder(id uuid.UUID) (*models.OrderWithItems, error) {
+func (h *DBHandler) GetOrder(id uuid.UUID, logger *logrus.Logger) (*models.OrderWithItems, error) {
 	order, err := h.repo.GetOrderWithItems(id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": id,
 		}).Error("Failed to retrieve order from database")
 		return nil, err
@@ -149,10 +147,10 @@ func (h *OrderDBHandler) GetOrder(id uuid.UUID) (*models.OrderWithItems, error) 
 }
 
 // UpdateOrder updates an existing order
-func (h *OrderDBHandler) UpdateOrder(id uuid.UUID, req *models.UpdateOrderRequest) (*models.OrderWithItems, error) {
+func (h *DBHandler) UpdateOrder(id uuid.UUID, req *models.UpdateOrderRequest, logger *logrus.Logger) (*models.OrderWithItems, error) {
 	// Update order
 	if err := h.repo.UpdateOrder(id, req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": id,
 		}).Error("Failed to update order in database")
 		return nil, err
@@ -161,13 +159,13 @@ func (h *OrderDBHandler) UpdateOrder(id uuid.UUID, req *models.UpdateOrderReques
 	// Get updated order
 	updatedOrder, err := h.repo.GetOrderWithItems(id)
 	if err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": id,
 		}).Error("Failed to retrieve updated order from database")
 		return nil, err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id": id,
 	}).Info("Order updated successfully in database")
 
@@ -175,15 +173,15 @@ func (h *OrderDBHandler) UpdateOrder(id uuid.UUID, req *models.UpdateOrderReques
 }
 
 // CancelOrder cancels an order
-func (h *OrderDBHandler) CancelOrder(id uuid.UUID) error {
+func (h *DBHandler) CancelOrder(id uuid.UUID, logger *logrus.Logger) error {
 	if err := h.repo.CancelOrder(id); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"order_id": id,
 		}).Error("Failed to cancel order in database")
 		return err
 	}
 
-	h.logger.WithFields(logrus.Fields{
+	logger.WithFields(logrus.Fields{
 		"order_id": id,
 	}).Info("Order cancelled successfully in database")
 
@@ -191,10 +189,10 @@ func (h *OrderDBHandler) CancelOrder(id uuid.UUID) error {
 }
 
 // ListOrders retrieves orders with filtering and pagination
-func (h *OrderDBHandler) ListOrders(filter *models.OrderFilter) ([]models.Order, int, error) {
+func (h *DBHandler) ListOrders(filter *models.OrderFilter, logger *logrus.Logger) ([]models.Order, int, error) {
 	orders, totalCount, err := h.repo.ListOrders(filter)
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to retrieve orders from database")
+		logger.WithError(err).Error("Failed to retrieve orders from database")
 		return nil, 0, err
 	}
 
@@ -202,10 +200,10 @@ func (h *OrderDBHandler) ListOrders(filter *models.OrderFilter) ([]models.Order,
 }
 
 // GetOrderSummary retrieves order statistics
-func (h *OrderDBHandler) GetOrderSummary() (*models.OrderSummary, error) {
+func (h *DBHandler) GetOrderSummary(logger *logrus.Logger) (*models.OrderSummary, error) {
 	summary, err := h.repo.GetOrderSummary()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to retrieve order summary from database")
+		logger.WithError(err).Error("Failed to retrieve order summary from database")
 		return nil, err
 	}
 
@@ -213,10 +211,10 @@ func (h *OrderDBHandler) GetOrderSummary() (*models.OrderSummary, error) {
 }
 
 // GetPaymentMethodStats retrieves payment method statistics
-func (h *OrderDBHandler) GetPaymentMethodStats() ([]models.PaymentMethodStats, error) {
+func (h *DBHandler) GetPaymentMethodStats(logger *logrus.Logger) ([]models.PaymentMethodStats, error) {
 	stats, err := h.repo.GetPaymentMethodStats()
 	if err != nil {
-		h.logger.WithError(err).Error("Failed to retrieve payment method stats from database")
+		logger.WithError(err).Error("Failed to retrieve payment method stats from database")
 		return nil, err
 	}
 
@@ -224,6 +222,6 @@ func (h *OrderDBHandler) GetPaymentMethodStats() ([]models.PaymentMethodStats, e
 }
 
 // HealthCheck checks the health of the database connection
-func (h *OrderDBHandler) HealthCheck() error {
+func (h *DBHandler) HealthCheck() error {
 	return h.repo.HealthCheck()
 }

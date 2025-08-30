@@ -295,15 +295,3 @@ func (h *SettingsHandler) validateGatewayRequest(r *http.Request) bool {
 		username != "" &&
 		userRole != ""
 }
-
-// writeJSONResponse writes a JSON response to the HTTP response writer
-func (h *SettingsHandler) writeJSONResponse(w http.ResponseWriter, response interface{}, logger *logrus.Logger) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		logger.WithError(err).Error("Failed to encode JSON response")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-}

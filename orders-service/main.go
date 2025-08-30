@@ -37,7 +37,7 @@ func main() {
 	defer db.Close()
 
 	// Create database handler
-	dbHandler, err := handler.NewOrderDBHandler(db, cfg, logger.Logger)
+	dbHandler, err := handler.NewOrderDBHandler(db, cfg)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create database handler")
 	}

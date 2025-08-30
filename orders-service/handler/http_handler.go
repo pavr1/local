@@ -543,7 +543,7 @@ func (h *OrderHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 // createIncomeInvoice calls the invoice service to create an income invoice
-func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq map[string]interface{}) (*InvoiceResponse, error) {
+func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq map[string]interface{}) (*models.InvoiceResponse, error) {
 	// Convert data to JSON
 	jsonData, err := json.Marshal(invoiceReq)
 	if err != nil {
@@ -574,7 +574,7 @@ func (h *OrderHTTPHandler) createIncomeInvoice(invoiceReq map[string]interface{}
 	}
 
 	// Parse response
-	var invoiceResp InvoiceResponse
+	var invoiceResp models.InvoiceResponse
 	if err := json.NewDecoder(resp.Body).Decode(&invoiceResp); err != nil {
 		return nil, fmt.Errorf("failed to decode invoice response: %w", err)
 	}

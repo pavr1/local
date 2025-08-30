@@ -66,10 +66,3 @@ type ExpenseCategoryDeleteResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
 }
-
-// ErrorResponse represents an error response
-type ErrorResponse struct {
-	Success bool   `json:"success"`
-	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
-} 

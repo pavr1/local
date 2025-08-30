@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/expense_categories/models"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -15,32 +16,25 @@ import (
 // pvillalobos - crete unit tests for this
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateExpenseCategory(req models.CreateExpenseCategoryRequest) (*models.ExpenseCategory, error)
-	GetExpenseCategoryByID(id string) (*models.ExpenseCategory, error)
-	ListExpenseCategories() ([]models.ExpenseCategory, error)
-	UpdateExpenseCategory(id string, req models.UpdateExpenseCategoryRequest) (*models.ExpenseCategory, error)
-	DeleteExpenseCategory(id string) error
+	CreateExpenseCategory(req models.CreateExpenseCategoryRequest, logger *logrus.Logger) (*models.ExpenseCategory, error)
+	GetExpenseCategoryByID(id string, logger *logrus.Logger) (*models.ExpenseCategory, error)
+	ListExpenseCategories(logger *logrus.Logger) ([]models.ExpenseCategory, error)
+	UpdateExpenseCategory(id string, req models.UpdateExpenseCategoryRequest, logger *logrus.Logger) (*models.ExpenseCategory, error)
+	DeleteExpenseCategory(id string, logger *logrus.Logger) error
 }
 
-// HttpHandler handles HTTP requests for expense category operations
+// Ensure DBHandler implements DBHandlerInterface
+var _ DBHandlerInterface = (*DBHandler)(nil)
+
+// HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
-	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler *DBHandler, logger *logrus.Logger) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
-		logger:    logger,
-	}
-}
-
-// NewHttpHandlerWithInterface creates a new HTTP handler with interface (for testing)
-func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
-	return &HttpHandler{
-		dbHandler: dbHandler,
-		logger:    logger,
 	}
 }
 
@@ -51,25 +45,28 @@ func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Reque
 
 	var req models.CreateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create expense category request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		logger.WithError(err).Error("Invalid JSON in create expense category request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.CreateExpenseCategory(req)
+	expenseCategory, err := h.dbHandler.CreateExpenseCategory(req, logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoryResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.ExpenseCategory{},
 			Message: "Failed to create expense category: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.ExpenseCategoryResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusCreated,
 		Data:    *expenseCategory,
 		Message: "Expense category created successfully",
 	}
@@ -79,73 +76,84 @@ func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category created successfully")
 
-	h.writeJSONResponse(w, response, http.StatusCreated)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // GetExpenseCategory handles GET /expense-categories/{id}
 func (h *HttpHandler) GetExpenseCategory(w http.ResponseWriter, r *http.Request) {
+	// Get logger with request ID
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
+
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing expense category ID in get request")
-		h.writeErrorResponse(w, "Expense category ID is required", http.StatusBadRequest)
+		logger.Warn("Missing expense category ID in get request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Expense category ID is required",
+		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.GetExpenseCategoryByID(id)
+	expenseCategory, err := h.dbHandler.GetExpenseCategoryByID(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.ExpenseCategoryResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.ExpenseCategory{},
 				Message: "Expense category not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoryResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.ExpenseCategory{},
 			Message: "Failed to retrieve expense category: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.ExpenseCategoryResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *expenseCategory,
 		Message: "Expense category retrieved successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // ListExpenseCategories handles GET /expense-categories
 func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Request) {
-	expenseCategories, err := h.dbHandler.ListExpenseCategories()
+	// Get logger with request ID
+	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
+
+	expenseCategories, err := h.dbHandler.ListExpenseCategories(logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoryListResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    []models.ExpenseCategory{},
-			Count:   0,
 			Message: "Failed to list expense categories: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.ExpenseCategoryListResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    expenseCategories,
-		Count:   len(expenseCategories),
 		Message: "Expense categories listed successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		Code:    http.StatusOK,
+		Message: "Expense categories listed successfully",
+		Data:    response,
+	})
 }
 
 // UpdateExpenseCategory handles PUT /expense-categories/{id}
@@ -157,44 +165,47 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing expense category ID in update request")
-		h.writeErrorResponse(w, "Expense category ID is required", http.StatusBadRequest)
+		logger.Warn("Missing expense category ID in update request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Expense category ID is required",
+		})
 		return
 	}
 
 	var req models.UpdateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update expense category request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		logger.WithError(err).Error("Invalid JSON in update expense category request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.UpdateExpenseCategory(id, req)
+	expenseCategory, err := h.dbHandler.UpdateExpenseCategory(id, req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.ExpenseCategoryResponse{
-				Success: false,
-				Data:    models.ExpenseCategory{},
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Message: "Expense category not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoryResponse{
-			Success: false,
-			Data:    models.ExpenseCategory{},
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Message: "Failed to update expense category: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.ExpenseCategoryResponse{
-		Success: true,
-		Data:    *expenseCategory,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Expense category updated successfully",
 	}
 
@@ -203,7 +214,7 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category updated successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // DeleteExpenseCategory handles DELETE /expense-categories/{id}
@@ -215,34 +226,36 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing expense category ID in delete request")
-		h.writeErrorResponse(w, "Expense category ID is required", http.StatusBadRequest)
+		logger.Warn("Missing expense category ID in delete request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Expense category ID is required"})
 		return
 	}
 
-	err := h.dbHandler.DeleteExpenseCategory(id)
+	err := h.dbHandler.DeleteExpenseCategory(id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.ExpenseCategoryDeleteResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Message: "Expense category not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.ExpenseCategoryDeleteResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete expense category: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.ExpenseCategoryDeleteResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Expense category deleted successfully",
 	}
 
@@ -250,27 +263,5 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 		"expense_category_id": id,
 	}).Info("Expense category deleted successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
-}
-
-// writeJSONResponse writes a JSON response with the given status code
-func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.WithError(err).Error("Failed to encode JSON response")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-}
-
-// writeErrorResponse writes an error response with the given message and status code
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
-	response := models.ErrorResponse{
-		Success: false,
-		Error:   message,
-		Message: message,
-	}
-	h.writeJSONResponse(w, response, statusCode)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }

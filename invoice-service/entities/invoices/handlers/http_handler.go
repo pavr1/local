@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"invoice-service/entities/invoices/models"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -26,25 +27,15 @@ type DBHandlerInterface interface {
 // Ensure DBHandler implements DBHandlerInterface
 var _ DBHandlerInterface = (*DBHandler)(nil)
 
-// HttpHandler handles HTTP requests for invoice operations
+// HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
-	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler *DBHandler, logger *logrus.Logger) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
-		logger:    logger,
-	}
-}
-
-// NewHttpHandlerWithInterface creates a new HTTP handler with interface (for testing)
-func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
-	return &HttpHandler{
-		dbHandler: dbHandler,
-		logger:    logger,
 	}
 }
 
@@ -55,35 +46,41 @@ func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateInvoiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in create invoice request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		logger.WithError(err).Error("Invalid JSON in create invoice request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateInvoiceRequest(req); err != nil {
-		h.logger.WithError(err).WithFields(logrus.Fields{
+		logger.WithError(err).WithFields(logrus.Fields{
 			"invoice_number":   req.InvoiceNumber,
 			"transaction_type": req.TransactionType,
 		}).Error("Validation failed for create invoice request")
-		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Validation failed: " + err.Error(),
+		})
 		return
 	}
 
 	invoice, err := h.dbHandler.CreateInvoice(req, logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Invoice{},
 			Message: "Failed to create invoice: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoiceResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusCreated,
 		Data:    *invoice,
 		Message: "Invoice created successfully",
 	}
@@ -94,7 +91,7 @@ func (h *HttpHandler) CreateInvoice(w http.ResponseWriter, r *http.Request) {
 		"transaction_type": invoice.TransactionType,
 	}).Info("Invoice created successfully")
 
-	h.writeJSONResponse(w, response, http.StatusCreated)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // validateCreateInvoiceRequest validates all required fields for invoice creation
@@ -199,8 +196,11 @@ func (h *HttpHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing invoice ID in get request")
-		h.writeErrorResponse(w, "Invoice ID is required", http.StatusBadRequest)
+		logger.Warn("Missing invoice ID in get request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invoice ID is required",
+		})
 		return
 	}
 
@@ -208,31 +208,31 @@ func (h *HttpHandler) GetInvoiceByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.InvoiceResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.Invoice{},
 				Message: "Invoice not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Invoice{},
 			Message: "Failed to retrieve invoice: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoiceResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *invoice,
 		Message: "Invoice retrieved successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // GetInvoiceByNumber handles GET /invoices/number/{number}
@@ -243,8 +243,11 @@ func (h *HttpHandler) GetInvoiceByNumber(w http.ResponseWriter, r *http.Request)
 	number := vars["number"]
 
 	if number == "" {
-		h.logger.Warn("Missing invoice number in get request")
-		h.writeErrorResponse(w, "Invoice number is required", http.StatusBadRequest)
+		logger.Warn("Missing invoice number in get request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invoice number is required",
+		})
 		return
 	}
 
@@ -252,31 +255,31 @@ func (h *HttpHandler) GetInvoiceByNumber(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.InvoiceResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.Invoice{},
 				Message: "Invoice not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Invoice{},
 			Message: "Failed to retrieve invoice: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoiceResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *invoice,
 		Message: "Invoice retrieved successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // ListInvoices handles GET /invoices
@@ -286,23 +289,21 @@ func (h *HttpHandler) ListInvoices(w http.ResponseWriter, r *http.Request) {
 	invoices, err := h.dbHandler.ListInvoices(logger.Logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoicesListResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    []models.Invoice{},
-			Count:   0,
 			Message: "Failed to list invoices: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoicesListResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    invoices,
-		Count:   len(invoices),
 		Message: "Invoices listed successfully",
 	}
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // UpdateInvoice handles PUT /invoices/{id}
@@ -314,15 +315,21 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing invoice ID in update request")
-		h.writeErrorResponse(w, "Invoice ID is required", http.StatusBadRequest)
+		logger.Warn("Missing invoice ID in update request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invoice ID is required",
+		})
 		return
 	}
 
 	var req models.UpdateInvoiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.WithError(err).Error("Invalid JSON in update invoice request")
-		h.writeErrorResponse(w, "Invalid JSON format", http.StatusBadRequest)
+		logger.WithError(err).Error("Invalid JSON in update invoice request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
@@ -330,27 +337,27 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.InvoiceResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.Invoice{},
 				Message: "Invoice not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Invoice{},
 			Message: "Failed to update invoice: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoiceResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *invoice,
 		Message: "Invoice updated successfully",
 	}
@@ -361,7 +368,7 @@ func (h *HttpHandler) UpdateInvoice(w http.ResponseWriter, r *http.Request) {
 		"transaction_type": invoice.TransactionType,
 	}).Info("Invoice updated successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // DeleteInvoice handles DELETE /invoices/{id}
@@ -373,8 +380,11 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 	id := vars["id"]
 
 	if id == "" {
-		h.logger.Warn("Missing invoice ID in delete request")
-		h.writeErrorResponse(w, "Invoice ID is required", http.StatusBadRequest)
+		logger.Warn("Missing invoice ID in delete request")
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invoice ID is required",
+		})
 		return
 	}
 
@@ -382,25 +392,25 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
-			response := models.InvoiceDeleteResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Message: "Invoice not found",
 			}
-			h.writeJSONResponse(w, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
 		// DBHandler already logged the error, don't duplicate
-		response := models.InvoiceDeleteResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete invoice: " + err.Error(),
 		}
-		h.writeJSONResponse(w, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
-	response := models.InvoiceDeleteResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Invoice deleted successfully",
 	}
 
@@ -408,27 +418,5 @@ func (h *HttpHandler) DeleteInvoice(w http.ResponseWriter, r *http.Request) {
 		"invoice_id": id,
 	}).Info("Invoice deleted successfully")
 
-	h.writeJSONResponse(w, response, http.StatusOK)
-}
-
-// writeJSONResponse writes a JSON response with the given status code
-func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		h.logger.WithError(err).Error("Failed to encode JSON response")
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-}
-
-// writeErrorResponse writes an error response with the given message and status code
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
-	response := models.ErrorResponse{
-		Success: false,
-		Error:   message,
-		Message: message,
-	}
-	h.writeJSONResponse(w, response, statusCode)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }

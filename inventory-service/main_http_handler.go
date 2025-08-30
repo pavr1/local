@@ -2,8 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
 	"net/http"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 	sharedMiddleware "shared/middlewares"
 	"time"
@@ -215,21 +215,27 @@ func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	if !dataServiceHealthy {
 		h.logger.Error("Data-service health check failed")
-		h.writeJSONResponse(w, http.StatusServiceUnavailable, map[string]interface{}{
-			"status":  "unhealthy",
-			"service": "inventory-service",
-			"message": "Data-service is not healthy",
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code: http.StatusServiceUnavailable,
+			Data: map[string]interface{}{
+				"status":  "unhealthy",
+				"service": "inventory-service",
+				"message": "Data-service is not healthy",
+			},
 		})
 		return
 	}
 
-	response := map[string]interface{}{
-		"status":  "healthy",
-		"service": "inventory-service",
-		"message": "Inventory service is operational",
+	response := httpresponse.Response{
+		Code: http.StatusOK,
+		Data: map[string]interface{}{
+			"status":  "healthy",
+			"service": "inventory-service",
+			"message": "Inventory service is operational",
+		},
 	}
 
-	h.writeJSONResponse(w, http.StatusOK, response)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // checkDataServiceHealth checks if the data-service is healthy
@@ -247,21 +253,6 @@ func (h *MainHttpHandler) checkDataServiceHealth() bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
-}
-
-// writeJSONResponse writes a JSON response
-func (h *MainHttpHandler) writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		h.logger.WithError(err).Error("Failed to marshal JSON response")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(jsonData)
 }
 
 // responseWriter wraps http.ResponseWriter to capture status code

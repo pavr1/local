@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/recipes/models"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -46,7 +47,10 @@ func (h *HttpHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in create recipe request")
-		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
@@ -55,23 +59,26 @@ func (h *HttpHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_name": req.RecipeName,
 		}).Error("Validation failed for create recipe request")
-		h.writeErrorResponse(w, r, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Validation failed: " + err.Error(),
+		})
 		return
 	}
 
 	recipe, err := h.dbHandler.Create(req, logger.Logger)
 	if err != nil {
-		response := models.RecipeResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Recipe{},
 			Message: "Failed to create recipe: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RecipeResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusCreated,
 		Data:    *recipe,
 		Message: "Recipe created successfully",
 	}
@@ -81,7 +88,7 @@ func (h *HttpHandler) CreateRecipe(w http.ResponseWriter, r *http.Request) {
 		"recipe_name": recipe.RecipeName,
 	}).Info("Recipe created successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusCreated)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // GetRecipe handles GET /recipes/{id}
@@ -94,7 +101,10 @@ func (h *HttpHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing recipe ID in get request")
-		h.writeErrorResponse(w, r, "Recipe ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Recipe ID is required",
+		})
 		return
 	}
 
@@ -103,7 +113,10 @@ func (h *HttpHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 		logger.WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Warn("Invalid recipe ID format in get request")
-		h.writeErrorResponse(w, r, "Recipe ID must be a valid UUID", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Recipe ID must be a valid UUID",
+		})
 		return
 	}
 
@@ -111,30 +124,30 @@ func (h *HttpHandler) GetRecipe(w http.ResponseWriter, r *http.Request) {
 	recipe, err := h.dbHandler.GetByID(req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			response := models.RecipeResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.Recipe{},
 				Message: "Recipe not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.RecipeResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Recipe{},
 			Message: "Failed to get recipe: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RecipeResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *recipe,
 		Message: "Recipe retrieved successfully",
 	}
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // ListRecipes handles GET /recipes
@@ -167,22 +180,21 @@ func (h *HttpHandler) ListRecipes(w http.ResponseWriter, r *http.Request) {
 
 	recipes, err := h.dbHandler.List(req, logger.Logger)
 	if err != nil {
-		response := models.RecipesResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    []models.Recipe{},
 			Message: "Failed to list recipes: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RecipesResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    recipes,
-		Total:   len(recipes),
 		Message: "Recipes retrieved successfully",
 	}
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // UpdateRecipe handles PUT /recipes/{id}
@@ -195,14 +207,20 @@ func (h *HttpHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing recipe ID in update request")
-		h.writeErrorResponse(w, r, "Recipe ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Recipe ID is required",
+		})
 		return
 	}
 
 	var req models.UpdateRecipeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Invalid JSON in update recipe request")
-		h.writeErrorResponse(w, r, "Invalid JSON format", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid JSON format",
+		})
 		return
 	}
 
@@ -211,33 +229,36 @@ func (h *HttpHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Error("Validation failed for update recipe request")
-		h.writeErrorResponse(w, r, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Validation failed: " + err.Error(),
+		})
 		return
 	}
 
 	recipe, err := h.dbHandler.Update(req, id, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			response := models.RecipeResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Data:    models.Recipe{},
 				Message: "Recipe not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.RecipeResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Data:    models.Recipe{},
 			Message: "Failed to update recipe: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.RecipeResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *recipe,
 		Message: "Recipe updated successfully",
 	}
@@ -247,7 +268,7 @@ func (h *HttpHandler) UpdateRecipe(w http.ResponseWriter, r *http.Request) {
 		"recipe_name": recipe.RecipeName,
 	}).Info("Recipe updated successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusOK)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // DeleteRecipe handles DELETE /recipes/{id}
@@ -260,7 +281,10 @@ func (h *HttpHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 
 	if id == "" {
 		logger.Warn("Missing recipe ID in delete request")
-		h.writeErrorResponse(w, r, "Recipe ID is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Recipe ID is required",
+		})
 		return
 	}
 
@@ -269,7 +293,10 @@ func (h *HttpHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 		logger.WithFields(logrus.Fields{
 			"recipe_id": id,
 		}).Warn("Invalid recipe ID format in delete request")
-		h.writeErrorResponse(w, r, "Recipe ID must be a valid UUID", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Recipe ID must be a valid UUID",
+		})
 		return
 	}
 
@@ -277,24 +304,24 @@ func (h *HttpHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 	err := h.dbHandler.Delete(req, logger.Logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			response := models.GenericResponse{
-				Success: false,
+			response := httpresponse.Response{
+				Code:    http.StatusNotFound,
 				Message: "Recipe not found",
 			}
-			h.writeJSONResponse(w, r, response, http.StatusNotFound)
+			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
-		response := models.GenericResponse{
-			Success: false,
+		response := httpresponse.Response{
+			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete recipe: " + err.Error(),
 		}
-		h.writeJSONResponse(w, r, response, http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	response := models.GenericResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Recipe deleted successfully",
 	}
 
@@ -302,34 +329,7 @@ func (h *HttpHandler) DeleteRecipe(w http.ResponseWriter, r *http.Request) {
 		"recipe_id": id,
 	}).Info("Recipe deleted successfully")
 
-	h.writeJSONResponse(w, r, response, http.StatusOK)
-}
-
-// Helper methods for HTTP responses
-
-// writeJSONResponse writes a JSON response with the specified status code
-func (h *HttpHandler) writeJSONResponse(w http.ResponseWriter, r *http.Request, data interface{}, statusCode int) {
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		logger.WithError(err).Error("Failed to encode JSON response")
-		// If we can't encode the response, send a basic error
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
-}
-
-// writeErrorResponse writes an error response
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, r *http.Request, message string, statusCode int) {
-	errorResponse := map[string]interface{}{
-		"success": false,
-		"error":   http.StatusText(statusCode),
-		"message": message,
-	}
-
-	h.writeJSONResponse(w, r, errorResponse, statusCode)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // validateCreateRecipeRequest validates all required fields for recipe creation

@@ -129,6 +129,7 @@ func (h *DBHandler) CreateInvoice(req models.CreateInvoiceRequest, logger *logru
 				logger.WithError(err).WithFields(logrus.Fields{
 					"ingredient_id": *item.IngredientID,
 				}).Warn("Failed to recalculate recipes for ingredient, continuing with invoice creation")
+				//pvillalobos - think this through
 				// Don't fail the entire invoice creation if recipe recalculation fails
 			} else {
 				logger.WithFields(logrus.Fields{
@@ -296,19 +297,17 @@ func (h *DBHandler) DeleteInvoice(id string, logger *logrus.Logger) error {
 // CreateInventoryExistence creates an existence record from an invoice detail
 func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExistenceRequest, logger *logrus.Logger) error {
 	// Debug logging to verify items_per_unit value
-	logger.WithFields(logrus.Fields{
+	logger = logger.WithFields(logrus.Fields{
 		"ingredient_id":     req.IngredientID,
 		"invoice_detail_id": req.InvoiceDetailID,
 		"items_per_unit":    req.ItemsPerUnit,
 		"cost_per_unit":     req.CostPerUnit,
 		"unit_type":         req.UnitType,
-	}).Info("CreateInventoryExistence called with items_per_unit")
+	}).Logger
+	logger.Info("CreateInventoryExistence called with items_per_unit")
 
 	if req.ItemsPerUnit == 0 {
-		logger.WithFields(logrus.Fields{
-			"ingredient_id": req.IngredientID,
-			"unit_type":     req.UnitType,
-		}).Error("Items per unit is 0")
+		logger.Error("Items per unit is 0")
 		return fmt.Errorf("items per unit is 0")
 	}
 
@@ -318,10 +317,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 		if err == sql.ErrNoRows {
 			mostRecentExistence = nil // Ensure it's nil when no rows found
 		} else {
-			logger.WithError(err).WithFields(logrus.Fields{
-				"ingredient_id": req.IngredientID,
-				"unit_type":     req.UnitType,
-			}).Error("Failed to call inventory service for existence")
+			logger.WithError(err).Error("Failed to call inventory service for existence")
 			return err
 		}
 	}
