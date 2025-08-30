@@ -165,14 +165,6 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	invoicesRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
 	invoicesHandler := mainHandler.GetInvoicesHandler()
 
-	// Main invoice operations (MUST be after specific routes)
-	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoice).Methods("POST")
-	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")
-	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
-	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
-
 	// Expense Categories routes - under invoices (MUST be before generic {id} routes)
 	expenseCategoriesRouter := invoicesRouter.PathPrefix("/expense-categories").Subrouter()
 	expenseCategoriesHandler := mainHandler.GetExpenseCategoriesHandler()
@@ -183,6 +175,14 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.GetExpenseCategory).Methods("GET")
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.UpdateExpenseCategory).Methods("PUT")
 	expenseCategoriesRouter.HandleFunc("/{id}", expenseCategoriesHandler.DeleteExpenseCategory).Methods("DELETE")
+
+	// Main invoice operations (MUST be after specific routes)
+	invoicesRouter.HandleFunc("", invoicesHandler.CreateInvoice).Methods("POST")
+	invoicesRouter.HandleFunc("", invoicesHandler.ListInvoices).Methods("GET")
+	invoicesRouter.HandleFunc("/number/{number}", invoicesHandler.GetInvoiceByNumber).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.GetInvoiceByID).Methods("GET")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.UpdateInvoice).Methods("PUT")
+	invoicesRouter.HandleFunc("/{id}", invoicesHandler.DeleteInvoice).Methods("DELETE")
 
 	logger.Info("HTTP router configured successfully")
 	return router
