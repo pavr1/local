@@ -17,7 +17,6 @@ import (
 	recipesHandlers "inventory-service/entities/recipes/handlers"
 	runoutIngredientsHandlers "inventory-service/entities/runout_ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
-	"inventory-service/middleware"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -128,16 +127,15 @@ func (h *MainHttpHandler) GetRecipeIngredientsHandler() *recipeIngredientsHandle
 
 // SetupRoutes sets up all the routes for the service
 func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
+	router.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE))
+	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
+
 	// Public router for endpoints that don't require gateway validation
 	publicRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
 	publicRouter.HandleFunc("/p/health", h.HealthCheck).Methods("GET")
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
-	protectedRouter.Use(middleware.NewGatewayMiddleware(h.logger).ValidateGateway)
-	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
-	protectedRouter.Use(h.loggingMiddleware())
-
 	// Suppliers endpoints under inventory
 	suppliersRouter := protectedRouter.PathPrefix("/suppliers").Subrouter()
 	suppliersRouter.HandleFunc("", h.GetSuppliersHandler().ListSuppliers).Methods("GET")
@@ -260,34 +258,6 @@ func (h *MainHttpHandler) writeJSONResponse(w http.ResponseWriter, statusCode in
 	}
 
 	w.Write(jsonData)
-}
-
-// loggingMiddleware logs HTTP requests
-func (h *MainHttpHandler) loggingMiddleware() mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-
-			// Create a custom response writer to capture status code
-			wrappedWriter := &responseWriter{
-				ResponseWriter: w,
-				statusCode:     http.StatusOK,
-			}
-
-			// Call the next handler
-			next.ServeHTTP(wrappedWriter, r)
-
-			// Log the request
-			duration := time.Since(start)
-			h.logger.WithFields(logrus.Fields{
-				"method":    r.Method,
-				"path":      r.URL.Path,
-				"status":    wrappedWriter.statusCode,
-				"duration":  duration.String(),
-				"remote_ip": r.RemoteAddr,
-			}).Info("HTTP request processed")
-		})
-	}
 }
 
 // responseWriter wraps http.ResponseWriter to capture status code

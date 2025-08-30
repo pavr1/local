@@ -113,20 +113,12 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 // setupRouter configures the HTTP router with all routes
 func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
-
-	// Add request ID middleware
+	router.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE))
 	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
 
-	// Add logging middleware
-	router.Use(loggingMiddleware(logger))
-
-	// CORS removed - gateway handles all CORS headers
-
 	// Health check endpoint
-	// API versioning
 	v1 := router.PathPrefix("/api/v1").Subrouter()
 
-	//pvillalobos - is this duplicated?
 	// Public health check endpoint
 	v1.HandleFunc("/invoices/p/health", func(w http.ResponseWriter, r *http.Request) {
 		healthData := mainHandler.HealthCheck()
@@ -192,40 +184,6 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 
 	logger.Info("HTTP router configured successfully")
 	return router
-}
-
-// loggingMiddleware logs HTTP requests
-func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			start := time.Now()
-
-			// Create a response writer wrapper to capture status code
-			wrappedWriter := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-
-			// Process request
-			next.ServeHTTP(wrappedWriter, r)
-
-			// Log request with request ID
-			duration := time.Since(start)
-			logFields := logrus.Fields{
-				"method":      r.Method,
-				"uri":         r.RequestURI,
-				"status":      wrappedWriter.statusCode,
-				"duration_ms": duration.Milliseconds(),
-				"remote_addr": r.RemoteAddr,
-			}
-
-			// Add request ID if available
-			if requestID := r.Context().Value("request_id"); requestID != nil {
-				if id, ok := requestID.(string); ok {
-					logFields["request_id"] = id
-				}
-			}
-
-			logger.WithFields(logFields).Info("HTTP request processed")
-		})
-	}
 }
 
 // responseWriter wraps http.ResponseWriter to capture status code

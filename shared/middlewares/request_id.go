@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -16,21 +15,19 @@ const (
 	RequestIDHeader = "X-Request-ID"
 )
 
+// RequestIDContextKey is the context key for request ID
+type RequestIDContextKey struct{}
+
 // RequestIDMiddleware generates a unique request ID for each request
-func InjectRequestIDMiddleware() func(http.Handler) http.Handler {
+func InjectRequestIDMiddleware(serviceName string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
+			logger := sharedLogger.GetRequestLogger(r, serviceName)
 			// Check if request ID is already provided in header
 			requestID := generateRequestID()
 
 			// Add request ID to response headers
-			w.Header().Set(RequestIDHeader, requestID)
-
-			// Add request ID to request context
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, "request_id", requestID)
-			r = r.WithContext(ctx)
+			r.Header.Set(RequestIDHeader, requestID)
 
 			// Log the incoming request with request ID
 			logger.WithFields(logrus.Fields{
@@ -77,10 +74,6 @@ func CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) fun
 
 			// Add request ID to response headers
 			w.Header().Set(RequestIDHeader, requestID)
-
-			// Add request ID to context
-			ctx := context.WithValue(r.Context(), "request_id", requestID)
-			r = r.WithContext(ctx)
 
 			// Call next handler
 			next.ServeHTTP(w, r)

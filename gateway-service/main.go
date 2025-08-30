@@ -85,7 +85,8 @@ func main() {
 	r := mux.NewRouter()
 
 	// Apply request ID middleware to main router (first)
-	r.Use(sharedMiddleware.InjectRequestIDMiddleware())
+	r.Use(sharedMiddleware.InjectRequestIDMiddleware(sharedLogger.SERVICE_GATEWAY_SERVICE))
+	r.Use(sharedMiddleware.InjectGatewayHeadersMiddleware(sharedLogger.SERVICE_GATEWAY_SERVICE))
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
