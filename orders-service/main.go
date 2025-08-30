@@ -37,13 +37,13 @@ func main() {
 	defer db.Close()
 
 	// Create database handler
-	dbHandler, err := handler.NewOrderDBHandler(db, cfg)
+	dbHandler, err := handler.NewDBHandler(db, cfg)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create database handler")
 	}
 
 	// Create HTTP handler
-	ordersHandler := handler.NewOrderHTTPHandler(dbHandler, cfg, logger.Logger)
+	ordersHandler := handler.NewHttpHandler(dbHandler, cfg)
 
 	// Setup HTTP router
 	router := setupRouter(ordersHandler, logger.Logger)
@@ -128,7 +128,7 @@ func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, erro
 }
 
 // setupRouter configures the HTTP routes
-func setupRouter(ordersHandler handler.OrdersHandler, logger *logrus.Logger) *mux.Router {
+func setupRouter(ordersHandler *handler.HttpHandler, logger *logrus.Logger) *mux.Router {
 	router := mux.NewRouter()
 
 	// Public routes (no authentication required)

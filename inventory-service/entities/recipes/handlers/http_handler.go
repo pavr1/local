@@ -363,7 +363,7 @@ func (h *HttpHandler) validateCreateRecipeRequest(req models.CreateRecipeRequest
 
 	// Validate each ingredient
 	for i, ingredient := range req.Ingredients {
-		if err := h.validateRecipeIngredient(ingredient, i); err != nil {
+		if err := h.validateRecipeIngredient(ingredient); err != nil {
 			return fmt.Errorf("ingredient %d validation failed: %w", i, err)
 		}
 	}
@@ -377,7 +377,7 @@ func (h *HttpHandler) validateCreateRecipeRequest(req models.CreateRecipeRequest
 }
 
 // validateRecipeIngredient validates a single recipe ingredient
-func (h *HttpHandler) validateRecipeIngredient(ingredient models.RecipeIngredient, index int) error {
+func (h *HttpHandler) validateRecipeIngredient(ingredient models.RecipeIngredient) error {
 	// Validate ingredient_id (required, valid UUID)
 	if ingredient.IngredientID == "" {
 		return fmt.Errorf("ingredient_id is required and cannot be empty")
@@ -439,7 +439,7 @@ func (h *HttpHandler) validateUpdateRecipeRequest(req models.UpdateRecipeRequest
 
 		// Validate each ingredient
 		for i, ingredient := range req.Ingredients {
-			if err := h.validateRecipeIngredient(ingredient, i); err != nil {
+			if err := h.validateRecipeIngredient(ingredient); err != nil {
 				return fmt.Errorf("ingredient %d validation failed: %w", i, err)
 			}
 		}

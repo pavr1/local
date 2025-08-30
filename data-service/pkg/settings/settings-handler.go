@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/sirupsen/logrus"
@@ -55,14 +56,13 @@ func (h *SettingsHandler) GetAllSettings(w http.ResponseWriter, r *http.Request)
 		settings = append(settings, setting)
 	}
 
-	response := &SettingsResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    settings,
-		Total:   len(settings),
 		Message: "All settings retrieved successfully",
 	}
 
-	h.writeJSONResponse(w, response, logger.Logger)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, response)
 }
 
 // GetByService returns general settings + service-specific settings (for business services)
@@ -72,14 +72,20 @@ func (h *SettingsHandler) GetByService(w http.ResponseWriter, r *http.Request) {
 	var req GetSettingsByServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Failed to decode request body")
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body",
+		})
 		return
 	}
 
 	// Validate request
 	if req.Service == "" {
 		logger.Error("Service parameter is required")
-		http.Error(w, "Service parameter is required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Service parameter is required",
+		})
 		return
 	}
 
@@ -93,14 +99,13 @@ func (h *SettingsHandler) GetByService(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	response := &SettingsResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    settings,
-		Total:   len(settings),
 		Message: "Settings retrieved successfully",
 	}
 
-	h.writeJSONResponse(w, response, logger.Logger)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, response)
 }
 
 // GetByKey returns a specific setting by service and key
@@ -110,28 +115,41 @@ func (h *SettingsHandler) GetByKey(w http.ResponseWriter, r *http.Request) {
 	var req GetSettingByKeyRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Failed to decode request body")
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body",
+		})
 		return
 	}
 
 	// Validate request
 	if req.Service == "" || req.Key == "" {
 		logger.Error("Service and Key parameters are required")
-		http.Error(w, "Service and Key parameters are required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Service and Key parameters are required",
+		})
 		return
 	}
 
 	// Validate service name format (basic validation)
 	if len(req.Service) > 50 {
 		logger.Error("Service name too long")
-		http.Error(w, "Service name cannot exceed 50 characters", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Service name cannot exceed 50 characters",
+		})
 		return
 	}
 
+	//pvillalobos - hardcoded values
 	// Validate key format (basic validation)
 	if len(req.Key) > 100 {
 		logger.Error("Key name too long")
-		http.Error(w, "Key name cannot exceed 100 characters", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Key name cannot exceed 100 characters",
+		})
 		return
 	}
 
@@ -154,17 +172,20 @@ func (h *SettingsHandler) GetByKey(w http.ResponseWriter, r *http.Request) {
 			"service": req.Service,
 			"key":     req.Key,
 		}).Warn("Setting not found")
-		http.Error(w, "Setting not found", http.StatusNotFound)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusNotFound,
+			Message: "Setting not found",
+		})
 		return
 	}
 
-	response := &SettingResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Data:    *foundSetting,
 		Message: "Setting retrieved successfully",
 	}
 
-	h.writeJSONResponse(w, response, logger.Logger)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, response)
 }
 
 // Reload reloads all settings into memory
@@ -175,7 +196,10 @@ func (h *SettingsHandler) Reload(w http.ResponseWriter, r *http.Request) {
 	// Reload settings into memory
 	if err := h.service.loadAllSettings(); err != nil {
 		logger.WithError(err).Error("Failed to reload settings")
-		http.Error(w, "Failed to reload settings", http.StatusInternalServerError)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusInternalServerError,
+			Message: "Failed to reload settings",
+		})
 		return
 	}
 
@@ -187,12 +211,12 @@ func (h *SettingsHandler) Reload(w http.ResponseWriter, r *http.Request) {
 	}
 	h.service.cacheMux.RUnlock()
 
-	response := &GenericResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Settings reloaded successfully",
 	}
 
-	h.writeJSONResponse(w, response, logger.Logger)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, response)
 }
 
 // UpdateSetting updates a specific setting (requires gateway validation for UI access)
@@ -201,7 +225,10 @@ func (h *SettingsHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) 
 	// Check if request is from gateway (UI access)
 	if !h.validateGatewayRequest(r) {
 		logger.Warn("Request not from gateway, rejecting")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusUnauthorized,
+			Message: "Unauthorized",
+		})
 		return
 	}
 
@@ -209,35 +236,50 @@ func (h *SettingsHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) 
 	var req UpdateSettingRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		logger.WithError(err).Error("Failed to decode request body")
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid request body",
+		})
 		return
 	}
 
 	// Validate request
 	if req.Service == "" || req.Key == "" || req.Value == "" {
 		logger.Error("Service, Key, and Value parameters are required")
-		http.Error(w, "Service, Key, and Value parameters are required", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Service, Key, and Value parameters are required",
+		})
 		return
 	}
 
 	// Validate service name format (basic validation)
 	if len(req.Service) > 50 {
 		logger.Error("Service name too long")
-		http.Error(w, "Service name cannot exceed 50 characters", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Service name cannot exceed 50 characters",
+		})
 		return
 	}
 
 	// Validate key format (basic validation)
 	if len(req.Key) > 100 {
 		logger.Error("Key name too long")
-		http.Error(w, "Key name cannot exceed 100 characters", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Key name cannot exceed 100 characters",
+		})
 		return
 	}
 
 	// Validate value format (basic validation)
 	if len(req.Value) > 1000 {
 		logger.Error("Value too long")
-		http.Error(w, "Value cannot exceed 1000 characters", http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Value cannot exceed 1000 characters",
+		})
 		return
 	}
 
@@ -269,12 +311,12 @@ func (h *SettingsHandler) UpdateSetting(w http.ResponseWriter, r *http.Request) 
 	}
 	h.service.cacheMux.RUnlock()
 
-	response := &GenericResponse{
-		Success: true,
+	response := httpresponse.Response{
+		Code:    http.StatusOK,
 		Message: "Setting updated successfully",
 	}
 
-	h.writeJSONResponse(w, response, logger.Logger)
+	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_DATA_SERVICE, response)
 }
 
 // validateGatewayRequest checks if the request is coming from the gateway

@@ -139,7 +139,7 @@ func (h *HttpHandler) validateCreateInvoiceRequest(req models.CreateInvoiceReque
 
 	// Validate each item
 	for i, item := range req.Items {
-		if err := h.validateInvoiceItem(item, i); err != nil {
+		if err := h.validateInvoiceItem(item); err != nil {
 			return fmt.Errorf("item %d validation failed: %w", i, err)
 		}
 	}
@@ -148,7 +148,7 @@ func (h *HttpHandler) validateCreateInvoiceRequest(req models.CreateInvoiceReque
 }
 
 // validateInvoiceItem validates a single invoice item
-func (h *HttpHandler) validateInvoiceItem(item models.CreateInvoiceItemRequest, index int) error {
+func (h *HttpHandler) validateInvoiceItem(item models.CreateInvoiceItemRequest) error {
 	// Validate detail (required, non-empty)
 	if item.Detail == "" {
 		return fmt.Errorf("detail is required and cannot be empty")

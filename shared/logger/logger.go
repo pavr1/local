@@ -92,7 +92,7 @@ func GetLogger() *CentralizedLogger {
 // Connect establishes connection to Fluentd
 func (cl *CentralizedLogger) Connect() error {
 	var err error
-	cl.conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", cl.host, cl.port))
+	cl.conn, err = net.Dial("tcp", net.JoinHostPort(cl.host, fmt.Sprintf("%d", cl.port)))
 	if err != nil {
 		cl.connected = false
 		return fmt.Errorf("failed to connect to Fluentd: %v", err)

@@ -47,7 +47,7 @@ type InvoiceResponse struct {
 }
 
 // generateOrderNumber generates a unique order number
-func generateOrderNumber() string {
+func GenerateOrderNumber() string {
 	timestamp := time.Now().Format("20060102150405")
 	random := fmt.Sprintf("%04d", rand.Intn(10000))
 	return fmt.Sprintf("ORD-%s-%s", timestamp, random)

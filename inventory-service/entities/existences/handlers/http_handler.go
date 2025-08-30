@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"inventory-service/entities/existences/models"
+	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -57,7 +58,10 @@ func (h *HttpHandler) CreateExistence(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).WithFields(logrus.Fields{
 			"ingredient_id": req.IngredientID,
 		}).Error("Validation failed for create existence request")
-		h.writeErrorResponse(w, "Validation failed: "+err.Error(), http.StatusBadRequest)
+		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+			Code:    http.StatusBadRequest,
+			Message: "Validation failed: " + err.Error(),
+		})
 		return
 	}
 
@@ -376,47 +380,6 @@ func (h *HttpHandler) validateCreateExistenceRequest(req models.CreateExistenceR
 	return nil
 }
 
-// validateUpdateExistenceRequest validates all required fields for existence update
-func (h *HttpHandler) validateUpdateExistenceRequest(req models.UpdateExistenceRequest, id string) error {
-	// Validate existence ID (required, valid UUID)
-	if id == "" {
-		return fmt.Errorf("existence ID is required and cannot be empty")
-	}
-	if !isValidUUID(id) {
-		return fmt.Errorf("existence ID must be a valid UUID, got: %s", id)
-	}
-
-	// Validate units_available if provided (non-negative)
-	if req.UnitsAvailable != nil {
-		if *req.UnitsAvailable < 0 {
-			return fmt.Errorf("units_available must be non-negative, got: %f", *req.UnitsAvailable)
-		}
-	}
-
-	// Validate minimum_price if provided (non-negative)
-	if req.MinimumPrice != nil {
-		if *req.MinimumPrice < 0 {
-			return fmt.Errorf("minimum_price must be non-negative, got: %f", *req.MinimumPrice)
-		}
-	}
-
-	// Validate maximum_price if provided (non-negative)
-	if req.MaximumPrice != nil {
-		if *req.MaximumPrice < 0 {
-			return fmt.Errorf("maximum_price must be non-negative, got: %f", *req.MaximumPrice)
-		}
-	}
-
-	// Validate final_price if provided (non-negative)
-	if req.FinalPrice != nil {
-		if *req.FinalPrice < 0 {
-			return fmt.Errorf("final_price must be non-negative, got: %f", *req.FinalPrice)
-		}
-	}
-
-	return nil
-}
-
 // isValidUUID checks if a string is a valid UUID
 func isValidUUID(uuid string) bool {
 	// Simple UUID validation - check length and format
@@ -435,17 +398,4 @@ func isValidUUID(uuid string) bool {
 	}
 
 	return true
-}
-
-// writeErrorResponse writes an error response with the specified status code
-func (h *HttpHandler) writeErrorResponse(w http.ResponseWriter, message string, statusCode int) {
-	response := models.ExistenceResponse{
-		Success: false,
-		Data:    nil,
-		Message: message,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(response)
 }

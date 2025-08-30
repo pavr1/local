@@ -50,7 +50,7 @@ func (h *DBHandler) CreateOrder(req models.CreateOrderRequest, logger *logrus.Lo
 	serviceTaxAmount := subtotalAmount * 0.10                     // 10% service tax
 
 	// Generate order number
-	orderNumber := generateOrderNumber()
+	orderNumber := models.GenerateOrderNumber()
 
 	// Create order
 	order := &models.Order{
