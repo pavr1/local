@@ -3,9 +3,9 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"session-service/config"
 	"session-service/entities/sessions/models"
 	sessionSQL "session-service/entities/sessions/sql"
+	sharedConfig "shared/config"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -22,7 +22,7 @@ type DBHandler struct {
 }
 
 // NewDBHandler creates a new database handler with internal database connection
-func NewDBHandler(cfg *config.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
+func NewDBHandler(cfg *sharedConfig.Config, jwtHandler *JWTHandler, logger *logrus.Logger) (*DBHandler, error) {
 	// Connect to database
 	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
@@ -53,9 +53,14 @@ func (h *DBHandler) Close() error {
 }
 
 // connectToDatabase connects to the PostgreSQL database
-func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
+func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
+		cfg.GetString("DB_HOST", "localhost"),
+		cfg.GetString("DB_PORT", "5432"),
+		cfg.GetString("DB_USER", "postgres"),
+		cfg.GetString("DB_PASSWORD", "postgres123"),
+		cfg.GetString("DB_NAME", "icecream_store"),
+		cfg.GetString("DB_SSL_MODE", "disable"))
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"orders-service/config"
 	"orders-service/models"
+	sharedConfig "shared/config"
 	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 
@@ -38,13 +38,13 @@ var _ DBHandlerInterface = (*DBHandler)(nil)
 // HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
-	config    *config.Config
+	config    *sharedConfig.Config
 	// Invoice service client
 	httpClient *http.Client
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler DBHandlerInterface, config *config.Config) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface, config *sharedConfig.Config) *HttpHandler {
 	return &HttpHandler{
 		dbHandler:  dbHandler,
 		config:     config,
@@ -704,7 +704,7 @@ func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Timeout: 5 * time.Second,
 	}
 
-	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.DataServiceURL)
+	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"))
 	resp, err := client.Get(dataServiceHealthURL)
 	if err != nil {
 		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
@@ -749,11 +749,11 @@ func (h *HttpHandler) createIncomeInvoice(invoiceReq map[string]interface{}, log
 	// Debug: Log the JSON being sent
 	logger.WithFields(logrus.Fields{
 		"invoice_data": string(jsonData),
-		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.InvoiceServiceURL),
+		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085")),
 	}).Info("Sending invoice request to invoice service")
 
 	// Call invoice service using configured URL
-	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.InvoiceServiceURL)
+	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"))
 	resp, err := h.httpClient.Post(
 		invoiceURL,
 		"application/json",

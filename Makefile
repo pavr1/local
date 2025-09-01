@@ -137,8 +137,53 @@ stop-locally: stop-ui stop-gateway stop-invoice stop-inventory stop-orders stop-
 restart-locally: stop-locally start-locally ## Restart all local services
 	@echo "$(GREEN)🔄 All local services restarted!$(RESET)"
 
-start-container: start-data-container start-session-container start-orders-container start-inventory-container start-invoice-container start-gateway-container start-ui-container ## Start all services in Docker containers
-	@echo "$(GREEN)🚀 All services are starting in Docker containers!$(RESET)"
+start-containers: ## Start all services in Docker containers (fails fast if any service fails)
+	@echo "$(CYAN)🚀 Starting all services in Docker containers...$(RESET)"
+	@echo "$(YELLOW)⚠️  This will stop immediately if any service fails to start$(RESET)"
+	@echo ""
+	@echo "$(CYAN)🗄️  Starting Data Service container...$(RESET)"
+	@cd $(DATA_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Data Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Data Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Data Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8086/api/v1/data/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Data Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Data Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)🔐 Starting Session Service container...$(RESET)"
+	@cd $(SESSION_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Session Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Session Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Session Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8081/api/v1/sessions/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Session Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Session Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)📦 Starting Orders Service container...$(RESET)"
+	@cd $(ORDERS_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Orders Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Orders Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Orders Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8083/api/v1/orders/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Orders Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Orders Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)📋 Starting Inventory Service container...$(RESET)"
+	@cd $(INVENTORY_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Inventory Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Inventory Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Inventory Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8084/api/v1/inventory/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Inventory Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Inventory Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)💰 Starting Invoice Service container...$(RESET)"
+	@cd $(INVOICE_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Invoice Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Invoice Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Invoice Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8085/api/v1/invoices/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Invoice Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Invoice Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)🌐 Starting Gateway Service container...$(RESET)"
+	@cd $(GATEWAY_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ Gateway Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ Gateway Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying Gateway Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:8082/api/v1/gateway/p/health >/dev/null 2>&1; then echo "$(GREEN)✅ Gateway Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ Gateway Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(CYAN)🎨 Starting UI Service container...$(RESET)"
+	@cd $(UI_SERVICE) && $(MAKE) start-container || (echo "$(RED)❌ UI Service failed to start$(RESET)" && exit 1)
+	@echo "$(GREEN)✅ UI Service started successfully$(RESET)"
+	@echo "$(CYAN)🔍 Verifying UI Service health...$(RESET)"
+	@for i in {1..30}; do if curl -f http://localhost:3000/health >/dev/null 2>&1; then echo "$(GREEN)✅ UI Service health check passed$(RESET)"; break; fi; sleep 1; done || (echo "$(RED)❌ UI Service health check failed$(RESET)" && exit 1)
+	@echo ""
+	@echo "$(GREEN)🎉 All services started successfully in Docker containers!$(RESET)"
 
 stop-container: stop-ui-container stop-gateway-container stop-invoice-container stop-inventory-container stop-orders-container stop-session-container stop-data-container ## Stop all Docker containers
 	@echo "$(YELLOW)🛑 All Docker containers stopped$(RESET)"

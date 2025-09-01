@@ -10,34 +10,55 @@ import (
 	"syscall"
 	"time"
 
-	"session-service/config"
+	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq" // PostgreSQL driver
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	// Setup initial logger
 	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_SESSION_SERVICE)
 	logger.Info("Starting Session Service")
 
 	// Load configuration from data service
-	cfg, err := config.LoadConfigFromDataService(logger.Logger)
+	logger.Info("Loading configuration from data service...")
+	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://icecream_data_service:8086")
+	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+
+	config, err := configLoader.LoadConfig("Session", logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
-	// Connect to database using config
-	db, err := connectToDatabase(cfg, logger.Logger)
+	logger.WithFields(logrus.Fields{
+		"server_port": config.GetString("SERVER_PORT", "8081"),
+		"server_host": config.GetString("SERVER_HOST", "0.0.0.0"),
+		"log_level":   config.GetString("LOG_LEVEL", "info"),
+	}).Info("Session service configuration loaded")
+
+	// Connect to database
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		config.GetString("DB_HOST", "localhost"),
+		config.GetString("DB_PORT", "5432"),
+		config.GetString("DB_USER", "postgres"),
+		config.GetString("DB_PASSWORD", "postgres123"),
+		config.GetString("DB_NAME", "icecream_store"),
+		config.GetString("DB_SSL_MODE", "disable")))
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer db.Close()
 
+	// Test database connection
+	if err := db.Ping(); err != nil {
+		logger.WithError(err).Fatal("Failed to ping database")
+	}
+	logger.Info("Database connection established")
+
 	// Create main HTTP handler
-	mainHandler, err := NewMainHTTPHandler(cfg, logger.Logger)
+	mainHandler, err := NewMainHTTPHandler(config, logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
@@ -48,7 +69,7 @@ func main() {
 
 	// Create HTTP server
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort),
+		Addr:         fmt.Sprintf("%s:%s", config.GetString("SERVER_HOST", "0.0.0.0"), config.GetString("SERVER_PORT", "8081")),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -58,8 +79,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithFields(logrus.Fields{
-			"host": cfg.ServerHost,
-			"port": cfg.ServerPort,
+			"host": config.GetString("SERVER_HOST", "0.0.0.0"),
+			"port": config.GetString("SERVER_PORT", "8081"),
 		}).Info("Starting HTTP server")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -85,21 +106,9 @@ func main() {
 	logger.Info("Server exited")
 }
 
-// connectToDatabase establishes connection to PostgreSQL database using config
-func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
-
-	db, err := sql.Open("postgres", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open database connection: %w", err)
+func getEnvString(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
 	}
-
-	// Test the connection
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	logger.Info("Database connection established successfully")
-	return db, nil
+	return defaultValue
 }

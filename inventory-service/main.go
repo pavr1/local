@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"inventory-service/config"
+	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -24,7 +24,11 @@ func main() {
 	logger.Info("Starting Ice Cream Store Inventory Service")
 
 	// Load configuration from data service
-	cfg, err := config.LoadConfigFromDataService(logger.Logger)
+	logger.Info("Loading configuration from data service...")
+	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://icecream_data_service:8086")
+	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+
+	cfg, err := configLoader.LoadConfig("Inventory", logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
@@ -44,9 +48,8 @@ func main() {
 	mainHandler.SetupRoutes(router)
 
 	// Start HTTP server
-	//pvillalalobos - config values
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.ServerHost, cfg.ServerPort),
+		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST", "0.0.0.0"), cfg.GetString("SERVER_PORT", "8084")),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -56,8 +59,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithFields(logrus.Fields{
-			"host": cfg.ServerHost,
-			"port": cfg.ServerPort,
+			"host": cfg.GetString("SERVER_HOST", "0.0.0.0"),
+			"port": cfg.GetString("SERVER_PORT", "8084"),
 		}).Info("Starting HTTP server")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -83,10 +86,22 @@ func main() {
 	logger.Info("Server exited gracefully")
 }
 
+func getEnvString(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
 // connectToDatabase establishes connection to PostgreSQL database using config
-func connectToDatabase(cfg *config.Config, logger *logrus.Logger) (*sql.DB, error) {
+func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode)
+		cfg.GetString("DB_HOST", "localhost"),
+		cfg.GetString("DB_PORT", "5432"),
+		cfg.GetString("DB_USER", "postgres"),
+		cfg.GetString("DB_PASSWORD", "postgres123"),
+		cfg.GetString("DB_NAME", "icecream_store"),
+		cfg.GetString("DB_SSL_MODE", "disable"))
 
 	var db *sql.DB
 	var err error

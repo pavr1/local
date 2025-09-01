@@ -2,8 +2,8 @@ package main
 
 import (
 	"net/http"
-	"session-service/config"
 	"session-service/entities/sessions/handlers"
+	sharedConfig "shared/config"
 	httpresponse "shared/http-response"
 	sharedLogger "shared/logger"
 	sharedMiddleware "shared/middlewares"
@@ -19,9 +19,9 @@ type MainHTTPHandler struct {
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
-func NewMainHTTPHandler(cfg *config.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
+func NewMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
 	// Create JWT handler
-	jwtHandler := handlers.NewJWTHandler(cfg.JWTSecret, cfg.JWTExpirationTime, logger)
+	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"), cfg.GetDuration("JWT_EXPIRATION_TIME", "30m"), logger)
 
 	// Create database handler
 	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)

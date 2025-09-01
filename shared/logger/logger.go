@@ -211,9 +211,22 @@ func GetRequestLogger(r *http.Request, service string) *logrus.Entry {
 
 	if r != nil {
 		if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
-			return logger.WithField("request_id", requestID)
+			return logger.WithFields(logrus.Fields{
+				"service":    service,
+				"request_id": requestID,
+			})
 		} else {
-			logger.WithFields(logrus.Fields{"service": service}).Info("No X-Request-ID found in header")
+			// Debug: log all headers to see what's being received
+			allHeaders := make(map[string]string)
+			for name, values := range r.Header {
+				if len(values) > 0 {
+					allHeaders[name] = values[0]
+				}
+			}
+			logger.WithFields(logrus.Fields{
+				"service": service,
+				"headers": allHeaders,
+			}).Debug("No X-Request-ID found in header, showing all headers for debugging")
 		}
 	}
 

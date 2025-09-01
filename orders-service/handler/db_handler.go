@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"orders-service/config"
 	"orders-service/models"
 	ordersql "orders-service/sql"
+	sharedConfig "shared/config"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,12 +17,12 @@ import (
 // DBHandler handles database operations for orders
 type DBHandler struct {
 	db     *sql.DB
-	config *config.Config
+	config *sharedConfig.Config
 	repo   *ordersql.Repository
 }
 
 // NewDBHandler creates a new order database handler
-func NewDBHandler(db *sql.DB, cfg *config.Config) (*DBHandler, error) {
+func NewDBHandler(db *sql.DB, cfg *sharedConfig.Config) (*DBHandler, error) {
 	repo, err := ordersql.NewRepository(db)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create repository: %w", err)
@@ -46,8 +46,8 @@ func (h *DBHandler) CreateOrder(req models.CreateOrderRequest, logger *logrus.Lo
 
 	//pvillalobos - hardcoded tax rates
 	// Calculate taxes on the subtotal (tax handling responsibility)
-	ivaAmount := subtotalAmount * (h.config.DefaultTaxRate / 100) // 13% IVA
-	serviceTaxAmount := subtotalAmount * 0.10                     // 10% service tax
+	ivaAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_TAX_RATE", 13.0) / 100)            // 13% IVA
+	serviceTaxAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_SERVICE_RATE", 10.0) / 100) // 10% service tax
 
 	// Generate order number
 	orderNumber := models.GenerateOrderNumber()

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -16,8 +15,10 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 	sharedMiddleware "shared/middlewares"
+	sharedModels "shared/models"
 	"strings"
 	"time"
 
@@ -38,15 +39,8 @@ type HealthResponse struct {
 	Time    time.Time `json:"time"`
 }
 
-// Service configuration
-type Config struct {
-	GatewayServiceURL   string
-	SessionServiceURL   string
-	OrdersServiceURL    string
-	InventoryServiceURL string
-	InvoiceServiceURL   string
-	DataServiceURL      string
-}
+// Service configuration - using shared config
+type Config = sharedConfig.Config
 
 func main() {
 	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_GATEWAY_SERVICE)
@@ -54,32 +48,32 @@ func main() {
 
 	//pvillalobos - hardcoded values
 	// Bootstrap config with hardcoded data service URL for initial config loading
-	bootstrapConfig := Config{
-		DataServiceURL: "http://icecream_data_service:8086", // Hardcoded for bootstrap - Docker service name
-	}
+	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
 
 	logger.WithFields(logrus.Fields{
-		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
+		"bootstrap_data_service_url": dataServiceURL,
 	}).Info("Created bootstrap configuration")
 
 	// Load full configuration from data service
 	logger.Info("Loading configuration from data service...")
-	config, err := loadConfigFromDataService(&bootstrapConfig, logger.Logger)
+	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+
+	config, err := configLoader.LoadConfig("Gateway", logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	logger.WithFields(logrus.Fields{
-		"gateway_service":   config.GatewayServiceURL,
-		"session_service":   config.SessionServiceURL,
-		"orders_service":    config.OrdersServiceURL,
-		"inventory_service": config.InventoryServiceURL,
-		"invoice_service":   config.InvoiceServiceURL,
-		"data_service":      config.DataServiceURL,
+		"gateway_service":   config.GetString("GATEWAY_SERVICE_URL", "http://localhost:8082"),
+		"session_service":   config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"),
+		"orders_service":    config.GetString("ORDERS_SERVICE_URL", "http://localhost:8083"),
+		"inventory_service": config.GetString("INVENTORY_SERVICE_URL", "http://localhost:8084"),
+		"invoice_service":   config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"),
+		"data_service":      config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"),
 	}).Info("Gateway service starting")
 
 	// Create session manager for authentication with logger
-	sessionManager := sessionmanager.NewSessionManager(config.SessionServiceURL, logger.Logger)
+	sessionManager := sessionmanager.NewSessionManager(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), logger.Logger)
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger.Logger)
 
 	r := mux.NewRouter()
@@ -112,21 +106,21 @@ func main() {
 	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/login", logger.Logger)).Methods("POST")
-	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/validate", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/login", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/validate", logger.Logger)).Methods("POST")
 	// Protected session endpoints - session service handles authentication
-	sessionRouter.HandleFunc("/logout", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/logout", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/logout", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/logout", logger.Logger)).Methods("POST")
 
 	// Public health endpoints (no authentication required)
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.SessionServiceURL, "/api/v1/sessions/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.OrdersServiceURL, "/api/v1/orders/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.InvoiceServiceURL, logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.DataServiceURL, "/api/v1/data/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.GetString("ORDERS_SERVICE_URL", "http://localhost:8083"), "/api/v1/orders/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.GetString("INVENTORY_SERVICE_URL", "http://localhost:8084"), "/api/v1/inventory/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"), logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/p/health", logger.Logger)).Methods("GET")
 
 	// Public image serving endpoints (no authentication required) - MUST be defined BEFORE authenticated routes
-	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}/{filename}", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.DataServiceURL, "/api/v1/data/images/{service}", logger.Logger)).Methods("POST")
+	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/images/{service}/{filename}", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/images/{service}", logger.Logger)).Methods("POST")
 
 	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logger.Logger)).Methods("GET")
@@ -1029,18 +1023,20 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
 	}).Info("Starting configuration loading from data service")
 
+	// Create config loader
+	configLoader := sharedConfig.NewConfigLoader(bootstrapConfig.DataServiceURL)
+
 	// Get settings from data service
-	settings, err := getSettingsFromDataService("Gateway", logger)
+	settings, err := configLoader.LoadSettingsFromDataService("Gateway", logger)
 	if err != nil {
 		logger.WithError(err).Error("Failed to get settings from data service")
-		return nil, fmt.Errorf("failed to get settings from data service: %w", err)
+		return nil, err
 	}
 
 	logger.WithFields(logrus.Fields{
 		"settings_count": len(settings),
 	}).Info("Successfully retrieved settings from data service")
 
-	//pvillalobos - hardcoded values
 	// Create config with defaults
 	config := &Config{
 		GatewayServiceURL:   "http://localhost:8082",
@@ -1075,109 +1071,8 @@ func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (
 	return config, nil
 }
 
-// getSettingsFromDataService calls the data service API to get settings
-func getSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]Setting, error) {
-	//pvillalobos - hardcoded values
-	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
-
-	logger.WithFields(logrus.Fields{
-		"service_name":     serviceName,
-		"data_service_url": dataServiceURL,
-		"endpoint":         "/api/v1/data/settings/by-service",
-	}).Info("Requesting settings from data service")
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	// Create request body
-	requestBody := map[string]string{
-		"service": serviceName,
-	}
-
-	jsonBody, err := json.Marshal(requestBody)
-	if err != nil {
-		logger.WithError(err).WithFields(logrus.Fields{
-			"request_body": requestBody,
-		}).Error("Failed to marshal request body")
-		return nil, fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	logger.WithFields(logrus.Fields{
-		"request_body": string(jsonBody),
-		"url":          dataServiceURL + "/api/v1/data/settings/by-service",
-	}).Debug("Making HTTP request to data service")
-
-	//pvillalobos - hardcoded values
-	// Make request to data service
-	resp, err := client.Post(
-		dataServiceURL+"/api/v1/data/settings/by-service",
-		"application/json",
-		bytes.NewBuffer(jsonBody),
-	)
-	if err != nil {
-		logger.WithError(err).WithFields(logrus.Fields{
-			"url": dataServiceURL + "/api/v1/data/settings/by-service",
-		}).Error("Failed to make HTTP request to data service")
-		return nil, fmt.Errorf("failed to make HTTP request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	logger.WithFields(logrus.Fields{
-		"status_code": resp.StatusCode,
-		"status":      resp.Status,
-	}).Info("Received response from data service")
-
-	if resp.StatusCode != http.StatusOK {
-		logger.WithFields(logrus.Fields{
-			"status_code": resp.StatusCode,
-			"status":      resp.Status,
-		}).Error("Data service returned non-OK status")
-		return nil, fmt.Errorf("data service returned status %d", resp.StatusCode)
-	}
-
-	// Parse response
-	var response struct {
-		Success bool      `json:"success"`
-		Data    []Setting `json:"data"`
-		Message string    `json:"message"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		logger.WithError(err).Error("Failed to decode data service response")
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	logger.WithFields(logrus.Fields{
-		"success":    response.Success,
-		"data_count": len(response.Data),
-		"message":    response.Message,
-	}).Info("Parsed data service response")
-
-	if !response.Success {
-		logger.WithFields(logrus.Fields{
-			"message": response.Message,
-		}).Error("Data service returned error")
-		return nil, fmt.Errorf("data service error: %s", response.Message)
-	}
-
-	logger.WithFields(logrus.Fields{
-		"settings_count": len(response.Data),
-	}).Info("Successfully retrieved settings from data service")
-
-	return response.Data, nil
-}
-
-// Setting represents a setting from the data service
-type Setting struct {
-	Service     string `json:"service"`
-	Key         string `json:"key"`
-	Value       string `json:"value"`
-	Description string `json:"description"`
-}
-
 // populateConfigFromSettings populates the config struct from settings
-func populateConfigFromSettings(config *Config, settings []Setting, logger *logrus.Logger) {
+func populateConfigFromSettings(config *Config, settings []sharedModels.Setting, logger *logrus.Logger) {
 	logger.WithFields(logrus.Fields{
 		"settings_count": len(settings),
 	}).Info("Starting to populate configuration from settings")
