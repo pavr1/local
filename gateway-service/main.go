@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"gateway-service/middleware"
 	sessionmanager "gateway-service/middleware/session-manager"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -18,7 +17,6 @@ import (
 	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 	sharedMiddleware "shared/middlewares"
-	sharedModels "shared/models"
 	"strings"
 	"time"
 
@@ -56,24 +54,31 @@ func main() {
 
 	// Load full configuration from data service
 	logger.Info("Loading configuration from data service...")
-	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
 
+	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
 	config, err := configLoader.LoadConfig("Gateway", logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
+	gatewayServiceUrl := config.GetString("GATEWAY_SERVICE_URL")
+	sessionServiceUrl := config.GetString("SESSION_SERVICE_URL")
+	orderServiceUrl := config.GetString("ORDERS_SERVICE_URL")
+	inventoryServiceUrl := config.GetString("INVENTORY_SERVICE_URL")
+	invoiceServiceUrl := config.GetString("INVOICE_SERVICE_URL")
+	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
+
 	logger.WithFields(logrus.Fields{
-		"gateway_service":   config.GetString("GATEWAY_SERVICE_URL", "http://localhost:8082"),
-		"session_service":   config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"),
-		"orders_service":    config.GetString("ORDERS_SERVICE_URL", "http://localhost:8083"),
-		"inventory_service": config.GetString("INVENTORY_SERVICE_URL", "http://localhost:8084"),
-		"invoice_service":   config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"),
-		"data_service":      config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"),
+		"gateway_service":   gatewayServiceUrl,
+		"session_service":   sessionServiceUrl,
+		"orders_service":    orderServiceUrl,
+		"inventory_service": inventoryServiceUrl,
+		"invoice_service":   invoiceServiceUrl,
+		"data_service":      dataServiceUrl,
 	}).Info("Gateway service starting")
 
 	// Create session manager for authentication with logger
-	sessionManager := sessionmanager.NewSessionManager(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), logger.Logger)
+	sessionManager := sessionmanager.NewSessionManager(sessionServiceUrl, logger.Logger)
 	sessionMiddleware := middleware.NewSessionMiddleware(sessionManager, logger.Logger)
 
 	r := mux.NewRouter()
@@ -84,15 +89,8 @@ func main() {
 
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
-
-	// ==== GATEWAY ENDPOINTS ====
-
-	// Gateway health check endpoint
-	// API versioning
 	v1 := api.PathPrefix("/v1").Subrouter()
-
-	// Public health check endpoint
-	v1.HandleFunc("/gateway/p/health", createHealthHandler(config)).Methods("GET")
+	v1.HandleFunc("/gateway/p/health", createHealthHandler(gatewayServiceUrl)).Methods("GET")
 
 	// ==== SERVICE MANAGEMENT ENDPOINTS ====
 	managementRouter := api.PathPrefix("/management").Subrouter()
@@ -106,52 +104,52 @@ func main() {
 	sessionRouter := api.PathPrefix("/v1/sessions").Subrouter()
 
 	// Public session endpoints (no authentication required) - /p/ prefix
-	sessionRouter.HandleFunc("/p/login", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/login", logger.Logger)).Methods("POST")
-	sessionRouter.HandleFunc("/p/validate", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/validate", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/login", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/login", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/p/validate", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/validate", logger.Logger)).Methods("POST")
 	// Protected session endpoints - session service handles authentication
-	sessionRouter.HandleFunc("/logout", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/logout", logger.Logger)).Methods("POST")
+	sessionRouter.HandleFunc("/logout", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/logout", logger.Logger)).Methods("POST")
 
 	// Public health endpoints (no authentication required)
-	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(config.GetString("SESSION_SERVICE_URL", "http://localhost:8081"), "/api/v1/sessions/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/orders/p/health", createProxyHandler(config.GetString("ORDERS_SERVICE_URL", "http://localhost:8083"), "/api/v1/orders/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(config.GetString("INVENTORY_SERVICE_URL", "http://localhost:8084"), "/api/v1/inventory/p/health", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/invoices/p/health", createInvoiceHealthHandler(config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"), logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/data/p/health", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/sessions/p/health", createProxyHandler(sessionServiceUrl, "/api/v1/sessions/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/orders/p/health", createProxyHandler(orderServiceUrl, "/api/v1/orders/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/inventory/p/health", createProxyHandler(inventoryServiceUrl, "/api/v1/inventory/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/invoices/p/health", createProxyHandler(invoiceServiceUrl, "/api/v1/invoices/p/health", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/p/health", createProxyHandler(dataServiceUrl, "/api/v1/data/p/health", logger.Logger)).Methods("GET")
 
 	// Public image serving endpoints (no authentication required) - MUST be defined BEFORE authenticated routes
-	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/images/{service}/{filename}", logger.Logger)).Methods("GET")
-	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"), "/api/v1/data/images/{service}", logger.Logger)).Methods("POST")
+	api.HandleFunc("/v1/data/images/{service}/{filename}", createProxyHandler(dataServiceUrl, "/api/v1/data/images/{service}/{filename}", logger.Logger)).Methods("GET")
+	api.HandleFunc("/v1/data/images/{service}", createProxyHandler(dataServiceUrl, "/api/v1/data/images/{service}", logger.Logger)).Methods("POST")
 
 	// Public logs endpoints (no authentication required) - for debugging
 	api.HandleFunc("/v1/logs/{service}", createServiceLogsHandler(logger.Logger)).Methods("GET")
 
 	// Orders service endpoints - with authentication middleware
 	ordersRouter := api.PathPrefix("/v1/orders").Subrouter()
-	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.OrdersServiceURL, "/api/v1/orders", logger.Logger))
+	ordersRouter.PathPrefix("").HandlerFunc(createProxyHandler(orderServiceUrl, "/api/v1/orders", logger.Logger))
 	ordersRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Inventory service endpoints - with authentication middleware
 	inventoryRouter := api.PathPrefix("/v1/inventory").Subrouter()
-	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InventoryServiceURL, "/api/v1/inventory", logger.Logger))
+	inventoryRouter.PathPrefix("").HandlerFunc(createProxyHandler(inventoryServiceUrl, "/api/v1/inventory", logger.Logger))
 	inventoryRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Invoice service routes - with authentication middleware
 	invoiceRouter := api.PathPrefix("/v1/invoices").Subrouter()
-	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.InvoiceServiceURL, "/api/v1", logger.Logger))
+	invoiceRouter.PathPrefix("").HandlerFunc(createProxyHandler(invoiceServiceUrl, "/api/v1", logger.Logger))
 	invoiceRouter.Use(sessionMiddleware.ValidateSession) // Add authentication for business endpoints
 
 	// Data service routes - with authentication middleware
 	dataRouter := api.PathPrefix("/v1/data").Subrouter()
 
 	// Settings endpoints (authenticated)
-	dataRouter.HandleFunc("/settings/all", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/all", logger.Logger)).Methods("GET")
-	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-service", logger.Logger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/by-key", logger.Logger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/reload", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/reload", logger.Logger)).Methods("POST")
-	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(config.DataServiceURL, "/api/v1/data/settings/update-setting", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/all", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/all", logger.Logger)).Methods("GET")
+	dataRouter.HandleFunc("/settings/by-service", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/by-service", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/by-key", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/by-key", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/reload", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/reload", logger.Logger)).Methods("POST")
+	dataRouter.HandleFunc("/settings/update-setting", createProxyHandler(dataServiceUrl, "/api/v1/data/settings/update-setting", logger.Logger)).Methods("POST")
 
 	// Other data service endpoints (authenticated)
-	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(config.DataServiceURL, "/api/v1/data", logger.Logger))
+	dataRouter.PathPrefix("").HandlerFunc(createProxyHandler(dataServiceUrl, "/api/v1/data", logger.Logger))
 
 	// Apply authentication middleware to data router
 	dataRouter.Use(sessionMiddleware.ValidateSession)
@@ -172,67 +170,67 @@ func main() {
 	// Static file serving removed - UI runs independently
 
 	logger.Logger.WithFields(logrus.Fields{
-		"url": config.GatewayServiceURL,
+		"url": gatewayServiceUrl,
 	}).Info("Gateway service started successfully")
 
 	logger.Logger.WithFields(logrus.Fields{
-		"url": config.GatewayServiceURL,
-	}).Info("🚀 Gateway Service with Session Management starting on " + config.GatewayServiceURL)
+		"url": gatewayServiceUrl,
+	}).Info("🚀 Gateway Service with Session Management starting on " + gatewayServiceUrl)
 	logger.Logger.Info("📡 API available at http://localhost:8082/api")
 	logger.Logger.Info("")
 	logger.Logger.Info("🔐 SESSION MANAGEMENT ENDPOINTS:")
 	logger.Logger.Info("   📂 Public:")
 	logger.Logger.WithFields(logrus.Fields{
-		"session_service_url": config.SessionServiceURL,
-	}).Info("      POST /api/v1/sessions/p/login    → " + config.SessionServiceURL + "/api/v1/sessions/p/login (+ session creation)")
+		"session_service_url": sessionServiceUrl,
+	}).Info("      POST /api/v1/sessions/p/login    → " + sessionServiceUrl + "/api/v1/sessions/p/login (+ session creation)")
 	logger.Logger.WithFields(logrus.Fields{
-		"session_service_url": config.SessionServiceURL,
-	}).Info("      POST /api/v1/sessions/p/validate → " + config.SessionServiceURL + "/api/v1/sessions/p/validate (+ session validation)")
+		"session_service_url": sessionServiceUrl,
+	}).Info("      POST /api/v1/sessions/p/validate → " + sessionServiceUrl + "/api/v1/sessions/p/validate (+ session validation)")
 	logger.Logger.WithFields(logrus.Fields{
-		"session_service_url": config.SessionServiceURL,
-	}).Info("      GET  /api/v1/sessions/p/health   → " + config.SessionServiceURL + "/api/v1/sessions/p/health")
+		"session_service_url": sessionServiceUrl,
+	}).Info("      GET  /api/v1/sessions/p/health   → " + sessionServiceUrl + "/api/v1/sessions/p/health")
 	logger.Logger.Info("   🔒 Protected (require valid session):")
 	logger.Logger.WithFields(logrus.Fields{
-		"session_service_url": config.SessionServiceURL,
-	}).Info("      POST /api/v1/sessions/logout     → " + config.SessionServiceURL + "/api/v1/sessions/logout (+ session revocation)")
+		"session_service_url": sessionServiceUrl,
+	}).Info("      POST /api/v1/sessions/logout     → " + sessionServiceUrl + "/api/v1/sessions/logout (+ session revocation)")
 
 	logger.Logger.Info("")
 	logger.Logger.Info("🛒 BUSINESS SERVICE ENDPOINTS:")
 	fmt.Println("   📂 Public Health Checks:")
 	logger.Logger.WithFields(logrus.Fields{
-		"orders_service_url": config.OrdersServiceURL,
-	}).Info("      GET  /api/v1/orders/p/health       → " + config.OrdersServiceURL)
+		"orders_service_url": orderServiceUrl,
+	}).Info("      GET  /api/v1/orders/p/health       → " + orderServiceUrl)
 	logger.Logger.WithFields(logrus.Fields{
-		"inventory_service_url": config.InventoryServiceURL,
-	}).Info("      GET  /api/v1/inventory/p/health    → " + config.InventoryServiceURL)
+		"inventory_service_url": inventoryServiceUrl,
+	}).Info("      GET  /api/v1/inventory/p/health    → " + inventoryServiceUrl)
 	logger.Logger.WithFields(logrus.Fields{
-		"invoice_service_url": config.InvoiceServiceURL,
-	}).Info("      GET  /api/v1/invoices/p/health     → " + config.InvoiceServiceURL)
+		"invoice_service_url": invoiceServiceUrl,
+	}).Info("      GET  /api/v1/invoices/p/health     → " + invoiceServiceUrl)
 	logger.Logger.WithFields(logrus.Fields{
-		"data_service_url": config.DataServiceURL,
-	}).Info("      GET  /api/v1/data/p/health         → " + config.DataServiceURL)
+		"data_service_url": dataServiceUrl,
+	}).Info("      GET  /api/v1/data/p/health         → " + dataServiceUrl)
 	logger.Logger.Info("   🔒 Protected (require valid session):")
 	logger.Logger.WithFields(logrus.Fields{
-		"orders_service_url": config.OrdersServiceURL,
-	}).Info("      ALL  /api/v1/orders/*          → " + config.OrdersServiceURL)
+		"orders_service_url": orderServiceUrl,
+	}).Info("      ALL  /api/v1/orders/*          → " + orderServiceUrl)
 	logger.Logger.WithFields(logrus.Fields{
-		"inventory_service_url": config.InventoryServiceURL,
-	}).Info("      ALL  /api/v1/inventory/*       → " + config.InventoryServiceURL)
+		"inventory_service_url": inventoryServiceUrl,
+	}).Info("      ALL  /api/v1/inventory/*       → " + inventoryServiceUrl)
 	logger.Logger.Info("           ├─ /suppliers/*          → Suppliers management")
 	logger.Logger.Info("           ├─ /ingredients/*        → [Future] Ingredients management")
 	logger.Logger.Info("           └─ /existences/*         → [Future] Stock management")
 	logger.Logger.WithFields(logrus.Fields{
-		"invoice_service_url": config.InvoiceServiceURL,
-	}).Info("      ALL  /api/v1/invoices/*        → " + config.InvoiceServiceURL)
+		"invoice_service_url": invoiceServiceUrl,
+	}).Info("      ALL  /api/v1/invoices/*        → " + invoiceServiceUrl)
 	logger.Logger.Info("           ├─ /invoices/*           → Invoice management")
 	logger.Logger.Info("           └─ /invoices/{id}/details  → Invoice details management")
 	logger.Logger.WithFields(logrus.Fields{
-		"invoice_service_url": config.InvoiceServiceURL,
-	}).Info("      ALL  /api/v1/expense-categories/* → " + config.InvoiceServiceURL)
+		"invoice_service_url": invoiceServiceUrl,
+	}).Info("      ALL  /api/v1/expense-categories/* → " + invoiceServiceUrl)
 	logger.Logger.Info("           └─ /expense-categories/*  → Expense categories management")
 	logger.Logger.WithFields(logrus.Fields{
-		"data_service_url": config.DataServiceURL,
-	}).Info("      ALL  /api/v1/data/*            → " + config.DataServiceURL)
+		"data_service_url": dataServiceUrl,
+	}).Info("      ALL  /api/v1/data/*            → " + dataServiceUrl)
 	logger.Logger.Info("           ├─ /settings/by-service   → Get settings by service")
 	logger.Logger.Info("           ├─ /settings/by-name      → Get settings by name")
 	logger.Logger.Info("           └─ /settings/grouped      → Get settings grouped by service")
@@ -241,8 +239,8 @@ func main() {
 	logger.Logger.Info("")
 	logger.Logger.Info("📋 SESSION MANAGEMENT:")
 	logger.Logger.WithFields(logrus.Fields{
-		"session_service_url": config.SessionServiceURL,
-	}).Info("   🔒 /api/v1/sessions/*        → " + config.SessionServiceURL + " (session validated)")
+		"session_service_url": sessionServiceUrl,
+	}).Info("   🔒 /api/v1/sessions/*        → " + sessionServiceUrl + " (session validated)")
 	logger.Logger.Info("")
 	logger.Logger.Info("🔐 SESSION SECURITY FEATURES:")
 	logger.Logger.Info("   ✅ Server-side token validation")
@@ -296,57 +294,6 @@ func createServiceLogsHandler(logger *logrus.Logger) http.HandlerFunc {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write(output)
-	}
-}
-
-// createInvoiceHealthHandler creates a custom health handler for invoice service
-func createInvoiceHealthHandler(invoiceServiceURL string, logger *logrus.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		// Create a direct request to invoice service health endpoint
-		healthURL := invoiceServiceURL + "/api/v1/invoices/p/health"
-
-		logger.WithFields(logrus.Fields{
-			"invoice_service_url": healthURL,
-		}).Info("Proxying invoice health check")
-
-		client := &http.Client{
-			Timeout: 5 * time.Second,
-		}
-
-		req, err := http.NewRequest("GET", healthURL, nil)
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"error": err.Error(),
-			}).Error("Failed to create health request")
-			http.Error(w, "Failed to create health request", http.StatusInternalServerError)
-			return
-		}
-
-		// Add gateway headers
-		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
-		req.Header.Set("X-Gateway-Session-Managed", "true")
-		req.Header.Set("X-Forwarded-For", r.RemoteAddr)
-
-		resp, err := client.Do(req)
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"error": err.Error(),
-			}).Error("Invoice health check failed")
-			http.Error(w, "Invoice service unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		defer resp.Body.Close()
-
-		// Copy response headers
-		for key, values := range resp.Header {
-			for _, value := range values {
-				w.Header().Add(key, value)
-			}
-		}
-
-		// Copy status code and body
-		w.WriteHeader(resp.StatusCode)
-		io.Copy(w, resp.Body)
 	}
 }
 
@@ -452,19 +399,20 @@ func generateRequestID() string {
 }
 
 // createHealthHandler creates a health handler with config
-func createHealthHandler(config *Config) http.HandlerFunc {
+func createHealthHandler(gatewayServiceUrl string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
 
+		//pvillalobos - gateway should not be calling itself, it should be calling the downstream services here
 		// Check all business services that appear on the dashboard + data service for UI monitoring
 		// Use gateway's own proxy endpoints instead of direct service calls
 		gatewayHealthy := true // Gateway is healthy if it's responding to this request
-		sessionHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/sessions/p/health", logger.Logger)
-		ordersHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/orders/p/health", logger.Logger)
-		inventoryHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/inventory/p/health", logger.Logger)
-		invoiceHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/invoices/p/health", logger.Logger)
+		sessionHealthy := checkServiceHealth(gatewayServiceUrl+"/api/v1/sessions/p/health", logger.Logger)
+		ordersHealthy := checkServiceHealth(gatewayServiceUrl+"/api/v1/orders/p/health", logger.Logger)
+		inventoryHealthy := checkServiceHealth(gatewayServiceUrl+"/api/v1/inventory/p/health", logger.Logger)
+		invoiceHealthy := checkServiceHealth(gatewayServiceUrl+"/api/v1/invoices/p/health", logger.Logger)
 
-		dataHealthy := checkServiceHealth(config.GatewayServiceURL+"/api/v1/data/p/health", logger.Logger)
+		dataHealthy := checkServiceHealth(gatewayServiceUrl+"/api/v1/data/p/health", logger.Logger)
 		status := "healthy"
 		if !gatewayHealthy || !sessionHealthy || !ordersHealthy || !inventoryHealthy || !invoiceHealthy || !dataHealthy {
 			status = "degraded"
@@ -1015,133 +963,4 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
-}
-
-// loadConfigFromDataService loads configuration from the data service API
-func loadConfigFromDataService(bootstrapConfig *Config, logger *logrus.Logger) (*Config, error) {
-	logger.WithFields(logrus.Fields{
-		"bootstrap_data_service_url": bootstrapConfig.DataServiceURL,
-	}).Info("Starting configuration loading from data service")
-
-	// Create config loader
-	configLoader := sharedConfig.NewConfigLoader(bootstrapConfig.DataServiceURL)
-
-	// Get settings from data service
-	settings, err := configLoader.LoadSettingsFromDataService("Gateway", logger)
-	if err != nil {
-		logger.WithError(err).Error("Failed to get settings from data service")
-		return nil, err
-	}
-
-	logger.WithFields(logrus.Fields{
-		"settings_count": len(settings),
-	}).Info("Successfully retrieved settings from data service")
-
-	// Create config with defaults
-	config := &Config{
-		GatewayServiceURL:   "http://localhost:8082",
-		SessionServiceURL:   "http://localhost:8081",
-		OrdersServiceURL:    "http://localhost:8083",
-		InventoryServiceURL: "http://localhost:8084",
-		InvoiceServiceURL:   "http://localhost:8085",
-		DataServiceURL:      bootstrapConfig.DataServiceURL, // Use bootstrap value
-	}
-
-	logger.WithFields(logrus.Fields{
-		"default_gateway_service":   config.GatewayServiceURL,
-		"default_session_service":   config.SessionServiceURL,
-		"default_orders_service":    config.OrdersServiceURL,
-		"default_inventory_service": config.InventoryServiceURL,
-		"default_invoice_service":   config.InvoiceServiceURL,
-		"bootstrap_data_service":    config.DataServiceURL,
-	}).Info("Created default configuration")
-
-	// Populate config from settings
-	populateConfigFromSettings(config, settings, logger)
-
-	logger.WithFields(logrus.Fields{
-		"final_gateway_service":   config.GatewayServiceURL,
-		"final_session_service":   config.SessionServiceURL,
-		"final_orders_service":    config.OrdersServiceURL,
-		"final_inventory_service": config.InventoryServiceURL,
-		"final_invoice_service":   config.InvoiceServiceURL,
-		"final_data_service":      config.DataServiceURL,
-	}).Info("Configuration loading completed successfully")
-
-	return config, nil
-}
-
-// populateConfigFromSettings populates the config struct from settings
-func populateConfigFromSettings(config *Config, settings []sharedModels.Setting, logger *logrus.Logger) {
-	logger.WithFields(logrus.Fields{
-		"settings_count": len(settings),
-	}).Info("Starting to populate configuration from settings")
-
-	for _, setting := range settings {
-
-		switch setting.Key {
-		case "SESSION_SERVICE_URL":
-			oldValue := config.SessionServiceURL
-			config.SessionServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated session service URL")
-		case "ORDERS_SERVICE_URL":
-			oldValue := config.OrdersServiceURL
-			config.OrdersServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated orders service URL")
-		case "INVENTORY_SERVICE_URL":
-			oldValue := config.InventoryServiceURL
-			config.InventoryServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated inventory service URL")
-		case "INVOICE_SERVICE_URL":
-			oldValue := config.InvoiceServiceURL
-			config.InvoiceServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated invoice service URL")
-		case "DATA_SERVICE_URL":
-			oldValue := config.DataServiceURL
-			config.DataServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated data service URL")
-		case "GATEWAY_SERVICE_URL":
-			oldValue := config.GatewayServiceURL
-			config.GatewayServiceURL = setting.Value
-			logger.WithFields(logrus.Fields{
-				"key":       setting.Key,
-				"old_value": oldValue,
-				"new_value": setting.Value,
-			}).Info("Updated gateway service URL")
-		default:
-			logger.WithFields(logrus.Fields{
-				"key":   setting.Key,
-				"value": setting.Value,
-			}).Warn("Unknown setting key, ignoring")
-		}
-	}
-
-	logger.WithFields(logrus.Fields{
-		"gateway_service":   config.GatewayServiceURL,
-		"session_service":   config.SessionServiceURL,
-		"orders_service":    config.OrdersServiceURL,
-		"inventory_service": config.InventoryServiceURL,
-		"invoice_service":   config.InvoiceServiceURL,
-		"data_service":      config.DataServiceURL,
-	}).Info("Configuration populated from settings successfully")
 }

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"shared/config"
 	recipeIngredientsHandler "inventory-service/entities/recipe_ingredients/handlers"
 	recipeIngredientsModels "inventory-service/entities/recipe_ingredients/models"
 	recipeIngredientsSQL "inventory-service/entities/recipe_ingredients/sql"
@@ -14,6 +13,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"shared/config"
 	"strings"
 	"time"
 
@@ -157,7 +157,8 @@ func (h *DBHandler) storeImageInDataService(service, imageName string, imageData
 
 	// Create HTTP request
 	// Use the gateway URL from config
-	url := fmt.Sprintf("%s/api/v1/data/images/%s", h.config.GetString("GATEWAY_URL", "http://localhost:8082"), service)
+	gatewayURL := h.config.GetString("GATEWAY_URL")
+	url := fmt.Sprintf("%s/api/v1/data/images/%s", gatewayURL, service)
 
 	req, err := http.NewRequest("POST", url, &buf)
 	if err != nil {
@@ -215,7 +216,8 @@ func (h *DBHandler) storeImageInDataService(service, imageName string, imageData
 func (h *DBHandler) deleteImageFromDataService(service, filename string, logger *logrus.Logger) error {
 	// Construct the delete URL
 	// pvillalobos: hardcoded values
-	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", h.config.GetString("GATEWAY_URL", "http://localhost:8082"), service, filename)
+	gatewayURL := h.config.GetString("GATEWAY_URL")
+	deleteURL := fmt.Sprintf("%s/api/v1/data/images/%s/%s", gatewayURL, service, filename)
 
 	// Create HTTP client
 	client := &http.Client{

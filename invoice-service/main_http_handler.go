@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"shared/config"
 	expenseCategoriesHandlers "invoice-service/entities/expense_categories/handlers"
 	invoicesHandlers "invoice-service/entities/invoices/handlers"
+	"shared/config"
 
 	"github.com/sirupsen/logrus"
 )

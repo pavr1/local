@@ -8,7 +8,6 @@ import (
 	sharedMiddleware "shared/middlewares"
 	"time"
 
-	"shared/config"
 	existencesHandlers "inventory-service/entities/existences/handlers"
 	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"
@@ -17,6 +16,7 @@ import (
 	recipesHandlers "inventory-service/entities/recipes/handlers"
 	runoutIngredientsHandlers "inventory-service/entities/runout_ingredients/handlers"
 	suppliersHandlers "inventory-service/entities/suppliers/handlers"
+	"shared/config"
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"

@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"shared/config"
 	"invoice-service/entities/invoices/models"
 	invoiceSQL "invoice-service/entities/invoices/sql"
 	"math"
 	"net/http"
+	"shared/config"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -439,7 +439,7 @@ func (h *DBHandler) CreateInventoryExistence(tx *sql.Tx, req models.CreateExiste
 func (h *DBHandler) getMostRecentExistenceFromInventoryService(ingredientID, unitType string, logger *logrus.Logger) (*models.Existence, error) {
 	//pvillalobos - hardcoded values
 	url := fmt.Sprintf("%s/api/v1/inventory/existences/ingredient/%s/unit-type/%s",
-		h.config.GetString("INVENTORY_SERVICE_URL", "http://localhost:8084"), ingredientID, unitType)
+		h.config.GetString("INVENTORY_SERVICE_URL"), ingredientID, unitType)
 
 	client := &http.Client{
 		Timeout: 10 * time.Second,

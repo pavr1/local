@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -30,54 +29,70 @@ func NewConfigLoader(dataServiceURL string) *ConfigLoader {
 type Config struct {
 	// Store all configuration as key-value pairs
 	Values map[string]string
+	Logger *logrus.Logger
 }
 
 // NewConfig creates a new config with default values
-func NewConfig() *Config {
+func newConfig(logger *logrus.Logger) *Config {
 	return &Config{
 		Values: make(map[string]string),
+		Logger: logger,
 	}
 }
 
 // GetString returns a string value from config
-func (c *Config) GetString(key, defaultValue string) string {
+func (c *Config) GetString(key string) string {
 	if value, exists := c.Values[key]; exists {
 		return value
 	}
-	return defaultValue
+
+	c.Logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Fatal("Key not found in config")
+	return ""
 }
 
 // GetInt returns an int value from config
-func (c *Config) GetInt(key string, defaultValue int) int {
+func (c *Config) GetInt(key string) int {
 	if value, exists := c.Values[key]; exists {
 		if intValue, err := strconv.Atoi(value); err == nil {
 			return intValue
 		}
 	}
-	return defaultValue
+
+	c.Logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Fatal("Key not found in config")
+	return 0
 }
 
 // GetFloat returns a float64 value from config
-func (c *Config) GetFloat(key string, defaultValue float64) float64 {
+func (c *Config) GetFloat(key string) float64 {
 	if value, exists := c.Values[key]; exists {
 		if floatValue, err := strconv.ParseFloat(value, 64); err == nil {
 			return floatValue
 		}
 	}
-	return defaultValue
+
+	c.Logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Fatal("Key not found in config")
+	return 0
 }
 
 // GetDuration returns a time.Duration value from config
-func (c *Config) GetDuration(key, defaultValue string) time.Duration {
+func (c *Config) GetDuration(key string) time.Duration {
 	if value, exists := c.Values[key]; exists {
 		if duration, err := time.ParseDuration(value); err == nil {
 			return duration
 		}
 	}
-	if duration, err := time.ParseDuration(defaultValue); err == nil {
-		return duration
-	}
-	return 30 * time.Minute // fallback
+
+	c.Logger.WithFields(logrus.Fields{
+		"key": key,
+	}).Fatal("Key not found in config")
+	return 0
+
 }
 
 // Set sets a key-value pair in the config
@@ -86,7 +101,7 @@ func (c *Config) Set(key, value string) {
 }
 
 // LoadSettingsFromDataService calls the data service API to get settings
-func (cl *ConfigLoader) LoadSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]sharedModels.Setting, error) {
+func (cl *ConfigLoader) loadSettingsFromDataService(serviceName string, logger *logrus.Logger) ([]sharedModels.Setting, error) {
 	url := fmt.Sprintf("%s/api/v1/data/settings/by-service", cl.dataServiceURL)
 
 	// Prepare request
@@ -153,31 +168,16 @@ func (cl *ConfigLoader) LoadSettingsFromDataService(serviceName string, logger *
 	return settings, nil
 }
 
-// LoadMultipleServicesSettings loads settings for multiple services
-func (cl *ConfigLoader) LoadMultipleServicesSettings(serviceNames []string, logger *logrus.Logger) ([]sharedModels.Setting, error) {
-	var allSettings []sharedModels.Setting
-
-	for _, serviceName := range serviceNames {
-		settings, err := cl.LoadSettingsFromDataService(serviceName, logger)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get settings for service %s: %w", serviceName, err)
-		}
-		allSettings = append(allSettings, settings...)
-	}
-
-	return allSettings, nil
-}
-
 // LoadConfig loads configuration for any service
 func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*Config, error) {
 	logger.Info("Loading configuration from data service")
 
-	settings, err := cl.LoadSettingsFromDataService(serviceName, logger)
+	settings, err := cl.loadSettingsFromDataService(serviceName, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	config := NewConfig()
+	config := newConfig(logger)
 
 	// Set default values based on service
 	setDefaultValues(config, serviceName)
@@ -189,33 +189,6 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 		"service":        serviceName,
 		"settings_count": len(settings),
 	}).Info("Configuration loaded from data service")
-
-	return config, nil
-}
-
-// LoadMultipleServicesConfig loads configuration for multiple services
-func (cl *ConfigLoader) LoadMultipleServicesConfig(serviceNames []string, logger *logrus.Logger) (*Config, error) {
-	logger.Info("Loading configuration from multiple services")
-
-	settings, err := cl.LoadMultipleServicesSettings(serviceNames, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	config := NewConfig()
-
-	// Set default values for the primary service
-	if len(serviceNames) > 0 {
-		setDefaultValues(config, serviceNames[0])
-	}
-
-	// Populate from settings
-	populateConfigFromSettings(config, settings, logger)
-
-	logger.WithFields(logrus.Fields{
-		"services":       serviceNames,
-		"settings_count": len(settings),
-	}).Info("Configuration loaded from multiple services")
 
 	return config, nil
 }
@@ -275,6 +248,7 @@ func setDefaultValues(config *Config, serviceName string) {
 		config.Set("LOG_LEVEL", "info")
 		config.Set("INVENTORY_SERVICE_URL", "http://localhost:8084")
 	case "Gateway":
+		//pvillalobos - hardcoded values for service URLs - will revisit
 		config.Set("GATEWAY_SERVICE_URL", "http://localhost:8082")
 		config.Set("SESSION_SERVICE_URL", "http://localhost:8081")
 		config.Set("ORDERS_SERVICE_URL", "http://localhost:8083")
@@ -297,43 +271,4 @@ func populateConfigFromSettings(config *Config, settings []sharedModels.Setting,
 	}
 
 	logger.WithField("settings_processed", len(settings)).Info("Config populated from data service settings")
-}
-
-// ===== ENVIRONMENT UTILITY FUNCTIONS =====
-
-func getEnvString(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
-func getEnvFloat(key string, defaultValue float64) float64 {
-	if value := os.Getenv(key); value != "" {
-		if parsed, err := strconv.ParseFloat(value, 64); err == nil {
-			return parsed
-		}
-	}
-	return defaultValue
-}
-
-func getEnvDuration(key, defaultValue string) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	if duration, err := time.ParseDuration(defaultValue); err == nil {
-		return duration
-	}
-	return 30 * time.Minute // fallback
 }

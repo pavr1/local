@@ -50,7 +50,7 @@ func main() {
 
 	// Start HTTP server
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST", "0.0.0.0"), cfg.GetString("SERVER_PORT", "8085")),
+		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST"), cfg.GetString("SERVER_PORT")),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -95,12 +95,12 @@ func getEnvString(key, defaultValue string) string {
 func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
 	// Build connection string using config
 	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.GetString("DB_HOST", "localhost"),
-		cfg.GetString("DB_PORT", "5432"),
-		cfg.GetString("DB_USER", "postgres"),
-		cfg.GetString("DB_PASSWORD", "postgres123"),
-		cfg.GetString("DB_NAME", "icecream_store"),
-		cfg.GetString("DB_SSL_MODE", "disable"))
+		cfg.GetString("DB_HOST"),
+		cfg.GetString("DB_PORT"),
+		cfg.GetString("DB_USER"),
+		cfg.GetString("DB_PASSWORD"),
+		cfg.GetString("DB_NAME"),
+		cfg.GetString("DB_SSL_MODE"))
 
 	// Open database connection
 	db, err := sql.Open("postgres", connStr)

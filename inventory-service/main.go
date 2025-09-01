@@ -46,10 +46,12 @@ func main() {
 	// Setup HTTP router
 	router := mux.NewRouter()
 	mainHandler.SetupRoutes(router)
+	serverHost := cfg.GetString("SERVER_HOST")
+	serverPort := cfg.GetString("SERVER_PORT")
 
 	// Start HTTP server
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST", "0.0.0.0"), cfg.GetString("SERVER_PORT", "8084")),
+		Addr:         fmt.Sprintf("%s:%s", serverHost, serverPort),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -59,8 +61,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithFields(logrus.Fields{
-			"host": cfg.GetString("SERVER_HOST", "0.0.0.0"),
-			"port": cfg.GetString("SERVER_PORT", "8084"),
+			"host": serverHost,
+			"port": serverPort,
 		}).Info("Starting HTTP server")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -95,13 +97,20 @@ func getEnvString(key, defaultValue string) string {
 
 // connectToDatabase establishes connection to PostgreSQL database using config
 func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
+	dbHost := cfg.GetString("DB_HOST")
+	dbPort := cfg.GetString("DB_PORT")
+	dbUser := cfg.GetString("DB_USER")
+	dbPassword := cfg.GetString("DB_PASSWORD")
+	dbName := cfg.GetString("DB_NAME")
+	dbSslMode := cfg.GetString("DB_SSL_MODE")
+
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.GetString("DB_HOST", "localhost"),
-		cfg.GetString("DB_PORT", "5432"),
-		cfg.GetString("DB_USER", "postgres"),
-		cfg.GetString("DB_PASSWORD", "postgres123"),
-		cfg.GetString("DB_NAME", "icecream_store"),
-		cfg.GetString("DB_SSL_MODE", "disable"))
+		dbHost,
+		dbPort,
+		dbUser,
+		dbPassword,
+		dbName,
+		dbSslMode)
 
 	var db *sql.DB
 	var err error
