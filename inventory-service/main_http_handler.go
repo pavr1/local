@@ -8,7 +8,7 @@ import (
 	sharedMiddleware "shared/middlewares"
 	"time"
 
-	"inventory-service/config"
+	"shared/config"
 	existencesHandlers "inventory-service/entities/existences/handlers"
 	ingredientCategoriesHandlers "inventory-service/entities/ingredient_categories/handlers"
 	ingredientsHandlers "inventory-service/entities/ingredients/handlers"

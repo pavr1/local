@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"invoice-service/config"
+	"shared/config"
 	expenseCategoriesHandlers "invoice-service/entities/expense_categories/handlers"
 	invoicesHandlers "invoice-service/entities/invoices/handlers"
 

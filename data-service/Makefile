@@ -101,7 +101,7 @@ fresh: create-network clean deps remove-volumes reset start init-manual migrate-
 
 ## 🐳 Container Management Commands (Data Service Always Uses Containers)
 
-start: create-network ## Start PostgreSQL and PgAdmin containers
+start: create-network build ## Start PostgreSQL and PgAdmin containers
 	@echo "$(CYAN)🍦 Starting Ice Cream Store Data Service...$(RESET)"
 	@./scripts/start.sh
 
@@ -202,9 +202,12 @@ build: ## Build the data service application
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
 
-build-container: build ## Build the Docker image
+build-container: ## Build the Docker image
+	@echo "$(CYAN)🔨 Building data service application...$(RESET)"
+	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
 	@echo "$(CYAN)🐳 Building Docker image...$(RESET)"
 	@docker build -t docker-data-service -f docker/Dockerfile .
+	@rm -f main
 	@echo "$(GREEN)✅ Docker image built: docker-data-service$(RESET)"
 
 run: build ## Run the data service application to test database connection
