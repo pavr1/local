@@ -21,7 +21,7 @@ type MainHTTPHandler struct {
 // NewMainHTTPHandler creates a new main HTTP handler
 func NewMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainHTTPHandler, error) {
 	// Create JWT handler
-	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"), cfg.GetDuration("JWT_EXPIRATION_TIME", "30m"), logger)
+	jwtHandler := handlers.NewJWTHandler(cfg.GetString("JWT_SECRET"), cfg.GetDuration("JWT_EXPIRATION_TIME"), logger)
 
 	// Create database handler
 	dbHandler, err := handlers.NewDBHandler(cfg, jwtHandler, logger)

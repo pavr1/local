@@ -46,8 +46,8 @@ func (h *DBHandler) CreateOrder(req models.CreateOrderRequest, logger *logrus.Lo
 
 	//pvillalobos - hardcoded tax rates
 	// Calculate taxes on the subtotal (tax handling responsibility)
-	ivaAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_TAX_RATE", 13.0) / 100)            // 13% IVA
-	serviceTaxAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_SERVICE_RATE", 10.0) / 100) // 10% service tax
+	ivaAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_TAX_RATE") / 100)            // 13% IVA
+	serviceTaxAmount := subtotalAmount * (h.config.GetFloat("DEFAULT_SERVICE_RATE") / 100) // 10% service tax
 
 	// Generate order number
 	orderNumber := models.GenerateOrderNumber()

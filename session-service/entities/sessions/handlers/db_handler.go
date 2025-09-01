@@ -55,12 +55,12 @@ func (h *DBHandler) Close() error {
 // connectToDatabase connects to the PostgreSQL database
 func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.GetString("DB_HOST", "localhost"),
-		cfg.GetString("DB_PORT", "5432"),
-		cfg.GetString("DB_USER", "postgres"),
-		cfg.GetString("DB_PASSWORD", "postgres123"),
-		cfg.GetString("DB_NAME", "icecream_store"),
-		cfg.GetString("DB_SSL_MODE", "disable"))
+		cfg.GetString("DB_HOST"),
+		cfg.GetString("DB_PORT"),
+		cfg.GetString("DB_USER"),
+		cfg.GetString("DB_PASSWORD"),
+		cfg.GetString("DB_NAME"),
+		cfg.GetString("DB_SSL_MODE"))
 
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {

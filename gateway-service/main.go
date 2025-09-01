@@ -44,18 +44,16 @@ func main() {
 	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_GATEWAY_SERVICE)
 	logger.Info("Gateway service starting - logger initialized")
 
-	//pvillalobos - hardcoded values
-	// Bootstrap config with hardcoded data service URL for initial config loading
-	dataServiceURL := "http://icecream_data_service:8086" // Hardcoded for bootstrap - Docker service name
+	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
 
 	logger.WithFields(logrus.Fields{
-		"bootstrap_data_service_url": dataServiceURL,
+		"bootstrap_data_service_url": dataServiceUrl,
 	}).Info("Created bootstrap configuration")
 
 	// Load full configuration from data service
 	logger.Info("Loading configuration from data service...")
 
-	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 	config, err := configLoader.LoadConfig("Gateway", logger.Logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
@@ -66,7 +64,6 @@ func main() {
 	orderServiceUrl := config.GetString("ORDERS_SERVICE_URL")
 	inventoryServiceUrl := config.GetString("INVENTORY_SERVICE_URL")
 	invoiceServiceUrl := config.GetString("INVOICE_SERVICE_URL")
-	dataServiceUrl := config.GetString("DATA_SERVICE_URL")
 
 	logger.WithFields(logrus.Fields{
 		"gateway_service":   gatewayServiceUrl,

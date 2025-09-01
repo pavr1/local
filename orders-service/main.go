@@ -26,8 +26,8 @@ func main() {
 
 	// Load configuration from data service
 	logger.Info("Loading configuration from data service...")
-	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://icecream_data_service:8086")
-	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
+	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
 	cfg, err := configLoader.LoadConfig("Orders", logger.Logger)
 	if err != nil {
@@ -54,7 +54,7 @@ func main() {
 
 	// Start HTTP server
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST", "0.0.0.0"), cfg.GetString("SERVER_PORT", "8083")),
+		Addr:         fmt.Sprintf("%s:%s", cfg.GetString("SERVER_HOST"), cfg.GetString("SERVER_PORT")),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -64,8 +64,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithFields(logrus.Fields{
-			"host": cfg.GetString("SERVER_HOST", "0.0.0.0"),
-			"port": cfg.GetString("SERVER_PORT", "8083"),
+			"host": cfg.GetString("SERVER_HOST"),
+			"port": cfg.GetString("SERVER_PORT"),
 		}).Info("Orders service starting on")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -98,12 +98,12 @@ func getEnvString(key, defaultValue string) string {
 // connectToDatabase establishes database connection using config
 func connectToDatabase(cfg *sharedConfig.Config, logger *logrus.Logger) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.GetString("DB_HOST", "localhost"),
-		cfg.GetString("DB_PORT", "5432"),
-		cfg.GetString("DB_USER", "postgres"),
-		cfg.GetString("DB_PASSWORD", "postgres123"),
-		cfg.GetString("DB_NAME", "icecream_store"),
-		cfg.GetString("DB_SSL_MODE", "disable"))
+		cfg.GetString("DB_HOST"),
+		cfg.GetString("DB_PORT"),
+		cfg.GetString("DB_USER"),
+		cfg.GetString("DB_PASSWORD"),
+		cfg.GetString("DB_NAME"),
+		cfg.GetString("DB_SSL_MODE"))
 
 	var db *sql.DB
 	var err error

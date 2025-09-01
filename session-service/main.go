@@ -24,8 +24,8 @@ func main() {
 
 	// Load configuration from data service
 	logger.Info("Loading configuration from data service...")
-	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://icecream_data_service:8086")
-	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
+	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
 	config, err := configLoader.LoadConfig("Session", logger.Logger)
 	if err != nil {
@@ -33,19 +33,19 @@ func main() {
 	}
 
 	logger.WithFields(logrus.Fields{
-		"server_port": config.GetString("SERVER_PORT", "8081"),
-		"server_host": config.GetString("SERVER_HOST", "0.0.0.0"),
-		"log_level":   config.GetString("LOG_LEVEL", "info"),
+		"server_port": config.GetString("SERVER_PORT"),
+		"server_host": config.GetString("SERVER_HOST"),
+		"log_level":   config.GetString("LOG_LEVEL"),
 	}).Info("Session service configuration loaded")
 
 	// Connect to database
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.GetString("DB_HOST", "localhost"),
-		config.GetString("DB_PORT", "5432"),
-		config.GetString("DB_USER", "postgres"),
-		config.GetString("DB_PASSWORD", "postgres123"),
-		config.GetString("DB_NAME", "icecream_store"),
-		config.GetString("DB_SSL_MODE", "disable")))
+		config.GetString("DB_HOST"),
+		config.GetString("DB_PORT"),
+		config.GetString("DB_USER"),
+		config.GetString("DB_PASSWORD"),
+		config.GetString("DB_NAME"),
+		config.GetString("DB_SSL_MODE")))
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
@@ -69,7 +69,7 @@ func main() {
 
 	// Create HTTP server
 	server := &http.Server{
-		Addr:         fmt.Sprintf("%s:%s", config.GetString("SERVER_HOST", "0.0.0.0"), config.GetString("SERVER_PORT", "8081")),
+		Addr:         fmt.Sprintf("%s:%s", config.GetString("SERVER_HOST"), config.GetString("SERVER_PORT")),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -79,8 +79,8 @@ func main() {
 	// Start server in a goroutine
 	go func() {
 		logger.WithFields(logrus.Fields{
-			"host": config.GetString("SERVER_HOST", "0.0.0.0"),
-			"port": config.GetString("SERVER_PORT", "8081"),
+			"host": config.GetString("SERVER_HOST"),
+			"port": config.GetString("SERVER_PORT"),
 		}).Info("Starting HTTP server")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

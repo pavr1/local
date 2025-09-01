@@ -704,7 +704,7 @@ func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		Timeout: 5 * time.Second,
 	}
 
-	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.GetString("DATA_SERVICE_URL", "http://icecream_data_service:8086"))
+	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.GetString("DATA_SERVICE_URL"))
 	resp, err := client.Get(dataServiceHealthURL)
 	if err != nil {
 		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
@@ -749,11 +749,11 @@ func (h *HttpHandler) createIncomeInvoice(invoiceReq map[string]interface{}, log
 	// Debug: Log the JSON being sent
 	logger.WithFields(logrus.Fields{
 		"invoice_data": string(jsonData),
-		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085")),
+		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL")),
 	}).Info("Sending invoice request to invoice service")
 
 	// Call invoice service using configured URL
-	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL", "http://localhost:8085"))
+	invoiceURL := fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL"))
 	resp, err := h.httpClient.Post(
 		invoiceURL,
 		"application/json",

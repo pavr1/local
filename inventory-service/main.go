@@ -25,8 +25,8 @@ func main() {
 
 	// Load configuration from data service
 	logger.Info("Loading configuration from data service...")
-	dataServiceURL := getEnvString("DATA_SERVICE_URL", "http://icecream_data_service:8086")
-	configLoader := sharedConfig.NewConfigLoader(dataServiceURL)
+	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
+	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
 	cfg, err := configLoader.LoadConfig("Inventory", logger.Logger)
 	if err != nil {

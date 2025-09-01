@@ -13,6 +13,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	DATA_SERVICE_URL = "http://icecream_data_service:8086"
+)
+
 // ConfigLoader provides functionality to load configuration from the data service
 type ConfigLoader struct {
 	dataServiceURL string
