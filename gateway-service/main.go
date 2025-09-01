@@ -64,6 +64,7 @@ func main() {
 	orderServiceUrl := config.GetString("ORDERS_SERVICE_URL")
 	inventoryServiceUrl := config.GetString("INVENTORY_SERVICE_URL")
 	invoiceServiceUrl := config.GetString("INVOICE_SERVICE_URL")
+	dataServiceUrl = config.GetString("DATA_SERVICE_URL")
 
 	logger.WithFields(logrus.Fields{
 		"gateway_service":   gatewayServiceUrl,
@@ -357,27 +358,10 @@ func createProxyHandler(targetURL, stripPrefix string, logger *logrus.Logger) ht
 			logger.WithField("request_id", requestID).Warn("Generated request ID in proxy director (fallback)")
 		}
 
-		//pvillalobos - hardcoded values
-		// Log the proxy request (only for important requests)
-		if req.URL.Path != "/api/v1/sessions/p/health" {
-			logFields := logrus.Fields{
-				"method":      req.Method,
-				"path":        req.URL.Path,
-				"target":      target.String(),
-				"remote_addr": req.RemoteAddr,
-				"request_id":  requestID,
-			}
-
-			logger.WithFields(logFields).Info("Proxying request")
-		}
-
 		// Add gateway headers
 		req.Header.Set("X-Forwarded-For", req.RemoteAddr)
 		req.Header.Set("X-Gateway-Service", "ice-cream-gateway")
 		req.Header.Set("X-Gateway-Session-Managed", "true")
-
-		// Ensure request ID is forwarded to downstream services
-		// Debug logging removed to reduce noise
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
