@@ -237,7 +237,7 @@
                 console.log('✅ Login page initialized');
             }
 
-            async checkExistingAuth() {
+            async checkExistingAuth() {                
                 if (window.authService && window.authService.isAuthenticated()) {
                     console.log('🔍 User already authenticated, validating session...');
                     const sessionId = window.authService.getSessionId();
@@ -245,6 +245,7 @@
                     if (sessionId) {
                         try {
                             // Validate session by calling the gateway validate endpoint
+                            console.log('🔍 Validating session with gateway...');
                             const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/sessions/p/validate`, {
                                 method: 'POST',
                                 headers: {
@@ -257,10 +258,14 @@
                             
                             if (response.ok) {
                                 const data = await response.json();
-                                if (data.valid) {
+                                // Handle new centralized response structure
+                                const isValid = data.data?.valid || data.valid;
+                                
+                                if (isValid) {
                                     console.log('✅ Session is valid, redirecting...');
                                     this.showAlert('Already signed in. Redirecting...', 'success');
                                     setTimeout(() => {
+                                        console.log('🎉 Redirecting to dashboard...');
                                         window.location.href = 'dashboard.html';
                                     }, 1000);
                                 } else {
@@ -283,7 +288,11 @@
                             window.authService.clearAuthData();
                             this.showAlert('Unable to validate session. Please login again.', 'info');
                         }
+                    } else {
+                        console.log('🔍 No session ID found');
                     }
+                } else {
+                    console.log('🔍 User not authenticated or authService not available');
                 }
             }
 
@@ -569,9 +578,12 @@
                                     const healthData = await response.json();
                                     console.log('✅ [Auto] Login system status: Health check successful:', healthData);
                                     
+                                    // Handle new centralized response structure
+                                    const services = healthData.data?.services || healthData.services;
+                                    
                                     // Update status indicators based on gateway health response
-                                    if (healthData.services) {
-                                        this.updateStatusFromGateway(healthData.services);
+                                    if (services) {
+                                        this.updateStatusFromGateway(services);
                                     }
                                     
                                 } else {

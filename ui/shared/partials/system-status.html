@@ -155,9 +155,12 @@
                 if (response.ok) {
                     const healthData = await response.json();
                     
+                    // Handle new centralized response structure
+                    const services = healthData.data?.services || healthData.services;
+                    
                     // Update status indicators based on gateway health response
-                    if (healthData.services) {
-                        this.updateStatusFromGateway(healthData.services);
+                    if (services) {
+                        this.updateStatusFromGateway(services);
                     }
                     
                 } else {

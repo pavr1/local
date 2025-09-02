@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	sharedConfig "shared/config"
+
 	"github.com/lib/pq"
 	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/sirupsen/logrus"
@@ -68,27 +70,43 @@ type Config struct {
 	RetryInterval time.Duration
 }
 
+// pvillalobos: hardcoded values - will revisit
 // DefaultConfig returns a default configuration
-func DefaultConfig() *Config {
-	return &Config{
-		Host:    "localhost",
-		Port:    5432,
-		SSLMode: "disable",
+func DefaultConfig(logger *logrus.Logger) *Config {
+	// Get environment variables with defaults
+	host := sharedConfig.DATA_SERVICE_HOST
+	port := sharedConfig.DATA_SERVICE_PORT
+	user := sharedConfig.DATA_SERVICE_USER
+	password := sharedConfig.DATA_SERVICE_PASSWORD
+	dbName := sharedConfig.DATA_SERVICE_DB_NAME
+	sslMode := sharedConfig.DATA_SERVICE_SSL_MODE
 
-		// Connection pool defaults
-		MaxOpenConns:    25,
-		MaxIdleConns:    5,
-		ConnMaxLifetime: 5 * time.Minute,
-		ConnMaxIdleTime: 5 * time.Minute,
+	// Create database configuration using environment variables
+	dbConfig := &Config{
+		Host:     host,
+		Port:     port,
+		User:     user,
+		Password: password,
+		DBName:   dbName,
+		SSLMode:  sslMode,
 
-		// Timeout defaults
-		ConnectTimeout: 10 * time.Second,
-		QueryTimeout:   30 * time.Second,
+		//pvillalobos - add these to config
+		// Connection pool settings
+		MaxOpenConns:    sharedConfig.DATA_SERVICE_MAX_OPEN_CONNS,
+		MaxIdleConns:    sharedConfig.DATA_SERVICE_MAX_IDLE_CONNS,
+		ConnMaxLifetime: sharedConfig.DATA_SERVICE_CONN_MAX_LIFETIME,
+		ConnMaxIdleTime: sharedConfig.DATA_SERVICE_CONN_MAX_IDLE_TIME,
 
-		// Retry defaults
-		MaxRetries:    3,
-		RetryInterval: 1 * time.Second,
+		// Timeout settings
+		ConnectTimeout: sharedConfig.DATA_SERVICE_CONNECT_TIMEOUT,
+		QueryTimeout:   sharedConfig.DATA_SERVICE_QUERY_TIMEOUT,
+
+		// Retry settings
+		MaxRetries:    sharedConfig.DATA_SERVICE_MAX_RETRIES,
+		RetryInterval: sharedConfig.DATA_SERVICE_RETRY_INTERVAL,
 	}
+
+	return dbConfig
 }
 
 // dbHandler implements the DatabaseHandler interface
@@ -102,7 +120,7 @@ type dbHandler struct {
 // New creates a new database handler instance
 func New(config *Config, logger *logrus.Logger) DatabaseHandler {
 	if config == nil {
-		config = DefaultConfig()
+		config = DefaultConfig(logger)
 	}
 
 	return &dbHandler{
@@ -149,9 +167,11 @@ func (h *dbHandler) Connect() error {
 		cancel()
 
 		if err != nil {
-			h.logger.WithFields(logrus.Fields{
+			h.logger.WithError(err).WithFields(logrus.Fields{
 				"attempt": attempt,
-				"error":   err.Error(),
+				"host":    h.config.Host,
+				"port":    h.config.Port,
+				"dbname":  h.config.DBName,
 			}).Warn("Failed to ping database")
 
 			db.Close()

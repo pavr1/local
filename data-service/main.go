@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
 	"data-service/pkg/database"
 	"data-service/pkg/images"
 	"data-service/pkg/settings"
+	sharedConfig "shared/config"
 	sharedLogger "shared/logger"
 
 	"github.com/gorilla/mux"
@@ -23,30 +23,7 @@ import (
 func main() {
 	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_DATA_SERVICE)
 
-	//pvillalobos: hardcoded values
-	// Create database configuration
-	config := &database.Config{
-		Host:     getEnv("DB_HOST", "localhost"),
-		Port:     getEnvInt("DB_PORT", 5432),
-		User:     getEnv("DB_USER", "postgres"),
-		Password: getEnv("DB_PASSWORD", "postgres123"),
-		DBName:   getEnv("DB_NAME", "icecream_store"),
-		SSLMode:  getEnv("DB_SSL_MODE", "disable"),
-
-		// Connection pool settings
-		MaxOpenConns:    25,
-		MaxIdleConns:    5,
-		ConnMaxLifetime: 5 * time.Minute,
-		ConnMaxIdleTime: 5 * time.Minute,
-
-		// Timeout settings
-		ConnectTimeout: 10 * time.Second,
-		QueryTimeout:   30 * time.Second,
-
-		// Retry settings
-		MaxRetries:    3,
-		RetryInterval: 1 * time.Second,
-	}
+	config := database.DefaultConfig(logger.Logger)
 
 	// Create database handler
 	db := database.New(config, logger.Logger)
@@ -79,10 +56,14 @@ func main() {
 	imageHandler := images.NewImageHandler("/app")
 
 	// Setup HTTP server
-	router := setupRouter(db, logger.Logger, settingsHandler, imageHandler)
+	router := setupRouter(db, config, logger.Logger, settingsHandler, imageHandler)
+
+	// Get server configuration from environment variables
+	serverHost := sharedConfig.DATA_SERVICE_HOST
+	serverPort := sharedConfig.DATA_SERVICE_PORT
 
 	server := &http.Server{
-		Addr:         "0.0.0.0:8086", // Data service port - bind to all interfaces
+		Addr:         fmt.Sprintf("%s:%d", serverHost, serverPort),
 		Handler:      router,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
@@ -91,9 +72,9 @@ func main() {
 
 	// Start server in a goroutine
 	go func() {
-		logger.WithField("port", "8086").Info("Starting Data Service HTTP server")
-		logger.WithField("port", "8086").Info("🚀 Data Service HTTP server starting on :8086")
-		logger.WithField("port", "8086").Info("📡 Health endpoint available at: http://localhost:8086/api/v1/data/p/health")
+		logger.WithField("port", serverPort).Info("Starting Data Service HTTP server")
+		logger.WithField("port", serverPort).Info("🚀 Data Service HTTP server starting on :8086")
+		logger.WithField("port", serverPort).Info("📡 Health endpoint available at: http://localhost:8086/api/v1/data/p/health")
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.WithError(err).Fatal("Failed to start HTTP server")
@@ -118,25 +99,8 @@ func main() {
 	logger.Info("Data Service exited gracefully")
 }
 
-// Helper functions for environment variables
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
-
 // setupRouter configures the HTTP routes
-func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHandler *settings.SettingsHandler, imageHandler *images.ImageHandler) *mux.Router {
+func setupRouter(db database.DatabaseHandler, config *database.Config, logger *logrus.Logger, settingsHandler *settings.SettingsHandler, imageHandler *images.ImageHandler) *mux.Router {
 	router := mux.NewRouter()
 
 	// Root endpoint to test if router is working
@@ -148,7 +112,7 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 
 	// Public health check endpoint (no authentication required)
 	router.HandleFunc("/api/v1/data/p/health", func(w http.ResponseWriter, r *http.Request) {
-		healthCheck(w, r, db, logger)
+		healthCheck(w, db, config, logger)
 	}).Methods("GET")
 
 	// Stats endpoint (optional, for monitoring)
@@ -178,7 +142,7 @@ func setupRouter(db database.DatabaseHandler, logger *logrus.Logger, settingsHan
 }
 
 // healthCheck handles the health check endpoint
-func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHandler, logger *logrus.Logger) {
+func healthCheck(w http.ResponseWriter, db database.DatabaseHandler, config *database.Config, logger *logrus.Logger) {
 	response := map[string]interface{}{
 		"service":   "data-service",
 		"timestamp": time.Now(),
@@ -186,9 +150,9 @@ func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHan
 
 	// Perform database health check
 	if err := db.HealthCheck(); err != nil {
-		logger.WithError(err).Error("Database health check failed")
+		logger.WithError(err).Error("Database ping check failed")
 		response["status"] = "unhealthy"
-		response["message"] = "Database connection failed"
+		response["message"] = "Database ping check failed"
 		response["error"] = err.Error()
 
 		w.Header().Set("Content-Type", "application/json")
@@ -199,11 +163,11 @@ func healthCheck(w http.ResponseWriter, r *http.Request, db database.DatabaseHan
 
 	// Health check passed
 	response["status"] = "healthy"
-	response["message"] = "Database is operational"
+	response["message"] = "Database ping check passed"
 	response["database"] = map[string]interface{}{
-		"host":   "localhost",
-		"port":   5432,
-		"dbname": "icecream_store",
+		"host":   config.Host,
+		"port":   config.Port,
+		"dbname": config.DBName,
 		"stats":  db.GetStats(),
 	}
 

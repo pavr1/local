@@ -72,7 +72,10 @@ class StatusService {
             
             if (response.ok) {
                 const data = await response.json();
-                return data.status === 'healthy' || data.success ? 'healthy' : 'degraded';
+                // Handle new centralized response structure
+                const status = data.data?.status || data.status;
+                const success = data.data?.success || data.success;
+                return status === 'healthy' || success ? 'healthy' : 'degraded';
             } else {
                 return 'unhealthy';
             }

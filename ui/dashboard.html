@@ -1141,7 +1141,7 @@
         async function initializeDashboard() {
             try {
                 // Check authentication
-                if (!isAuthenticated()) {
+                if (!auth || !auth.isAuthenticated()) {
                     window.location.href = 'login.html';
                     return;
                 }
@@ -1825,12 +1825,16 @@
                 if (response.ok) {
                     const healthData = await response.json();
                     
+                    // Handle new centralized response structure
+                    const status = healthData.data?.status || healthData.status;
+                    const services = healthData.data?.services || healthData.services;
+                    
                     // Update top panel based on overall status and service counts
-                    if (healthData.status === 'healthy') {
+                    if (status === 'healthy') {
                         systemStatusIcon.className = 'system-status-indicator online';
                         systemStatusText.textContent = 'System Online';
                         systemStatusElement.className = 'header-status';
-                    } else if (healthData.status === 'degraded') {
+                    } else if (status === 'degraded') {
                         // Always show degraded when any services are down
                         // Gateway remains operational for system recovery
                         systemStatusIcon.className = 'system-status-indicator degraded';
@@ -1844,8 +1848,8 @@
                     }
                     
                     // Update individual service cards if they exist (dashboard page)
-                    if (healthData.services) {
-                        updateServiceCards(healthData.services, healthData.status);
+                    if (services) {
+                        updateServiceCards(services, status);
                     }
                     
                 } else {
@@ -6720,7 +6724,7 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Recipe created successfully!');
                     
                     // Hide modal
@@ -6735,7 +6739,7 @@
                     // Reload recipes data
                     await loadRecipesData();
                 } else {
-                    throw new Error(result.message || 'Failed to create recipe');
+                    throw new Error(result.data?.message || result.message || 'Failed to create recipe');
                 }
                 
             } catch (error) {

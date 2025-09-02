@@ -13,8 +13,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// pvillalobos - add these to a secret maybe?
 const (
-	DATA_SERVICE_URL = "http://icecream_data_service:8086"
+	DATA_SERVICE_URL                = "http://icecream_data_service:8086"
+	DATA_SERVICE_HOST               = "0.0.0.0"
+	DATA_SERVICE_PORT               = 8086
+	DATA_SERVICE_USER               = "postgres"
+	DATA_SERVICE_PASSWORD           = "postgres123"
+	DATA_SERVICE_DB_NAME            = "icecream_store"
+	DATA_SERVICE_SSL_MODE           = "disable"
+	DATA_SERVICE_MAX_OPEN_CONNS     = 25
+	DATA_SERVICE_MAX_IDLE_CONNS     = 5
+	DATA_SERVICE_CONN_MAX_LIFETIME  = 5 * time.Minute
+	DATA_SERVICE_CONN_MAX_IDLE_TIME = 5 * time.Minute
+	DATA_SERVICE_CONNECT_TIMEOUT    = 10 * time.Second
+	DATA_SERVICE_QUERY_TIMEOUT      = 30 * time.Second
+	DATA_SERVICE_MAX_RETRIES        = 3
+	DATA_SERVICE_RETRY_INTERVAL     = 1 * time.Second
 )
 
 // ConfigLoader provides functionality to load configuration from the data service
@@ -183,6 +198,9 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 
 	config := newConfig(logger)
 
+	//pvillalobos - I don't think we need to add these default values
+	//they all should be retrieved from the db if that doesn't happen
+	//then there's an error and the app should fail to start
 	// Set default values based on service
 	setDefaultValues(config, serviceName)
 
@@ -200,6 +218,16 @@ func (cl *ConfigLoader) LoadConfig(serviceName string, logger *logrus.Logger) (*
 // setDefaultValues sets default values based on service name
 func setDefaultValues(config *Config, serviceName string) {
 	switch serviceName {
+	case "Data":
+		config.Set("SERVER_PORT", "8086")
+		config.Set("SERVER_HOST", "0.0.0.0")
+		config.Set("DB_HOST", "postgres")
+		config.Set("DB_PORT", "5432")
+		config.Set("DB_USER", "postgres")
+		config.Set("DB_PASSWORD", "postgres123")
+		config.Set("DB_NAME", "icecream_store")
+		config.Set("DB_SSL_MODE", "disable")
+		config.Set("LOG_LEVEL", "info")
 	case "Session":
 		config.Set("SERVER_PORT", "8081")
 		config.Set("SERVER_HOST", "0.0.0.0")

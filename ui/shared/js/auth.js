@@ -61,7 +61,6 @@ class AuthService {
     
     async login(username, password, rememberMe = false) {
         try {
-            
             const response = await fetch(`${this.baseURL}${CONFIG.API.LOGIN}`, {
                 method: 'POST',
                 headers: {
@@ -79,17 +78,16 @@ class AuthService {
             }
 
             const data = await response.json();
-
-            
+                        
             // Store authentication data
-            this.setSessionId(data.session_id, rememberMe);
-            this.setUserData(data.user, data.role, data.permissions || []);
+            this.setSessionId(data.data?.session_id, rememberMe);
+            this.setUserData(data.data?.user, data.data?.role, data.data?.permissions || []);
             
             return {
                 success: true,
-                user: data.user,
-                role: data.role,
-                permissions: data.permissions || []
+                user: data.data?.user,
+                role: data.data?.role,
+                permissions: data.data?.permissions || []
             };
             
         } catch (error) {
