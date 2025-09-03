@@ -170,9 +170,22 @@
 <!-- Include Create Order Modal -->
 <div id="createOrderModalContainer"></div>
 
+<!-- Include shared response utilities -->
+<script src="shared/js/response-utils.js"></script>
+
 <script>
-// Global variables
-let ordersSummary = {};
+/*
+ * Orders Overview - Response Structure
+ * 
+ * Expected API Response Format:
+ * {
+ *   "code": 200,           // HTTP status code (200-299 = success)
+ *   "message": "Success",  // Optional message string
+ *   "data": {...}          // The actual data payload
+ * }
+ * 
+ * Uses shared ResponseUtils for consistent handling
+ */
 
 // Initialize the orders overview page
 window.initOrdersOverviewContent = async function() {
@@ -206,31 +219,31 @@ window.loadOrdersSummary = async function() {
         
         const result = await response.json();
         console.log('Orders summary result:', result);
+        console.log('Response structure - Code:', result.code, 'Message:', result.message, 'Data type:', typeof result.data);
         
-        if (result.success) {
-            ordersSummary = result.data;
-            updateSummaryCards();
+        // Check if response code indicates success
+        if (isSuccessfulResponse(result)) {
+            updateSummaryCards(result.data);
+            hideServiceUnavailable();
         } else {
-            console.error('Failed to load orders summary:', result.message);
+            console.error('Failed to load orders summary:', result.message || 'Unknown error');
             showServiceUnavailable();
             return;
         }
+        
     } catch (error) {
         console.error('Error loading orders summary:', error);
         showServiceUnavailable();
         return;
     }
-    
-    // If we get here, the API call was successful
-    hideServiceUnavailable();
 }
 
 // Update summary cards
-window.updateSummaryCards = function() {
-    document.getElementById('totalOrders').textContent = ordersSummary.total_orders || 0;
-    document.getElementById('completedOrders').textContent = ordersSummary.completed_orders || 0;
-    document.getElementById('pendingOrders').textContent = ordersSummary.pending_orders || 0;
-    document.getElementById('todayRevenue').textContent = `₡${(ordersSummary.today_revenue || 0).toFixed(2)}`;
+window.updateSummaryCards = function(data) {
+    document.getElementById('totalOrders').textContent = data.total_orders || 0;
+    document.getElementById('completedOrders').textContent = data.completed_orders || 0;
+    document.getElementById('pendingOrders').textContent = data.pending_orders || 0;
+    document.getElementById('todayRevenue').textContent = `₡${(data.today_revenue || 0).toFixed(2)}`;
 }
 
 // Load recent orders
@@ -251,22 +264,23 @@ window.loadRecentOrders = async function() {
         
         const result = await response.json();
         console.log('Recent orders result:', result);
+        console.log('Response structure - Code:', result.code, 'Message:', result.message, 'Data type:', typeof result.data);
         
-        if (result.success) {
-            displayRecentOrders(result.data.data);
+        // Check if response code indicates success
+        if (isSuccessfulResponse(result)) {
+            displayRecentOrders(result.data);
+            hideServiceUnavailable();
         } else {
-            console.error('Failed to load recent orders:', result.message);
+            console.error('Failed to load recent orders:', result.message || 'Unknown error');
             showServiceUnavailable();
             return;
         }
+        
     } catch (error) {
         console.error('Error loading recent orders:', error);
         showServiceUnavailable();
         return;
     }
-    
-    // If we get here, the API call was successful
-    hideServiceUnavailable();
 }
 
 // Display recent orders

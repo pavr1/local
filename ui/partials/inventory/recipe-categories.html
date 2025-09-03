@@ -305,8 +305,8 @@
             const result = await response.json();
             console.log('📦 Recipe Categories loaded:', result);
             
-            if (result.success && Array.isArray(result.data)) {
-                displayRecipeCategories(result.data);
+            if (result.data?.success && Array.isArray(result.data?.data)) {
+                displayRecipeCategories(result.data?.data);
             } else {
                 displayRecipeCategoriesError('Invalid response format');
             }
@@ -499,7 +499,7 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            if (response.ok && result.data?.success) {
                 Alert.success('Recipe category created successfully!');
                 
                 // Hide modal
@@ -509,7 +509,7 @@
                 // Reload data
                 await loadRecipeCategoriesData();
             } else {
-                throw new Error(result.message || 'Failed to create recipe category');
+                throw new Error(result.data?.message || result.message || 'Failed to create recipe category');
             }
             
         } catch (error) {
@@ -541,7 +541,7 @@
             }
             
             const result = await response.json();
-            const category = result.data;
+            const category = result.data?.data || result.data;
             
             // Populate view modal
             document.getElementById('viewRecipeCategoryContent').innerHTML = `
@@ -591,7 +591,7 @@
             }
             
             const result = await response.json();
-            const category = result.data;
+            const category = result.data?.data || result.data;
             
             // Populate edit form
             document.getElementById('editRecipeCategoryId').value = category.id;
@@ -664,18 +664,18 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
-                Alert.success('Recipe category updated successfully!');
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeCategoryModal'));
-                modal.hide();
-                
-                // Reload data
-                await loadRecipeCategoriesData();
-            } else {
-                throw new Error(result.message || 'Failed to update recipe category');
-            }
+                            if (response.ok && result.data?.success) {
+                    Alert.success('Recipe category updated successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editRecipeCategoryModal'));
+                    modal.hide();
+                    
+                    // Reload data
+                    await loadRecipeCategoriesData();
+                } else {
+                    throw new Error(result.data?.message || result.message || 'Failed to update recipe category');
+                }
             
         } catch (error) {
             console.error('❌ Error updating recipe category:', error);

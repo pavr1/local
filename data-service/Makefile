@@ -69,7 +69,7 @@ migrate-reset: ## Reset migrations and reapply (⚠️  DESTRUCTIVE - removes mi
 	@./scripts/migrate.sh up
 	@echo "$(GREEN)✅ Migration reset completed!$(RESET)"
 
-fresh: create-network clean deps remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
+fresh: create-network clean deps clean-go-cache force-deps build-container remove-volumes reset start init-manual migrate-up test status info ## Complete fresh installation: clean everything, install, setup, and test
 	@echo "$(GREEN)🎉 Fresh installation completed successfully!$(RESET)"
 	@echo "$(CYAN)📋 Quick verification:$(RESET)"
 	@docker exec icecream_postgres psql -U postgres -d icecream_store -c "SELECT 'Fresh install verified!' as status, COUNT(*) as total_tables FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "$(RED)❌ Database verification failed$(RESET)"
@@ -199,8 +199,8 @@ health: ## Check database health
 
 build: ## Build the data service application
 	@echo "$(CYAN)🔨 Building data service application...$(RESET)"
-	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
-	@echo "$(GREEN)✅ Build completed: main (Linux binary)$(RESET)"
+	@go build -o main .
+	@echo "$(GREEN)✅ Build completed: main (macOS binary)$(RESET)"
 
 build-container: ## Build the Docker image
 	@echo "$(CYAN)🔨 Building data service application...$(RESET)"
@@ -267,6 +267,20 @@ clean: ## Clean up containers, volumes, and built binaries
 	@docker volume prune -f 2>/dev/null || true
 	@rm -rf bin/
 	@echo "$(GREEN)✅ Cleanup completed$(RESET)"
+
+clean-go-cache: ## Clean Go module cache to force recompilation
+	@echo "$(YELLOW)🧹 Cleaning Go module cache...$(RESET)"
+	@go clean -cache -modcache -testcache
+	@rm -rf go.sum
+	@rm -rf vendor/
+	@rm -rf ~/go/pkg/mod/shared
+	@echo "$(GREEN)✅ Go module cache cleaned$(RESET)"
+
+force-deps: ## Force re-download of dependencies to pick up shared package changes
+	@echo "$(YELLOW)📦 Force re-downloading dependencies...$(RESET)"
+	@go mod download -x
+	@go mod tidy
+	@echo "$(GREEN)✅ Dependencies force updated$(RESET)"
 
 clean-all: clean ## Complete cleanup including Docker images
 	@echo "$(YELLOW)🧹 Performing complete cleanup...$(RESET)"

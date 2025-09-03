@@ -77,18 +77,26 @@ class AuthService {
                 throw new Error(errorMessage);
             }
 
-            const data = await response.json();
-                        
-            // Store authentication data
-            this.setSessionId(data.data?.session_id, rememberMe);
-            this.setUserData(data.data?.user, data.data?.role, data.data?.permissions || []);
+            const result = await response.json();
+            console.log('🔐 Login response:', result);
             
-            return {
-                success: true,
-                user: data.data?.user,
-                role: data.data?.role,
-                permissions: data.data?.permissions || []
-            };
+            // Check if response code indicates success
+            if (isSuccessfulResponse(result)) {
+                // Store authentication data from the new response structure
+                this.setSessionId(result.data.session_id, rememberMe);
+                this.setUserData(result.data.user, result.data.role, result.data.permissions || []);
+                
+                return {
+                    success: true,
+                    user: result.data.user,
+                    role: result.data.role,
+                    permissions: result.data.permissions || []
+                };
+            } else {
+                // Handle error response
+                const errorMessage = result.message || `Login failed (${result.code})`;
+                throw new Error(errorMessage);
+            }
             
         } catch (error) {
             throw error;
@@ -140,8 +148,6 @@ class AuthService {
         } else {
             localStorage.removeItem(this.rememberKey);
         }
-        
-
     }
 
     getSessionId() {
@@ -150,6 +156,11 @@ class AuthService {
         if (!sessionId) {
             sessionId = localStorage.getItem(this.sessionIdKey);
         }
+
+        if (!sessionId) {
+            console.log('🚨 CRITICAL ERROR: sessionId is null');
+        }
+        
         return sessionId;
     }
 
@@ -247,6 +258,7 @@ async function makeAuthenticatedRequest(url, options = {}) {
     }
     
     const sessionId = authService.getSessionId();
+    console.log('🔑 Making authenticated request with session ID:', sessionId ? '***' + sessionId.slice(-4) : 'null');
     
     // Set up headers
     const headers = {
@@ -254,6 +266,8 @@ async function makeAuthenticatedRequest(url, options = {}) {
         'Authorization': `Bearer ${sessionId}`,
         ...options.headers
     };
+    
+    console.log('📤 Request headers:', headers);
     
     // Make the request
     const response = await fetch(url, {
@@ -263,7 +277,15 @@ async function makeAuthenticatedRequest(url, options = {}) {
     
     // Handle authentication errors
     if (response.status === 401) {
-        console.warn('⚠️ Session expired, redirecting to login');
+        console.warn('⚠️ Session expired, redirecting to login. Full response:', {
+            status: response.status,
+            statusText: response.statusText,
+            url: response.url,
+            headers: Object.fromEntries(response.headers.entries()),
+            body: response.body,
+            type: response.type,
+            redirected: response.redirected
+        });
         authService.clearAuthData();
         redirectToLogin();
         throw new Error('Session expired');
@@ -275,7 +297,7 @@ async function makeAuthenticatedRequest(url, options = {}) {
 // === UTILITY FUNCTIONS ===
 
 function redirectToLogin() {
-    window.location.href = 'login.html';
+    //window.location.href = 'login.html';
 }
 
 // === CONVENIENCE METHODS ===
@@ -304,14 +326,5 @@ async function authenticatedDelete(url) {
 
 // === AUTO-INITIALIZATION ===
 
-// Initialize AuthService when this script loads
-if (typeof CONFIG !== 'undefined') {
-    initializeAuthService();
-} else {
-    
-    window.addEventListener('load', () => {
-        if (typeof CONFIG !== 'undefined') {
-            initializeAuthService();
-        }
-    });
-} 
+// AuthService initialization is handled by the dashboard
+// to ensure proper script loading order 

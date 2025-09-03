@@ -1117,6 +1117,7 @@
     <script src="config.js?v=1.3"></script>
     
     <!-- Shared JavaScript -->
+    <script src="shared/js/response-utils.js"></script>
     <script src="shared/js/auth.js?v=1.4"></script>
     <script src="shared/js/alerts.js?v=1.4"></script>
     <script src="shared/js/status.js?v=1.2"></script>
@@ -1168,6 +1169,7 @@
             try {
                 // Initialize authentication
                 auth = new AuthService();
+                window.authService = auth; // Make it globally available for partials
                 if (!auth.isAuthenticated()) {
                     window.location.href = 'login.html';
                     return;
@@ -1190,11 +1192,13 @@
                 // Additional health check to ensure proper button states after content load
                 setTimeout(() => {
                     updateSystemStatus(false);
+                    //pvillalobos - hardcoded value
                 }, 2000);
                 
                 // Test SweetAlert2 system
                 setTimeout(() => {
                     Alert.success('Dashboard Ready', 'Welcome to your Ice Cream Store management system!');
+                    //pvillalobos - hardcoded value
                 }, 1000);
             } catch (error) {
                 // Check if this is an authentication error
@@ -2793,7 +2797,7 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     // Success
                     Alert.success('Supplier created successfully!');
                     
@@ -2811,7 +2815,7 @@
                         currentSupplierModal = null;
                     }
                 } else {
-                    throw new Error(result.message || 'Failed to create supplier');
+                    throw new Error(result.data?.message || result.message || 'Failed to create supplier');
                 }
                 
             } catch (error) {
@@ -2848,7 +2852,7 @@
                 }
                 
                 const result = await response.json();
-                const supplier = result.data;
+                const supplier = result.data?.data || result.data;
                 
                 // Populate view modal
                 document.getElementById('viewSupplierName').textContent = supplier.supplier_name || '-';
@@ -2885,7 +2889,7 @@
                 }
                 
                 const result = await response.json();
-                const supplier = result.data;
+                const supplier = result.data?.data || result.data;
                 
                 // Reset form
                 resetEditSupplierForm();
@@ -2985,7 +2989,7 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     // Success
                     Alert.success('Supplier updated successfully!');
                     
@@ -2998,7 +3002,7 @@
                     
                 } else {
                     // API returned error
-                    const errorMessage = result.message || result.error || 'Failed to update supplier';
+                    const errorMessage = result.data?.message || result.message || result.error || 'Failed to update supplier';
                     Alert.error('Error: ' + errorMessage);
                 }
                 
@@ -3037,7 +3041,7 @@
                 
                 const deleteResult = await response.json();
                 
-                if (response.ok && deleteResult.success) {
+                if (response.ok && deleteResult.data?.success) {
                     // Success
                     Alert.success('Supplier deleted successfully!');
                     
@@ -3050,7 +3054,7 @@
                     
                 } else {
                     // API returned error
-                    const errorMessage = deleteResult.message || deleteResult.error || 'Failed to delete supplier';
+                    const errorMessage = deleteResult.data?.message || deleteResult.message || deleteResult.error || 'Failed to delete supplier';
                     Alert.error('Error: ' + errorMessage);
                 }
                 
@@ -3095,12 +3099,12 @@
 
                 const result = await response.json();
                 
-                if (result.success && result.data) {
-                    categories = result.data;
+                if (result.data?.success && result.data?.data) {
+                    categories = result.data?.data;
                     console.log(`✅ Loaded ${categories.length} categories`);
                     displayCategories();
                 } else {
-                    throw new Error(result.message || 'Failed to load categories');
+                    throw new Error(result.data?.message || result.message || 'Failed to load categories');
                 }
             } catch (error) {
                 // Check if this is an authentication error
@@ -3249,7 +3253,7 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Category created successfully!');
                     
                     // Hide modal
@@ -3259,7 +3263,7 @@
                     // Reload categories
                     await loadCategoriesData();
                 } else {
-                    throw new Error(result.message || 'Failed to create category');
+                    throw new Error(result.data?.message || result.message || 'Failed to create category');
                 }
             } catch (error) {
                 console.error('❌ Error saving category:', error);
@@ -3390,7 +3394,7 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Category updated successfully!');
                     
                     // Hide modal
@@ -3400,7 +3404,7 @@
                     // Reload categories
                     await loadCategoriesData();
                 } else {
-                    throw new Error(result.message || 'Failed to update category');
+                    throw new Error(result.data?.message || result.message || 'Failed to update category');
                 }
             } catch (error) {
                 console.error('❌ Error updating category:', error);
@@ -3451,11 +3455,11 @@
 
                     const deleteResult = await response.json();
 
-                    if (response.ok && deleteResult.success) {
+                    if (response.ok && deleteResult.data?.success) {
                         Alert.success('Category deleted successfully!');
                         await loadCategoriesData();
                     } else {
-                        throw new Error(deleteResult.message || 'Failed to delete category');
+                        throw new Error(deleteResult.data?.message || deleteResult.message || 'Failed to delete category');
                     }
                 } catch (error) {
                     console.error('❌ Error deleting category:', error);
@@ -3493,12 +3497,12 @@
 
                 const result = await response.json();
                 
-                if (result.success && result.data) {
-                    expenseCategories = result.data;
+                if (result.data?.success && result.data?.data) {
+                    expenseCategories = result.data?.data;
                     console.log(`✅ Loaded ${expenseCategories.length} expense categories`);
                     displayExpenseCategories();
                 } else {
-                    throw new Error(result.message || 'Failed to load expense categories');
+                    throw new Error(result.data?.message || result.message || 'Failed to load expense categories');
                 }
             } catch (error) {
                 // Check if this is an authentication error
@@ -3644,12 +3648,12 @@
 
                 const result = await response.json();
                 
-                if (result.success && result.data) {
-                    ingredients = result.data;
+                if (result.data?.success && result.data?.data) {
+                    ingredients = result.data?.data;
                     console.log(`✅ Loaded ${ingredients.length} ingredients`);
                     displayIngredients();
                 } else {
-                    throw new Error(result.message || 'Failed to load ingredients');
+                    throw new Error(result.data?.message || result.message || 'Failed to load ingredients');
                 }
             } catch (error) {
                 // Check if this is an authentication error
@@ -3766,8 +3770,8 @@
                 const categoriesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories`);
                 if (categoriesResponse.ok) {
                     const categoriesResult = await categoriesResponse.json();
-                    if (categoriesResult.success && categoriesResult.data) {
-                        availableCategories = categoriesResult.data.filter(c => c.is_active);
+                    if (categoriesResult.data?.success && categoriesResult.data?.data) {
+                        availableCategories = categoriesResult.data?.data.filter(c => c.is_active);
                     }
                 }
 
@@ -3775,8 +3779,8 @@
                 const suppliersResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
                 if (suppliersResponse.ok) {
                     const suppliersResult = await suppliersResponse.json();
-                    if (suppliersResult.success && suppliersResult.data) {
-                        availableSuppliers = suppliersResult.data;
+                    if (suppliersResult.data?.success && suppliersResult.data?.data) {
+                        availableSuppliers = suppliersResult.data?.data;
                     }
                 }
             } catch (error) {
@@ -3976,8 +3980,8 @@
                 const result = await response.json();
                 console.log('📦 Existences loaded:', result);
                 
-                if (result.success && Array.isArray(result.data)) {
-                    displayExistences(result.data);
+                if (result.data?.success && Array.isArray(result.data?.data)) {
+                    displayExistences(result.data?.data);
                 } else {
                     displayExistencesError('Invalid response format');
                 }
@@ -4560,13 +4564,13 @@
 
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Existence created successfully!');
                     const modal = bootstrap.Modal.getInstance(document.getElementById('addExistenceModal'));
                     modal.hide();
                     await loadExistencesData();
                 } else {
-                    Alert.error(result.message || 'Failed to create existence');
+                    Alert.error(result.data?.message || result.message || 'Failed to create existence');
                 }
 
             } catch (error) {
@@ -4613,13 +4617,13 @@
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${id}`);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
-                    const existence = result.data;
+                if (response.ok && result.data?.success) {
+                    const existence = result.data?.data;
                     populateViewExistenceModal(existence);
                     const modal = new bootstrap.Modal(document.getElementById('viewExistenceModal'));
                     modal.show();
                 } else {
-                    Alert.error(result.message || 'Failed to load existence details');
+                    Alert.error(result.data?.message || result.message || 'Failed to load existence details');
                 }
             } catch (error) {
                 console.error('❌ Error viewing existence:', error);
@@ -4671,14 +4675,14 @@
                 const response = await fetch(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${id}`);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
-                    const existence = result.data;
+                if (response.ok && result.data?.success) {
+                    const existence = result.data?.data;
                     populateEditExistenceModal(existence);
                     currentExistenceModal = 'edit';
                     const modal = new bootstrap.Modal(document.getElementById('editExistenceModal'));
                     modal.show();
                 } else {
-                    Alert.error(result.message || 'Failed to load existence for editing');
+                    Alert.error(result.data?.message || result.message || 'Failed to load existence for editing');
                 }
             } catch (error) {
                 console.error('❌ Error loading existence for edit:', error);
@@ -4945,17 +4949,17 @@
                 const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, formData);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Final price updated successfully!');
                     const modal = bootstrap.Modal.getInstance(document.getElementById('setFinalPriceModal'));
                     modal.hide();
                     await loadExistencesData();
                 } else {
                     // Handle specific database validation errors
-                    if (result.message && result.message.includes('check_final_price_range')) {
+                    if (result.data?.message && result.data?.message.includes('check_final_price_range')) {
                         Alert.error(`Final price must be between ₡${minimumPrice.toLocaleString()} and ₡${maximumPrice.toLocaleString()}`);
                     } else {
-                        Alert.error(result.message || 'Failed to update final price');
+                        Alert.error(result.data?.message || result.message || 'Failed to update final price');
                     }
                 }
 
@@ -5018,13 +5022,13 @@
                 const response = await authenticatedPut(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences/${existenceId}`, formData);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Existence updated successfully!');
                     const modal = bootstrap.Modal.getInstance(document.getElementById('editExistenceModal'));
                     modal.hide();
                     await loadExistencesData();
                 } else {
-                    Alert.error(result.message || 'Failed to update existence');
+                    Alert.error(result.data?.message || result.message || 'Failed to update existence');
                 }
 
             } catch (error) {
@@ -5079,11 +5083,11 @@
 
                     const deleteResult = await response.json();
 
-                    if (response.ok && deleteResult.success) {
+                    if (response.ok && deleteResult.data?.success) {
                         Alert.success('Existence deleted successfully!');
                         await loadExistencesData();
                     } else {
-                        Alert.error(deleteResult.message || 'Failed to delete existence');
+                        Alert.error(deleteResult.data?.message || deleteResult.message || 'Failed to delete existence');
                     }
                 } catch (error) {
                     console.error('❌ Error deleting existence:', error);
@@ -5098,11 +5102,11 @@
                 const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     const select = document.getElementById('filterIngredient');
                     if (select) {
                         select.innerHTML = '<option value="">All Ingredients</option>';
-                        result.data.forEach(ingredient => {
+                        result.data?.data.forEach(ingredient => {
                             select.innerHTML += `<option value="${ingredient.id}">${ingredient.name}</option>`;
                         });
                     }
@@ -5118,8 +5122,8 @@
                 const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredients`);
                 const result = await response.json();
 
-                if (response.ok && result.success) {
-                    availableIngredients = result.data;
+                if (response.ok && result.data?.success) {
+                    availableIngredients = result.data?.data;
                 }
             } catch (error) {
                 console.error('❌ Error loading ingredients:', error);
@@ -5510,7 +5514,7 @@
                 }
                 
                 const result = await response.json();
-                allExistences = result.data || [];
+                allExistences = result.data?.data || result.data || [];
                 filteredExistences = [...allExistences];
                 
                 displayExistencesForPicker();
@@ -5968,7 +5972,7 @@
                 
                 const result = await response.json();
                 
-                if (result.success) {
+                if (result.data?.success) {
                     // Show success message
                     showAlert('Setting updated successfully!', 'success');
                     
@@ -5982,7 +5986,7 @@
                     // Reset current editing setting
                     currentEditingSetting = null;
                 } else {
-                    throw new Error(result.message || 'Failed to update setting');
+                    throw new Error(result.data?.message || result.message || 'Failed to update setting');
                 }
                 
             } catch (error) {
@@ -6254,7 +6258,7 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Ingredient created successfully!');
                     
                     // Hide modal
@@ -6264,7 +6268,7 @@
                     // Reload data
                     await loadIngredientsData();
                 } else {
-                    throw new Error(result.message || 'Failed to create ingredient');
+                    throw new Error(result.data?.message || result.message || 'Failed to create ingredient');
                 }
                 
             } catch (error) {
@@ -6461,7 +6465,7 @@
                 }
                 
                 const result = await response.json();
-                allRecipeCategories = result.data || [];
+                allRecipeCategories = result.data?.data || result.data || [];
                 filteredRecipeCategories = [...allRecipeCategories];
                 
                 displayRecipeCategoriesForPicker();
@@ -6785,7 +6789,7 @@
                 }
                 
                 const ingredientsResult = await ingredientsResponse.json();
-                const ingredients = ingredientsResult.data || [];
+                const ingredients = ingredientsResult.data?.data || ingredientsResult.data || [];
                 
                 // Load existences to get pricing information
                 const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
@@ -6795,7 +6799,7 @@
                 }
                 
                 const existencesResult = await existencesResponse.json();
-                const existences = existencesResult.data || [];
+                const existences = existencesResult.data?.data || existencesResult.data || [];
                 
                 // Create a map of ingredient ID to most recent final price
                 const ingredientPrices = new Map();
@@ -7071,7 +7075,7 @@
                 }
                 
                 const result = await response.json();
-                const ingredient = result.data;
+                const ingredient = result.data?.data || result.data;
                 
                 // Get category and supplier names if IDs exist
                 let categoryName = 'Not assigned';
@@ -7082,7 +7086,7 @@
                         const categoryResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories/${ingredient.ingredient_category_id}`);
                         if (categoryResponse.ok) {
                             const categoryResult = await categoryResponse.json();
-                            categoryName = categoryResult.data.name;
+                            categoryName = categoryResult.data?.data?.name || categoryResult.data?.name || 'Unknown';
                         }
                     } catch (error) {
                         console.warn('Could not fetch category name:', error);
@@ -7094,7 +7098,7 @@
                         const supplierResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers/${ingredient.supplier_id}`);
                         if (supplierResponse.ok) {
                             const supplierResult = await supplierResponse.json();
-                            supplierName = supplierResult.data.supplier_name;
+                            supplierName = supplierResult.data?.data?.supplier_name || supplierResult.data?.supplier_name || 'Unknown';
                         }
                     } catch (error) {
                         console.warn('Could not fetch supplier name:', error);
@@ -7156,7 +7160,7 @@
                 }
                 
                 const result = await response.json();
-                const ingredient = result.data;
+                const ingredient = result.data?.data || result.data;
                 
                 // Get category name if ID exists
                 let categoryName = '';
@@ -7166,7 +7170,7 @@
                         const categoryResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/ingredient-categories/${ingredient.ingredient_category_id}`);
                         if (categoryResponse.ok) {
                             const categoryResult = await categoryResponse.json();
-                            categoryName = categoryResult.data.name;
+                            categoryName = categoryResult.data?.data?.name || categoryResult.data?.name || 'Unknown';
                         }
                     } catch (error) {
                         console.warn('Could not fetch category name:', error);
@@ -7237,7 +7241,7 @@
                 
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
+                if (response.ok && result.data?.success) {
                     Alert.success('Ingredient updated successfully!');
                     
                     // Hide modal
@@ -7247,7 +7251,7 @@
                     // Reload data
                     await loadIngredientsData();
                 } else {
-                    throw new Error(result.message || 'Failed to update ingredient');
+                    throw new Error(result.data?.message || result.message || 'Failed to update ingredient');
                 }
                 
             } catch (error) {

@@ -62,6 +62,12 @@ func main() {
 	serverHost := sharedConfig.DATA_SERVICE_HOST
 	serverPort := sharedConfig.DATA_SERVICE_PORT
 
+	// Debug logging to see what values we're actually getting
+	logger.WithField("DATA_SERVICE_HOST", sharedConfig.DATA_SERVICE_HOST).Info("🔍 DEBUG: DATA_SERVICE_HOST")
+	logger.WithField("DATA_SERVICE_PORT", sharedConfig.DATA_SERVICE_PORT).Info("🔍 DEBUG: DATA_SERVICE_PORT")
+	logger.WithField("serverHost", serverHost).Info("🔍 DEBUG: serverHost")
+	logger.WithField("serverPort", serverPort).Info("🔍 DEBUG: serverPort")
+
 	server := &http.Server{
 		Addr:         fmt.Sprintf("%s:%d", serverHost, serverPort),
 		Handler:      router,

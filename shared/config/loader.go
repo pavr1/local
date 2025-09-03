@@ -16,8 +16,10 @@ import (
 // pvillalobos - add these to a secret maybe?
 const (
 	DATA_SERVICE_URL                = "http://icecream_data_service:8086"
-	DATA_SERVICE_HOST               = "0.0.0.0"
-	DATA_SERVICE_PORT               = 8086
+	DATA_SERVICE_HOST               = "0.0.0.0"  // Service HTTP server host
+	DATA_SERVICE_PORT               = 8086       // Service HTTP server port
+	DATABASE_NAME                   = "postgres" // Database host
+	DATABASE_PORT                   = 5432       // Database port
 	DATA_SERVICE_USER               = "postgres"
 	DATA_SERVICE_PASSWORD           = "postgres123"
 	DATA_SERVICE_DB_NAME            = "icecream_store"

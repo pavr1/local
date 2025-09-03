@@ -545,8 +545,8 @@
             const result = await response.json();
             console.log('📦 Recipes loaded:', result);
             
-            if (result.success && Array.isArray(result.data)) {
-                displayRecipes(result.data);
+            if (result.data?.success && Array.isArray(result.data?.data)) {
+                displayRecipes(result.data?.data);
             } else {
                 displayRecipesError('Invalid response format');
             }
@@ -564,8 +564,8 @@
             
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && Array.isArray(result.data)) {
-                    recipeCategories = result.data;
+                if (result.data?.success && Array.isArray(result.data?.data)) {
+                    recipeCategories = result.data?.data;
                     filteredCategories = [...recipeCategories]; // Initialize filtered categories
                 }
             }
@@ -822,7 +822,7 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            if (response.ok && result.data?.success) {
                 Alert.success('Recipe created successfully!');
                 
                 // Hide modal
@@ -832,7 +832,7 @@
                 // Reload data
                 await loadRecipesData();
             } else {
-                throw new Error(result.message || 'Failed to create recipe');
+                throw new Error(result.data?.message || result.message || 'Failed to create recipe');
             }
             
         } catch (error) {
@@ -923,7 +923,7 @@
             }
             
             const ingredientsResult = await ingredientsResponse.json();
-            const ingredients = ingredientsResult.data || [];
+                            const ingredients = ingredientsResult.data?.data || ingredientsResult.data || [];
             
             // Load existences to get pricing information
             const existencesResponse = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/existences?limit=1000`);
@@ -933,7 +933,7 @@
             }
             
             const existencesResult = await existencesResponse.json();
-            const existences = existencesResult.data || [];
+                            const existences = existencesResult.data?.data || existencesResult.data || [];
             
             // Create a map of ingredient ID to most recent final price
             const ingredientPrices = new Map();
@@ -1428,7 +1428,7 @@
             }
             
             const result = await response.json();
-            const recipe = result.data;
+            const recipe = result.data?.data || result.data;
             
             const categoryName = recipe.recipe_category_name || 'Unknown';
             
@@ -1504,7 +1504,7 @@
             }
             
             const result = await response.json();
-            const recipe = result.data;
+            const recipe = result.data?.data || result.data;
             
             // Populate edit form
             document.getElementById('editRecipeId').value = recipe.id;
@@ -1627,7 +1627,7 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            if (response.ok && result.data?.success) {
                 Alert.success('Recipe updated successfully!');
                 
                 // Hide modal
@@ -1637,7 +1637,7 @@
                 // Reload data
                 await loadRecipesData();
             } else {
-                throw new Error(result.message || 'Failed to update recipe');
+                throw new Error(result.data?.message || result.message || 'Failed to update recipe');
             }
             
         } catch (error) {
@@ -1677,7 +1677,7 @@
                     await loadRecipesData();
                 } else {
                     const result = await response.json();
-                    throw new Error(result.message || 'Failed to delete recipe');
+                    throw new Error(result.data?.message || result.message || 'Failed to delete recipe');
                 }
                 
             } catch (error) {

@@ -331,12 +331,12 @@
 
             const result = await response.json();
             
-            if (result.success && result.data) {
-                expenseCategories = result.data;
+            if (result.data?.success && result.data?.data) {
+                expenseCategories = result.data?.data;
                 console.log(`✅ Loaded ${expenseCategories.length} expense categories`);
                 displayExpenseCategories();
             } else {
-                throw new Error(result.message || 'Failed to load expense categories');
+                throw new Error(result.data?.message || result.message || 'Failed to load expense categories');
             }
         } catch (error) {
             console.error('❌ Error loading expense categories:', error);
@@ -481,12 +481,12 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
+                if (result.data?.success) {
                     Alert.success('Expense category created successfully');
                     bootstrap.Modal.getInstance(document.getElementById('addExpenseCategoryModal')).hide();
                     await loadExpenseCategoriesData();
                 } else {
-                    Alert.error(result.message || 'Failed to create expense category');
+                    Alert.error(result.data?.message || result.message || 'Failed to create expense category');
                 }
             } else {
                 Alert.error('Failed to create expense category');
@@ -504,12 +504,12 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
-                    displayExpenseCategoryDetails(result.data);
+                if (result.data?.success) {
+                    displayExpenseCategoryDetails(result.data?.data);
                     const modal = new bootstrap.Modal(document.getElementById('viewExpenseCategoryModal'));
                     modal.show();
                 } else {
-                    Alert.error(result.message || 'Failed to load expense category details');
+                    Alert.error(result.data?.message || result.message || 'Failed to load expense category details');
                 }
             } else {
                 Alert.error('Failed to load expense category details');
@@ -575,8 +575,8 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
-                    populateEditExpenseCategoryForm(result.data);
+                if (result.data?.success) {
+                    populateEditExpenseCategoryForm(result.data?.data);
                     const modal = new bootstrap.Modal(document.getElementById('editExpenseCategoryModal'));
                     modal.show();
                 } else {
@@ -620,12 +620,12 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
+                if (result.data?.success) {
                     Alert.success('Expense category updated successfully');
                     bootstrap.Modal.getInstance(document.getElementById('editExpenseCategoryModal')).hide();
                     await loadExpenseCategoriesData();
                 } else {
-                    Alert.error(result.message || 'Failed to update expense category');
+                    Alert.error(result.data?.message || result.message || 'Failed to update expense category');
                 }
             } else {
                 Alert.error('Failed to update expense category');
@@ -646,11 +646,11 @@
 
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
+                if (result.data?.success) {
                     Alert.success('Expense category deleted successfully');
                     await loadExpenseCategoriesData();
                 } else {
-                    Alert.error(result.message || 'Failed to delete expense category');
+                    Alert.error(result.data?.message || result.message || 'Failed to delete expense category');
                 }
             } else {
                 Alert.error('Failed to delete expense category');

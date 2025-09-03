@@ -1,3 +1,6 @@
+<!-- Include shared response utilities -->
+<script src="shared/js/response-utils.js"></script>
+
 <!-- Create Order Modal -->
 <div class="modal fade" id="createOrderModal" tabindex="-1" aria-labelledby="createOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl" style="max-width: 90%; height: 90%;">
@@ -321,10 +324,14 @@
             if (response.ok) {
                 const result = await response.json();
                 console.log('🍦 Recipes response:', result);
-                if (result.success && Array.isArray(result.data)) {
+                // Check if response code indicates success
+                if (isSuccessfulResponse(result) && Array.isArray(result.data)) {
                     allRecipes = result.data;
                     filteredRecipes = [...allRecipes];
                     console.log(`🍦 Loaded ${allRecipes.length} recipes`);
+                } else {
+                    console.error('Failed to load recipes:', result.message || 'Unknown error');
+                    Alert.error('Failed to load recipes');
                 }
             }
         } catch (error) {
@@ -341,7 +348,8 @@
             if (response.ok) {
                 const result = await response.json();
                 console.log('📋 Recipe categories response:', result);
-                if (result.success && Array.isArray(result.data)) {
+                // Check if response code indicates success
+                if (isSuccessfulResponse(result) && Array.isArray(result.data)) {
                     const categorySelect = document.getElementById('recipeCategoryFilter');
                     result.data.forEach(category => {
                         const option = document.createElement('option');
@@ -350,6 +358,8 @@
                         categorySelect.appendChild(option);
                     });
                     console.log(`📋 Loaded ${result.data.length} recipe categories`);
+                } else {
+                    console.error('Failed to load recipe categories:', result.message || 'Unknown error');
                 }
             }
         } catch (error) {
@@ -671,7 +681,8 @@ function filterRecipes() {
             const response = await authenticatedPost(`${CONFIG.GATEWAY_URL}/api/v1/orders`, orderData);
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            // Check if response code indicates success
+            if (isSuccessfulResponse(result)) {
                 Alert.success('Order created successfully!');
                 
                 // Close modals
@@ -688,9 +699,9 @@ function filterRecipes() {
                 
                 // Refresh the background page (Orders Overview)
                 if (typeof loadContent === 'function') {
-                loadContent('orders-overview');
+                    loadContent('orders-overview');
                 }
-        } else {
+            } else {
                 throw new Error(result.message || 'Failed to create order');
             }
         } catch (error) {

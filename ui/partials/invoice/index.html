@@ -548,8 +548,8 @@
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/invoices/expense-categories`);
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && result.data) {
-                    availableExpenseCategories = result.data.filter(c => c.is_active);
+                if (result.data?.success && result.data?.data) {
+                    availableExpenseCategories = result.data?.data.filter(c => c.is_active);
                 }
             }
         } catch (error) {
@@ -637,8 +637,8 @@
             const response = await authenticatedGet(`${CONFIG.GATEWAY_URL}/api/v1/inventory/suppliers`);
             if (response.ok) {
                 const result = await response.json();
-                if (result.success && result.data) {
-                    availableSuppliers = result.data;
+                if (result.data?.success && result.data?.data) {
+                    availableSuppliers = result.data?.data;
                 }
             }
         } catch (error) {
@@ -837,8 +837,8 @@
             if (response.ok) {
                 const result = await response.json();
                 console.log('📊 Ingredients result:', result);
-                if (result.success && result.data) {
-                    availableIngredients = result.data;
+                if (result.data?.success && result.data?.data) {
+                    availableIngredients = result.data?.data;
                     console.log('✅ Loaded ingredients:', availableIngredients.length);
                 }
             }
@@ -930,8 +930,8 @@
                         
                         if (response.ok) {
                             const result = await response.json();
-                            if (result.success && result.data && result.data.items_per_unit) {
-                                itemsPerUnitInput.value = result.data.items_per_unit;
+                            if (result.data?.success && result.data?.data && result.data?.data.items_per_unit) {
+                                itemsPerUnitInput.value = result.data?.data.items_per_unit;
                                 console.log(`📦 Pre-populated items_per_unit with ${result.data.items_per_unit} for ${ingredientName} (${unitType})`);
                             }
                         }
@@ -999,9 +999,9 @@
                             
                             if (response.ok) {
                                 const result = await response.json();
-                                if (result.success && result.data && result.data.items_per_unit) {
-                                    itemsPerUnitInput.value = result.data.items_per_unit;
-                                    console.log(`📦 Updated items_per_unit to ${result.data.items_per_unit} for unit type ${unitType}`);
+                                if (result.data?.success && result.data?.data && result.data?.data.items_per_unit) {
+                                    itemsPerUnitInput.value = result.data?.data.items_per_unit;
+                                    console.log(`📦 Updated items_per_unit to ${result.data?.data.items_per_unit} for unit type ${unitType}`);
                                 }
                             }
                         } catch (error) {
@@ -1401,8 +1401,8 @@
             
             if (response.ok) {
                 const result = await response.json();
-                if (result.success) {
-                    console.log('✅ Invoice created successfully:', result.data);
+                if (result.data?.success) {
+                    console.log('✅ Invoice created successfully:', result.data?.data);
                     Alert.success('Invoice created successfully!');
                     
                     // Close modal and refresh invoice list
@@ -1416,7 +1416,7 @@
                     // Refresh invoice list
                     await loadInvoices();
                 } else {
-                    throw new Error(result.message || 'Failed to create invoice');
+                    throw new Error(result.data?.message || result.message || 'Failed to create invoice');
                 }
             } else {
                 const errorData = await response.json();

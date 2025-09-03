@@ -74,8 +74,8 @@ type Config struct {
 // DefaultConfig returns a default configuration
 func DefaultConfig(logger *logrus.Logger) *Config {
 	// Get environment variables with defaults
-	host := sharedConfig.DATA_SERVICE_HOST
-	port := sharedConfig.DATA_SERVICE_PORT
+	host := sharedConfig.DATABASE_NAME
+	port := sharedConfig.DATABASE_PORT
 	user := sharedConfig.DATA_SERVICE_USER
 	password := sharedConfig.DATA_SERVICE_PASSWORD
 	dbName := sharedConfig.DATA_SERVICE_DB_NAME

@@ -424,8 +424,8 @@
             const result = await response.json();
             console.log('📦 Runout Ingredients loaded:', result);
             
-            if (result.success && Array.isArray(result.data)) {
-                displayRunoutIngredients(result.data);
+            if (result.data?.success && Array.isArray(result.data?.data)) {
+                displayRunoutIngredients(result.data?.data);
             } else {
                 displayRunoutIngredientsError('Invalid response format');
             }
@@ -630,18 +630,18 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
-                Alert.success('Runout ingredient created successfully!');
-                
-                // Hide modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addRunoutIngredientModal'));
-                modal.hide();
-                
-                // Reload data
-                await loadRunoutIngredientsData();
-            } else {
-                throw new Error(result.message || 'Failed to create runout ingredient');
-            }
+                            if (response.ok && result.data?.success) {
+                    Alert.success('Runout ingredient created successfully!');
+                    
+                    // Hide modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addRunoutIngredientModal'));
+                    modal.hide();
+                    
+                    // Reload data
+                    await loadRunoutIngredientsData();
+                } else {
+                    throw new Error(result.data?.message || result.message || 'Failed to create runout ingredient');
+                }
             
         } catch (error) {
             console.error('❌ Error saving runout ingredient:', error);
@@ -672,10 +672,10 @@
             }
             
             const result = await response.json();
-            const runoutIngredient = result.data;
-            
-            // Populate view modal
-            document.getElementById('viewRunoutIngredientContent').innerHTML = `
+                            const runoutIngredient = result.data?.data || result.data;
+                
+                // Populate view modal
+                document.getElementById('viewRunoutIngredientContent').innerHTML = `
                 <div class="row">
                     <div class="col-md-6">
                         <h6 class="fw-bold">Runout Ingredient Information</h6>
@@ -737,10 +737,10 @@
             }
             
             const result = await response.json();
-            const runoutIngredient = result.data;
-            
-            // Populate edit form
-            document.getElementById('editRunoutIngredientId').value = runoutIngredient.id;
+                            const runoutIngredient = result.data?.data || result.data;
+                
+                // Populate edit form
+                document.getElementById('editRunoutIngredientId').value = runoutIngredient.id;
             document.getElementById('editExistenceId').value = runoutIngredient.existence_id;
             document.getElementById('editEmployeeId').value = runoutIngredient.employee_id;
             document.getElementById('editQuantity').value = runoutIngredient.quantity;
@@ -819,7 +819,7 @@
             
             const result = await response.json();
             
-            if (response.ok && result.success) {
+            if (response.ok && result.data?.success) {
                 Alert.success('Runout ingredient updated successfully!');
                 
                 // Hide modal
@@ -829,7 +829,7 @@
                 // Reload data
                 await loadRunoutIngredientsData();
             } else {
-                throw new Error(result.message || 'Failed to update runout ingredient');
+                throw new Error(result.data?.message || result.message || 'Failed to update runout ingredient');
             }
             
         } catch (error) {
@@ -869,7 +869,7 @@
                     await loadRunoutIngredientsData();
                 } else {
                     const result = await response.json();
-                    throw new Error(result.message || 'Failed to delete runout ingredient');
+                    throw new Error(result.data?.message || result.message || 'Failed to delete runout ingredient');
                 }
                 
             } catch (error) {

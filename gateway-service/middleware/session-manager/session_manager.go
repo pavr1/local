@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"gateway-service/models"
+	httpresponse "shared/http-response"
 
 	"github.com/sirupsen/logrus"
 )
@@ -134,8 +135,9 @@ func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*
 		"body_length": len(body),
 	}).Debug("Received session validation response")
 
-	var validationResp models.SessionValidationResponse
-	if err := json.Unmarshal(body, &validationResp); err != nil {
+	// First, unmarshal the new response structure using shared Response
+	var responseWrapper httpresponse.Response
+	if err := json.Unmarshal(body, &responseWrapper); err != nil {
 		sm.logger.WithError(err).WithFields(logrus.Fields{
 			"session_id":  sessionId,
 			"status":      resp.StatusCode,
@@ -145,12 +147,22 @@ func (sm *SessionManager) ValidateSession(sessionId string, requestID string) (*
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	// Extract the data from the response
+	var validationResp models.SessionValidationResponse
+	if responseWrapper.Data != nil {
+		if dataBytes, err := json.Marshal(responseWrapper.Data); err == nil {
+			json.Unmarshal(dataBytes, &validationResp)
+		}
+	}
+
 	sm.logger.WithFields(logrus.Fields{
-		"session_id": sessionId,
-		"valid":      validationResp.Valid,
-		"message":    validationResp.Message,
-		"user_id":    validationResp.UserID,
-		"username":   validationResp.Username,
+		"session_id":       sessionId,
+		"valid":            validationResp.Valid,
+		"message":          validationResp.Message,
+		"user_id":          validationResp.UserID,
+		"username":         validationResp.Username,
+		"response_code":    responseWrapper.Code,
+		"response_message": responseWrapper.Message,
 	}).Debug("Session validation completed")
 
 	return &validationResp, nil
@@ -188,25 +200,35 @@ func (sm *SessionManager) LoginSession(req *models.SessionCreateRequest, request
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
-	// Debug logging removed to reduce noise
-
-	if resp.StatusCode != http.StatusCreated {
-		sm.logger.WithFields(logrus.Fields{
-			"username": req.Username,
-			"status":   resp.StatusCode,
-			"body":     string(body),
-		}).Error("Session creation failed with non-201 status")
-		return nil, fmt.Errorf("session creation failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	var createResp models.SessionCreateResponse
-	if err := json.Unmarshal(body, &createResp); err != nil {
+	// First, unmarshal the new response structure using shared Response
+	var responseWrapper httpresponse.Response
+	if err := json.Unmarshal(body, &responseWrapper); err != nil {
 		sm.logger.WithError(err).WithFields(logrus.Fields{
 			"username": req.Username,
 			"status":   resp.StatusCode,
 			"body":     string(body),
 		}).Error("Failed to unmarshal session creation response")
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	// Check if the response indicates success (200-299 range)
+	if responseWrapper.Code < 200 || responseWrapper.Code >= 300 {
+		sm.logger.WithFields(logrus.Fields{
+			"username":         req.Username,
+			"status":           resp.StatusCode,
+			"response_code":    responseWrapper.Code,
+			"response_message": responseWrapper.Message,
+			"body":             string(body),
+		}).Error("Session creation failed")
+		return nil, fmt.Errorf("session creation failed: %s", responseWrapper.Message)
+	}
+
+	// Extract the data from the response
+	var createResp models.SessionCreateResponse
+	if responseWrapper.Data != nil {
+		if dataBytes, err := json.Marshal(responseWrapper.Data); err == nil {
+			json.Unmarshal(dataBytes, &createResp)
+		}
 	}
 
 	// Debug logging removed to reduce noise
