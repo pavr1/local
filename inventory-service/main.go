@@ -20,7 +20,8 @@ import (
 
 func main() {
 	// Setup initial logger
-	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_INVENTORY_SERVICE) // Default log level for initial setup
+	//pvillalobos - hardcoded values
+	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_INVENTORY_SERVICE, "INFO") // Default log level for initial setup
 	logger.Info("Starting Ice Cream Store Inventory Service")
 
 	// Load configuration from data service
@@ -28,20 +29,20 @@ func main() {
 	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
 	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
-	cfg, err := configLoader.LoadConfig("Inventory", logger.Logger)
+	cfg, err := configLoader.LoadConfig("Inventory", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	// Connect to database using config
-	db, err := connectToDatabase(cfg, logger.Logger)
+	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer db.Close()
 
 	// Create main HTTP handler with all entity handlers
-	mainHandler := NewMainHttpHandler(db, logger.Logger, cfg)
+	mainHandler := NewMainHttpHandler(db, logger, cfg)
 
 	// Setup HTTP router
 	router := mux.NewRouter()
@@ -86,13 +87,6 @@ func main() {
 	}
 
 	logger.Info("Server exited gracefully")
-}
-
-func getEnvString(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }
 
 // connectToDatabase establishes connection to PostgreSQL database using config

@@ -48,30 +48,30 @@ func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *
 
 	// Initialize ingredient categories handlers
 	ingredientCategoriesDBHandler := ingredientCategoriesHandlers.NewDBHandler(db)
-	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler)
+	ingredientCategoriesHttpHandler := ingredientCategoriesHandlers.NewHttpHandler(ingredientCategoriesDBHandler, logger)
 
 	// Initialize ingredients handlers
 	ingredientsDBHandler := ingredientsHandlers.NewDBHandler(db)
-	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler)
+	ingredientsHttpHandler := ingredientsHandlers.NewHttpHandler(ingredientsDBHandler, logger)
 
 	// Initialize existences handlers
 	existencesDBHandler := existencesHandlers.NewDBHandler(db)
-	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler)
+	existencesHttpHandler := existencesHandlers.NewHttpHandler(existencesDBHandler, logger)
 
 	// Initialize runout ingredients handlers
-	runoutIngredientsHttpHandler := runoutIngredientsHandlers.NewHttpHandler(db)
+	runoutIngredientsHttpHandler := runoutIngredientsHandlers.NewHttpHandler(db, logger)
 
 	// Initialize recipe categories handlers
 	recipeCategoriesDBHandler := recipeCategoriesHandlers.NewDBHandler(db)
-	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewHttpHandler(recipeCategoriesDBHandler)
+	recipeCategoriesHttpHandler := recipeCategoriesHandlers.NewHttpHandler(recipeCategoriesDBHandler, logger)
 
 	// Initialize recipes handlers
 	recipesDBHandler := recipesHandlers.NewDBHandler(db, cfg)
-	recipesHttpHandler := recipesHandlers.NewHttpHandler(recipesDBHandler)
+	recipesHttpHandler := recipesHandlers.NewHttpHandler(recipesDBHandler, logger)
 
 	// Initialize recipe ingredients handlers
 	recipeIngredientsDBHandler := recipeIngredientsHandlers.NewDBHandler(db)
-	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewHttpHandler(recipeIngredientsDBHandler)
+	recipeIngredientsHttpHandler := recipeIngredientsHandlers.NewHttpHandler(recipeIngredientsDBHandler, logger)
 
 	return &MainHttpHandler{
 		db:                          db,
@@ -137,8 +137,10 @@ func (h *MainHttpHandler) SetupRoutes(router *mux.Router) {
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/inventory").Subrouter()
-	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE))
-	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
+	gatewayMiddleware := sharedMiddleware.NewGatewayMiddleware(h.logger)
+	protectedRouter.Use(gatewayMiddleware.CheckGatewayMiddleware)
+	requestIDMiddleware := sharedMiddleware.NewRequestIDMiddleware(h.logger)
+	protectedRouter.Use(requestIDMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVENTORY_SERVICE, "/api/v1/inventory/p/health"))
 
 	// Suppliers endpoints under inventory
 	suppliersRouter := protectedRouter.PathPrefix("/suppliers").Subrouter()
@@ -215,7 +217,7 @@ func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 	if !dataServiceHealthy {
 		h.logger.Error("Data-service health check failed")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code: http.StatusServiceUnavailable,
 			Data: map[string]interface{}{
 				"status":  "unhealthy",
@@ -235,7 +237,7 @@ func (h *MainHttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // checkDataServiceHealth checks if the data-service is healthy
@@ -253,15 +255,4 @@ func (h *MainHttpHandler) checkDataServiceHealth() bool {
 	defer resp.Body.Close()
 
 	return resp.StatusCode == http.StatusOK
-}
-
-// responseWriter wraps http.ResponseWriter to capture status code
-type responseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	rw.statusCode = code
-	rw.ResponseWriter.WriteHeader(code)
 }

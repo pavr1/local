@@ -16,6 +16,7 @@ import (
 
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
+	logger    *logrus.Logger
 }
 
 // DBHandlerInterface defines the database operations interface
@@ -31,35 +32,33 @@ type DBHandlerInterface interface {
 var _ DBHandlerInterface = (*DBHandler)(nil)
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
+		logger:    logger,
 	}
 }
 
 // CreateRecipeIngredient handles POST /recipe-ingredients
 func (h *HttpHandler) CreateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	var req models.CreateRecipeIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in create recipe ingredient request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in create recipe ingredient request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
 		return
 	}
 
-	recipeIngredient, err := h.dbHandler.Create(req, logger.Logger)
+	recipeIngredient, err := h.dbHandler.Create(req, h.logger)
 	if err != nil {
 		response := httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Data:    models.RecipeIngredient{},
 			Message: "Failed to create recipe ingredient: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -69,26 +68,23 @@ func (h *HttpHandler) CreateRecipeIngredient(w http.ResponseWriter, r *http.Requ
 		Message: "Recipe ingredient created successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"recipe_ingredient_id": recipeIngredient.ID,
 		"recipe_id":            recipeIngredient.RecipeID,
 		"ingredient_id":        recipeIngredient.IngredientID,
 	}).Info("Recipe ingredient created successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // GetRecipeIngredient handles GET /recipe-ingredients/{id}
 func (h *HttpHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing recipe ingredient ID in get request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing recipe ingredient ID in get request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Recipe ingredient ID is required",
 		})
@@ -96,7 +92,7 @@ func (h *HttpHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request
 	}
 
 	req := models.GetRecipeIngredientRequest{ID: id}
-	recipeIngredient, err := h.dbHandler.GetByID(req, logger.Logger)
+	recipeIngredient, err := h.dbHandler.GetByID(req, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			response := httpresponse.Response{
@@ -104,7 +100,7 @@ func (h *HttpHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request
 				Data:    models.RecipeIngredient{},
 				Message: "Recipe ingredient not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -113,7 +109,7 @@ func (h *HttpHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request
 			Data:    models.RecipeIngredient{},
 			Message: "Failed to get recipe ingredient: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -122,14 +118,11 @@ func (h *HttpHandler) GetRecipeIngredient(w http.ResponseWriter, r *http.Request
 		Data:    *recipeIngredient,
 		Message: "Recipe ingredient retrieved successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // ListRecipeIngredients handles GET /recipe-ingredients
 func (h *HttpHandler) ListRecipeIngredients(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	req := models.ListRecipeIngredientsRequest{}
 
 	// Parse query parameters
@@ -153,14 +146,14 @@ func (h *HttpHandler) ListRecipeIngredients(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	recipeIngredients, err := h.dbHandler.List(req, logger.Logger)
+	recipeIngredients, err := h.dbHandler.List(req, h.logger)
 	if err != nil {
 		response := httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Data:    []models.RecipeIngredient{},
 			Message: "Failed to list recipe ingredients: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -169,20 +162,17 @@ func (h *HttpHandler) ListRecipeIngredients(w http.ResponseWriter, r *http.Reque
 		Data:    recipeIngredients,
 		Message: "Recipe ingredients retrieved successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // UpdateRecipeIngredient handles PUT /recipe-ingredients/{id}
 func (h *HttpHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing recipe ingredient ID in update request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing recipe ingredient ID in update request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Recipe ingredient ID is required",
 		})
@@ -191,18 +181,18 @@ func (h *HttpHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Requ
 
 	var req models.UpdateRecipeIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in update recipe ingredient request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in update recipe ingredient request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
 		return
 	}
 
-	recipeIngredient, err := h.dbHandler.Update(req, id, logger.Logger)
+	recipeIngredient, err := h.dbHandler.Update(req, id, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			logger.WithFields(logrus.Fields{
+			h.logger.WithFields(logrus.Fields{
 				"recipe_ingredient_id": id,
 			}).Warn("Recipe ingredient not found for update")
 			response := httpresponse.Response{
@@ -210,7 +200,7 @@ func (h *HttpHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Requ
 				Data:    models.RecipeIngredient{},
 				Message: "Recipe ingredient not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -219,7 +209,7 @@ func (h *HttpHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Requ
 			Data:    models.RecipeIngredient{},
 			Message: "Failed to update recipe ingredient: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -229,26 +219,23 @@ func (h *HttpHandler) UpdateRecipeIngredient(w http.ResponseWriter, r *http.Requ
 		Message: "Recipe ingredient updated successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"recipe_ingredient_id": recipeIngredient.ID,
 		"recipe_id":            recipeIngredient.RecipeID,
 		"ingredient_id":        recipeIngredient.IngredientID,
 	}).Info("Recipe ingredient updated successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // DeleteRecipeIngredient handles DELETE /recipe-ingredients/{id}
 func (h *HttpHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing recipe ingredient ID in delete request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing recipe ingredient ID in delete request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Recipe ingredient ID is required",
 		})
@@ -256,17 +243,17 @@ func (h *HttpHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Requ
 	}
 
 	req := models.DeleteRecipeIngredientRequest{ID: id}
-	err := h.dbHandler.Delete(req, logger.Logger)
+	err := h.dbHandler.Delete(req, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			logger.WithFields(logrus.Fields{
+			h.logger.WithFields(logrus.Fields{
 				"recipe_ingredient_id": id,
 			}).Warn("No recipe ingredient found to delete")
 			response := httpresponse.Response{
 				Code:    http.StatusNotFound,
 				Message: "Recipe ingredient not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -274,7 +261,7 @@ func (h *HttpHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Requ
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete recipe ingredient: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -283,9 +270,9 @@ func (h *HttpHandler) DeleteRecipeIngredient(w http.ResponseWriter, r *http.Requ
 		Message: "Recipe ingredient deleted successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"recipe_ingredient_id": id,
 	}).Info("Recipe ingredient deleted successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }

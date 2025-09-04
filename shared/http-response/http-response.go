@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	sharedLogger "shared/logger"
+	"github.com/sirupsen/logrus"
 )
 
 // Response represents a response message
@@ -15,9 +15,7 @@ type Response struct {
 }
 
 // WriteResponse writes a JSON response with the given status code
-func WriteResponse(w http.ResponseWriter, r *http.Request, serviceName string, response Response) {
-	logger := sharedLogger.GetRequestLogger(r, serviceName)
-
+func WriteResponse(w http.ResponseWriter, logger *logrus.Logger, serviceName string, response Response) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(response.Code)
 

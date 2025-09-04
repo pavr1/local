@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
-	sharedLogger "shared/logger"
 
 	"github.com/sirupsen/logrus"
 )
@@ -18,34 +17,39 @@ const (
 // RequestIDContextKey is the context key for request ID
 type RequestIDContextKey struct{}
 
+type RequestIDMiddleware struct {
+	logger *logrus.Logger
+}
+
+func NewRequestIDMiddleware(logger *logrus.Logger) *RequestIDMiddleware {
+	return &RequestIDMiddleware{logger: logger}
+}
+
 // RequestIDMiddleware generates a unique request ID for each request
-func InjectRequestIDMiddleware(serviceName string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			logger := sharedLogger.GetRequestLogger(r, serviceName)
-			// Check if request ID is already provided in header
-			requestID := generateRequestID()
+func (rm *RequestIDMiddleware) InjectRequestIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if request ID is already provided in header
+		requestID := generateRequestID()
 
-			// Add request ID to response headers
-			r.Header.Set(RequestIDHeader, requestID)
+		// Add request ID to response headers
+		r.Header.Set(RequestIDHeader, requestID)
 
-			// Log the incoming request with request ID
-			logger.WithFields(logrus.Fields{
-				"request_id":  requestID,
-				"method":      r.Method,
-				"path":        r.URL.Path,
-				"remote_addr": r.RemoteAddr,
-			}).Debug("Incoming request, request ID injected")
+		// Log the incoming request with request ID
+		rm.logger.WithFields(logrus.Fields{
+			"request_id":  requestID,
+			"method":      r.Method,
+			"path":        r.URL.Path,
+			"remote_addr": r.RemoteAddr,
+		}).Debug("Incoming request, request ID injected")
 
-			// Call next handler
-			next.ServeHTTP(w, r)
-		})
-	}
+		// Call next handler
+		next.ServeHTTP(w, r)
+	})
 }
 
 // CheckRequestIDMiddleware validates request ID header and adds it to context
 // healthExcludedPath: path to exclude from X-Request-ID validation (e.g., "/api/v1/sessions/p/health")
-func CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) func(http.Handler) http.Handler {
+func (rm *RequestIDMiddleware) CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Skip X-Request-ID validation for health check endpoints
@@ -55,10 +59,9 @@ func CheckRequestIDMiddleware(serviceName string, healthExcludedPath string) fun
 			}
 
 			// Validate request ID header exists (should be provided by gateway)
-			logger := sharedLogger.GetRequestLogger(r, serviceName)
 			requestID := r.Header.Get(RequestIDHeader)
 			if requestID == "" {
-				logger.Error("Missing X-Request-ID header")
+				rm.logger.Error("Missing X-Request-ID header")
 
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusBadRequest)

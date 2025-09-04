@@ -21,12 +21,12 @@ import (
 )
 
 func main() {
-	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_DATA_SERVICE)
+	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_DATA_SERVICE, "INFO")
 
-	config := database.DefaultConfig(logger.Logger)
+	config := database.DefaultConfig(logger)
 
 	// Create database handler
-	db := database.New(config, logger.Logger)
+	db := database.New(config, logger)
 
 	// Connect to database
 	fmt.Println("🍦 Connecting to Ice Cream Store Data Service...")
@@ -43,11 +43,11 @@ func main() {
 	fmt.Println("✅ Database connection established successfully")
 
 	// Create settings service
-	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger.Logger)
-	settingsService := settings.NewSettingsService(settingsDBHandler, logger.Logger)
+	settingsDBHandler := settings.NewSettingsDBHandler(db.GetDB(), logger)
+	settingsService := settings.NewSettingsService(settingsDBHandler, logger)
 
 	// Create settings handler
-	settingsHandler, err := settings.NewSettingsHandler(settingsService)
+	settingsHandler, err := settings.NewSettingsHandler(settingsService, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to initialize settings handler")
 	}
@@ -56,7 +56,7 @@ func main() {
 	imageHandler := images.NewImageHandler("/app")
 
 	// Setup HTTP server
-	router := setupRouter(db, config, logger.Logger, settingsHandler, imageHandler)
+	router := setupRouter(db, config, logger, settingsHandler, imageHandler)
 
 	// Get server configuration from environment variables
 	serverHost := sharedConfig.DATA_SERVICE_HOST

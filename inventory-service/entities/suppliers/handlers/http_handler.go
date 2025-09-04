@@ -17,11 +17,11 @@ import (
 
 // DBHandlerInterface defines the database operations interface
 type DBHandlerInterface interface {
-	CreateSupplier(req models.CreateSupplierRequest, logger *logrus.Entry) (*models.Supplier, error)
-	GetSupplierByID(id string, logger *logrus.Entry) (*models.Supplier, error)
-	ListSuppliers(logger *logrus.Entry) ([]models.Supplier, error)
-	UpdateSupplier(id string, req models.UpdateSupplierRequest, logger *logrus.Entry) (*models.Supplier, error)
-	DeleteSupplier(id string, logger *logrus.Entry) error
+	CreateSupplier(req models.CreateSupplierRequest, logger *logrus.Logger) (*models.Supplier, error)
+	GetSupplierByID(id string, logger *logrus.Logger) (*models.Supplier, error)
+	ListSuppliers(logger *logrus.Logger) ([]models.Supplier, error)
+	UpdateSupplier(id string, req models.UpdateSupplierRequest, logger *logrus.Logger) (*models.Supplier, error)
+	DeleteSupplier(id string, logger *logrus.Logger) error
 }
 
 // Ensure DBHandler implements DBHandlerInterface
@@ -51,13 +51,10 @@ func NewHttpHandlerWithInterface(dbHandler DBHandlerInterface, logger *logrus.Lo
 
 // CreateSupplier handles POST /suppliers
 func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	var req models.CreateSupplierRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in create supplier request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in create supplier request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
@@ -66,17 +63,17 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields based on database schema
 	if err := h.validateCreateSupplierRequest(req); err != nil {
-		logger.WithError(err).WithFields(logrus.Fields{
+		h.logger.WithError(err).WithFields(logrus.Fields{
 			"supplier_name": req.SupplierName,
 		}).Error("Validation failed for create supplier request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Validation failed: " + err.Error(),
 		})
 		return
 	}
 
-	supplier, err := h.dbHandler.CreateSupplier(req, logger)
+	supplier, err := h.dbHandler.CreateSupplier(req, h.logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := httpresponse.Response{
@@ -84,11 +81,11 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Supplier{},
 			Message: "Failed to create supplier: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"supplier_id":   supplier.ID,
 		"supplier_name": supplier.SupplierName,
 	}).Info("Supplier created successfully")
@@ -98,20 +95,17 @@ func (h *HttpHandler) CreateSupplier(w http.ResponseWriter, r *http.Request) {
 		Data:    *supplier,
 		Message: "Supplier created successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // GetSupplier handles GET /suppliers/{id}
 func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing supplier ID in get request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing supplier ID in get request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Supplier ID is required",
 		})
@@ -120,17 +114,17 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 
 	// Validate supplier ID format
 	if !isValidUUID(id) {
-		logger.WithFields(logrus.Fields{
+		h.logger.WithFields(logrus.Fields{
 			"supplier_id": id,
 		}).Warn("Invalid supplier ID format in get request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Supplier ID must be a valid UUID",
 		})
 		return
 	}
 
-	supplier, err := h.dbHandler.GetSupplierByID(id, logger)
+	supplier, err := h.dbHandler.GetSupplierByID(id, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -139,7 +133,7 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 				Data:    models.Supplier{},
 				Message: "Supplier not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -149,7 +143,7 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Supplier{},
 			Message: "Failed to get supplier: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -158,19 +152,12 @@ func (h *HttpHandler) GetSupplier(w http.ResponseWriter, r *http.Request) {
 		Data:    *supplier,
 		Message: "Supplier retrieved successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // ListSuppliers handles GET /suppliers
 func (h *HttpHandler) ListSuppliers(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
-	// TODO: Parse query parameters for pagination when needed
-	// limit := r.URL.Query().Get("limit")
-	// offset := r.URL.Query().Get("offset")
-
-	suppliers, err := h.dbHandler.ListSuppliers(logger)
+	suppliers, err := h.dbHandler.ListSuppliers(h.logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := httpresponse.Response{
@@ -178,7 +165,7 @@ func (h *HttpHandler) ListSuppliers(w http.ResponseWriter, r *http.Request) {
 			Data:    []models.Supplier{},
 			Message: "Failed to list suppliers: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -187,20 +174,17 @@ func (h *HttpHandler) ListSuppliers(w http.ResponseWriter, r *http.Request) {
 		Data:    suppliers,
 		Message: "Suppliers retrieved successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // UpdateSupplier handles PUT /suppliers/{id}
 func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing supplier ID in update request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing supplier ID in update request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Supplier ID is required",
 		})
@@ -209,8 +193,8 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UpdateSupplierRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in update supplier request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in update supplier request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
@@ -219,17 +203,17 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields based on database schema
 	if err := h.validateUpdateSupplierRequest(req, id); err != nil {
-		logger.WithError(err).WithFields(logrus.Fields{
+		h.logger.WithError(err).WithFields(logrus.Fields{
 			"supplier_id": id,
 		}).Error("Validation failed for update supplier request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Validation failed: " + err.Error(),
 		})
 		return
 	}
 
-	supplier, err := h.dbHandler.UpdateSupplier(id, req, logger)
+	supplier, err := h.dbHandler.UpdateSupplier(id, req, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -238,7 +222,7 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 				Data:    models.Supplier{},
 				Message: "Supplier not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -248,7 +232,7 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 			Data:    models.Supplier{},
 			Message: "Failed to update supplier: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -258,25 +242,22 @@ func (h *HttpHandler) UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 		Message: "Supplier updated successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"supplier_id":   supplier.ID,
 		"supplier_name": supplier.SupplierName,
 	}).Info("Supplier updated successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // DeleteSupplier handles DELETE /suppliers/{id}
 func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVENTORY_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing supplier ID in delete request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing supplier ID in delete request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Supplier ID is required",
 		})
@@ -285,17 +266,17 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 
 	// Validate supplier ID format
 	if !isValidUUID(id) {
-		logger.WithFields(logrus.Fields{
+		h.logger.WithFields(logrus.Fields{
 			"supplier_id": id,
 		}).Warn("Invalid supplier ID format in delete request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Supplier ID must be a valid UUID",
 		})
 		return
 	}
 
-	err := h.dbHandler.DeleteSupplier(id, logger)
+	err := h.dbHandler.DeleteSupplier(id, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -303,7 +284,7 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 				Code:    http.StatusNotFound,
 				Message: "Supplier not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 			return
 		}
 
@@ -312,7 +293,7 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete supplier: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 		return
 	}
 
@@ -321,11 +302,11 @@ func (h *HttpHandler) DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 		Message: "Supplier deleted successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"supplier_id": id,
 	}).Info("Supplier deleted successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVENTORY_SERVICE, response)
 }
 
 // validateCreateSupplierRequest validates all required fields for supplier creation

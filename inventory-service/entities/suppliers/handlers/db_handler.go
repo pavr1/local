@@ -22,7 +22,7 @@ func NewDBHandler(db *sql.DB) *DBHandler {
 }
 
 // CreateSupplier creates a new supplier in the database
-func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest, logger *logrus.Entry) (*models.Supplier, error) {
+func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest, logger *logrus.Logger) (*models.Supplier, error) {
 	var supplier models.Supplier
 
 	err := h.db.QueryRow(supplierSQL.CreateSupplierQuery,
@@ -47,7 +47,7 @@ func (h *DBHandler) CreateSupplier(req models.CreateSupplierRequest, logger *log
 }
 
 // GetSupplierByID retrieves a supplier by ID from the database
-func (h *DBHandler) GetSupplierByID(id string, logger *logrus.Entry) (*models.Supplier, error) {
+func (h *DBHandler) GetSupplierByID(id string, logger *logrus.Logger) (*models.Supplier, error) {
 	var supplier models.Supplier
 
 	err := h.db.QueryRow(supplierSQL.GetSupplierByIDQuery, id).
@@ -70,7 +70,7 @@ func (h *DBHandler) GetSupplierByID(id string, logger *logrus.Entry) (*models.Su
 }
 
 // ListSuppliers retrieves all suppliers from the database
-func (h *DBHandler) ListSuppliers(logger *logrus.Entry) ([]models.Supplier, error) {
+func (h *DBHandler) ListSuppliers(logger *logrus.Logger) ([]models.Supplier, error) {
 	rows, err := h.db.Query(supplierSQL.ListSuppliersQuery)
 	if err != nil {
 		logger.WithError(err).Error("Failed to execute suppliers list query")
@@ -95,7 +95,7 @@ func (h *DBHandler) ListSuppliers(logger *logrus.Entry) ([]models.Supplier, erro
 }
 
 // UpdateSupplier updates a supplier in the database
-func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest, logger *logrus.Entry) (*models.Supplier, error) {
+func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest, logger *logrus.Logger) (*models.Supplier, error) {
 	var supplier models.Supplier
 
 	err := h.db.QueryRow(supplierSQL.UpdateSupplierQuery,
@@ -124,7 +124,7 @@ func (h *DBHandler) UpdateSupplier(id string, req models.UpdateSupplierRequest, 
 }
 
 // DeleteSupplier deletes a supplier from the database
-func (h *DBHandler) DeleteSupplier(id string, logger *logrus.Entry) error {
+func (h *DBHandler) DeleteSupplier(id string, logger *logrus.Logger) error {
 	result, err := h.db.Exec(supplierSQL.DeleteSupplierQuery, id)
 	if err != nil {
 		logger.WithError(err).WithFields(logrus.Fields{
