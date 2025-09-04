@@ -29,31 +29,30 @@ var _ DBHandlerInterface = (*DBHandler)(nil)
 // HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
 	dbHandler DBHandlerInterface
+	logger    *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler DBHandlerInterface) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HttpHandler {
 	return &HttpHandler{
 		dbHandler: dbHandler,
+		logger:    logger,
 	}
 }
 
 // CreateExpenseCategory handles POST /expense-categories
 func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
-
 	var req models.CreateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in create expense category request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in create expense category request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.CreateExpenseCategory(req, logger.Logger)
+	expenseCategory, err := h.dbHandler.CreateExpenseCategory(req, h.logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := httpresponse.Response{
@@ -61,7 +60,7 @@ func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Reque
 			Data:    models.ExpenseCategory{},
 			Message: "Failed to create expense category: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
@@ -71,32 +70,29 @@ func (h *HttpHandler) CreateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Message: "Expense category created successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"expense_category_id":   expenseCategory.ID,
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category created successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // GetExpenseCategory handles GET /expense-categories/{id}
 func (h *HttpHandler) GetExpenseCategory(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing expense category ID in get request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing expense category ID in get request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Expense category ID is required",
 		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.GetExpenseCategoryByID(id, logger.Logger)
+	expenseCategory, err := h.dbHandler.GetExpenseCategoryByID(id, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -105,7 +101,7 @@ func (h *HttpHandler) GetExpenseCategory(w http.ResponseWriter, r *http.Request)
 				Data:    models.ExpenseCategory{},
 				Message: "Expense category not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
@@ -115,7 +111,7 @@ func (h *HttpHandler) GetExpenseCategory(w http.ResponseWriter, r *http.Request)
 			Data:    models.ExpenseCategory{},
 			Message: "Failed to retrieve expense category: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
@@ -124,15 +120,12 @@ func (h *HttpHandler) GetExpenseCategory(w http.ResponseWriter, r *http.Request)
 		Data:    *expenseCategory,
 		Message: "Expense category retrieved successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // ListExpenseCategories handles GET /expense-categories
 func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
-
-	expenseCategories, err := h.dbHandler.ListExpenseCategories(logger.Logger)
+	expenseCategories, err := h.dbHandler.ListExpenseCategories(h.logger)
 	if err != nil {
 		// DBHandler already logged the error, don't duplicate
 		response := httpresponse.Response{
@@ -140,7 +133,7 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 			Data:    []models.ExpenseCategory{},
 			Message: "Failed to list expense categories: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
@@ -149,7 +142,7 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 		Data:    expenseCategories,
 		Message: "Expense categories listed successfully",
 	}
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Expense categories listed successfully",
 		Data:    response,
@@ -158,15 +151,12 @@ func (h *HttpHandler) ListExpenseCategories(w http.ResponseWriter, r *http.Reque
 
 // UpdateExpenseCategory handles PUT /expense-categories/{id}
 func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing expense category ID in update request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing expense category ID in update request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Expense category ID is required",
 		})
@@ -175,15 +165,15 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 
 	var req models.UpdateExpenseCategoryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in update expense category request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in update expense category request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON format",
 		})
 		return
 	}
 
-	expenseCategory, err := h.dbHandler.UpdateExpenseCategory(id, req, logger.Logger)
+	expenseCategory, err := h.dbHandler.UpdateExpenseCategory(id, req, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -191,7 +181,7 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 				Code:    http.StatusNotFound,
 				Message: "Expense category not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
@@ -200,7 +190,7 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to update expense category: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
@@ -209,31 +199,28 @@ func (h *HttpHandler) UpdateExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Message: "Expense category updated successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"expense_category_id":   expenseCategory.ID,
 		"expense_category_name": expenseCategory.CategoryName,
 	}).Info("Expense category updated successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }
 
 // DeleteExpenseCategory handles DELETE /expense-categories/{id}
 func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_INVOICE_SERVICE)
-
 	vars := mux.Vars(r)
 	id := vars["id"]
 
 	if id == "" {
-		logger.Warn("Missing expense category ID in delete request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
+		h.logger.Warn("Missing expense category ID in delete request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Expense category ID is required"})
 		return
 	}
 
-	err := h.dbHandler.DeleteExpenseCategory(id, logger.Logger)
+	err := h.dbHandler.DeleteExpenseCategory(id, h.logger)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// This is expected behavior, don't log as error
@@ -241,7 +228,7 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 				Code:    http.StatusNotFound,
 				Message: "Expense category not found",
 			}
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 			return
 		}
 
@@ -250,7 +237,7 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to delete expense category: " + err.Error(),
 		}
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 		return
 	}
 
@@ -259,9 +246,9 @@ func (h *HttpHandler) DeleteExpenseCategory(w http.ResponseWriter, r *http.Reque
 		Message: "Expense category deleted successfully",
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"expense_category_id": id,
 	}).Info("Expense category deleted successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_INVOICE_SERVICE, response)
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_INVOICE_SERVICE, response)
 }

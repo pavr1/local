@@ -21,7 +21,7 @@ import (
 
 func main() {
 	// Setup initial logger
-	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_ORDERS_SERVICE)
+	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_ORDERS_SERVICE, "INFO")
 	logger.Info("Starting Ice Cream Store Orders Service")
 
 	// Load configuration from data service
@@ -29,12 +29,12 @@ func main() {
 	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
 	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
-	cfg, err := configLoader.LoadConfig("Orders", logger.Logger)
+	cfg, err := configLoader.LoadConfig("Orders", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 	// Connect to database using config
-	db, err := connectToDatabase(cfg, logger.Logger)
+	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
@@ -47,10 +47,10 @@ func main() {
 	}
 
 	// Create HTTP handler
-	ordersHandler := handler.NewHttpHandler(dbHandler, cfg)
+	ordersHandler := handler.NewHttpHandler(dbHandler, cfg, logger)
 
 	// Setup HTTP router
-	router := setupRouter(ordersHandler, logger.Logger)
+	router := setupRouter(ordersHandler, logger)
 
 	// Start HTTP server
 	server := &http.Server{
@@ -153,8 +153,12 @@ func setupRouter(ordersHandler *handler.HttpHandler, logger *logrus.Logger) *mux
 
 	// Protected routes (authentication required)
 	protectedRouter := router.PathPrefix("/api/v1").Subrouter()
-	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE))
-	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE, "/api/v1/orders/p/health"))
+
+	gatewayMiddleware := sharedMiddleware.NewGatewayMiddleware(logger)
+	requestIDMiddleware := sharedMiddleware.NewRequestIDMiddleware(logger)
+
+	protectedRouter.Use(gatewayMiddleware.CheckGatewayMiddleware)
+	protectedRouter.Use(requestIDMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_ORDERS_SERVICE, "/api/v1/orders/p/health"))
 
 	// Removed protectedRouter.Use(authMiddleware.Authenticate) - gateway handles all auth
 

@@ -22,24 +22,24 @@ type DBHandlerInterface interface {
 // HTTPHandler handles HTTP requests for sessions
 type HTTPHandler struct {
 	dbHandler DBHandlerInterface
+	logger    *logrus.Logger
 }
 
 // NewHTTPHandler creates a new HTTP handler
-func NewHTTPHandler(dbHandler DBHandlerInterface) *HTTPHandler {
+func NewHTTPHandler(dbHandler DBHandlerInterface, logger *logrus.Logger) *HTTPHandler {
 	return &HTTPHandler{
 		dbHandler: dbHandler,
+		logger:    logger,
 	}
 }
 
 // CreateSession handles session creation requests
 func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
-
 	// Parse request
 	var req models.SessionCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid request format")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request format",
 		})
@@ -48,7 +48,8 @@ func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if req.Username == "" || req.Password == "" {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.Error("Username and password are required")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Username and password are required",
 		})
@@ -58,7 +59,8 @@ func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	// Create session
 	response, err := h.dbHandler.CreateSession(&req)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid username or password")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusUnauthorized,
 			Message: "Invalid username or password",
 		})
@@ -66,12 +68,12 @@ func (h *HTTPHandler) CreateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Return success response
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"session_id": response.SessionID,
 		"username":   req.Username,
 	}).Info("Session created successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 		Code:    http.StatusCreated,
 		Data:    response,
 		Message: "Session created successfully",
@@ -83,7 +85,8 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req models.SessionValidationRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid request body")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body",
 		})
@@ -93,7 +96,8 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 	// Validate session
 	response, err := h.dbHandler.ValidateSession(req.SessionID)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to validate session")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to validate session",
 		})
@@ -101,7 +105,7 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write response
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Data:    response,
 		Message: "Session validated successfully",
@@ -110,15 +114,12 @@ func (h *HTTPHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 
 // LogoutSession handles session logout requests
 func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
-
 	// Parse request body
 	var req models.SessionLogoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid request body")
+		h.logger.WithError(err).Error("Invalid request body")
 
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid request body",
 		})
@@ -127,8 +128,8 @@ func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if req.SessionID == "" {
-		logger.WithError(errors.New("Session ID is required")).Error("Session ID is required")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(errors.New("Session ID is required")).Error("Session ID is required")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Session ID is required",
 		})
@@ -138,18 +139,19 @@ func (h *HTTPHandler) LogoutSession(w http.ResponseWriter, r *http.Request) {
 	// Delete session
 	response, err := h.dbHandler.DeleteSession(req.SessionID)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to logout session")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to logout session",
 		})
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"session_id": req.SessionID,
 	}).Info("Session logged out successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Data:    response,
 		Message: "Session logged out successfully",

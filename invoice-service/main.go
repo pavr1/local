@@ -22,7 +22,7 @@ import (
 
 func main() {
 	// Setup initial logger
-	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_INVOICE_SERVICE)
+	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_INVOICE_SERVICE, "INFO")
 	logger.Info("Starting Ice Cream Store Invoice Service")
 
 	// Load configuration from data service
@@ -30,23 +30,23 @@ func main() {
 	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
 	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
-	cfg, err := configLoader.LoadConfig("Invoice", logger.Logger)
+	cfg, err := configLoader.LoadConfig("Invoice", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
 
 	// Connect to database using config
-	db, err := connectToDatabase(cfg, logger.Logger)
+	db, err := connectToDatabase(cfg, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to connect to database")
 	}
 	defer db.Close()
 
 	// Create main HTTP handler with all entity handlers
-	mainHandler := NewMainHttpHandler(db, logger.Logger, cfg)
+	mainHandler := NewMainHttpHandler(db, logger, cfg)
 
 	// Setup HTTP router
-	router := setupRouter(mainHandler, logger.Logger)
+	router := setupRouter(mainHandler, logger)
 
 	// Start HTTP server
 	server := &http.Server{
@@ -177,8 +177,12 @@ func setupRouter(mainHandler *MainHttpHandler, logger *logrus.Logger) *mux.Route
 
 	// Invoices routes (includes invoice details management)
 	invoicesRouter := api.PathPrefix("/invoices").Subrouter()
-	invoicesRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE))
-	invoicesRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
+
+	gatewayMiddleware := sharedMiddleware.NewGatewayMiddleware(logger)
+	requestIDMiddleware := sharedMiddleware.NewRequestIDMiddleware(logger)
+	invoicesRouter.Use(gatewayMiddleware.CheckGatewayMiddleware)
+	//pvillalobos - hardcoded values
+	invoicesRouter.Use(requestIDMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_INVOICE_SERVICE, "/api/v1/invoices/p/health"))
 	invoicesHandler := mainHandler.GetInvoicesHandler()
 
 	// Expense Categories routes - under invoices (MUST be before generic {id} routes)

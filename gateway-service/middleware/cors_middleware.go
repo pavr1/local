@@ -2,25 +2,24 @@ package middleware
 
 import (
 	"net/http"
-	sharedLogger "shared/logger"
 
 	"github.com/sirupsen/logrus"
 )
 
 // CORSMiddleware handles Cross-Origin Resource Sharing (CORS) headers
 type CORSMiddleware struct {
+	logger *logrus.Logger
 }
 
 // NewCORSMiddleware creates a new CORS middleware
-func NewCORSMiddleware() *CORSMiddleware {
-	return &CORSMiddleware{}
+func NewCORSMiddleware(logger *logrus.Logger) *CORSMiddleware {
+	return &CORSMiddleware{logger: logger}
 }
 
 // HandleCORS middleware sets CORS headers and handles preflight requests
 func (cm *CORSMiddleware) HandleCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_GATEWAY_SERVICE)
-		logger.WithFields(logrus.Fields{
+		cm.logger.WithFields(logrus.Fields{
 			"method": r.Method,
 			"path":   r.URL.Path,
 			"origin": r.Header.Get("Origin"),
@@ -35,7 +34,7 @@ func (cm *CORSMiddleware) HandleCORS(next http.Handler) http.Handler {
 
 		// Handle preflight requests
 		if r.Method == "OPTIONS" {
-			logger.WithFields(logrus.Fields{
+			cm.logger.WithFields(logrus.Fields{
 				"method": r.Method,
 				"path":   r.URL.Path,
 				"origin": r.Header.Get("Origin"),

@@ -37,31 +37,29 @@ var _ DBHandlerInterface = (*DBHandler)(nil)
 
 // HttpHandler handles HTTP requests for existence operations
 type HttpHandler struct {
-	dbHandler DBHandlerInterface
-	config    *sharedConfig.Config
-	// Invoice service client
+	dbHandler  DBHandlerInterface
+	config     *sharedConfig.Config
 	httpClient *http.Client
+	logger     *logrus.Logger
 }
 
 // NewHttpHandler creates a new HTTP handler
-func NewHttpHandler(dbHandler DBHandlerInterface, config *sharedConfig.Config) *HttpHandler {
+func NewHttpHandler(dbHandler DBHandlerInterface, config *sharedConfig.Config, logger *logrus.Logger) *HttpHandler {
 	return &HttpHandler{
 		dbHandler:  dbHandler,
 		config:     config,
 		httpClient: http.DefaultClient,
+		logger:     logger,
 	}
 }
 
 // CreateOrder handles POST /orders
 func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	var req models.CreateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in create order request")
+		h.logger.WithError(err).Error("Invalid JSON in create order request")
 
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON payload",
 		})
@@ -70,8 +68,8 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Validate request
 	if err := req.Validate(); err != nil {
-		logger.WithError(err).Error("Validation failed for create order request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Validation failed for create order request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Validation failed",
 		})
@@ -79,10 +77,10 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create order in database
-	createdOrder, err := h.dbHandler.CreateOrder(req, logger.Logger)
+	createdOrder, err := h.dbHandler.CreateOrder(req, h.logger)
 	if err != nil {
-		logger.WithError(err).Error("Failed to create order")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to create order")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to create order",
 		})
@@ -124,10 +122,10 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call invoice service to create income invoice
-	invoiceResp, err := h.createIncomeInvoice(invoiceReq, logger.Logger)
+	invoiceResp, err := h.createIncomeInvoice(invoiceReq, h.logger)
 	if err != nil {
-		logger.WithError(err).WithField("order_id", createdOrder.Order.ID).Error("Failed to create income invoice")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).WithField("order_id", createdOrder.Order.ID).Error("Failed to create income invoice")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to create invoice",
 		})
@@ -141,10 +139,10 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 			InvoiceURL:    &invoiceResp.Data.ImageURL, // Use image_url as invoice URL
 		}
 
-		updatedOrder, err := h.dbHandler.UpdateOrder(createdOrder.Order.ID, updateReq, logger.Logger)
+		updatedOrder, err := h.dbHandler.UpdateOrder(createdOrder.Order.ID, updateReq, h.logger)
 		if err != nil {
-			logger.WithError(err).WithField("order_id", createdOrder.Order.ID).Error("Failed to update order with invoice details")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).WithField("order_id", createdOrder.Order.ID).Error("Failed to update order with invoice details")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusInternalServerError,
 				Message: "Failed to update order with invoice details",
 			})
@@ -153,7 +151,7 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		createdOrder = updatedOrder
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"order_id":     createdOrder.Order.ID,
 		"order_number": createdOrder.Order.OrderNumber,
 		"total_amount": createdOrder.Order.TotalAmount,
@@ -161,7 +159,7 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		"service_tax":  createdOrder.Order.ServiceTaxAmount,
 	}).Info("Order created successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusCreated,
 		Message: "Order created successfully",
 		Data:    createdOrder,
@@ -170,39 +168,36 @@ func (h *HttpHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 // GetOrder handles GET /orders/{id}
 func (h *HttpHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		logger.WithError(err).Error("Invalid order ID")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid order ID")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid order ID",
 		})
 		return
 	}
 
-	order, err := h.dbHandler.GetOrder(orderID, logger.Logger)
+	order, err := h.dbHandler.GetOrder(orderID, h.logger)
 	if err != nil {
 		//pvillalobos - hardcoded error message
 		if strings.Contains(err.Error(), "not found") {
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusNotFound,
 				Message: "Order not found",
 			})
 			return
 		}
-		logger.WithError(err).Error("Failed to retrieve order")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to retrieve order")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to retrieve order",
 		})
 		return
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Order retrieved successfully",
 		Data:    order,
@@ -211,14 +206,11 @@ func (h *HttpHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 
 // UpdateOrder handles PUT /orders/{id}
 func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		logger.WithError(err).Error("Invalid order ID")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid order ID")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid order ID",
 		})
@@ -227,8 +219,8 @@ func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 
 	var req models.UpdateOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		logger.WithError(err).Error("Invalid JSON in update order request")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid JSON in update order request")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid JSON payload",
 		})
@@ -246,8 +238,8 @@ func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !valid {
-			logger.WithError(err).Error("Invalid payment method")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid payment method")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid payment method",
 			})
@@ -266,8 +258,8 @@ func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !valid {
-			logger.WithError(err).Error("Invalid order status")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid order status")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid order status",
 			})
@@ -276,30 +268,30 @@ func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update order
-	updatedOrder, err := h.dbHandler.UpdateOrder(orderID, &req, logger.Logger)
+	updatedOrder, err := h.dbHandler.UpdateOrder(orderID, &req, h.logger)
 	if err != nil {
 		//pvillalobos - hardcoded error message
 		if strings.Contains(err.Error(), "not found") {
-			logger.WithError(err).Error("Order not found")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Order not found")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusNotFound,
 				Message: "Order not found",
 			})
 			return
 		}
-		logger.WithError(err).Error("Failed to update order")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to update order")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to update order",
 		})
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"order_id": orderID,
 	}).Info("Order updated successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Order updated successfully",
 		Data:    updatedOrder,
@@ -308,43 +300,40 @@ func (h *HttpHandler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 
 // CancelOrder handles DELETE /orders/{id}
 func (h *HttpHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	vars := mux.Vars(r)
 	orderID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		logger.WithError(err).Error("Invalid order ID")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Invalid order ID")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid order ID",
 		})
 		return
 	}
 
-	if err := h.dbHandler.CancelOrder(orderID, logger.Logger); err != nil {
+	if err := h.dbHandler.CancelOrder(orderID, h.logger); err != nil {
 		//pvillalobos - hardcoded error message
 		if strings.Contains(err.Error(), "not found") || strings.Contains(err.Error(), "completed") {
-			logger.WithError(err).Error("Order cannot be cancelled")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Order cannot be cancelled")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Order cannot be cancelled",
 			})
 			return
 		}
-		logger.WithError(err).Error("Failed to cancel order")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to cancel order")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to cancel order",
 		})
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"order_id": orderID,
 	}).Info("Order cancelled successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Order cancelled successfully",
 		Data: map[string]interface{}{
@@ -356,9 +345,6 @@ func (h *HttpHandler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 
 // ListOrders handles GET /orders
 func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	filter := &models.OrderFilter{}
 
 	// Parse query parameters
@@ -368,8 +354,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if customerIDStr := query.Get("customer_id"); customerIDStr != "" {
 		customerID, err := uuid.Parse(customerIDStr)
 		if err != nil {
-			logger.WithError(err).Error("Invalid customer ID")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid customer ID")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid customer ID",
 			})
@@ -393,8 +379,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if dateFromStr := query.Get("date_from"); dateFromStr != "" {
 		dateFrom, err := time.Parse("2006-01-02", dateFromStr)
 		if err != nil {
-			logger.WithError(err).Error("Invalid date_from format, use YYYY-MM-DD")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid date_from format, use YYYY-MM-DD")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid date_from format, use YYYY-MM-DD",
 			})
@@ -407,8 +393,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if dateToStr := query.Get("date_to"); dateToStr != "" {
 		dateTo, err := time.Parse("2006-01-02", dateToStr)
 		if err != nil {
-			logger.WithError(err).Error("Invalid date_to format, use YYYY-MM-DD")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid date_to format, use YYYY-MM-DD")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid date_to format, use YYYY-MM-DD",
 			})
@@ -423,8 +409,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if minAmountStr := query.Get("min_amount"); minAmountStr != "" {
 		minAmount, err := strconv.ParseFloat(minAmountStr, 64)
 		if err != nil {
-			logger.WithError(err).Error("Invalid min_amount")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid min_amount")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid min_amount",
 			})
@@ -436,8 +422,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if maxAmountStr := query.Get("max_amount"); maxAmountStr != "" {
 		maxAmount, err := strconv.ParseFloat(maxAmountStr, 64)
 		if err != nil {
-			logger.WithError(err).Error("Invalid max_amount")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid max_amount")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid max_amount",
 			})
@@ -451,8 +437,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if limitStr := query.Get("limit"); limitStr != "" {
 		limit, err := strconv.Atoi(limitStr)
 		if err != nil || limit <= 0 {
-			logger.WithError(err).Error("Invalid limit")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid limit")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid limit",
 			})
@@ -466,8 +452,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	if offsetStr := query.Get("offset"); offsetStr != "" {
 		offset, err := strconv.Atoi(offsetStr)
 		if err != nil || offset < 0 {
-			logger.WithError(err).Error("Invalid offset")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.WithError(err).Error("Invalid offset")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid offset",
 			})
@@ -488,8 +474,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if !valid {
-			logger.Error("Invalid sort_by field")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.Error("Invalid sort_by field")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid sort_by field",
 			})
@@ -500,8 +486,8 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 	if sortOrder := query.Get("sort_order"); sortOrder != "" {
 		if sortOrder != "asc" && sortOrder != "desc" {
-			logger.Error("Invalid sort_order, use 'asc' or 'desc'")
-			httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+			h.logger.Error("Invalid sort_order, use 'asc' or 'desc'")
+			httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 				Code:    http.StatusBadRequest,
 				Message: "Invalid sort_order, use 'asc' or 'desc'",
 			})
@@ -511,10 +497,10 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get orders
-	orders, totalCount, err := h.dbHandler.ListOrders(filter, logger.Logger)
+	orders, totalCount, err := h.dbHandler.ListOrders(filter, h.logger)
 	if err != nil {
-		logger.WithError(err).Error("Failed to retrieve orders")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to retrieve orders")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to retrieve orders",
 		})
@@ -529,7 +515,7 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		"has_more":    filter.Offset+len(orders) < totalCount,
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Orders retrieved successfully",
 		Data:    response,
@@ -538,10 +524,7 @@ func (h *HttpHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 
 // GetOrdersByDateRange handles GET /orders/by-date-range
 func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"endpoint": "/orders/by-date-range",
 		"method":   r.Method,
 		"remote":   r.RemoteAddr,
@@ -552,8 +535,8 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 	dateToStr := r.URL.Query().Get("date_to")
 
 	if dateFromStr == "" || dateToStr == "" {
-		logger.Error("Both date_from and date_to parameters are required")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.Error("Both date_from and date_to parameters are required")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Both date_from and date_to parameters are required",
 		})
@@ -563,8 +546,8 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 	// Parse dates
 	dateFrom, err := time.Parse("2006-01-02", dateFromStr)
 	if err != nil {
-		logger.WithError(err).WithField("date_from", dateFromStr).Warn("Invalid date_from format")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).WithField("date_from", dateFromStr).Warn("Invalid date_from format")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid date_from format. Use YYYY-MM-DD",
 		})
@@ -573,8 +556,8 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 
 	dateTo, err := time.Parse("2006-01-02", dateToStr)
 	if err != nil {
-		logger.WithError(err).WithField("date_to", dateToStr).Warn("Invalid date_to format")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).WithField("date_to", dateToStr).Warn("Invalid date_to format")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusBadRequest,
 			Message: "Invalid date_to format. Use YYYY-MM-DD",
 		})
@@ -595,10 +578,10 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Get orders
-	orders, total, err := h.dbHandler.ListOrders(filter, logger.Logger)
+	orders, total, err := h.dbHandler.ListOrders(filter, h.logger)
 	if err != nil {
-		logger.WithError(err).Error("Failed to get orders by date range")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithError(err).Error("Failed to get orders by date range")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to get orders",
 		})
@@ -616,14 +599,14 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 		},
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"orders_count": len(orders),
 		"total":        total,
 		"date_from":    dateFromStr,
 		"date_to":      dateToStr,
 	}).Info("Successfully retrieved orders by date range")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Orders retrieved successfully",
 		Data:    response,
@@ -632,32 +615,29 @@ func (h *HttpHandler) GetOrdersByDateRange(w http.ResponseWriter, r *http.Reques
 
 // GetOrderSummary handles GET /orders/summary
 func (h *HttpHandler) GetOrderSummary(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"endpoint": "/orders/summary",
 		"method":   r.Method,
 		"remote":   r.RemoteAddr,
 	}).Info("Get order summary requested")
 
-	summary, err := h.dbHandler.GetOrderSummary(logger.Logger)
+	summary, err := h.dbHandler.GetOrderSummary(h.logger)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to retrieve order summary",
 		})
 		return
 	}
 
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"total_orders":     summary.TotalOrders,
 		"pending_orders":   summary.PendingOrders,
 		"completed_orders": summary.CompletedOrders,
 		"total_revenue":    summary.TotalRevenue,
 	}).Info("Order summary retrieved successfully")
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Order summary retrieved successfully",
 		Data:    summary,
@@ -666,19 +646,16 @@ func (h *HttpHandler) GetOrderSummary(w http.ResponseWriter, r *http.Request) {
 
 // GetPaymentMethodStats handles GET /orders/payment-method-stats
 func (h *HttpHandler) GetPaymentMethodStats(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
-	stats, err := h.dbHandler.GetPaymentMethodStats(logger.Logger)
+	stats, err := h.dbHandler.GetPaymentMethodStats(h.logger)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusInternalServerError,
 			Message: "Failed to retrieve payment method stats",
 		})
 		return
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Payment method stats retrieved successfully",
 		Data:    stats,
@@ -687,12 +664,9 @@ func (h *HttpHandler) GetPaymentMethodStats(w http.ResponseWriter, r *http.Reque
 
 // HealthCheck handles GET /health
 func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	// Get logger with request ID
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_ORDERS_SERVICE)
-
 	// Check database health
 	if err := h.dbHandler.HealthCheck(); err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusServiceUnavailable,
 			Message: "Database connection failed",
 		})
@@ -707,7 +681,7 @@ func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	dataServiceHealthURL := fmt.Sprintf("%s/api/v1/data/p/health", h.config.GetString("DATA_SERVICE_URL"))
 	resp, err := client.Get(dataServiceHealthURL)
 	if err != nil {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusServiceUnavailable,
 			Message: "Data service connection failed",
 		})
@@ -716,8 +690,8 @@ func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.WithField("status_code", resp.StatusCode).Error("Data service health check failed")
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+		h.logger.WithField("status_code", resp.StatusCode).Error("Data service health check failed")
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 			Code:    http.StatusServiceUnavailable,
 			Message: "Data service is unhealthy",
 		})
@@ -731,7 +705,7 @@ func (h *HttpHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		"version": "1.0.0",
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_ORDERS_SERVICE, httpresponse.Response{
 		Code:    http.StatusOK,
 		Message: "Orders service is healthy",
 		Data:    response,
@@ -747,7 +721,7 @@ func (h *HttpHandler) createIncomeInvoice(invoiceReq map[string]interface{}, log
 	}
 
 	// Debug: Log the JSON being sent
-	logger.WithFields(logrus.Fields{
+	h.logger.WithFields(logrus.Fields{
 		"invoice_data": string(jsonData),
 		"invoice_url":  fmt.Sprintf("%s/api/v1/invoices", h.config.GetString("INVOICE_SERVICE_URL")),
 	}).Info("Sending invoice request to invoice service")

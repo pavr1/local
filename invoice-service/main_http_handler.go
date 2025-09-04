@@ -28,11 +28,11 @@ type MainHttpHandler struct {
 func NewMainHttpHandler(db *sql.DB, logger *logrus.Logger, cfg *config.Config) *MainHttpHandler {
 	// Initialize invoices handlers
 	invoicesDBHandler := invoicesHandlers.NewDBHandler(db, cfg)
-	invoicesHttpHandler := invoicesHandlers.NewHttpHandler(invoicesDBHandler)
+	invoicesHttpHandler := invoicesHandlers.NewHttpHandler(invoicesDBHandler, logger)
 
 	// Initialize expense categories handlers
 	expenseCategoriesDBHandler := expenseCategoriesHandlers.NewDBHandler(db)
-	expenseCategoriesHttpHandler := expenseCategoriesHandlers.NewHttpHandler(expenseCategoriesDBHandler)
+	expenseCategoriesHttpHandler := expenseCategoriesHandlers.NewHttpHandler(expenseCategoriesDBHandler, logger)
 
 	return &MainHttpHandler{
 		db:                       db,

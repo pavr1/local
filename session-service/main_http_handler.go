@@ -16,6 +16,7 @@ import (
 // MainHTTPHandler handles all HTTP requests for the session service
 type MainHTTPHandler struct {
 	sessionsHandler *handlers.HTTPHandler
+	logger          *logrus.Logger
 }
 
 // NewMainHTTPHandler creates a new main HTTP handler
@@ -30,17 +31,20 @@ func NewMainHTTPHandler(cfg *sharedConfig.Config, logger *logrus.Logger) (*MainH
 	}
 
 	// Create HTTP handler
-	sessionsHandler := handlers.NewHTTPHandler(dbHandler)
+	sessionsHandler := handlers.NewHTTPHandler(dbHandler, logger)
 
 	return &MainHTTPHandler{
 		sessionsHandler: sessionsHandler,
+		logger:          logger,
 	}, nil
 }
 
 // SetupRoutes sets up all the routes for the service
 func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 	// Add request ID middleware to all routes
-	router.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_SESSION_SERVICE, "/api/v1/sessions/p/health"))
+	requestIDMiddleware := sharedMiddleware.NewRequestIDMiddleware(h.logger)
+	gatewayMiddleware := sharedMiddleware.NewGatewayMiddleware(h.logger)
+	router.Use(requestIDMiddleware.InjectRequestIDMiddleware)
 
 	// Public router for endpoints that don't require gateway validation
 	publicRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
@@ -50,8 +54,8 @@ func (h *MainHTTPHandler) SetupRoutes(router *mux.Router) {
 
 	// Protected endpoints (require gateway validation)
 	protectedRouter := router.PathPrefix("/api/v1/sessions").Subrouter()
-	protectedRouter.Use(sharedMiddleware.CheckGatewayMiddleware(sharedLogger.SERVICE_SESSION_SERVICE))
-	protectedRouter.Use(sharedMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_SESSION_SERVICE, "/api/v1/sessions/p/health"))
+	protectedRouter.Use(gatewayMiddleware.CheckGatewayMiddleware)
+	protectedRouter.Use(requestIDMiddleware.CheckRequestIDMiddleware(sharedLogger.SERVICE_SESSION_SERVICE, "/api/v1/sessions/p/health"))
 	protectedRouter.HandleFunc("/logout", h.sessionsHandler.LogoutSession).Methods("POST")
 }
 
@@ -61,7 +65,7 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	dataServiceHealthy := h.checkDataServiceHealth(r)
 
 	if !dataServiceHealthy {
-		httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+		httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 			Code: http.StatusServiceUnavailable,
 			Data: map[string]interface{}{
 				"status":  "unhealthy",
@@ -78,7 +82,7 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 		"message": "Session service is operational",
 	}
 
-	httpresponse.WriteResponse(w, r, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
+	httpresponse.WriteResponse(w, h.logger, sharedLogger.SERVICE_SESSION_SERVICE, httpresponse.Response{
 		Code: http.StatusOK,
 		Data: response,
 	})
@@ -86,8 +90,6 @@ func (h *MainHTTPHandler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 // checkDataServiceHealth checks if the data-service is healthy
 func (h *MainHTTPHandler) checkDataServiceHealth(r *http.Request) bool {
-	logger := sharedLogger.GetRequestLogger(r, sharedLogger.SERVICE_SESSION_SERVICE)
-
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -95,7 +97,7 @@ func (h *MainHTTPHandler) checkDataServiceHealth(r *http.Request) bool {
 	// Direct call to data service (internal service communication)
 	req, err := http.NewRequest("GET", "http://icecream_data_service:8086/api/v1/data/p/health", nil)
 	if err != nil {
-		logger.WithError(err).Error("Failed to create data service health check request")
+		h.logger.WithError(err).Error("Failed to create data service health check request")
 
 		return false
 	}
@@ -113,7 +115,7 @@ func (h *MainHTTPHandler) checkDataServiceHealth(r *http.Request) bool {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.WithError(err).Error("Failed to connect to data-service")
+		h.logger.WithError(err).Error("Failed to connect to data-service")
 
 		return false
 	}

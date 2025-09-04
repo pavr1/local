@@ -19,7 +19,7 @@ import (
 )
 
 func main() {
-	logger := sharedLogger.GetRequestLogger(nil, sharedLogger.SERVICE_SESSION_SERVICE)
+	logger := sharedLogger.SetupLogger(sharedLogger.SERVICE_SESSION_SERVICE, "INFO")
 	logger.Info("Starting Session Service")
 
 	// Load configuration from data service
@@ -27,7 +27,7 @@ func main() {
 	dataServiceUrl := sharedConfig.DATA_SERVICE_URL
 	configLoader := sharedConfig.NewConfigLoader(dataServiceUrl)
 
-	config, err := configLoader.LoadConfig("Session", logger.Logger)
+	config, err := configLoader.LoadConfig("Session", logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to load configuration from data service")
 	}
@@ -58,7 +58,7 @@ func main() {
 	logger.Info("Database connection established")
 
 	// Create main HTTP handler
-	mainHandler, err := NewMainHTTPHandler(config, logger.Logger)
+	mainHandler, err := NewMainHTTPHandler(config, logger)
 	if err != nil {
 		logger.WithError(err).Fatal("Failed to create HTTP handler")
 	}
